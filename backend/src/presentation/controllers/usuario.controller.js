@@ -1,21 +1,28 @@
 import { usuarioService } from '../../business/services/usuario.service.js';
+import { usuarioValidator } from '../../business/validators/usuario.validator.js';
 
 export class usuarioController {
-    static async createUsuario(req, res) {
+    static async createUsuario(req, res, next) {
         try {
-            let { idRol, nombre, password } = req.body;
+            const resultado = usuarioValidator.validateCreateUsuario(req.body);
 
-            let usuario = await usuarioService.createUsuario({ idRol, nombre, password });
+            if (!resultado.success) {
+                return res.status(400).json({
+                    message: 'Datos inválidos',
+                    errors: resultado.error.issues
+                });
+            }
 
-            res.status(201).json({
+            let usuario = await usuarioService.createUsuario(resultado.data);
+
+            return res.status(201).json({
                 message: 'Usuario creado exitosamente',
                 nombre: usuario.nombre_usuario,
                 contraseña: usuario.password_hash
             });
         }
         catch (error) {
-            console.error('Error al crear el usuario:', error);
-            return res.status(500).json({ message: 'Error interno del servidor' });
+            next(error);
         }
     }
 }

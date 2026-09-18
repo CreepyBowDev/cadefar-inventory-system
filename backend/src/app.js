@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { usuarioRouter } from './presentation/routes/usuario.router.js';
+import { errorHandler } from './presentation/middlewares/error.middleware.js';
 
 export const app = express();
 
@@ -14,4 +15,5 @@ app.use(express.json());
 
 app.use('/api/usuarios', usuarioRouter);
 
+app.use(errorHandler);
 app.use(cookieParser());

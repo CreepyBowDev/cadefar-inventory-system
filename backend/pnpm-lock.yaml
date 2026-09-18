@@ -228,6 +228,9 @@ importers:
       sequelize:
         specifier: ^6.37.8
         version: 6.37.8(mysql2@3.24.4(@types/node@26.5.1))
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
     devDependencies:
       sequelize-cli:
         specifier: ^6.6.5
@@ -896,6 +899,9 @@ packages:
     resolution: {integrity: sha512-Nt9ZJjXTv5R8MHbqby/wXQ6Gi0Bb3TcYZkR1bzuL4yB2OxWPkXknz513gEF0GoA6tn00UpbPvERW8rzCuWCA6w==}
     engines: {node: '>=10'}
 
+  zod@4.6.5:
+    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+
 snapshots:
 
   '@isaacs/cliui@8.0.2':
@@ -1560,3 +1566,5 @@ snapshots:
       string-width: 4.2.3
       y18n: 5.0.8
       yargs-parser: 20.2.9
+
+  zod@4.6.5: {}
