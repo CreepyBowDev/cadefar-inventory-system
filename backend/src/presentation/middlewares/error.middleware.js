@@ -6,9 +6,15 @@ export const errorHandler = (error, req, res, next) => {
 
     if (error instanceof AppError) {
 
-        return res.status(error.statusCode).json({
+        const response = {
             message: error.message
-        });
+        };
+
+        if (error.details) {
+            response.errors = error.details;
+        }
+
+        return res.status(error.statusCode).json(response);
 
     }
 

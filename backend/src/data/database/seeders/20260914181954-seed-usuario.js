@@ -1,5 +1,8 @@
 'use strict';
 
+require('dotenv').config();
+const bcrypt = require('bcrypt');
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -12,26 +15,40 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
+    const password = process.env.SEED_USERS_PASSWORD;
+
+    if (!password || password.length < 8) {
+      throw new Error(
+        'SEED_USERS_PASSWORD debe estar definida y tener al menos 8 caracteres'
+      );
+    }
+
+    const passwordHashes = await Promise.all([
+      bcrypt.hash(password, 10),
+      bcrypt.hash(password, 10),
+      bcrypt.hash(password, 10)
+    ]);
+
     await queryInterface.bulkInsert('usuario', [
       {
         id_usuario: 1,
         id_rol: 1,
         nombre_usuario: 'admin_demo',
-        password_hash: '$argon2id$v=19$m=19456,t=2,p=1$I2nB2716AiX0xR3Ecqdekw$8b2gH2y4refRjdmFNXb7B77L4gQ9S6UwAk8gR0pgBeg',
+        password_hash: passwordHashes[0],
         estado: true
       },
       {
         id_usuario: 2,
         id_rol: 2,
         nombre_usuario: 'farmaceutico_demo',
-        password_hash: '$argon2id$v=19$m=19456,t=2,p=1$e3byF23wv5BfTXC86ozs6w$bl50wNkPzwUmg3Wber5OBFN3TF/3dsdnL2xKr1BTz74',
+        password_hash: passwordHashes[1],
         estado: true
       },
       {
         id_usuario: 3,
         id_rol: 3,
         nombre_usuario: 'cajero_demo',
-        password_hash: '$argon2id$v=19$m=19456,t=2,p=1$I91+O7sp+WYwHHyC1j8sVQ$MbgCId8bi8jVayUJ3MJjKQXVzcJVmPZ11ZXU5QAycZg',
+        password_hash: passwordHashes[2],
         estado: true
       }
     ]);

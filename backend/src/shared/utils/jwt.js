@@ -9,7 +9,7 @@ export const generarToken = ({ idUsuario, idRol }) => {
         },
         process.env.JWT_SECRET,
         {
-            expiresIn: '1h'
+            expiresIn: '8h'
         }
     );
 

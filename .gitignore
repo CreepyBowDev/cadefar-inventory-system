@@ -7,5 +7,6 @@ node_modules/
 !.env.example
 
 Programming.txt
+Contexto-completo.txt
 
 requests.http

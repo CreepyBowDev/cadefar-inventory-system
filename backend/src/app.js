@@ -19,4 +19,3 @@ app.use('/api/usuarios', usuarioRouter);
 app.use('/api/auth', authRouter);
 
 app.use(errorHandler);
-app.use(cookieParser());

@@ -1,11 +1,12 @@
 import { verificarToken } from '../../shared/utils/jwt.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { authService } from '../../business/services/auth.service.js';
 
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
 
     try {
 
-        const token = req.cookies.token;
+        const token = req.cookies?.token;
 
         if (!token) {
             throw new AppError(
@@ -16,9 +17,13 @@ export const authMiddleware = (req, res, next) => {
 
         const payload = verificarToken(token);
 
+        const usuario = await authService.getSessionUsuario(
+            payload.idUsuario
+        );
+
         req.usuario = {
-            idUsuario: payload.idUsuario,
-            idRol: payload.idRol
+            idUsuario: usuario.idUsuario,
+            idRol: usuario.idRol
         };
 
         next();
@@ -29,12 +34,22 @@ export const authMiddleware = (req, res, next) => {
             return next(error);
         }
 
-        next(
-            new AppError(
-                'Token inválido o expirado',
-                401
-            )
-        );
+        const jwtErrorNames = [
+            'JsonWebTokenError',
+            'TokenExpiredError',
+            'NotBeforeError'
+        ];
+
+        if (jwtErrorNames.includes(error.name)) {
+            return next(
+                new AppError(
+                    'Token inválido o expirado',
+                    401
+                )
+            );
+        }
+
+        next(error);
 
     }
 };

@@ -9,10 +9,10 @@ const loginSchema = z.object({
         .string()
         .min(6, 'La contraseña debe tener al menos 6 caracteres')
         .max(100, 'La contraseña no puede superar los 100 caracteres')
-});
+}).strict();
 
 export class authValidator {
-    static validateLogin({ nombreUsuario, password }) {
-        return loginSchema.safeParse({ nombreUsuario, password });
+    static validateLogin(data) {
+        return loginSchema.safeParse(data);
     }
 }
