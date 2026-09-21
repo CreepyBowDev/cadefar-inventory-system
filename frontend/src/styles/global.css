@@ -1,0 +1,115 @@
+:root {
+  font-family: "Segoe UI Variable", "Aptos", "Segoe UI", sans-serif;
+  color: #242528;
+  background: #f1f1ef;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --color-charcoal: #151619;
+  --color-charcoal-soft: #222326;
+  --color-accent: #ef8b00;
+  --color-accent-strong: #f5a000;
+  --color-accent-soft: #ffc55c;
+  --color-accent-pale: #fff3df;
+  --color-silver-soft: #eef0f2;
+  --color-app-bg: #f1f1ef;
+  --color-surface: #f7f7f5;
+  --color-surface-subtle: #f4f4f2;
+  --color-ink: #242528;
+  --color-muted: #6d7074;
+  --color-line: #dedfe1;
+  --color-line-strong: #cfd1d4;
+  --color-danger: #a9362e;
+  --color-error: #a9362e;
+  --color-on-dark: #f7f7f7;
+  --color-on-dark-muted: #b8bbc0;
+  --color-brand-deep: var(--color-charcoal);
+  --color-brand: var(--color-accent);
+  --color-mint-soft: #eef0f2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-app-bg);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+input,
+select,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.auth-layout {
+  min-height: 100vh;
+  color: var(--color-ink);
+  background: #f2f2f0;
+}
+
+.auth-layout > .session-loader {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+}
+
+.session-loader--page {
+  display: flex;
+  min-height: 100vh;
+  justify-content: center;
+}
+
+.session-loader__mark {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--color-line-strong);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: global-spin 700ms linear infinite;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+@keyframes global-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-loader__mark {
+    animation-duration: 1.4s;
+  }
+}
