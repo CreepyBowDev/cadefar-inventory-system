@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { AppIcon } from '../../../components/AppIcon.jsx';
 import { ROLE_OPTIONS } from '../../../constants/roles.js';
 import { PasswordInput } from './PasswordInput.jsx';
+import { PasswordRequirements } from './PasswordRequirements.jsx';
+import { getPasswordValidationError } from '../utils/passwordPolicy.js';
 
 const EMPTY_FORM = {
   nombreUsuario: '',
@@ -57,8 +59,10 @@ export const UsuarioForm = ({
     }
 
     if (isCreate) {
-      if (form.password.length < 8 || form.password.length > 100) {
-        setValidationError('La contraseña debe tener entre 8 y 100 caracteres.');
+      const passwordError = getPasswordValidationError(form.password);
+
+      if (passwordError) {
+        setValidationError(passwordError);
         return;
       }
 
@@ -136,6 +140,7 @@ export const UsuarioForm = ({
                 disabled={submitting}
                 required
               />
+              <PasswordRequirements password={form.password} />
             </div>
 
             <div className="form-field">

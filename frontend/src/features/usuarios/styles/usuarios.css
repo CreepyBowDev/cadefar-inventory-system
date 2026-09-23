@@ -391,6 +391,61 @@
   gap: 1.1rem;
 }
 
+.password-requirements {
+  margin-top: 0.15rem;
+  padding: 0.75rem 0.8rem;
+  color: var(--color-muted);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-line);
+  border-radius: 0.42rem;
+}
+
+.password-requirements > p {
+  margin: 0 0 0.55rem;
+  color: var(--color-ink);
+  font-size: 0.73rem;
+  font-weight: 650;
+}
+
+.password-requirements ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.42rem 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #777a7e;
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.password-requirements li > span {
+  display: grid;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: transparent;
+  border: 1px solid #c5c7ca;
+  border-radius: 50%;
+}
+
+.password-requirements li.is-complete {
+  color: #426341;
+}
+
+.password-requirements li.is-complete > span {
+  color: #fff;
+  background: #5f8e58;
+  border-color: #5f8e58;
+}
+
 .password-form .modal__actions {
   margin-top: 0.25rem;
   padding-top: 1.1rem;
@@ -476,6 +531,10 @@
   }
 
   .usuario-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .password-requirements ul {
     grid-template-columns: 1fr;
   }
 

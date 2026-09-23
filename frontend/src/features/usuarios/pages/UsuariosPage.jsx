@@ -99,7 +99,7 @@ export const UsuariosPage = () => {
   const handlePasswordReset = (usuario) => {
     setResetTarget(null);
     setSuccessMessage(
-      `La contraseña de ${usuario.nombreUsuario} fue restablecida correctamente.`
+      `La contraseña de ${usuario.nombreUsuario} fue restablecida y cualquier bloqueo temporal fue eliminado.`
     );
   };
 

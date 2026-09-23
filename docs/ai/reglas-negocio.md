@@ -64,6 +64,28 @@ Las contraseñas nunca deben almacenarse en texto plano.
 
 El sistema debe conservar únicamente su representación protegida mediante hash.
 
+Toda contraseña nueva debe:
+
+- tener entre 8 y 100 caracteres;
+- incluir al menos una letra mayúscula;
+- incluir al menos una letra minúscula;
+- incluir al menos un número;
+- incluir al menos un carácter especial.
+
+La política se aplica al crear una cuenta, cambiar la contraseña propia y restablecer administrativamente una contraseña. Las credenciales creadas antes de incorporar esta política pueden continuar utilizándose hasta que su contraseña sea cambiada.
+
+### Bloqueo temporal por intentos fallidos
+
+Después de tres intentos fallidos consecutivos de inicio de sesión, la cuenta debe impedir nuevos inicios de sesión durante diez minutos.
+
+- Un inicio de sesión exitoso reinicia el contador.
+- Al finalizar el bloqueo, el siguiente intento comienza desde cero.
+- Los intentos realizados durante el bloqueo no amplían su duración.
+- El bloqueo temporal no modifica el estado activo o inactivo de la cuenta.
+- El bloqueo impide nuevos inicios de sesión, pero no revoca sesiones ya autenticadas.
+- Un cambio propio exitoso o un restablecimiento administrativo de contraseña reinicia los intentos fallidos y elimina el bloqueo temporal.
+- No se almacenan intentos fallidos para nombres de usuario inexistentes.
+
 ## RN08. Responsable de operaciones
 
 Toda operación que requiera responsabilidad o trazabilidad debe registrar el usuario que la realizó.

@@ -47,6 +47,17 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
+      },
+
+      intentos_fallidos_login: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0
+      },
+
+      bloqueado_hasta: {
+        type: DataTypes.DATE,
+        allowNull: true
       }
     },
     {
