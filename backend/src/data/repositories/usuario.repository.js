@@ -16,13 +16,23 @@ const rolInclude = {
 };
 
 export class usuarioRepository {
-    static async findByNombreUsuario({ nombreUsuario }) {
-        return Usuario.findOne({
+    static async findByNombreUsuario({
+        nombreUsuario,
+        transaction = undefined,
+        lock = false
+    }) {
+        const options = {
             where: {
                 nombre_usuario: nombreUsuario
             },
-            include: [rolInclude]
-        });
+            transaction
+        };
+
+        if (transaction && lock) {
+            options.lock = transaction.LOCK.UPDATE;
+        }
+
+        return Usuario.findOne(options);
     }
 
     static async findAllUsuarios() {
@@ -86,8 +96,30 @@ export class usuarioRepository {
 
     static async updatePassword({ idUsuario, passwordHash }) {
         return Usuario.update(
-            { password_hash: passwordHash },
+            {
+                password_hash: passwordHash,
+                intentos_fallidos_login: 0,
+                bloqueado_hasta: null
+            },
             { where: { id_usuario: idUsuario } }
+        );
+    }
+
+    static async updateLoginSecurity({
+        idUsuario,
+        intentosFallidosLogin,
+        bloqueadoHasta,
+        transaction
+    }) {
+        return Usuario.update(
+            {
+                intentos_fallidos_login: intentosFallidosLogin,
+                bloqueado_hasta: bloqueadoHasta
+            },
+            {
+                where: { id_usuario: idUsuario },
+                transaction
+            }
         );
     }
 }

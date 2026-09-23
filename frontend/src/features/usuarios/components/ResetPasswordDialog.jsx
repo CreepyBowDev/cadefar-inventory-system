@@ -4,6 +4,8 @@ import { Modal } from '../../../components/Modal.jsx';
 import { getApiErrorMessage } from '../../../utils/apiError.js';
 import { resetPasswordUsuario } from '../services/usuario.service.js';
 import { PasswordInput } from './PasswordInput.jsx';
+import { PasswordRequirements } from './PasswordRequirements.jsx';
+import { getPasswordValidationError } from '../utils/passwordPolicy.js';
 
 export const ResetPasswordDialog = ({ usuario, onClose, onSuccess }) => {
   const [password, setPassword] = useState('');
@@ -23,8 +25,10 @@ export const ResetPasswordDialog = ({ usuario, onClose, onSuccess }) => {
     event.preventDefault();
     setErrorMessage('');
 
-    if (password.length < 8 || password.length > 100) {
-      setErrorMessage('La contraseña debe tener entre 8 y 100 caracteres.');
+    const passwordError = getPasswordValidationError(password);
+
+    if (passwordError) {
+      setErrorMessage(passwordError);
       return;
     }
 
@@ -71,7 +75,7 @@ export const ResetPasswordDialog = ({ usuario, onClose, onSuccess }) => {
             disabled={submitting}
             required
           />
-          <p className="form-field__help">Debe tener al menos 8 caracteres.</p>
+          <PasswordRequirements password={password} />
         </div>
         <div className="form-field">
           <label htmlFor="resetPasswordConfirmation">Confirmar contraseña</label>

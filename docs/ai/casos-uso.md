@@ -46,7 +46,15 @@ Permitir que un usuario acceda al sistema mediante su nombre de usuario y contra
 
 - El usuario debe existir.
 - La cuenta debe estar activa.
+- La cuenta no debe encontrarse dentro de un bloqueo temporal vigente.
 - La contraseña debe coincidir con el hash almacenado.
+
+**Flujo alternativo por credenciales incorrectas:**
+
+- Cada contraseña incorrecta incrementa el contador de intentos fallidos consecutivos.
+- El tercer intento fallido bloquea nuevos inicios de sesión durante diez minutos.
+- Los intentos realizados durante el bloqueo no extienden su duración.
+- Un inicio de sesión correcto reinicia el contador.
 
 **Resultado:**  
 El sistema genera un JWT con `idUsuario` e `idRol` y lo almacena en una cookie HttpOnly.
@@ -78,7 +86,7 @@ Registrar una nueva cuenta de usuario.
 
 - El nombre de usuario no debe estar registrado.
 - El rol debe existir y estar activo.
-- La contraseña debe cumplir las validaciones establecidas.
+- La contraseña debe tener entre 8 y 100 caracteres e incluir mayúscula, minúscula, número y carácter especial.
 - La contraseña se guarda mediante hash.
 
 **Resultado:**  
@@ -153,8 +161,16 @@ Usuario autorizado o Administrador según el mecanismo definido.
 **Objetivo:**  
 Modificar la contraseña de una cuenta.
 
+**Condiciones principales:**
+
+- La contraseña nueva debe cumplir la política de complejidad definida.
+- En el cambio propio, el usuario debe confirmar su contraseña actual.
+- En el restablecimiento administrativo no se consulta ni muestra la contraseña anterior.
+
 **Resultado:**  
-La nueva contraseña se almacena únicamente mediante su hash.
+
+- La nueva contraseña se almacena únicamente mediante su hash.
+- El cambio propio exitoso y el restablecimiento administrativo eliminan cualquier bloqueo temporal y reinician los intentos fallidos.
 
 ---
 

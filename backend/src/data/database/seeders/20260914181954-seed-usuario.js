@@ -17,9 +17,18 @@ module.exports = {
     */
     const password = process.env.SEED_USERS_PASSWORD;
 
-    if (!password || password.length < 8) {
+    const cumplePolitica =
+      password &&
+      password.length >= 8 &&
+      password.length <= 100 &&
+      /\p{Lu}/u.test(password) &&
+      /\p{Ll}/u.test(password) &&
+      /\p{N}/u.test(password) &&
+      /[\p{P}\p{S}]/u.test(password);
+
+    if (!cumplePolitica) {
       throw new Error(
-        'SEED_USERS_PASSWORD debe estar definida y tener al menos 8 caracteres'
+        'SEED_USERS_PASSWORD debe tener entre 8 y 100 caracteres e incluir mayúscula, minúscula, número y carácter especial'
       );
     }
 

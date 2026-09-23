@@ -20,6 +20,8 @@
 
 El sistema debe permitir que un usuario inicie sesión mediante nombre de usuario y contraseña.
 
+Después de tres intentos fallidos consecutivos para una cuenta existente y activa, el sistema debe impedir nuevos inicios de sesión durante diez minutos. Un inicio de sesión exitoso debe reiniciar el contador de intentos fallidos.
+
 ## RF02. Cerrar sesión
 
 El sistema debe permitir cerrar sesión eliminando la cookie de autenticación correspondiente.
@@ -57,6 +59,8 @@ El sistema debe permitir al Administrador cambiar el estado de una cuenta sin el
 ## RF09. Cambiar contraseña
 
 El sistema debe permitir cambiar la contraseña de un usuario, almacenando únicamente su hash.
+
+Toda contraseña nueva debe tener entre 8 y 100 caracteres e incluir al menos una letra mayúscula, una letra minúscula, un número y un carácter especial.
 
 ## RF10. Gestionar proveedores o laboratorios
 

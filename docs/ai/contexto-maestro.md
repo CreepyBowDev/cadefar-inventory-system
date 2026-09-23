@@ -577,6 +577,10 @@ No se contempla actualmente:
 
 La autorización actual se basa en roles fijos.
 
+Las contraseñas nuevas deben tener entre 8 y 100 caracteres e incluir mayúscula, minúscula, número y carácter especial.
+
+El inicio de sesión mantiene un contador de intentos fallidos consecutivos. Al tercer fallo, la cuenta impide nuevos inicios de sesión durante diez minutos sin cambiar su estado administrativo. Un inicio correcto, un cambio propio exitoso o un restablecimiento administrativo de contraseña reinicia el contador y elimina el bloqueo.
+
 ---
 
 ## 10. Arquitectura general del sistema
@@ -1461,6 +1465,8 @@ Implementado o diseñado:
 - Usuario Administrador inicial mediante seeder.
 - Validación mediante Zod.
 - Hash de contraseñas mediante bcrypt.
+- Política de complejidad para contraseñas nuevas.
+- Bloqueo temporal de inicio de sesión después de tres intentos fallidos.
 - `AppError`.
 - Middleware global de errores.
 - Login.
@@ -1470,14 +1476,11 @@ Implementado o diseñado:
 - `authMiddleware`.
 - `requireRole`.
 - Roles fijos.
+- Listado y consulta de usuarios.
+- Modificación y activación/desactivación de usuarios.
+- Cambio propio y restablecimiento administrativo de contraseña.
 
-Pendiente dentro del módulo Usuarios:
-
-- Listar usuarios.
-- Consultar usuario por ID.
-- Modificar usuario.
-- Activar/desactivar usuario.
-- Cambio de contraseña.
+El módulo Usuarios se encuentra implementado para el alcance actual del backend.
 
 ---
 

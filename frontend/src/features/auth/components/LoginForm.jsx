@@ -15,6 +15,13 @@ const getLoginErrorMessage = (error) => {
     return 'Esta cuenta se encuentra inactiva. Comunícate con el Administrador.';
   }
 
+  if (error.response.status === 423) {
+    return (
+      error.response.data?.message ||
+      'La cuenta está bloqueada temporalmente. Inténtalo más tarde.'
+    );
+  }
+
   if (error.response.status === 400) {
     return 'Revisa el nombre de usuario y la contraseña ingresados.';
   }
@@ -61,8 +68,8 @@ export const LoginForm = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMessage('La contraseña debe tener al menos 6 caracteres.');
+    if (!password) {
+      setErrorMessage('Ingresa tu contraseña.');
       return;
     }
 
@@ -127,7 +134,7 @@ export const LoginForm = () => {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
-            minLength={6}
+            minLength={1}
             maxLength={100}
             placeholder="Ingresa tu contraseña"
             required

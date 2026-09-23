@@ -12,10 +12,22 @@ const nombreUsuarioSchema = z
     .min(3, 'El nombre de usuario debe tener al menos 3 caracteres')
     .max(60, 'El nombre de usuario no puede superar los 60 caracteres');
 
-const passwordSchema = z
+const currentPasswordSchema = z
+    .string()
+    .min(1, 'La contraseña actual es obligatoria')
+    .max(100, 'La contraseña no puede superar los 100 caracteres');
+
+const newPasswordSchema = z
     .string()
     .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .max(100, 'La contraseña no puede superar los 100 caracteres');
+    .max(100, 'La contraseña no puede superar los 100 caracteres')
+    .regex(/\p{Lu}/u, 'La contraseña debe contener al menos una letra mayúscula')
+    .regex(/\p{Ll}/u, 'La contraseña debe contener al menos una letra minúscula')
+    .regex(/\p{N}/u, 'La contraseña debe contener al menos un número')
+    .regex(
+        /[\p{P}\p{S}]/u,
+        'La contraseña debe contener al menos un carácter especial'
+    );
 
 export const createUsuarioSchema = z.object({
     idRol: z
@@ -23,7 +35,7 @@ export const createUsuarioSchema = z.object({
         .int()
         .positive(),
     nombreUsuario: nombreUsuarioSchema,
-    password: passwordSchema
+    password: newPasswordSchema
 }).strict();
 
 const updateUsuarioSchema = z.object({
@@ -43,12 +55,12 @@ const updateEstadoSchema = z.object({
 }).strict();
 
 const updatePasswordSchema = z.object({
-    password: passwordSchema
+    password: newPasswordSchema
 }).strict();
 
 const updateOwnPasswordSchema = z.object({
-    passwordActual: passwordSchema,
-    passwordNueva: passwordSchema
+    passwordActual: currentPasswordSchema,
+    passwordNueva: newPasswordSchema
 }).strict();
 
 export class usuarioValidator {

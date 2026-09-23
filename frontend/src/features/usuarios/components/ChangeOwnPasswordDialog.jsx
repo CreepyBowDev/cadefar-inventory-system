@@ -4,6 +4,8 @@ import { Modal } from '../../../components/Modal.jsx';
 import { getApiErrorMessage } from '../../../utils/apiError.js';
 import { updateOwnPassword } from '../services/usuario.service.js';
 import { PasswordInput } from './PasswordInput.jsx';
+import { PasswordRequirements } from './PasswordRequirements.jsx';
+import { getPasswordValidationError } from '../utils/passwordPolicy.js';
 
 const INITIAL_FORM = {
   passwordActual: '',
@@ -35,12 +37,15 @@ export const ChangeOwnPasswordDialog = ({ open, onClose }) => {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (
-      form.passwordActual.length < 8 ||
-      form.passwordNueva.length < 8 ||
-      form.passwordNueva.length > 100
-    ) {
-      setErrorMessage('Las contraseñas deben tener entre 8 y 100 caracteres.');
+    if (!form.passwordActual || form.passwordActual.length > 100) {
+      setErrorMessage('Ingresa tu contraseña actual.');
+      return;
+    }
+
+    const passwordError = getPasswordValidationError(form.passwordNueva);
+
+    if (passwordError) {
+      setErrorMessage(passwordError);
       return;
     }
 
@@ -82,7 +87,7 @@ export const ChangeOwnPasswordDialog = ({ open, onClose }) => {
             name="passwordActual"
             value={form.passwordActual}
             onChange={updateField}
-            minLength={8}
+            minLength={1}
             maxLength={100}
             autoComplete="current-password"
             disabled={submitting}
@@ -102,6 +107,7 @@ export const ChangeOwnPasswordDialog = ({ open, onClose }) => {
             disabled={submitting}
             required
           />
+          <PasswordRequirements password={form.passwordNueva} />
         </div>
         <div className="form-field">
           <label htmlFor="ownPasswordConfirm">Confirmar nueva contraseña</label>
