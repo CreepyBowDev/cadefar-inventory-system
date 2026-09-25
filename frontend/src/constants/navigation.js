@@ -29,9 +29,10 @@ export const NAVIGATION_ITEMS = Object.freeze([
     key: 'proveedores',
     label: 'Proveedores / Laboratorios',
     description: 'Directorio de proveedores y laboratorios',
+    path: '/proveedores',
     icon: 'truck',
-    roles: [],
-    available: false
+    roles: [ROLES.ADMINISTRADOR, ROLES.REGENTE],
+    available: true
   },
   {
     key: 'medicamentos',
@@ -95,6 +96,10 @@ export const getNavigationForRole = (idRol) =>
   NAVIGATION_ITEMS.filter((item) => item.roles.includes(idRol));
 
 export const getPageTitle = (pathname) => {
+  if (pathname.startsWith('/proveedores/')) {
+    return 'Proveedores / Laboratorios';
+  }
+
   if (pathname.startsWith('/usuarios/nuevo')) {
     return 'Nuevo usuario';
   }
