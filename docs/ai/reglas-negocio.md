@@ -114,9 +114,11 @@ Según la información obtenida en la farmacia, el laboratorio también puede ac
 
 ## RN10. Estado del proveedor o laboratorio
 
-Un proveedor o laboratorio inactivo conserva su información histórica y las operaciones realizadas anteriormente.
+Al registrar un proveedor o laboratorio se puede indicar su estado. Si no se indica, se utiliza el valor predeterminado de la base de datos: activo. Después del registro, su estado se cambia mediante la operación específica de activación o desactivación; la edición normal modifica únicamente los datos del registro.
 
-No debe eliminarse si existen registros relacionados.
+Un proveedor o laboratorio inactivo conserva su información, sus relaciones con medicamentos y sus compras anteriores. Puede seguir consultándose y no debe eliminarse físicamente.
+
+Mientras esté inactivo, no puede seleccionarse para nuevas compras ni asignarse a nuevos medicamentos o nuevamente al modificar un medicamento. Su inactivación no elimina ni modifica las relaciones existentes o las compras anteriores, ni impide vender medicamentos que ya se encuentran en el inventario.
 
 ## RN11. Verificación del proveedor
 

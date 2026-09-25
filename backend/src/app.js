@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { usuarioRouter } from './presentation/routes/usuario.router.js';
 import { authRouter } from './presentation/routes/auth.router.js';
+import { proveedorLaboratorioRouter } from './presentation/routes/proveedor-laboratorio.router.js';
 import { errorHandler } from './presentation/middlewares/error.middleware.js';
 
 export const app = express();
@@ -17,5 +18,6 @@ app.use(cookieParser());
 
 app.use('/api/usuarios', usuarioRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/proveedores-laboratorios', proveedorLaboratorioRouter);
 
 app.use(errorHandler);
