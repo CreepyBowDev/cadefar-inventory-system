@@ -1,6 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.jsx';
 import { DashboardPage } from '../features/dashboard/pages/DashboardPage.jsx';
+import { ProveedoresPage } from '../features/proveedores/pages/ProveedoresPage.jsx';
+import { ProveedorLaboratorioDetailPage } from '../features/proveedores/pages/ProveedorLaboratorioDetailPage.jsx';
+import { ProveedorLaboratorioFormPage } from '../features/proveedores/pages/ProveedorLaboratorioFormPage.jsx';
 import { UsuarioFormPage } from '../features/usuarios/pages/UsuarioFormPage.jsx';
 import { UsuariosPage } from '../features/usuarios/pages/UsuariosPage.jsx';
 import { AuthLayout } from '../layouts/AuthLayout.jsx';
@@ -34,8 +37,29 @@ export const router = createBrowserRouter([
             element: <DashboardPage />
           },
           {
+            element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR, ROLES.REGENTE]} />,
+            children: [
+              {
+                path: '/proveedores',
+                element: <ProveedoresPage />
+              },
+              {
+                path: '/proveedores/:idProveedorLaboratorio',
+                element: <ProveedorLaboratorioDetailPage />
+              }
+            ]
+          },
+          {
             element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR]} />,
             children: [
+              {
+                path: '/proveedores/nuevo',
+                element: <ProveedorLaboratorioFormPage mode="create" />
+              },
+              {
+                path: '/proveedores/:idProveedorLaboratorio/editar',
+                element: <ProveedorLaboratorioFormPage mode="edit" />
+              },
               {
                 path: '/usuarios',
                 element: <UsuariosPage />
