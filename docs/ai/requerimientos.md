@@ -222,11 +222,6 @@ Conservar:
 - Dirección.
 - Estado.
 
-Permitir consultar:
-
-- Medicamentos asociados.
-- Compras realizadas a cada proveedor o laboratorio.
-
 ## RI03. Catálogo de medicamentos
 
 Registrar:

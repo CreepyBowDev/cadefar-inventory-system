@@ -87,6 +87,8 @@ La farmacia desea mejorar especialmente:
 - Registro de ventas.
 - Consultas necesarias para realizar ventas.
 
+El Administrador puede supervisar y consultar información sin heredar automáticamente las operaciones técnicas del Regente ni el registro de ventas del Vendedor. Los actores de cada operación se detallan en los casos de uso.
+
 Los proveedores deben contar con licencia de funcionamiento y resolución administrativa vigente del SEDES. La comprobación corresponde al personal de la farmacia; el sistema no realiza una validación automática contra SEDES.
 
 Según la información obtenida, el laboratorio también puede actuar como proveedor. Por esta razón se mantiene una única entidad denominada `ProveedorLaboratorio`.

@@ -26,9 +26,7 @@ No representan botones, pantallas o pasos pequeños de interfaz.
 - Regente.
 - Vendedor.
 
-Cuando una operación pueda ser realizada por más de un rol, se utiliza el término:
-
-`Usuario autorizado`
+Cuando una operación pueda ser realizada por más de un rol, se especifican explícitamente los roles correspondientes en el campo Actor.
 
 ---
 
@@ -64,7 +62,7 @@ El sistema genera un JWT con `idUsuario` e `idRol` y lo almacena en una cookie H
 ## CU02. Cerrar sesión
 
 **Actor:**  
-Usuario autenticado.
+Administrador, Regente o Vendedor.
 
 **Objetivo:**  
 Cerrar la sesión actual.
@@ -156,7 +154,7 @@ Una cuenta inactiva conserva su historial, pero no puede iniciar sesión ni regi
 ## CU08. Cambiar contraseña
 
 **Actor:**  
-Usuario autorizado o Administrador según el mecanismo definido.
+Administrador, Regente o Vendedor para el cambio propio; Administrador para el restablecimiento administrativo.
 
 **Objetivo:**  
 Modificar la contraseña de una cuenta.
@@ -179,7 +177,7 @@ Modificar la contraseña de una cuenta.
 ## CU09. Registrar proveedor o laboratorio
 
 **Actor:**  
-Usuario autorizado.
+Administrador.
 
 **Objetivo:**  
 Registrar una entidad que suministra medicamentos.
@@ -199,7 +197,7 @@ Según la entrevista, el laboratorio también puede funcionar como proveedor, po
 ## CU10. Consultar proveedores o laboratorios
 
 **Actor:**  
-Usuario autorizado.
+Administrador o Regente.
 
 **Objetivo:**  
 Consultar los proveedores o laboratorios registrados y la información relacionada con ellos.
@@ -209,7 +207,7 @@ Consultar los proveedores o laboratorios registrados y la información relaciona
 ## CU11. Modificar proveedor o laboratorio
 
 **Actor:**  
-Usuario autorizado.
+Administrador.
 
 **Objetivo:**  
 Actualizar los datos de un proveedor o laboratorio existente.
@@ -219,7 +217,7 @@ Actualizar los datos de un proveedor o laboratorio existente.
 ## CU12. Activar o desactivar proveedor o laboratorio
 
 **Actor:**  
-Usuario autorizado.
+Administrador.
 
 **Objetivo:**  
 Cambiar su estado sin eliminar el registro ni perder su historial.
@@ -231,7 +229,7 @@ Cambiar su estado sin eliminar el registro ni perder su historial.
 ## CU13. Registrar medicamento
 
 **Actor:**  
-Usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Agregar un medicamento al catálogo.
@@ -255,7 +253,7 @@ Agregar un medicamento al catálogo.
 ## CU14. Consultar o buscar medicamento
 
 **Actor:**  
-Usuario autorizado.
+Administrador, Regente o Vendedor.
 
 **Objetivo:**  
 Buscar medicamentos principalmente por nombre o código.
@@ -265,7 +263,7 @@ Buscar medicamentos principalmente por nombre o código.
 ## CU15. Modificar medicamento
 
 **Actor:**  
-Usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Actualizar los datos permitidos de un medicamento existente.
@@ -275,7 +273,7 @@ Actualizar los datos permitidos de un medicamento existente.
 ## CU16. Activar o desactivar medicamento
 
 **Actor:**  
-Usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Cambiar el estado de un medicamento sin eliminarlo físicamente.
@@ -288,7 +286,7 @@ Un medicamento inactivo conserva su historial y no puede utilizarse en operacion
 ## CU17. Gestionar principios activos
 
 **Actor:**  
-Usuario autorizado.
+Administrador y Regente para consultar; Regente para registrar, modificar y activar o desactivar.
 
 **Objetivo:**  
 Registrar, consultar, modificar y activar o desactivar principios activos.
@@ -298,7 +296,7 @@ Registrar, consultar, modificar y activar o desactivar principios activos.
 ## CU18. Gestionar composición de medicamento
 
 **Actor:**  
-Usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Relacionar un medicamento con uno o más principios activos.
@@ -316,7 +314,7 @@ Relacionar un medicamento con uno o más principios activos.
 ## CU19. Consultar medicamentos por composición
 
 **Actor:**  
-Usuario autorizado.
+Administrador, Regente o Vendedor.
 
 **Objetivo:**  
 Buscar medicamentos según sus principios activos o composición.
@@ -331,7 +329,7 @@ La coincidencia de composición no significa automáticamente que un medicamento
 ## CU20. Consultar inventario
 
 **Actor:**  
-Usuario autorizado.
+Administrador, Regente o Vendedor.
 
 **Objetivo:**  
 Consultar la disponibilidad de medicamentos y sus existencias.
@@ -350,7 +348,7 @@ Consultar la disponibilidad de medicamentos y sus existencias.
 ## CU21. Consultar existencias de un medicamento
 
 **Actor:**  
-Usuario autorizado.
+Administrador, Regente o Vendedor.
 
 **Objetivo:**  
 Consultar las diferentes existencias asociadas a un medicamento.
@@ -363,7 +361,7 @@ Un mismo medicamento puede tener varias existencias diferenciadas principalmente
 ## CU22. Registrar ajuste de inventario
 
 **Actor:**  
-Usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Registrar diferencias encontradas durante un conteo físico.
@@ -383,7 +381,7 @@ Registrar diferencias encontradas durante un conteo físico.
 ## CU23. Consultar movimientos de inventario
 
 **Actor:**  
-Usuario autorizado.
+Administrador o Regente.
 
 **Objetivo:**  
 Consultar el historial de entradas y salidas de una existencia o medicamento.
@@ -407,7 +405,7 @@ Consultar el historial de entradas y salidas de una existencia o medicamento.
 ## CU24. Registrar compra
 
 **Actor:**  
-Usuario autorizado para compras.
+Administrador.
 
 **Objetivo:**  
 Registrar una adquisición realizada a un proveedor o laboratorio.
@@ -437,7 +435,7 @@ La compra y todos sus efectos sobre inventario deben registrarse de forma conjun
 ## CU25. Consultar compras
 
 **Actor:**  
-Usuario autorizado.
+Administrador o Regente.
 
 **Objetivo:**  
 Consultar compras registradas.
@@ -454,7 +452,7 @@ Consultar compras registradas.
 ## CU26. Anular compra
 
 **Actor:**  
-Usuario autorizado.
+Administrador.
 
 **Objetivo:**  
 Anular una compra sin eliminarla físicamente.
@@ -479,7 +477,7 @@ Anular una compra sin eliminarla físicamente.
 ## CU27. Registrar venta
 
 **Actor:**  
-Vendedor o usuario autorizado.
+Vendedor.
 
 **Objetivo:**  
 Registrar la venta de medicamentos.
@@ -508,7 +506,7 @@ La venta y sus efectos sobre inventario se registran de forma conjunta.
 ## CU28. Consultar ventas
 
 **Actor:**  
-Usuario autorizado.
+Administrador, Regente o Vendedor.
 
 **Objetivo:**  
 Consultar ventas registradas.
@@ -525,7 +523,7 @@ Consultar ventas registradas.
 ## CU29. Anular venta
 
 **Actor:**  
-Usuario autorizado.
+Administrador.
 
 **Objetivo:**  
 Anular una venta conservando su historial.
@@ -549,7 +547,7 @@ Anular una venta conservando su historial.
 ## CU30. Registrar receta
 
 **Actor:**  
-Usuario autorizado.
+Regente o Vendedor.
 
 **Objetivo:**  
 Registrar una receta utilizada para respaldar medicamentos que requieren prescripción.
@@ -571,7 +569,7 @@ La receta queda vinculada con la venta correspondiente.
 ## CU31. Revisar receta
 
 **Actor:**  
-Regente o usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Registrar la revisión de una receta.
@@ -593,7 +591,7 @@ La receta puede quedar aprobada o rechazada.
 ## CU32. Consultar productos próximos a vencer
 
 **Actor:**  
-Regente o usuario autorizado.
+Administrador o Regente.
 
 **Objetivo:**  
 Identificar existencias próximas a vencer.
@@ -606,7 +604,7 @@ Se consideran próximas a vencer aquellas con saldo físico positivo cuyo vencim
 ## CU33. Consultar productos vencidos
 
 **Actor:**  
-Regente o usuario autorizado.
+Administrador o Regente.
 
 **Objetivo:**  
 Identificar existencias vencidas que todavía tengan saldo físico.
@@ -619,7 +617,7 @@ Se muestran las unidades vencidas pendientes de retiro.
 ## CU34. Registrar retiro por vencimiento
 
 **Actor:**  
-Regente o usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Registrar la salida física de medicamentos vencidos.
@@ -641,7 +639,7 @@ Registrar la salida física de medicamentos vencidos.
 ## CU35. Registrar retiro por daño
 
 **Actor:**  
-Usuario autorizado.
+Regente.
 
 **Objetivo:**  
 Registrar la salida de unidades que ya no pueden utilizarse por daño.
@@ -663,7 +661,7 @@ Debe existir saldo suficiente.
 ## CU36. Consultar medicamentos con stock bajo
 
 **Actor:**  
-Usuario autorizado.
+Administrador, Regente o Vendedor.
 
 **Objetivo:**  
 Identificar medicamentos cuya cantidad disponible necesita reposición.
@@ -689,7 +687,7 @@ Se muestran los medicamentos considerados con stock bajo.
 ## CU37. Consultar reporte de ventas
 
 **Actor:**  
-Usuario autorizado.
+Administrador.
 
 **Objetivo:**  
 Consultar las ventas realizadas por día, mes o período.
@@ -699,7 +697,7 @@ Consultar las ventas realizadas por día, mes o período.
 ## CU38. Consultar reporte de compras
 
 **Actor:**  
-Usuario autorizado.
+Administrador.
 
 **Objetivo:**  
 Consultar las compras realizadas por día, mes o período.
@@ -709,7 +707,7 @@ Consultar las compras realizadas por día, mes o período.
 ## CU39. Consultar historial de inventario
 
 **Actor:**  
-Usuario autorizado.
+Administrador o Regente.
 
 **Objetivo:**  
 Consultar la trazabilidad histórica del inventario.
@@ -731,7 +729,7 @@ Consultar la trazabilidad histórica del inventario.
 ## CU40. Consultar pérdidas
 
 **Actor:**  
-Usuario autorizado.
+Administrador o Regente.
 
 **Objetivo:**  
 Consultar pérdidas producidas por vencimiento o daño.
