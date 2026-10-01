@@ -2,11 +2,14 @@ import { authService } from '../../business/services/auth.service.js';
 import { authValidator } from '../../business/validators/auth.validator.js';
 import { AppError } from '../../shared/errors/app-error.js';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const authCookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax'
 };
+
 
 export class authController {
     static async login(req, res, next) {
