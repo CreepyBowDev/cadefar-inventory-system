@@ -6,6 +6,12 @@ import { ProveedorLaboratorioDetailPage } from '../features/proveedores/pages/Pr
 import { ProveedorLaboratorioFormPage } from '../features/proveedores/pages/ProveedorLaboratorioFormPage.jsx';
 import { UsuarioFormPage } from '../features/usuarios/pages/UsuarioFormPage.jsx';
 import { UsuariosPage } from '../features/usuarios/pages/UsuariosPage.jsx';
+import { MedicamentosPage } from '../features/medicamentos/pages/MedicamentosPage.jsx';
+import { MedicamentoFormPage } from '../features/medicamentos/pages/MedicamentoFormPage.jsx';
+import { MedicamentoDetailPage } from '../features/medicamentos/pages/MedicamentoDetailPage.jsx';
+import { MedicamentoComposicionPage } from '../features/medicamentos/pages/MedicamentoComposicionPage.jsx';
+import { PrincipiosActivosPage } from '../features/principios-activos/pages/PrincipiosActivosPage.jsx';
+import { PrincipioActivoFormPage } from '../features/principios-activos/pages/PrincipioActivoFormPage.jsx';
 import { AuthLayout } from '../layouts/AuthLayout.jsx';
 import { MainLayout } from '../layouts/MainLayout.jsx';
 import { ROLES } from '../constants/roles.js';
@@ -35,6 +41,29 @@ export const router = createBrowserRouter([
           {
             path: '/dashboard',
             element: <DashboardPage />
+          },
+          {
+            element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR, ROLES.REGENTE, ROLES.VENDEDOR]} />,
+            children: [
+              { path: '/medicamentos', element: <MedicamentosPage /> },
+              { path: '/medicamentos/:idMedicamento', element: <MedicamentoDetailPage /> },
+              { path: '/medicamentos/:idMedicamento/composicion', element: <MedicamentoComposicionPage /> }
+            ]
+          },
+          {
+            element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR, ROLES.REGENTE]} />,
+            children: [
+              { path: '/principios-activos', element: <PrincipiosActivosPage /> }
+            ]
+          },
+          {
+            element: <RoleRoute allowedRoles={[ROLES.REGENTE]} />,
+            children: [
+              { path: '/medicamentos/nuevo', element: <MedicamentoFormPage mode="create" /> },
+              { path: '/medicamentos/:idMedicamento/editar', element: <MedicamentoFormPage mode="edit" /> },
+              { path: '/principios-activos/nuevo', element: <PrincipioActivoFormPage mode="create" /> },
+              { path: '/principios-activos/:idPrincipioActivo/editar', element: <PrincipioActivoFormPage mode="edit" /> }
+            ]
           },
           {
             element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR, ROLES.REGENTE]} />,

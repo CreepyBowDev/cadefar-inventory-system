@@ -39,8 +39,18 @@ export const NAVIGATION_ITEMS = Object.freeze([
     label: 'Medicamentos',
     description: 'Catálogo y control de medicamentos',
     icon: 'pill',
-    roles: [ROLES.REGENTE],
-    available: false
+    path: '/medicamentos',
+    roles: ALL_ROLES,
+    available: true
+  },
+  {
+    key: 'principios-activos',
+    label: 'Principios activos',
+    description: 'Ingredientes de la composición de medicamentos',
+    path: '/principios-activos',
+    icon: 'prescription',
+    roles: [ROLES.ADMINISTRADOR, ROLES.REGENTE],
+    available: true
   },
   {
     key: 'compras',
@@ -96,6 +106,17 @@ export const getNavigationForRole = (idRol) =>
   NAVIGATION_ITEMS.filter((item) => item.roles.includes(idRol));
 
 export const getPageTitle = (pathname) => {
+  if (pathname.startsWith('/medicamentos/')) {
+    if (pathname === '/medicamentos/nuevo') return 'Nuevo medicamento';
+    if (pathname.endsWith('/editar')) return 'Editar medicamento';
+    if (pathname.endsWith('/composicion')) return 'Composición del medicamento';
+    return 'Detalle del medicamento';
+  }
+
+  if (pathname.startsWith('/principios-activos/')) {
+    return pathname === '/principios-activos/nuevo' ? 'Nuevo principio activo' : 'Editar principio activo';
+  }
+
   if (pathname.startsWith('/proveedores/')) {
     return 'Proveedores / Laboratorios';
   }

@@ -1,0 +1,23 @@
+@import '../../../styles/catalogo.css';
+
+.medicamentos-table { min-width: 62rem; }
+.medicamentos-table__product { max-width: 20rem; }
+.medicamentos-table td:nth-child(3) { white-space: nowrap; }
+.medicamento-filters { display: grid; gap: 1rem; padding: 1.25rem; border-bottom: 1px solid var(--color-line); }
+.medicamento-filters__text { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.medicamento-filters fieldset { min-width: 0; margin: 0; padding: .9rem; border: 1px solid var(--color-line); border-radius: .42rem; }
+.medicamento-filters legend { padding-inline: .35rem; font-size: .82rem; font-weight: 680; }
+.medicamento-filters__ingredients { display: flex; flex-wrap: wrap; gap: .5rem; max-height: 12rem; overflow-y: auto; margin-top: .75rem; }
+.medicamento-filters__ingredient { display: inline-flex; gap: .45rem; align-items: center; padding: .45rem .65rem; border: 1px solid var(--color-line); border-radius: .42rem; font-size: .8rem; cursor: pointer; }
+.medicamento-filters__ingredient:has(input:checked) { background: var(--color-accent-pale); border-color: var(--color-accent); }
+.medicamento-filters__ingredient input { accent-color: var(--color-accent); }
+.medicamento-filters__actions { display: flex; gap: .7rem; justify-content: flex-end; }
+.medicamento-filters .feedback { margin-top: .75rem; }
+.medicamento-detail-actions { display: flex; gap: .7rem; flex-wrap: wrap; }
+.composicion-principio { margin: 0; padding: .8rem; background: var(--color-surface-subtle); border-radius: .42rem; font-size: .88rem; overflow-wrap: anywhere; }
+.composicion-table { min-width: 34rem; }
+@media (max-width: 620px) {
+  .medicamento-filters__text { grid-template-columns: 1fr; }
+  .medicamento-filters__actions { flex-direction: column-reverse; }
+  .medicamento-detail-actions { flex-direction: column; }
+}
