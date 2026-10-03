@@ -126,6 +126,10 @@ El sistema debe permitir anular compras conservando su historial y compensando s
 
 El sistema debe permitir registrar ventas con sus detalles, cantidades, precios y existencias utilizadas.
 
+El Vendedor debe poder guardar la venta en estado `PENDIENTE` junto con sus recetas para su revisión por el Regente, sin descontar ni reservar stock ni generar movimientos. El Vendedor podrá confirmarla cuando se cumplan las condiciones de venta y todas las recetas requeridas estén aprobadas.
+
+La confirmación debe volver a validar disponibilidad, vencimientos y FEFO, finalizar la asignación de existencias en los detalles y registrar la fecha de venta y sus efectos sobre inventario de forma atómica.
+
 ## RF24. Seleccionar existencias para venta
 
 El sistema debe utilizar primero las existencias vendibles con vencimiento más próximo.
@@ -134,17 +138,25 @@ El sistema debe utilizar primero las existencias vendibles con vencimiento más 
 
 El sistema debe permitir consultar ventas por fecha, usuario, estado y período.
 
+Debe distinguir la fecha de registro de una venta pendiente de la fecha en que se confirmó su venta.
+
 ## RF26. Anular ventas
 
 El sistema debe permitir anular ventas conservando su historial y compensando sus efectos sobre el inventario.
+
+La anulación de una venta pendiente conserva fecha, motivo y responsable, pero no genera movimientos de reversión porque todavía no descontó inventario.
 
 ## RF27. Registrar recetas
 
 El sistema debe permitir registrar recetas asociadas a una venta cuando los medicamentos lo requieran.
 
+La venta debe guardarse como pendiente para que sus recetas puedan registrarse y revisarse antes de confirmarla. `id_venta` es obligatorio en la receta.
+
 ## RF28. Revisar recetas
 
 El sistema debe permitir que un usuario autorizado registre la revisión, aprobación o rechazo de una receta.
+
+La revisión corresponde al Regente. Una revisión pendiente o rechazada impide confirmar los detalles de venta que requieren esa receta.
 
 ## RF29. Consultar movimientos de inventario
 
@@ -173,6 +185,8 @@ El sistema debe mostrar medicamentos cuyo stock vendible sea menor o igual al st
 ## RF35. Consultar reportes de ventas
 
 El sistema debe permitir consultar ventas por día, mes o período.
+
+Los reportes de ventas realizadas deben utilizar la fecha de confirmación y distinguir las operaciones pendientes y anuladas de las ventas confirmadas.
 
 ## RF36. Consultar reportes de compras
 
@@ -295,9 +309,10 @@ En los detalles almacenar:
 
 Registrar:
 
-- Fecha y hora.
+- Fecha y hora de registro.
+- Fecha y hora de confirmación de la venta, sin valor mientras esté pendiente.
 - Usuario responsable.
-- Estado.
+- Estado: `PENDIENTE`, `CONFIRMADA` o `ANULADA`.
 - Total.
 
 En los detalles almacenar:

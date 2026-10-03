@@ -12,7 +12,51 @@ module.exports = (sequelize, DataTypes) => {
 
       Usuario.belongsTo(models.Rol, {
         foreignKey: 'id_rol',
-        as: 'rol'
+        as: 'rol',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
+      });
+
+      Usuario.hasMany(models.Compra, {
+        foreignKey: 'id_usuario',
+        as: 'comprasRegistradas',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
+      });
+
+      Usuario.hasMany(models.Compra, {
+        foreignKey: 'id_usuario_anulador',
+        as: 'comprasAnuladas',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
+      });
+
+      Usuario.hasMany(models.Venta, {
+        foreignKey: 'id_usuario',
+        as: 'ventasRegistradas',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
+      });
+
+      Usuario.hasMany(models.Venta, {
+        foreignKey: 'id_usuario_anulador',
+        as: 'ventasAnuladas',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
+      });
+
+      Usuario.hasMany(models.Receta, {
+        foreignKey: 'id_usuario_validador',
+        as: 'recetasValidadas',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
+      });
+
+      Usuario.hasMany(models.MovimientoInventario, {
+        foreignKey: 'id_usuario',
+        as: 'movimientosInventario',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
       });
 
     }

@@ -3,26 +3,20 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    class ProveedorLaboratorio extends Model {
+    class PrincipioActivo extends Model {
         static associate(models) {
-            ProveedorLaboratorio.hasMany(models.Medicamento, {
-                foreignKey: 'id_proveedor_laboratorio',
-                as: 'medicamentos',
-                onDelete: 'RESTRICT',
-                onUpdate: 'RESTRICT'
-            });
-            ProveedorLaboratorio.hasMany(models.Compra, {
-                foreignKey: 'id_proveedor_laboratorio',
-                as: 'compras',
+            PrincipioActivo.hasMany(models.ComposicionMedicamento, {
+                foreignKey: 'id_principio_activo',
+                as: 'composiciones',
                 onDelete: 'RESTRICT',
                 onUpdate: 'RESTRICT'
             });
         }
     }
 
-    ProveedorLaboratorio.init(
+    PrincipioActivo.init(
         {
-            id_proveedor_laboratorio: {
+            id_principio_activo: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 primaryKey: true,
@@ -30,13 +24,10 @@ module.exports = (sequelize, DataTypes) => {
             },
             nombre: {
                 type: DataTypes.STRING(150),
-                allowNull: false
+                allowNull: false,
+                unique: 'uq_principio_activo_nombre'
             },
-            telefono: {
-                type: DataTypes.STRING(30),
-                allowNull: true
-            },
-            direccion: {
+            descripcion: {
                 type: DataTypes.STRING(255),
                 allowNull: true
             },
@@ -48,11 +39,11 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'ProveedorLaboratorio',
-            tableName: 'proveedor_laboratorio',
+            modelName: 'PrincipioActivo',
+            tableName: 'principio_activo',
             timestamps: false
         }
     );
 
-    return ProveedorLaboratorio;
+    return PrincipioActivo;
 };

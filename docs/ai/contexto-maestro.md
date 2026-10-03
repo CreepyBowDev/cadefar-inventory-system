@@ -340,6 +340,27 @@ Reportes principales:
 
 ---
 
+### 4.11. Venta pendiente y revisión de recetas
+
+La venta utiliza los estados `PENDIENTE`, `CONFIRMADA` y `ANULADA`.
+
+El Vendedor puede guardar una venta pendiente con sus detalles y recetas para que el Regente las revise. La receta conserva `id_venta` obligatorio; no se registra como una receta independiente de la venta.
+
+- Una venta nueva queda pendiente por defecto.
+- Guardar una venta pendiente no descuenta ni reserva stock y no genera movimientos de inventario.
+- `fecha_registro` identifica cuándo se guardó la operación; `fecha_venta` permanece sin valor hasta la confirmación.
+- El Regente revisa las recetas; el Vendedor confirma la venta cuando las recetas necesarias estén aprobadas.
+- Al confirmar se comprueban nuevamente medicamento activo, stock, vencimientos y FEFO. Las existencias indicadas durante la preparación son provisionales y pueden necesitar redistribución en los detalles.
+- La confirmación, los detalles definitivos, la fecha de venta, los movimientos y la disminución de saldos se ejecutan en una transacción.
+- Una receta pendiente o rechazada no permite confirmar los detalles que requieren su aprobación.
+- Anular una venta pendiente conserva el registro, pero no genera reversiones porque no hubo salida de inventario. Anular una venta confirmada sí compensa sus movimientos originales.
+
+Los reportes de ventas realizadas utilizan la fecha de confirmación y distinguen las operaciones confirmadas de las pendientes y anuladas.
+
+Esta decisión amplía el diseño anterior, que solo contemplaba ventas confirmadas y anuladas. El modelo y las migraciones representan el flujo; su ejecución y autorización pertenecen a los futuros Services y rutas de Ventas y Recetas.
+
+---
+
 ## 5. Documentación funcional separada
 
 Para evitar que este archivo sea excesivamente grande, los detalles completos se encuentran en archivos independientes.

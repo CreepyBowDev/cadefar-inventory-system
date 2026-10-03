@@ -456,12 +456,18 @@ El total de la venta corresponde a la suma de sus subtotales.
 
 ## RN53. Condiciones para vender
 
-Una existencia solamente puede utilizarse en una venta cuando:
+Una venta se guarda inicialmente en estado `PENDIENTE`, con sus detalles y recetas cuando correspondan. Este registro no descuenta ni reserva stock ni genera movimientos de inventario.
+
+La venta solamente puede confirmarse y utilizar una existencia para la salida de inventario cuando:
 
 - El medicamento esté activo.
 - La existencia no esté vencida.
 - Exista stock suficiente.
 - Se cumplan los requisitos de receta cuando corresponda.
+
+El Vendedor confirma la venta; la revisión de las recetas corresponde al Regente. Una venta confirmada o anulada no puede confirmarse nuevamente.
+
+Las condiciones se comprueban de nuevo al confirmar. Las existencias indicadas en los detalles pendientes son una selección provisional, sin garantía de disponibilidad; deben redistribuirse si la disponibilidad o FEFO lo requieren.
 
 ## RN54. Prioridad por vencimiento
 
@@ -484,16 +490,21 @@ Cada existencia utilizada debe registrarse en un detalle separado para mantener 
 
 Cuando una venta queda confirmada:
 
-- Se registra la venta.
-- Se registran sus detalles.
+- Se cambia su estado de `PENDIENTE` a `CONFIRMADA`.
+- Se registra `fecha_venta` con la fecha y hora de confirmación.
+- Se finalizan sus detalles y la asignación de existencias mediante FEFO.
 - Se disminuyen los saldos correspondientes.
 - Se generan movimientos de salida.
 
+`fecha_registro` conserva la fecha y hora en que se guardó la venta pendiente. `fecha_venta` permanece sin valor hasta confirmarse; una venta confirmada debe tener fecha de venta.
+
 ## RN57. Atomicidad de la venta
 
-La venta, sus detalles, movimientos y actualización del inventario deben realizarse de forma conjunta.
+El registro inicial de la venta pendiente, sus detalles y sus recetas debe realizarse de forma conjunta, sin efectos sobre inventario.
 
-Si alguna parte falla, la venta completa debe considerarse fallida y no deben permanecer cambios parciales.
+La confirmación, los detalles definitivos, la fecha de venta, los movimientos y la actualización del inventario deben realizarse de forma conjunta mediante otra transacción.
+
+Si alguna parte de la confirmación falla, la venta conserva su estado pendiente y no deben permanecer cambios parciales de la confirmación ni del inventario.
 
 ---
 
@@ -501,17 +512,21 @@ Si alguna parte falla, la venta completa debe considerarse fallida y no deben pe
 
 ## RN58. Medicamentos que requieren receta
 
-Cuando un medicamento requiera receta, el detalle correspondiente no puede quedar respaldado por una receta inexistente o no aprobada.
+Cuando un medicamento requiera receta, su detalle no puede confirmarse respaldado por una receta inexistente o no aprobada. Mientras la venta esté pendiente, la receta puede estar registrada sin revisión o rechazada, pero no autoriza la entrega.
 
 ## RN59. Receta y venta
 
 Una receta debe estar relacionada con la venta en la que será utilizada.
+
+La receta se registra vinculada a una venta pendiente, antes de su confirmación. Su FK `id_venta` es obligatoria.
 
 ## RN60. Receta y detalles
 
 Una receta puede respaldar varios detalles de una misma venta cuando corresponda.
 
 Una venta puede contener más de una receta.
+
+La receta de un detalle debe pertenecer a la misma venta que ese detalle.
 
 ## RN61. Revisión de receta
 
@@ -527,6 +542,8 @@ El sistema debe conservar:
 ## RN62. Resultado de receta
 
 Una receta puede ser aprobada o rechazada según la revisión correspondiente.
+
+La ausencia de `resultado_revision`, usuario validador y fecha de validación representa una revisión pendiente. Al registrar una revisión se conservan conjuntamente su resultado, responsable y fecha.
 
 Solo una receta aprobada puede respaldar una entrega que requiera prescripción.
 
@@ -658,7 +675,9 @@ Debe conservar:
 
 ## RN78. Efecto de anular venta
 
-Al anular una venta deben generarse los movimientos necesarios para devolver al inventario las cantidades descontadas originalmente.
+Al anular una venta confirmada deben generarse los movimientos necesarios para devolver al inventario las cantidades descontadas originalmente. Su fecha de venta original se conserva.
+
+Al anular una venta pendiente no se generan movimientos de reversión ni se modifican saldos, ya que no hubo salida de inventario. Su fecha de venta permanece sin valor. En ambos casos se conserva el registro con fecha de anulación, motivo y usuario responsable.
 
 ## RN79. Anulación única
 
@@ -793,6 +812,8 @@ El sistema debe permitir consultar ventas por:
 - Día.
 - Mes.
 - Período.
+
+Las consultas deben distinguir los estados `PENDIENTE`, `CONFIRMADA` y `ANULADA`. Los reportes de ventas realizadas utilizan `fecha_venta`, correspondiente a la confirmación, sin contabilizar las pendientes como ventas efectivas.
 
 ## RN99. Consultas de compras
 

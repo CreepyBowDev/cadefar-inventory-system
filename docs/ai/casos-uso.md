@@ -480,26 +480,40 @@ Anular una compra sin eliminarla físicamente.
 Vendedor.
 
 **Objetivo:**  
-Registrar la venta de medicamentos.
+Preparar, guardar y confirmar la venta de medicamentos.
 
-**Condiciones principales:**
+**Registro pendiente:**
 
+- El Vendedor guarda la venta en estado `PENDIENTE` con sus detalles y recetas cuando correspondan.
+- Se calcula el total y se registra la fecha de registro, sin fecha de venta todavía.
+- Las existencias indicadas en los detalles son una selección provisional.
+- No se descuenta ni reserva stock ni se generan movimientos de inventario.
+- Las recetas quedan vinculadas con la venta para que el Regente las revise.
+
+**Condiciones para confirmar:**
+
+- La venta debe estar pendiente y contener al menos un detalle.
 - El medicamento debe estar activo.
 - La existencia no debe estar vencida.
 - Debe existir stock suficiente.
-- Si el medicamento requiere receta, debe existir una receta válida.
+- Si el medicamento requiere receta, su detalle debe estar respaldado por una receta de esa misma venta aprobada por el Regente.
 
-**Durante la operación:**
+**Durante la confirmación, realizada por el Vendedor:**
 
-- El sistema selecciona las existencias vendibles.
+- El sistema vuelve a verificar stock, vencimientos y recetas y selecciona las existencias vendibles.
 - Se priorizan las existencias con vencimiento más próximo.
-- Si se requieren varias existencias, se registran detalles separados.
+- Si se requieren varias existencias, se finalizan detalles separados y se conserva la relación con las recetas correspondientes.
 - Se calculan subtotales y total.
+- Se registra la fecha de venta y se cambia el estado a `CONFIRMADA`.
 - Se generan movimientos de salida.
 - Se actualizan los saldos.
 
 **Resultado:**  
-La venta y sus efectos sobre inventario se registran de forma conjunta.
+La confirmación y sus efectos sobre inventario se registran de forma conjunta mediante una transacción. Si falla, la venta sigue pendiente y no quedan cambios parciales de la confirmación.
+
+**Flujo alternativo:**
+
+Si una receta necesaria está pendiente o rechazada, la venta permanece pendiente y no puede confirmarse ni descontar inventario.
 
 ---
 
@@ -517,6 +531,8 @@ Consultar ventas registradas.
 - Período.
 - Usuario responsable.
 - Estado.
+
+Se distinguen la fecha de registro y la fecha de venta efectiva, así como las ventas pendientes, confirmadas y anuladas.
 
 ---
 
@@ -536,8 +552,8 @@ Anular una venta conservando su historial.
 **Resultado:**
 
 - Se registra fecha, motivo y responsable.
-- Se generan movimientos inversos.
-- Las unidades correspondientes regresan al inventario.
+- Si la venta estaba confirmada, se generan movimientos inversos y las unidades correspondientes regresan al inventario.
+- Si estaba pendiente, se anula sin movimientos de reversión ni cambios de saldo.
 - La venta queda marcada como anulada.
 
 ---
@@ -562,7 +578,7 @@ Registrar una receta utilizada para respaldar medicamentos que requieren prescri
 - Modalidad.
 
 **Resultado:**  
-La receta queda vinculada con la venta correspondiente.
+La receta queda vinculada con la venta pendiente correspondiente, mediante `id_venta` obligatorio, y disponible para revisión antes de la confirmación de la venta.
 
 ---
 
@@ -582,7 +598,7 @@ Registrar la revisión de una receta.
 - Observación.
 
 **Resultado:**  
-La receta puede quedar aprobada o rechazada.
+La receta puede quedar aprobada o rechazada. Su revisión no descuenta inventario ni confirma automáticamente la venta. El Vendedor confirma cuando se cumplen las condiciones de CU27.
 
 ---
 
@@ -692,6 +708,10 @@ Administrador.
 **Objetivo:**  
 Consultar las ventas realizadas por día, mes o período.
 
+**Consideración:**
+
+Se utiliza la fecha de confirmación y se distinguen las ventas confirmadas de las pendientes y anuladas. Las pendientes no se contabilizan como ventas realizadas.
+
 ---
 
 ## CU38. Consultar reporte de compras
@@ -748,10 +768,10 @@ Las pérdidas se obtienen de los movimientos registrados y no requieren una tabl
 
 - Crear, modificar, consultar y activar/desactivar usuarios requiere autenticación y autorización de Administrador.
 - Registrar una compra implica actualizar existencias, generar movimientos de entrada y actualizar el costo promedio.
-- Registrar una venta implica consultar stock vendible, seleccionar existencias y generar movimientos de salida.
+- Guardar una venta pendiente conserva sus detalles y recetas sin afectar inventario; confirmarla implica volver a consultar stock vendible, seleccionar existencias y generar movimientos de salida.
 - Cuando existen varias existencias de un medicamento, la venta prioriza la existencia vendible que vence primero.
-- Registrar una venta puede requerir registrar y aprobar una receta.
-- Anular una compra o venta genera movimientos de reversión en lugar de eliminar los movimientos originales.
+- Confirmar una venta puede requerir que el Regente apruebe las recetas previamente vinculadas con la venta pendiente.
+- Anular una compra o venta confirmada genera movimientos de reversión en lugar de eliminar los movimientos originales. Anular una venta pendiente no genera reversiones.
 - Registrar un ajuste modifica el saldo mediante `MovimientoInventario`.
 - Registrar un retiro por vencimiento o daño genera un movimiento de salida y permite calcular la pérdida.
 - Consultar productos próximos a vencer, vencidos o con stock bajo se realiza a partir de los datos actuales de `Medicamento` y `ExistenciaMedicamento`.

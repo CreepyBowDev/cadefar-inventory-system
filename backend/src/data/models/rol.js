@@ -9,7 +9,9 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             Rol.hasMany(models.Usuario, {
                 foreignKey: 'id_rol',
-                as: 'usuarios'
+                as: 'usuarios',
+                onDelete: 'RESTRICT',
+                onUpdate: 'RESTRICT'
             });
         }
 
