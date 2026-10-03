@@ -268,6 +268,15 @@ Regente.
 **Objetivo:**  
 Actualizar los datos permitidos de un medicamento existente.
 
+**Condiciones de edición:**
+
+- El medicamento debe existir.
+- El estado se modifica mediante CU16, no en esta edición.
+- Sin movimientos de inventario pueden editarse los datos del catálogo respetando referencias y unicidad.
+- Con al menos un movimiento en cualquiera de sus existencias, se bloquean cambios efectivos de código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación.
+- Con historial pueden seguir modificándose nombre comercial, stock mínimo y condición de venta.
+- Una corrección tipográfica del nombre no crea un nuevo medicamento. Si cambia realmente la identidad del producto, corresponde otro registro.
+
 ---
 
 ## CU16. Activar o desactivar medicamento
@@ -309,6 +318,15 @@ Relacionar un medicamento con uno o más principios activos.
 - Cantidad de referencia.
 - Unidad de referencia.
 
+**Operaciones permitidas:**
+
+- Sin movimientos del medicamento, el Regente puede agregar relaciones, editar cantidades y unidades (incluidas las de referencia) y retirar físicamente una relación.
+- Un principio activo incorrecto se corrige retirando la relación y creando la correcta.
+- La edición de la relación modifica cantidades y unidades; las FK no se cambian mediante su PATCH normal.
+- Una vez que exista al menos un movimiento en cualquier existencia del medicamento, no se puede agregar, retirar ni modificar su composición.
+- La relación debe pertenecer al medicamento indicado; no se puede modificar o retirar una relación de otro medicamento mediante su ID.
+- No se permite repetir el mismo principio activo dentro del mismo medicamento.
+
 ---
 
 ## CU19. Consultar medicamentos por composición
@@ -321,6 +339,8 @@ Buscar medicamentos según sus principios activos o composición.
 
 **Consideración:**  
 La coincidencia de composición no significa automáticamente que un medicamento pueda sustituir a otro.
+
+Cuando se indiquen varios principios activos, se buscan medicamentos que contengan todos ellos (AND). Se permiten ingredientes adicionales. La respuesta conserva la composición completa del producto, no solo los ingredientes utilizados como filtro.
 
 ---
 

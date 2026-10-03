@@ -70,6 +70,8 @@ El sistema debe permitir registrar, consultar, modificar y activar o desactivar 
 
 El sistema debe permitir registrar, consultar, buscar, modificar y activar o desactivar medicamentos.
 
+La edición normal no modifica estado. Desde el primer movimiento de inventario asociado a alguna existencia del medicamento, se bloquean cambios efectivos de código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación. Nombre comercial, stock mínimo y condición de venta siguen siendo editables. Un cambio real de identidad requiere registrar otro medicamento.
+
 ## RF12. Gestionar principios activos
 
 El sistema debe permitir registrar, consultar, modificar y activar o desactivar principios activos.
@@ -78,9 +80,13 @@ El sistema debe permitir registrar, consultar, modificar y activar o desactivar 
 
 El sistema debe permitir relacionar medicamentos con sus principios activos, cantidades y unidades correspondientes.
 
+Antes de existir movimientos del medicamento, el Regente puede agregar relaciones, editar cantidades y unidades y retirar relaciones físicamente. La corrección de un principio activo incorrecto se realiza retirando la relación y creando la correcta. Desde el primer movimiento, toda la composición queda bloqueada, incluida la incorporación de nuevos ingredientes.
+
 ## RF14. Consultar medicamentos por composición
 
 El sistema debe permitir buscar medicamentos según sus principios activos o composición.
+
+Cuando se soliciten varios principios activos, el medicamento debe contener todos ellos (AND). Puede contener otros ingredientes; no se exige igualdad exacta de conjuntos ni se establece equivalencia terapéutica.
 
 ## RF15. Gestionar existencias
 
@@ -270,6 +276,8 @@ Relacionarlos con los medicamentos mediante:
 - Unidad de medida.
 - Cantidad de referencia.
 - Unidad de referencia.
+
+Las cantidades de composición utilizan `DECIMAL(12,4)`: valores positivos, hasta cuatro decimales y dentro de su rango. La API recibe cantidades numéricas y las devuelve como cadenas decimales para conservar la precisión del almacenamiento.
 
 ## RI05. Existencias y disponibilidad
 

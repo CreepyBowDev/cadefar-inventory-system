@@ -147,6 +147,12 @@ Cada medicamento debe tener un código que permita identificarlo dentro del sist
 
 El código de medicamento debe ser único.
 
+El código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación no pueden cambiar efectivamente desde que exista al menos un movimiento de inventario en cualquiera de las existencias del medicamento. Estos campos pueden editarse antes de existir ese historial, respetando las demás reglas de referencia y unicidad.
+
+El nombre comercial, stock mínimo y condición de venta siguen siendo modificables con historial. Una corrección tipográfica del nombre no implica otro medicamento. Si cambia realmente la identidad comercial del producto, debe registrarse un nuevo medicamento.
+
+El estado se modifica únicamente mediante su operación específica, fuera de la edición normal.
+
 ## RN14. Estado del medicamento
 
 Solo los medicamentos activos pueden utilizarse en nuevas operaciones que requieran un medicamento disponible.
@@ -169,11 +175,19 @@ La composición debe indicar:
 
 Las cantidades utilizadas en la composición deben ser positivas.
 
+El mismo principio activo no puede repetirse para el mismo medicamento, conforme al UNIQUE compuesto existente. Las cantidades respetan el tipo `DECIMAL(12,4)` y las unidades las longitudes definidas en el esquema.
+
+Mientras no exista historial, el Regente puede agregar ingredientes, editar cantidades y unidades (incluidas las de referencia) y retirar una relación de composición. Se autoriza la eliminación física de esa relación únicamente en esa etapa. Un ingrediente registrado por error se corrige retirando la relación incorrecta y creando la correcta, sin modificar silenciosamente su FK.
+
+Desde el primer movimiento del medicamento, se prohíbe agregar o retirar ingredientes y cambiar principios activos, cantidades o unidades de su composición. Si la composición correcta representa otro producto, se registra un nuevo medicamento.
+
 ## RN17. Consulta por composición
 
 La coincidencia entre la composición de dos medicamentos no implica automáticamente que uno pueda sustituir al otro.
 
 La búsqueda por composición tiene finalidad informativa dentro del sistema.
+
+La búsqueda por varios principios activos aplica AND: debe contener todos los solicitados, aunque incluya otros ingredientes adicionales. Un producto que contenga solo una parte de los ingredientes solicitados no coincide.
 
 ---
 
@@ -866,6 +880,8 @@ Los cambios realizados sobre el inventario deben estar respaldados por el movimi
 No se debe modificar el saldo de una existencia sin conservar una causa trazable cuando la operación represente una entrada o salida de inventario.
 
 ## RN105. Datos históricos
+
+Para aplicar el bloqueo de identidad y composición, un medicamento tiene historial desde el primer `MovimientoInventario` asociado a cualquiera de sus `ExistenciaMedicamento`. No basta con tener una existencia sin movimientos. El criterio no depende del saldo, dirección, motivo ni de que el movimiento haya sido revertido.
 
 Los cambios posteriores en:
 
