@@ -361,6 +361,22 @@ Esta decisión amplía el diseño anterior, que solo contemplaba ventas confirma
 
 ---
 
+### 4.12. Identidad histórica y gestión de composición
+
+Un medicamento tiene historial cuando existe al menos un `MovimientoInventario` asociado a cualquiera de sus `ExistenciaMedicamento`. Una existencia por sí sola, incluso con saldo, no define este criterio. El historial permanece aunque los movimientos se hayan revertido o el saldo sea cero.
+
+Desde el primer movimiento se bloquean los cambios efectivos de código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación. También queda bloqueada toda la composición: agregar o retirar ingredientes y cambiar principios activos, cantidades o unidades, incluidas las de referencia.
+
+El nombre comercial, stock mínimo y condición de venta siguen siendo modificables. El estado se cambia únicamente por su operación específica. Una corrección tipográfica del nombre no crea un nuevo medicamento; si cambia realmente la identidad del producto, se registra otro medicamento.
+
+Antes de existir historial, el Regente puede agregar, editar y retirar relaciones de composición. Se autoriza eliminar físicamente una relación únicamente en esa etapa. Corregir un ingrediente incorrecto se realiza retirando la relación y creando la correcta; la edición normal de la relación modifica cantidades y unidades, sin cambiar sus FK.
+
+La búsqueda por varios principios activos utiliza AND: el medicamento debe contener todos los indicados y puede contener otros adicionales. Es una consulta informativa, sin equivalencia terapéutica ni sustitución automática.
+
+Las reglas se implementan en Services y las consultas de historial en Repositories. Las modificaciones protegidas y la comprobación de historial se coordinan mediante transacciones y bloqueos; este bloque no registra operaciones de inventario.
+
+---
+
 ## 5. Documentación funcional separada
 
 Para evitar que este archivo sea excesivamente grande, los detalles completos se encuentran en archivos independientes.
@@ -1504,6 +1520,10 @@ Implementado o diseñado:
 - Cambio propio y restablecimiento administrativo de contraseña.
 
 El módulo Usuarios se encuentra implementado para el alcance actual del backend.
+
+También se encuentra implementado el backend de Medicamentos, Principios Activos y Composición (CU13–CU19), con autorización por rol, búsqueda por código/nombre, búsqueda AND por principios activos y bloqueo de identidad/composición desde el primer movimiento de inventario. La corrección de un ingrediente utiliza retiro y alta antes de existir historial.
+
+Las pruebas de integración de este bloque se ejecutan con `pnpm test`, requieren MySQL configurado y utilizan datos temporales dentro de una transacción que se revierte. Se comprueban las rutas HTTP, JWT, permisos, validación, referencias, unicidad y reglas históricas sin modificar registros históricos.
 
 ---
 
