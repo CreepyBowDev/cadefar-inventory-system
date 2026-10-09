@@ -1,6 +1,7 @@
 # CADEFAR — Casos de Uso del Sistema
 
 > Este archivo contiene los casos de uso completos del sistema CADEFAR.
+> El catálogo contiene 41 casos de uso, numerados consecutivamente desde CU01 hasta CU41.
 >
 > Forma parte de la documentación ubicada en:
 >
@@ -172,9 +173,32 @@ Modificar la contraseña de una cuenta.
 
 ---
 
+## CU09. Restablecer contraseña mediante correo electrónico
+
+**Actor:**
+Administrador, Regente o Vendedor.
+
+**Objetivo:**
+Permitir que un usuario que olvidó su contraseña pueda establecer una nueva mediante un código de verificación enviado a su correo electrónico.
+
+**Condiciones principales:**
+
+- El usuario debe tener una cuenta registrada con un correo electrónico asociado.
+- No se requiere iniciar sesión ni conocer la contraseña anterior.
+- El código de verificación debe ser válido, no estar vencido y no haber sido utilizado.
+- La nueva contraseña debe cumplir la política de complejidad definida.
+
+**Resultado:**
+
+- La nueva contraseña se almacena únicamente mediante su hash.
+- El código de verificación utilizado queda invalidado.
+- Se reinician los intentos fallidos y se elimina el bloqueo temporal de inicio de sesión.
+
+---
+
 # 3. Proveedores y laboratorios
 
-## CU09. Registrar proveedor o laboratorio
+## CU10. Registrar proveedor o laboratorio
 
 **Actor:**  
 Administrador.
@@ -194,7 +218,7 @@ Según la entrevista, el laboratorio también puede funcionar como proveedor, po
 
 ---
 
-## CU10. Consultar proveedores o laboratorios
+## CU11. Consultar proveedores o laboratorios
 
 **Actor:**  
 Administrador o Regente.
@@ -204,7 +228,7 @@ Consultar los proveedores o laboratorios registrados y la información relaciona
 
 ---
 
-## CU11. Modificar proveedor o laboratorio
+## CU12. Modificar proveedor o laboratorio
 
 **Actor:**  
 Administrador.
@@ -214,7 +238,7 @@ Actualizar los datos de un proveedor o laboratorio existente.
 
 ---
 
-## CU12. Activar o desactivar proveedor o laboratorio
+## CU13. Activar o desactivar proveedor o laboratorio
 
 **Actor:**  
 Administrador.
@@ -226,7 +250,7 @@ Cambiar su estado sin eliminar el registro ni perder su historial.
 
 # 4. Medicamentos y composición
 
-## CU13. Registrar medicamento
+## CU14. Registrar medicamento
 
 **Actor:**  
 Regente.
@@ -250,7 +274,7 @@ Agregar un medicamento al catálogo.
 
 ---
 
-## CU14. Consultar o buscar medicamento
+## CU15. Consultar o buscar medicamento
 
 **Actor:**  
 Administrador, Regente o Vendedor.
@@ -260,7 +284,7 @@ Buscar medicamentos principalmente por nombre o código.
 
 ---
 
-## CU15. Modificar medicamento
+## CU16. Modificar medicamento
 
 **Actor:**  
 Regente.
@@ -271,7 +295,7 @@ Actualizar los datos permitidos de un medicamento existente.
 **Condiciones de edición:**
 
 - El medicamento debe existir.
-- El estado se modifica mediante CU16, no en esta edición.
+- El estado se modifica mediante CU17, no en esta edición.
 - Sin movimientos de inventario pueden editarse los datos del catálogo respetando referencias y unicidad.
 - Con al menos un movimiento en cualquiera de sus existencias, se bloquean cambios efectivos de código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación.
 - Con historial pueden seguir modificándose nombre comercial, stock mínimo y condición de venta.
@@ -279,7 +303,7 @@ Actualizar los datos permitidos de un medicamento existente.
 
 ---
 
-## CU16. Activar o desactivar medicamento
+## CU17. Activar o desactivar medicamento
 
 **Actor:**  
 Regente.
@@ -292,7 +316,7 @@ Un medicamento inactivo conserva su historial y no puede utilizarse en operacion
 
 ---
 
-## CU17. Gestionar principios activos
+## CU18. Gestionar principios activos
 
 **Actor:**  
 Administrador y Regente para consultar; Regente para registrar, modificar y activar o desactivar.
@@ -302,7 +326,7 @@ Registrar, consultar, modificar y activar o desactivar principios activos.
 
 ---
 
-## CU18. Gestionar composición de medicamento
+## CU19. Gestionar composición de medicamento
 
 **Actor:**  
 Regente.
@@ -329,7 +353,7 @@ Relacionar un medicamento con uno o más principios activos.
 
 ---
 
-## CU19. Consultar medicamentos por composición
+## CU20. Consultar medicamentos por composición
 
 **Actor:**  
 Administrador, Regente o Vendedor.
@@ -346,7 +370,7 @@ Cuando se indiquen varios principios activos, se buscan medicamentos que conteng
 
 # 5. Existencias e inventario
 
-## CU20. Consultar inventario
+## CU21. Consultar inventario
 
 **Actor:**  
 Administrador, Regente o Vendedor.
@@ -365,7 +389,7 @@ Consultar la disponibilidad de medicamentos y sus existencias.
 
 ---
 
-## CU21. Consultar existencias de un medicamento
+## CU22. Consultar existencias de un medicamento
 
 **Actor:**  
 Administrador, Regente o Vendedor.
@@ -378,7 +402,7 @@ Un mismo medicamento puede tener varias existencias diferenciadas principalmente
 
 ---
 
-## CU22. Registrar ajuste de inventario
+## CU23. Registrar ajuste de inventario
 
 **Actor:**  
 Regente.
@@ -398,7 +422,7 @@ Registrar diferencias encontradas durante un conteo físico.
 
 ---
 
-## CU23. Consultar movimientos de inventario
+## CU24. Consultar movimientos de inventario
 
 **Actor:**  
 Administrador o Regente.
@@ -422,7 +446,7 @@ Consultar el historial de entradas y salidas de una existencia o medicamento.
 
 # 6. Compras
 
-## CU24. Registrar compra
+## CU25. Registrar compra
 
 **Actor:**  
 Administrador.
@@ -452,7 +476,7 @@ La compra y todos sus efectos sobre inventario deben registrarse de forma conjun
 
 ---
 
-## CU25. Consultar compras
+## CU26. Consultar compras
 
 **Actor:**  
 Administrador o Regente.
@@ -469,7 +493,7 @@ Consultar compras registradas.
 
 ---
 
-## CU26. Anular compra
+## CU27. Anular compra
 
 **Actor:**  
 Administrador.
@@ -494,7 +518,7 @@ Anular una compra sin eliminarla físicamente.
 
 # 7. Ventas
 
-## CU27. Registrar venta
+## CU28. Registrar venta
 
 **Actor:**  
 Vendedor.
@@ -537,7 +561,7 @@ Si una receta necesaria está pendiente o rechazada, la venta permanece pendient
 
 ---
 
-## CU28. Consultar ventas
+## CU29. Consultar ventas
 
 **Actor:**  
 Administrador, Regente o Vendedor.
@@ -556,7 +580,7 @@ Se distinguen la fecha de registro y la fecha de venta efectiva, así como las v
 
 ---
 
-## CU29. Anular venta
+## CU30. Anular venta
 
 **Actor:**  
 Administrador.
@@ -580,7 +604,7 @@ Anular una venta conservando su historial.
 
 # 8. Recetas
 
-## CU30. Registrar receta
+## CU31. Registrar receta
 
 **Actor:**  
 Regente o Vendedor.
@@ -602,7 +626,7 @@ La receta queda vinculada con la venta pendiente correspondiente, mediante `id_v
 
 ---
 
-## CU31. Revisar receta
+## CU32. Revisar receta
 
 **Actor:**  
 Regente.
@@ -618,13 +642,13 @@ Registrar la revisión de una receta.
 - Observación.
 
 **Resultado:**  
-La receta puede quedar aprobada o rechazada. Su revisión no descuenta inventario ni confirma automáticamente la venta. El Vendedor confirma cuando se cumplen las condiciones de CU27.
+La receta puede quedar aprobada o rechazada. Su revisión no descuenta inventario ni confirma automáticamente la venta. El Vendedor confirma cuando se cumplen las condiciones de CU28.
 
 ---
 
 # 9. Vencimientos y retiros
 
-## CU32. Consultar productos próximos a vencer
+## CU33. Consultar productos próximos a vencer
 
 **Actor:**  
 Administrador o Regente.
@@ -637,7 +661,7 @@ Se consideran próximas a vencer aquellas con saldo físico positivo cuyo vencim
 
 ---
 
-## CU33. Consultar productos vencidos
+## CU34. Consultar productos vencidos
 
 **Actor:**  
 Administrador o Regente.
@@ -650,7 +674,7 @@ Se muestran las unidades vencidas pendientes de retiro.
 
 ---
 
-## CU34. Registrar retiro por vencimiento
+## CU35. Registrar retiro por vencimiento
 
 **Actor:**  
 Regente.
@@ -672,7 +696,7 @@ Registrar la salida física de medicamentos vencidos.
 
 ---
 
-## CU35. Registrar retiro por daño
+## CU36. Registrar retiro por daño
 
 **Actor:**  
 Regente.
@@ -694,7 +718,7 @@ Debe existir saldo suficiente.
 
 # 10. Stock bajo
 
-## CU36. Consultar medicamentos con stock bajo
+## CU37. Consultar medicamentos con stock bajo
 
 **Actor:**  
 Administrador, Regente o Vendedor.
@@ -720,7 +744,7 @@ Se muestran los medicamentos considerados con stock bajo.
 
 # 11. Reportes y consultas
 
-## CU37. Consultar reporte de ventas
+## CU38. Consultar reporte de ventas
 
 **Actor:**  
 Administrador.
@@ -734,7 +758,7 @@ Se utiliza la fecha de confirmación y se distinguen las ventas confirmadas de l
 
 ---
 
-## CU38. Consultar reporte de compras
+## CU39. Consultar reporte de compras
 
 **Actor:**  
 Administrador.
@@ -744,7 +768,7 @@ Consultar las compras realizadas por día, mes o período.
 
 ---
 
-## CU39. Consultar historial de inventario
+## CU40. Consultar historial de inventario
 
 **Actor:**  
 Administrador o Regente.
@@ -766,7 +790,7 @@ Consultar la trazabilidad histórica del inventario.
 
 ---
 
-## CU40. Consultar pérdidas
+## CU41. Consultar pérdidas
 
 **Actor:**  
 Administrador o Regente.

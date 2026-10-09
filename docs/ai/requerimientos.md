@@ -210,6 +210,26 @@ El sistema debe permitir consultar pérdidas por vencimiento o daño, valorizada
 
 El sistema debe identificar al usuario responsable de las operaciones registradas.
 
+## RF40. Solicitar recuperación de contraseña por correo
+
+El sistema debe permitir al Administrador, Regente o Vendedor solicitar la recuperación de una contraseña olvidada desde la pantalla de inicio de sesión, indicando el correo electrónico asociado a su cuenta.
+
+No se debe requerir iniciar sesión ni conocer la contraseña anterior. El sistema debe enviar un código temporal de verificación al correo asociado, sin revelar en la respuesta pública si el correo pertenece a una cuenta registrada.
+
+## RF41. Verificar código de recuperación
+
+El sistema debe permitir proporcionar el código recibido y verificar que corresponda a la recuperación solicitada, sea válido, no esté vencido y no haya sido utilizado.
+
+No se debe permitir establecer una nueva contraseña sin superar la verificación correspondiente.
+
+## RF42. Restablecer contraseña después de la verificación
+
+El sistema debe permitir establecer una nueva contraseña después de verificar el código de recuperación, aplicando la política de complejidad de RF09 y almacenando únicamente su hash.
+
+El restablecimiento exitoso debe invalidar el código utilizado y los demás códigos de recuperación anteriores correspondientes a la cuenta, reiniciar los intentos fallidos y eliminar el bloqueo temporal de inicio de sesión, sin activar una cuenta desactivada administrativamente.
+
+La recuperación de CU09 es independiente del cambio propio y del restablecimiento administrativo de CU08; no los reemplaza.
+
 ---
 
 # 2. Requerimientos de información
@@ -409,6 +429,14 @@ Conservar únicamente la información necesaria para identificar al usuario aute
 
 Las contraseñas deben almacenarse protegidas y nunca en texto plano.
 
+## RI15. Correo y recuperación de contraseña
+
+Para utilizar la recuperación de CU09, la cuenta debe disponer de un correo electrónico asociado.
+
+El sistema debe conservar de manera protegida la información necesaria para vincular el código temporal con la cuenta y comprobar su validez, vencimiento, uso e intentos de verificación.
+
+Este requerimiento es conceptual: la obligatoriedad del correo para todos los usuarios existentes y la estructura física para gestionar las solicitudes y códigos quedan pendientes de definición. No se establece todavía una nueva entidad o tabla.
+
 ---
 
 # 3. Requerimientos no funcionales
@@ -496,6 +524,22 @@ Las operaciones relevantes deben conservar información suficiente para identifi
 - Qué usuario la realizó.
 - Cuándo fue realizada.
 - Qué registros fueron afectados cuando corresponda.
+
+## RNF15. Protección y confidencialidad de la recuperación
+
+Los códigos de recuperación deben almacenarse de manera protegida, tener validez limitada y permitir un solo uso. La respuesta pública a una solicitud no debe revelar si el correo pertenece a una cuenta registrada.
+
+La recuperación no debe debilitar los controles de autenticación, autorización ni protección de contraseñas existentes.
+
+## RNF16. Prevención de abusos en la recuperación
+
+El sistema debe limitar las solicitudes de recuperación y los intentos de verificación del código para evitar abusos. Los límites concretos y el período de validez se definirán antes de implementar CU09.
+
+## RNF17. Seguridad de sesiones después del restablecimiento
+
+La implementación de CU09 debe contemplar una estrategia segura para invalidar las sesiones previamente emitidas después de un restablecimiento exitoso, de acuerdo con RN115.
+
+La estrategia técnica concreta queda pendiente de definición; este requerimiento no modifica todavía el funcionamiento actual de JWT ni de las cookies HttpOnly.
 
 ---
 
