@@ -433,7 +433,7 @@ Consultar:
 docs/ai/casos-uso.md
 ```
 
-Contiene los casos de uso completos y los actores correspondientes.
+Contiene 41 casos de uso, numerados desde CU01 hasta CU41, y los actores correspondientes.
 
 Antes de implementar una funcionalidad nueva que afecte comportamiento del sistema, revisar estos tres documentos.
 
@@ -1032,6 +1032,32 @@ El JWT está firmado, no cifrado.
 
 No guardar información sensible en su payload.
 
+### Recuperación de contraseña mediante correo electrónico — CU09
+
+Los usuarios Administrador, Regente o Vendedor podrán restablecer una contraseña olvidada mediante el correo electrónico asociado a su cuenta. Para utilizar la recuperación deberán disponer de un correo registrado, sin necesidad de iniciar sesión ni conocer la contraseña anterior.
+
+El sistema enviará un código temporal de verificación. El código deberá ser válido, no estar vencido ni haber sido utilizado, y validarse antes de permitir establecer la nueva contraseña. Su almacenamiento deberá estar protegido y se limitarán las solicitudes y los intentos de verificación. La respuesta pública no revelará si el correo pertenece a una cuenta registrada.
+
+La nueva contraseña deberá cumplir la política de seguridad existente y seguirá almacenándose únicamente mediante hash. Un restablecimiento exitoso invalidará el código utilizado y los demás códigos de recuperación anteriores correspondientes a la cuenta, reiniciará los intentos fallidos y eliminará el bloqueo temporal de inicio de sesión.
+
+Este mecanismo es independiente del cambio propio y del restablecimiento administrativo existentes en CU08; ambas operaciones se conservan. La recuperación no activará cuentas desactivadas administrativamente ni modificará roles o permisos, y no deberá debilitar los controles de autenticación y autorización.
+
+Antes de implementar CU09 deberá definirse una estrategia segura para invalidar las sesiones previamente emitidas después de un restablecimiento exitoso. La estrategia técnica concreta queda pendiente; no se modifican todavía las decisiones ni el funcionamiento actual de JWT y cookies HttpOnly.
+
+A nivel conceptual se requiere un correo asociado a `Usuario` y un mecanismo seguro para gestionar códigos temporales. Podría requerirse una entidad independiente para las solicitudes de recuperación, pero todavía no se aprueba una estructura física ni se modifican las entidades o tablas actuales.
+
+Quedan pendientes de implementación:
+
+- Si el correo será obligatorio para todos los usuarios existentes.
+- La longitud o cantidad de dígitos del código.
+- El tiempo exacto de expiración.
+- La cantidad máxima de intentos y los límites de solicitudes.
+- El servicio de envío de correos.
+- La estructura física definitiva para almacenar solicitudes y códigos.
+- La estrategia técnica concreta para invalidar JWT anteriores.
+
+La funcionalidad está documentada, pero no implementada. Sus requisitos corresponden a RF40–RF42, RI15 y RNF15–RNF17; sus reglas específicas son RN107–RN115.
+
 ---
 
 ## 18. Cookies
@@ -1138,6 +1164,8 @@ Por lo tanto, una copia externa del JWT seguiría siendo válida hasta su expira
 Para el alcance actual se considera suficiente.
 
 `SesionUsuario` solo sería una mejora futura si apareciera el requisito de revocación inmediata.
+
+Estas consideraciones describen el funcionamiento actual del logout. CU09 incorpora el requisito de contemplar la invalidación segura de sesiones anteriores después del restablecimiento; su solución deberá definirse antes de implementarlo, sin asumir que requiere `SesionUsuario` ni modificar todavía el logout existente.
 
 ---
 
@@ -1521,7 +1549,9 @@ Implementado o diseñado:
 
 El módulo Usuarios se encuentra implementado para el alcance actual del backend.
 
-También se encuentra implementado el backend de Medicamentos, Principios Activos y Composición (CU13–CU19), con autorización por rol, búsqueda por código/nombre, búsqueda AND por principios activos y bloqueo de identidad/composición desde el primer movimiento de inventario. La corrección de un ingrediente utiliza retiro y alta antes de existir historial.
+La recuperación de contraseña por correo (CU09) se incorpora como funcionalidad documentada y pendiente de implementación; todavía no incluye cambios en frontend, backend ni base de datos.
+
+También se encuentra implementado el backend de Medicamentos, Principios Activos y Composición (CU14–CU20), con autorización por rol, búsqueda por código/nombre, búsqueda AND por principios activos y bloqueo de identidad/composición desde el primer movimiento de inventario. La corrección de un ingrediente utiliza retiro y alta antes de existir historial.
 
 Las pruebas de integración de este bloque se ejecutan con `pnpm test`, requieren MySQL configurado y utilizan datos temporales dentro de una transacción que se revierte. Se comprueban las rutas HTTP, JWT, permisos, validación, referencias, unicidad y reglas históricas sin modificar registros históricos.
 

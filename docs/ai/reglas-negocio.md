@@ -100,6 +100,58 @@ Esto incluye, según corresponda:
 - Anulaciones.
 - Movimientos de inventario.
 
+## RN107. Recuperación mediante correo asociado
+
+El Administrador, Regente o Vendedor puede recuperar una contraseña olvidada mediante el correo electrónico asociado a su cuenta, sin iniciar sesión ni conocer la contraseña anterior.
+
+Esta recuperación corresponde a CU09 y es independiente del cambio propio y del restablecimiento administrativo de CU08. Para utilizarla se requiere un correo registrado; no se establece todavía que sea obligatorio para todos los usuarios existentes.
+
+## RN108. Código temporal de recuperación
+
+El código de recuperación debe tener un período de validez limitado, permitir un solo uso y almacenarse de manera protegida.
+
+La longitud del código, el tiempo exacto de expiración y la forma concreta de almacenamiento se definirán antes de implementar CU09.
+
+## RN109. Intentos de verificación del código
+
+Los intentos de verificación de un código de recuperación deben estar limitados. Al alcanzar el límite definido no se debe permitir continuar verificándolo.
+
+La cantidad máxima exacta y el mecanismo de control quedan pendientes de definición. Este límite no reemplaza ni modifica el bloqueo de inicio de sesión de RN07.
+
+## RN110. Solicitudes de recuperación
+
+Las solicitudes de recuperación deben estar limitadas para evitar abusos del mecanismo y del envío de correos.
+
+Los límites y períodos concretos se definirán antes de implementar CU09.
+
+## RN111. Respuesta pública de recuperación
+
+La respuesta pública a una solicitud de recuperación no debe revelar si el correo electrónico pertenece a una cuenta registrada.
+
+## RN112. Verificación y nueva contraseña
+
+No se puede restablecer una contraseña mediante CU09 sin superar la verificación de un código correspondiente a la cuenta, válido, no vencido y no utilizado.
+
+La nueva contraseña debe cumplir la política de complejidad de RN07 y almacenarse únicamente mediante su hash.
+
+## RN113. Efectos del restablecimiento exitoso
+
+El restablecimiento exitoso mediante CU09 debe invalidar el código utilizado y los demás códigos de recuperación anteriores correspondientes a la cuenta.
+
+También debe reiniciar los intentos fallidos y eliminar el bloqueo temporal de inicio de sesión. Una solicitud de recuperación o una verificación fallida no produce estos efectos.
+
+## RN114. Estado administrativo de la cuenta recuperada
+
+El restablecimiento de contraseña no debe activar una cuenta desactivada administrativamente ni modificar su rol.
+
+Una cuenta inactiva continúa sin poder iniciar sesión ni registrar operaciones, de acuerdo con RN05.
+
+## RN115. Sesiones anteriores al restablecimiento
+
+Debe contemplarse una estrategia segura para invalidar las sesiones previamente emitidas después de cambiar la contraseña mediante el restablecimiento de CU09.
+
+La estrategia técnica para invalidar JWT anteriores queda pendiente de definición antes de implementar la recuperación. No se decide todavía crear una tabla de sesiones ni adoptar otro mecanismo concreto, y esta regla no representa una revocación ya implementada.
+
 ---
 
 # 2. Proveedores y laboratorios
