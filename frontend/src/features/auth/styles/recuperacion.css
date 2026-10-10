@@ -1,0 +1,49 @@
+.recovery-form .login-form__field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.55rem;
+  padding: 0.75rem 1rem;
+  color: var(--color-ink);
+  background: #fff;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 0.5rem;
+}
+
+.recovery-form .password-input input {
+  padding-right: 3rem;
+}
+
+.recovery-form input:focus {
+  border-color: var(--color-accent);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(239, 139, 0, 0.16);
+}
+
+.recovery-form__help {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.recovery-form__secondary .auth-form-link {
+  margin-top: 0;
+}
+
+.recovery-form__secondary {
+  text-align: center;
+}
+
+.recovery-form .feedback svg {
+  flex-shrink: 0;
+}
+
+.recovery-success {
+  display: grid;
+  gap: 1.3rem;
+}
+
+.recovery-success .login-form__submit {
+  text-align: center;
+  text-decoration: none;
+}
