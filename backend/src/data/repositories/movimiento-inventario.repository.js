@@ -5,6 +5,27 @@ const { MovimientoInventario, ExistenciaMedicamento, Medicamento, Usuario,
 const { Op, fn, col, where } = Sequelize;
 
 export class movimientoInventarioRepository {
+    static async findParaAnular({ idsExistencias, idsDetalles, transaction }) {
+        // Lectura actual bajo bloqueo, incluso si la transacción esperó otra
+        // compra. Incluir enlaces a detalles fuera de su existencia detecta
+        // originales mal asociados, en vez de ignorarlos.
+        return MovimientoInventario.findAll({ where: { [Op.or]: [
+            { id_existencia: { [Op.in]: idsExistencias } },
+            { id_detalle_compra: { [Op.in]: idsDetalles } }
+        ] }, transaction, lock: transaction.LOCK.UPDATE, order: [['id_movimiento', 'ASC']] });
+    }
+
+    static async findReversiones({ idsOriginales, transaction }) {
+        return MovimientoInventario.findAll({ where: { id_movimiento_original: { [Op.in]: idsOriginales } },
+            transaction, lock: transaction.LOCK.UPDATE, order: [['id_movimiento', 'ASC']] });
+    }
+
+    static async create({ data, transaction }) {
+        return MovimientoInventario.create({ ...data,
+            fecha_movimiento: fn('STR_TO_DATE', data.fecha_movimiento, '%Y-%m-%d %H:%i:%s')
+        }, { transaction });
+    }
+
     static async findAll({ idMedicamento, idExistencia, desde, hasta, direccion, motivo } = {}) {
         const filtros = {};
         if (idExistencia !== undefined) filtros.id_existencia = idExistencia;

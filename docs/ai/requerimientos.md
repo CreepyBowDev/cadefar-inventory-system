@@ -130,6 +130,8 @@ El sistema debe permitir consultar compras por fecha, proveedor, estado y perío
 
 El sistema debe permitir anular compras conservando su historial y compensando sus efectos sobre el inventario.
 
+La operación corresponde al Administrador, registra un motivo obligatorio y aplica la valoración por existencia de RN76 de forma atómica conforme a RN80. Conserva los originales y evita una segunda anulación.
+
 ## RF23. Registrar ventas
 
 El sistema debe permitir registrar ventas con sus detalles, cantidades, precios y existencias utilizadas.
@@ -324,10 +326,12 @@ La precisión utiliza `DIA` y `MES`; el almacenamiento y la interpretación come
 
 Registrar:
 
-- Fecha.
+- Fecha de adquisición.
+- Fecha y hora de registro.
 - Proveedor o laboratorio.
 - Usuario responsable.
 - Estado.
+- Clave de operación.
 - Total.
 
 En los detalles almacenar:
@@ -336,6 +340,10 @@ En los detalles almacenar:
 - Cantidad.
 - Costo unitario.
 - Subtotal.
+- Saldo físico anterior de la existencia.
+- Costo promedio anterior de la existencia.
+
+El estado anterior se conserva conforme a RN36 para las nuevas compras. Puede no estar disponible en compras históricas; su uso en anulaciones se rige por RN76.
 
 ## RI07. Ventas
 

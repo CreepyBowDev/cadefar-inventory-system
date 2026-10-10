@@ -536,6 +536,8 @@ Representa una adquisición realizada a un proveedor/laboratorio.
 
 Representa una línea de una compra vinculada con una existencia.
 
+Se aprobó conservar `saldo_anterior INT NULL` y `costo_promedio_anterior DECIMAL(14,6) NULL` para respaldar RN36 y RN76. Ambos atributos todavía requieren una migración autorizada. Los registros históricos no se completan automáticamente.
+
 ### Venta
 
 Representa una operación de venta.
@@ -777,6 +779,161 @@ Consultas implementadas en el backend e integración verificada en una base MySQ
 Estas consultas reutilizan la disponibilidad de Fase 1A y aplican RN85, RN95 y RN32/RN96. No persisten alertas ni modifican saldos. Admiten los filtros `idMedicamento`, `codigoMedicamento` y `nombreComercial` de Inventario.
 
 Las respuestas mantienen `{ data, meta }`, con `meta.fechaComercial` y `meta.zonaHoraria`. Próximos a vencer agrega `meta.fechaHasta` y, por existencia, la `fechaEtiquetaNormalizada` calculada; conserva la fecha almacenada sin corregir registros históricos. El límite de tres meses calendario conserva el día de origen o utiliza el último día del mes destino si ese día no existe allí.
+
+### Diseño técnico de API — Fase 2
+
+Decisiones funcionales aprobadas para CU25 y CU26. La Fase 2.0 incorpora estas decisiones a la documentación; la implementación, la migración B1 y las pruebas de escritura requieren autorizaciones separadas. CU27 se reservó inicialmente para la Fase 5 y se adelantó después de Fase 2.4 por solicitud explícita del usuario, con autorización independiente para su integración real en bases temporales.
+
+| Método y ruta | Caso de uso | Actores autorizados |
+|---|---|---|
+| `POST /api/compras` | CU25 | Administrador |
+| `GET /api/compras` | CU26 | Administrador o Regente |
+| `GET /api/compras/:idCompra` | CU26 | Administrador o Regente |
+| `POST /api/compras/:idCompra/anular` | CU27 | Administrador |
+
+#### Entrada y respuestas
+
+POST admite exclusivamente `claveOperacion`, `fechaCompra` y `detalles`. Cada detalle admite `idMedicamento`, `cantidad`, `costoUnitario`, `precisionVencimiento` y `fechaVencimiento`. IDs y cantidades son enteros positivos dentro del rango INT. Los costos se reciben como cadenas decimales positivas con hasta seis decimales, sin exponente ni coma. `DIA` utiliza `YYYY-MM-DD`; `MES` utiliza `YYYY-MM` y se transforma al último día del mes para almacenamiento. La solicitud debe contener al menos un detalle y se rechazan campos adicionales.
+
+El backend resuelve proveedor, usuario, existencias, códigos, importes, estado anterior, movimientos y horas. Las condiciones de negocio se rigen por RN10, RN14, RN29, RN33 y RN36–RN45. Las consultas conservan el proveedor registrado en la cabecera, sin deducirlo nuevamente desde el catálogo.
+
+GET admite `desde`, `hasta`, `idProveedorLaboratorio`, `estadoOperacion` y `claveOperacion`. Los rangos inclusivos se aplican a `fechaCompra`; un día utiliza extremos iguales y un mes sus días primero y último. `estadoOperacion` admite `CONFIRMADA` y `ANULADA`; sin ese filtro se consultan ambos estados. El filtro por clave añade obligatoriamente el usuario autenticado, también cuando se combina con otros filtros; no acepta un usuario proporcionado por el cliente. Una clave ajena o una búsqueda sin resultados produce `{ data: [] }`. La consulta por ID inexistente devuelve 404. Los estados actuales de medicamentos y proveedores no excluyen compras históricas.
+
+Las respuestas mantienen `{ data }`, agregando `message` al registro exitoso. POST devuelve 201 únicamente después de confirmar la operación completa. Los errores mantienen el formato del middleware global, con `message` y, cuando corresponde, `errors`. Se utiliza 400 para entrada o importes inválidos, incluida fecha de adquisición futura; 404 para referencias requeridas inexistentes; 409 para clave repetida y conflictos funcionales; 401/403 para autenticación/autorización; y 500 para errores inesperados. La contención temporal se distingue de un duplicado y exige rollback completo antes de responder.
+
+#### Clave de operación
+
+Las claves nuevas admiten entre 1 y 64 caracteres ASCII alfanuméricos, guion y guion bajo, sin espacios, normalizados a minúsculas. La igualdad efectiva respeta la colación del UNIQUE de MySQL; los valores históricos no se corrigen.
+
+Una clave existente devuelve 409, sin reconstruir ni comparar solicitudes y sin devolver automáticamente una compra desde POST. Las claves de compras anuladas no se reutilizan. Un rollback no conserva la clave de la operación fallida. El cliente conserva la misma clave durante sus reintentos y puede localizar su operación mediante el filtro personal de GET antes de generar una clave distinta.
+
+La protección utiliza `Compra.clave_operacion VARCHAR(64) UNIQUE`, sin huellas de solicitud ni tablas adicionales de idempotencia. Una comprobación previa es auxiliar: el UNIQUE es la garantía final ante solicitudes simultáneas. Solo su conflicto específico se traduce como clave duplicada; otros errores UNIQUE se identifican por separado. La respuesta de conflicto no revela datos de compras de otros usuarios. Esta protección no demuestra equivalencia de contenido ni impide solicitudes con claves distintas.
+
+#### Cálculos y estado anterior
+
+Los cálculos de escala fija utilizan cadenas y BigInt, sin dependencias decimales adicionales. Se convierten costos a unidades de `0.000001` para multiplicar y sumar cantidades enteras, y se aplica el redondeo de RN40 al dividir o reducir escala. Los importes se guardan y devuelven como cadenas; los BigInt intermedios no se serializan directamente a JSON.
+
+Se verifican cantidades por detalle, sumas por existencia y saldo final hasta `2147483647`; costos y promedios hasta `99999999.999999` para DECIMAL(14,6); y subtotales y total hasta `999999999999.99` para DECIMAL(14,2). Los resultados se comprueban antes de persistir, además de validar los valores individuales. La valoración utiliza costos de seis decimales, no subtotales monetarios de dos decimales.
+
+El estado previo se captura una vez por existencia bloqueada, antes de modificar saldos o promedios, y se copia a todos sus detalles dentro de la misma transacción. Para una existencia nueva se captura `0 / 0.000000`; para una agotada se conserva su promedio previo aunque no aporte valor al cálculo. El promedio de RN45 se calcula una sola vez por grupo, conservando un movimiento original individual por detalle, con cantidad y costo de adquisición coincidentes.
+
+La migración B1 agrega únicamente `saldo_anterior INT NULL` y `costo_promedio_anterior DECIMAL(14,6) NULL` a DetalleCompra, sin valores predeterminados artificiales ni backfill. Un CHECK exige ambos NULL o ambos presentes y no negativos. Las compras nuevas siempre proporcionan el par; la igualdad entre detalles del grupo se asegura en el Service y se revalida al anular. La migración es aditiva y el modelo permanece CommonJS. Su autorización y aplicación son independientes de la implementación funcional de CU27.
+
+#### Transacción, bloqueos e historial
+
+CompraService coordina la transacción completa. Toma bloqueos exclusivos de medicamentos en orden estable, comprueba el proveedor bajo bloqueo compartido y bloquea las existencias antes de insertar movimientos. Identifica existencias por medicamento, fecha almacenada y precisión, reutiliza agotadas y genera códigos a partir del mayor correlativo conservado, sin COUNT + 1. Verifica la longitud de 30 caracteres y mantiene los UNIQUE como barreras finales.
+
+La detección de posteriores para RN76 obtiene todos los originales del grupo y busca, en la misma existencia, movimientos con ID mayor que el menor ID original que no pertenezcan al conjunto original. Esto excluye los distintos originales de la propia compra e ignora movimientos de otras existencias. Una intercalación ajena entre originales es una anomalía que impide la anulación, sin eludirla mediante A. La fiabilidad de esta secuencia exige que toda escritura bloquee la existencia antes del INSERT, mantenga el bloqueo hasta terminar la transacción y utilice IDs automáticos. AUTO_INCREMENT no se interpreta como orden global de commits ni demuestra la secuencia de escrituras externas al protocolo.
+
+Antes de utilizar B1 se comprueban originales íntegros y sin reversiones incompatibles, estado anterior disponible e idéntico en todo el grupo, ausencia de posteriores y coincidencia del saldo y promedio actuales con el resultado agrupado esperado de la compra. La restauración ocurre una vez por existencia; las reversiones son individuales y respetan RN72. Las modalidades y el tratamiento del legado se rigen por RN76 y RN80. Un saldo que coincide después de una salida y una entrada no acredita ausencia de posteriores.
+
+#### Representación temporal
+
+Fecha de adquisición, hora de registro y hora del movimiento conservan sus significados separados. Después de adquirir los bloqueos relevantes y antes de escribir, se toma un único instante para obtener el día comercial de validación y una hora civil común en America/La_Paz. No se generan movimientos retroactivos por la fecha de adquisición.
+
+La implementación construye las nuevas escrituras temporales mediante una expresión Sequelize STR_TO_DATE con valores escapados, evitando convertir el texto civil primero a Date, y lee mediante DATE_FORMAT. Se conserva la configuración global de Sequelize; los DATETIME históricos se devuelven como texto almacenado, sin asignarles una interpretación UTC o comercial no demostrada. Una hora local no recibe un sufijo Z. La Fase 2.4 verificó la persistencia real y la lectura de nuevas operaciones en una base aislada: el instante `2026-11-01T04:15:00Z` queda almacenado en Compra y sus movimientos como `2026-11-01 00:15:00`, mientras la sesión Sequelize conserva `+00:00`.
+
+#### Entregas y verificación
+
+Fase 2.0: documentación; Fase 2.1: contratos, validadores y operaciones decimales y temporales; Fase 2.2: consultas; Fase 2.3: registro transaccional completo; Fase 2.4: integración, concurrencia y regresiones. El hito de migración/modelo B1 requiere autorización separada y debe estar aplicado antes de utilizar esos atributos y habilitar POST. Ninguna entrega habilita un registro parcial de cabecera sin sus efectos de inventario.
+
+Fase 2.1 implementada y verificada mediante pruebas puras:
+
+- `compraValidator.validateCreate()`, `validateId()` y `validateFiltros()` validan el contrato estructural. Normalizan clave y costo, y convierten el vencimiento MES al último día para las nuevas entradas, conservando precisión, multiplicidad y orden de los detalles sin modificar el body original.
+- `decimalAEntero()`, `enteroADecimal()` y `dividirYRedondear()` proporcionan conversión exacta de escala fija y división de valores no negativos al más cercano con empate hacia arriba. El consumidor verifica los límites de persistencia; las primitivas permiten intermedios superiores a DECIMAL y al rango entero seguro de Number.
+- `obtenerFechaOperacion()` recibe un instante Date y devuelve `fechaComercial`, `fechaHoraComercial` y `zonaHoraria` coherentes con America/La_Paz. La hora es texto civil a segundos, sin Z, y no depende de la zona del proceso.
+
+La fecha de adquisición no futura, la recepción no vencida y los estados reales de medicamentos y proveedor se comprobarán en CompraService con el instante obtenido bajo bloqueo. El Validator no decide esas reglas temporales o dependientes de datos. La escritura y lectura de horas en MySQL, las rutas y las transacciones pertenecen a las entregas posteriores.
+
+Verificación de Fase 2.1: 37 pruebas aprobadas, cero fallidas, canceladas u omitidas, incluyendo las suites puras de Inventario y vencimientos. Ejecución sin importar modelos ni conectar a MySQL:
+
+```text
+node --test tests/decimal.test.js tests/compra.validator.test.js tests/fecha-operacion.test.js tests/vencimiento.test.js tests/inventario.validator.test.js
+```
+
+Fase 2.2 implementada: `GET /api/compras` devuelve cabeceras, ordenadas por fecha de adquisición descendente e ID descendente para desempatar. `GET /api/compras/:idCompra` devuelve la cabecera y `detalles`, ordenados por ID de detalle ascendente, con la existencia recibida y datos públicos de su medicamento. La consulta por ID no admite filtros de query. Las cabeceras incluyen proveedor registrado, usuario registrador y datos de anulación, con usuario anulador cuando existe. Las relaciones del catálogo se consultan en su estado actual; no se presentan como snapshots históricos del catálogo.
+
+Se conserva el total y cada importe registrados, con representación decimal de escala fija, sin recalcular la operación. El vencimiento histórico se devuelve como está almacenado, incluso para MES no canónico. Los DATETIME se seleccionan mediante DATE_FORMAT para devolver texto sin sufijo Z; estas respuestas no consultan los atributos B1. CompraService añade el ID de sesión al filtro por clave y exige una identidad válida antes de ejecutar esa búsqueda.
+
+Verificación conjunta: 56 pruebas aprobadas, cero fallidas, canceladas u omitidas. La suite de Compras ejecutó 54 comprobaciones HTTP y generó 74 SELECT con Sequelize; la regresión HTTP de Inventario generó otros 91 SELECT. Se ejecutaron las capas reales y se simularon únicamente los resultados de SELECT, bloqueando cualquier conexión MySQL. La integración real permanece pendiente de la entrega autorizada correspondiente.
+
+```text
+node --test tests/compra.http.test.js tests/compra.validator.test.js tests/decimal.test.js tests/fecha-operacion.test.js tests/vencimiento.test.js tests/inventario.validator.test.js tests/inventario.http.test.js
+```
+
+Hito B1: migración y modelo preparados con autorización específica; aplicación posterior autorizada por separado en la base de desarrollo `prueba` de `localhost`:
+
+- `20261010120000-add-compra-existencia-snapshots.js` agrega el par nullable y su CHECK en un único ALTER TABLE, sin defaults artificiales ni backfill. Los IS NOT NULL explícitos impiden que un par incompleto satisfaga el CHECK mediante el resultado UNKNOWN de MySQL.
+- `DetalleCompra` declara `saldo_anterior` como INTEGER y `costo_promedio_anterior` como DECIMAL(14,6), ambos nullable, conservando CommonJS, asociaciones y atributos anteriores.
+- `down` comprueba si existe información en cualquiera de las columnas y rechaza retirarlas en ese caso para conservar los snapshots. Si ambos campos están vacíos en todos los detalles, retira el CHECK y las dos columnas en un único ALTER TABLE.
+
+La verificación sin conexión ejecuta la migración contra una interfaz simulada e instancia el modelo Sequelize sin persistir. Comprueba el SQL emitido, la propagación de fallos, la protección de snapshots al revertir y la ausencia de valores previos fabricados. La suite conjunta aprueba 62 pruebas, incluidas las seis nuevas de B1 y las regresiones de Compras e Inventario. Estas comprobaciones sin conexión no acreditan por sí solas la ejecución real del DDL ni el cumplimiento del CHECK en MySQL.
+
+```text
+node --test tests/compra-b1.schema.test.js tests/compra.http.test.js tests/compra.validator.test.js tests/decimal.test.js tests/fecha-operacion.test.js tests/vencimiento.test.js tests/inventario.validator.test.js tests/inventario.http.test.js
+```
+
+B1 aplicada correctamente en `prueba`, MySQL 8.0.46 e InnoDB, mediante Sequelize CLI 6.6.5 seleccionando exclusivamente `20261010120000-add-compra-existencia-snapshots.js` por `--name`. SequelizeMeta conserva las migraciones anteriores y registra únicamente esta nueva ejecución. Las dos columnas tienen los tipos y nulabilidad previstos y `chk_detalle_compra_estado_anterior` figura con ENFORCED=YES.
+
+La comparación completa de datos anteriores antes y después del ALTER confirmó igualdad exacta en 4 compras, 9 detalles, 8 existencias y 19 movimientos. Los nueve detalles históricos conservan ambos atributos nuevos en NULL. Se evaluó la expresión real del CHECK obtenida de information_schema mediante 13 SELECT con pares sintéticos: ambos NULL y pares completos no negativos devuelven verdadero; los incompletos y negativos devuelven falso, sin resultados UNKNOWN. Durante esa aplicación en desarrollo no se ejecutaron INSERT, UPDATE ni DELETE de prueba. Las escrituras que ejercen el CHECK y la reversión de la migración se verificaron posteriormente en la base aislada de Fase 2.4.
+
+Se verificaron además 18 SELECT funcionales reales de Services/Repositories sobre el esquema actualizado: listado y consulta por ID de las cuatro compras y sus nueve detalles, importes y horas coincidentes con los valores almacenados, filtros inclusivos, búsqueda por clave propia y ajena, 404 por ID inexistente, stock físico de las ocho existencias, alertas y los diecinueve movimientos. Esta verificación fue de lectura y no sustituye las pruebas de escritura o concurrencia.
+
+Fase 2.3 implementada en código: `POST /api/compras` está montado con autenticación y permiso exclusivo de Administrador, validación estricta del body y ausencia de filtros de query. Devuelve la compra con detalles y el mensaje de registro exitoso, con 201 únicamente después del commit de la transacción gestionada por Sequelize. Las consultas existentes conservan sus atributos públicos anteriores.
+
+CompraService calcula subtotales, total y sumas por grupo con BigInt; rechaza importes y cantidades agrupadas fuera de rango antes de abrir la transacción. La consulta auxiliar de clave se hace fuera de la transacción para no iniciar una lectura snapshot anterior a los bloqueos. El UNIQUE sigue siendo la garantía final, incluso para compras anuladas y solicitudes simultáneas.
+
+Dentro de la transacción se bloquean medicamentos por ID ascendente, se resuelve el proveedor único bajo bloqueo compartido y se bloquean todas las existencias de los medicamentos involucrados por ID de existencia. Las agotadas y los códigos conservados participan en la identificación y en el cálculo del mayor correlativo, sin COUNT + 1 ni reutilización de códigos. Se toma un solo instante después de esos bloqueos y antes del primer INSERT para validar fecha de adquisición y vencimientos, y generar una hora civil común para la compra y sus movimientos.
+
+Los grupos se valoran una sola vez desde su estado anterior; cada detalle comparte el snapshot de la existencia anterior a la compra completa. Una existencia nueva captura cero/cero, mientras una agotada conserva su promedio histórico en el snapshot. Se crean o actualizan existencias, luego se conservan detalles y movimientos individuales con cantidad y costo de adquisición coincidentes. Cada movimiento utiliza únicamente su detalle de compra, sin detalle de venta ni movimiento original. La respuesta se consulta dentro de la misma transacción: un fallo de esa lectura también provoca rollback.
+
+Los errores UNIQUE de clave, código de existencia y combinación medicamento/vencimiento/precisión se identifican por separado. Deadlock y espera de bloqueo agotada devuelven un conflicto de contención temporal después de terminar la transacción fallida, sin confundirse con una clave duplicada ni reintentar automáticamente. Los errores técnicos inesperados conservan la respuesta 500 genérica.
+
+Verificación conjunta de Fase 2.3: 79 pruebas aprobadas, cero fallidas, canceladas u omitidas. La suite nueva ejecuta 61 comprobaciones HTTP del registro con capas, modelos, generación SQL y gestión de transacciones Sequelize reales. Se simulan únicamente el transporte SQL, las conexiones y su estado transaccional, sin conexiones ni escrituras MySQL. Incluye permisos, validación, recepción, límites, promedio agrupado frente a redondeos intermedios, snapshots, correlativos, corte comercial bajo bloqueo, clasificación de conflictos y fallos en cabecera, creación/actualización de existencia, detalles, movimientos y lectura final; el rollback simulado permite reintentar la misma clave.
+
+```text
+node --test tests/compra.registro.http.test.js tests/compra-b1.schema.test.js tests/compra.http.test.js tests/compra.validator.test.js tests/decimal.test.js tests/fecha-operacion.test.js tests/vencimiento.test.js tests/inventario.validator.test.js tests/inventario.http.test.js
+```
+
+La implementación de Fase 2.3 no ejecutó registros de compra contra `prueba` ni preparó una base de escritura. La aceptación real se completó en Fase 2.4 con autorización específica para crear, migrar, escribir y eliminar bases temporales locales exclusivas.
+
+Fase 2.4 completada y verificada mediante `tests/compra.integration.test.js`. La suite ejecuta las capas HTTP, autenticación, Services, Repositories, modelos y transacciones contra MySQL real, con datos sintéticos. Solo los puntos de fallo y las barreras para provocar carreras se instrumentan desde las pruebas; no se sustituye el transporte SQL ni se agrega infraestructura de concurrencia al backend.
+
+- B1: down/up en una base exclusiva sin snapshots preserva los atributos anteriores y deja el par NULL; escrituras reales rechazan pares incompletos y negativos y admiten los límites representables. La migración rechaza down cuando ya existen snapshots.
+- Registro: proveedor automático y único, activos, fechas, precisión DIA/MES, agotadas, códigos correlativos, importes pequeños y máximos, desbordamientos, snapshots comunes y promedio agrupado independiente del orden. Se preservan MES históricos no canónicos y detalles sin estado anterior.
+- Horas: Compra y movimientos conservan el mismo texto civil correcto en America/La_Paz; la sesión global no cambia. MES admite el último día inclusive y se rechaza si una espera real cruza su corte comercial antes de tomar el instante de operación.
+- Atomicidad: fallos inyectados después de escrituras SQL reales en cada etapa, incluida la lectura final, y un error FK real después de un movimiento previo revierten todos los datos relacionados. La misma clave puede reintentarse después del rollback.
+- Concurrencia: dos prechecks simultáneos vacíos para una misma clave producen un solo commit y un 409 específico del UNIQUE; claves distintas sobre la misma existencia serializan snapshots y conservan stock/promedio. Existencias nuevas reciben códigos únicos y solicitudes con orden inverso de medicamentos respetan el orden estable de bloqueos.
+- Contención y estados: esperas observadas mediante performance_schema verifican la validación posterior al bloqueo y la inactivación concurrente de medicamentos o proveedor. Lock wait timeout y deadlock reales devuelven el conflicto de contención, revierten la compra y admiten reintento. El escenario de deadlock toma filas individuales por PK para formar deliberadamente el ciclo en la base aislada.
+- Consultas e historial: filtros inclusivos, claves propias/ajenas, compras anuladas y referencias inactivas conservan los permisos y los datos históricos. Se comprueba un original por detalle y conciliación entre saldo físico y movimientos. Para la futura B1/A, los movimientos de otras existencias no cuentan como posteriores; salida/entrada con el mismo saldo y movimientos de la misma hora siguen siendo detectables por IDs. CU27 no se implementa en esta fase.
+
+Verificación conjunta final: 116 pruebas aprobadas, cero fallidas, canceladas u omitidas. Compras ejecutó 84 comprobaciones HTTP y observó 1014 sentencias SQL reales en su base temporal. La regresión real de Fases 1A/1B ejecutó 88 comprobaciones HTTP y 140 SELECT en otra base temporal exclusiva. Se incluyen las suites puras y HTTP sin conexión anteriores. Ambas bases fueron eliminadas y se confirmó su ausencia mediante information_schema; las pruebas no escribieron en las bases de desarrollo, producción ni pruebas compartidas.
+
+```text
+node --test tests/compra.integration.test.js tests/inventario.integration.test.js tests/compra.registro.http.test.js tests/compra-b1.schema.test.js tests/compra.http.test.js tests/compra.validator.test.js tests/decimal.test.js tests/fecha-operacion.test.js tests/vencimiento.test.js tests/inventario.validator.test.js tests/inventario.http.test.js
+```
+
+La aceptación incluye proveedor automático y único, activos y vencimientos, límites y redondeo, saldo cero, existencias nuevas y reutilizadas, snapshots comunes, escrituras concurrentes, clave repetida, rollback y regresión de Fases 1A/1B. Las pruebas de diseño de B1/A comprueban datos conservados, cálculos y selección por historial, incluidos movimientos con la misma hora y operaciones que dejan el mismo saldo. La escritura de reversiones de compra, originalmente prevista para la Fase 5, se adelantó con CU27. Las pruebas que escriben requieren autorización específica para una base aislada.
+
+#### CU27 adelantado — anulación de compra
+
+Implementado después de Fase 2.4 por solicitud expresa. Se reutilizan el esquema y la migración B1 existentes, sin una nueva migración. CU30 permanece pendiente.
+
+`POST /api/compras/:idCompra/anular` requiere autenticación y rol Administrador. Admite exclusivamente `{ "motivo": "Corrección de compra" }`, con motivo obligatorio de 1 a 255 caracteres después de recortar espacios exteriores. El ID es entero positivo dentro de INT; no admite filtros query ni fecha, estado, usuario o modalidad enviados por el cliente. Responde 200 con `{ message: 'Compra anulada exitosamente', data }`, usando el mismo DTO de consulta por ID, únicamente después del commit.
+
+CompraService bloquea primero la cabecera y sus detalles, luego las existencias por ID ascendente. Las lecturas de movimientos y reversiones son actuales bajo bloqueo, no snapshots anteriores a una espera. No se exige actividad actual de medicamentos/proveedor ni vendibilidad de los vencimientos. Se validan todos los grupos antes de escribir:
+
+- Un original íntegro por detalle, con existencia, cantidad y costo coincidentes, dirección ENTRADA, motivo Compra y sin referencia a movimiento original ni detalle de venta.
+- Historial de cada existencia con cantidades/costos representables, direcciones válidas, referencias de reversión coherentes y saldo físico conciliado con entradas/salidas. Un enlace incorrecto a un detalle no se ignora aunque apunte a otra existencia.
+- Snapshots completos e idénticos por grupo o todos NULL. Pares parciales, mezcla de NULL y valores, contradicciones, intercalaciones y reversiones previas impiden anular; A no elude esas inconsistencias.
+- B1 comprueba saldo y promedio agrupado esperados y restaura una sola vez el par anterior exacto, incluido el promedio histórico de una agotada. Sin posteriores ni snapshots se rechaza el legado; no se reconstruye ni completa.
+- A aplica RN76 al estado actual usando cantidad y costo original de seis decimales, no subtotales de dos decimales. Se rechazan stock insuficiente, residual negativo, residual no nulo a saldo cero o promedio fuera de rango. Con saldo cero y residual cero conserva el promedio actual.
+
+Dentro de la misma transacción se actualizan saldos/promedios, se crea una SALIDA de motivo Reversión por original, conservando existencia, cantidad y costo y referenciando tanto el original como su detalle de compra, y se marca la compra ANULADA con fecha, motivo y usuario autenticado. La observación de cada reversión conserva el motivo. Un único instante posterior a los bloqueos produce la misma hora civil America/La_Paz para cabecera y reversiones, mediante STR_TO_DATE y DATE_FORMAT. Se conservan originales, detalles, snapshots, total, fecha de adquisición, clave y códigos de existencia.
+
+Los errores mantienen el contrato global: 400 para entrada inválida; 401/403 para sesión/permisos; 404 para compra inexistente; 409 para doble anulación, insuficiencia, valoración incompatible, integridad o contención; 500 genérico para errores inesperados. Timeout/deadlock se traducen después del rollback, sin reintento automático. El bloqueo de cabecera y el UNIQUE de movimiento original impiden dos anulaciones efectivas. Ante una respuesta perdida, GET por ID permite consultar el estado; repetir la anulación ya confirmada devuelve 409.
+
+Verificación de CU27 y regresiones: 130 pruebas aprobadas, cero fallidas, canceladas u omitidas. `tests/compra.integration.test.js` incluye CU25–CU27 con 179 comprobaciones HTTP y 2339 sentencias reales observadas. Cubre mezcla B1/A, redondeo residual, agotadas/nuevas, legado, inconsistencias, intercalaciones, permisos, vencidos/inactivos, rollback en cada etapa, doble anulación concurrente, anulación de compras distintas sobre una existencia, espera a una compra concurrente, timeout y deadlock reales. La regresión 1A/1B mantiene 88 comprobaciones HTTP y 140 SELECT reales. Ambas bases temporales autorizadas se eliminan al finalizar; no se registran anulaciones en desarrollo ni se modifican históricos reales.
 
 ---
 
@@ -1629,6 +1786,8 @@ Las suites de credenciales, correo y recuperación crean, migran y eliminan úni
 Correcciones posteriores a la revisión general del backend (09/10/2026): el middleware global traduce errores `entity.parse.failed` a 400 y `entity.too.large` a 413 con mensajes propios, sin registrar el body; los errores técnicos siguen siendo 500 genéricos. La prueba de catálogo ahora selecciona y comprueba `DB_NAME_TEST` antes de importar Sequelize, igual que las demás suites de integración.
 
 Verificación de estas correcciones: suite completa con 151 pruebas aprobadas, cero fallidas, canceladas u omitidas, ejecutada partiendo de `NODE_ENV=development` para comprobar la selección interna del entorno de pruebas. La consulta de Usuario en desarrollo ya no falla por columnas ausentes y las comprobaciones HTTP del backend real confirman 400/413 para entradas malformadas/excesivas. No se enviaron correos reales.
+
+La Fase 2 de Compras (CU25 y CU26) está implementada y verificada hasta Fase 2.4. La Fase 2.0 conserva numeración, actores y referencias; la Fase 2.1 aporta validación y utilidades decimales/temporales; la Fase 2.2 incorpora las consultas y la Fase 2.3 el registro transaccional completo. El hito B1 está aplicado en `prueba` con autorización específica, conservando exactamente los datos anteriores y ambos atributos nuevos en NULL para históricos. La Fase 2.4 verificó escritura/lectura temporal, restricciones, rollback InnoDB, concurrencia, consultas e integridad histórica en bases temporales autorizadas, junto con las regresiones de Inventario: 116 pruebas aprobadas. CU27, reservado inicialmente para la Fase 5, se adelantó por solicitud del usuario y está implementado con B1 + A por existencia. Su integración y las regresiones aprobaron 130 pruebas; las bases temporales autorizadas fueron eliminadas. El backend de Compras cubre CU25–CU27; el frontend y las funcionalidades de fases posteriores continúan pendientes. El contrato técnico y las verificaciones se conservan en la sección de API de Fase 2.
 
 ---
 
