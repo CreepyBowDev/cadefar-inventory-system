@@ -357,13 +357,30 @@ El stock vendible representa las unidades que pueden utilizarse para una venta.
 
 Una existencia vencida no forma parte del stock vendible.
 
+El stock vendible de un medicamento inactivo se considera cero. Su stock físico permanece visible y se conservan sus existencias y movimientos históricos.
+
+Esta inactividad no excluye sus existencias de las consultas de próximos a vencer o vencidos cuando cumplen las condiciones correspondientes.
+
 ## RN29. Medicamentos vencidos
 
-Cuando una existencia alcanza su fecha de vencimiento:
+Cuando una existencia alcanza su fecha efectiva de vencimiento, determinada según su precisión:
 
 - Deja de ser vendible.
 - No se elimina automáticamente.
 - Su saldo físico se conserva hasta registrar el retiro correspondiente.
+
+La precisión de vencimiento utiliza los valores `DIA` y `MES`:
+
+- `DIA`: se almacena la fecha específica indicada y la existencia deja de ser vendible desde el inicio de esa fecha comercial.
+- `MES`: se almacena el último día del mes indicado en la etiqueta. La existencia puede venderse durante todo ese día y deja de ser vendible desde el inicio del primer día del mes siguiente.
+
+Ejemplos: una existencia `DIA` con fecha `2026-10-15` está vencida desde el 15/10/2026; una existencia `MES` con etiqueta `10/2026` almacena `2026-10-31` y está vencida desde el 01/11/2026.
+
+La fecha efectiva desde la cual deja de ser vendible se calcula; no requiere una columna adicional.
+
+La fecha comercial actual y las comparaciones de días comerciales se determinan en `America/La_Paz`. Esta decisión no autoriza convertir ni reinterpretar automáticamente los `DATETIME` históricos; su convención de almacenamiento debe verificarse antes de proponer cambios.
+
+Tampoco se modifican ni normalizan automáticamente fechas de registros históricos. Las discrepancias deben revisarse antes de plantear una corrección de datos.
 
 ## RN30. Stock negativo
 
@@ -379,7 +396,7 @@ El stock mínimo no puede ser negativo.
 
 ## RN32. Stock bajo
 
-Un medicamento se considera con stock bajo cuando:
+Un medicamento activo se considera con stock bajo cuando:
 
 ```text
 stockVendible <= stockMinimo
@@ -544,6 +561,8 @@ Las condiciones se comprueban de nuevo al confirmar. Las existencias indicadas e
 ## RN54. Prioridad por vencimiento
 
 Cuando existan varias existencias vendibles del mismo medicamento, se debe utilizar primero la que tenga el vencimiento más próximo.
+
+Para comparar vencimientos con precisión `DIA` y `MES`, se utiliza la fecha efectiva desde la cual dejan de ser vendibles, definida en RN29.
 
 Se aplica el criterio:
 
@@ -801,7 +820,11 @@ Una existencia se considera próxima a vencer cuando:
 
 - Tiene saldo físico positivo.
 - Todavía no está vencida.
-- Su vencimiento se encuentra entre la fecha actual y los próximos tres meses.
+- Su fecha de vencimiento normalizada de la etiqueta está comprendida entre la fecha comercial actual y los próximos tres meses calendario.
+
+Con precisión `MES`, para este intervalo se utiliza el último día del mes indicado en la etiqueta, no la fecha efectiva de no venta del mes siguiente. La condición de no estar vencida se comprueba conforme a RN29.
+
+Tres meses calendario no se sustituyen automáticamente por 90 días.
 
 ## RN86. Existencia vencida
 
@@ -865,7 +888,7 @@ El sistema debe identificar las existencias vencidas que todavía mantengan sald
 
 ## RN96. Alerta de stock bajo
 
-El sistema debe identificar los medicamentos cuyo stock vendible sea menor o igual al stock mínimo.
+El sistema debe identificar los medicamentos activos cuyo stock vendible sea menor o igual al stock mínimo.
 
 ---
 
