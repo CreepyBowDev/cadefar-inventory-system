@@ -29,7 +29,7 @@ const waitUntil = async (predicate) => {
   throw new Error('Tiempo agotado esperando el navegador de pruebas');
 };
 
-test('CU09: flujo público y compatibilidad en navegador, con API simulada', { timeout: 90000 }, async (t) => {
+test('CU09 y correo de Usuarios: integración en navegador, con API simulada', { timeout: 90000 }, async (t) => {
   assert.ok(browserPath, 'Instala Chrome/Edge o indica CADEFAR_TEST_BROWSER');
   const tempRoot = process.platform === 'win32'
     ? join(process.env.LOCALAPPDATA, 'Temp', 'opencode') : tmpdir();
@@ -75,7 +75,13 @@ test('CU09: flujo público y compatibilidad en navegador, con API simulada', { t
     const pending = new Map();
     const requests = [];
     let nextResponse = null;
+    let usuarioError = null;
     let heldRequest = null;
+    const usuarios = [{
+      idUsuario: 2, nombreUsuario: 'cu08-prueba', idRol: 3,
+      correo: 'registrado+prueba@example.invalid', estado: true,
+      rol: { idRol: 3, nombre: 'Vendedor' }
+    }];
     const response = (requestId, status, data) => send('Fetch.fulfillRequest', {
       requestId, responseCode: status,
       responseHeaders: [{ name: 'Content-Type', value: 'application/json' }],
@@ -123,7 +129,26 @@ test('CU09: flujo público y compatibilidad en navegador, con API simulada', { t
         } else if (path === '/api/auth/login') {
           void response(requestId, 200, { data: { idUsuario: 1, nombreUsuario: 'cu09-prueba', idRol: 1 } });
         } else if (path === '/api/usuarios' && request.method === 'GET') {
-          void response(requestId, 200, { data: [{ idUsuario: 2, nombreUsuario: 'cu08-prueba', idRol: 3, estado: true, rol: { nombre: 'Vendedor' } }] });
+          void response(requestId, 200, { data: usuarios });
+        } else if (/^\/api\/usuarios\/\d+$/.test(path) && request.method === 'GET') {
+          void response(requestId, 200, { data: usuarios.find((usuario) => usuario.idUsuario === Number(path.split('/').at(-1))) });
+        } else if ((path === '/api/usuarios' && request.method === 'POST') ||
+            (/^\/api\/usuarios\/\d+$/.test(path) && request.method === 'PATCH')) {
+          if (usuarioError) {
+            void response(requestId, usuarioError.status, { message: usuarioError.message });
+            usuarioError = null;
+          } else {
+            const { password, ...data } = JSON.parse(request.postData);
+            if (request.method === 'POST') {
+              const usuario = { ...data, idUsuario: usuarios.length + 2, estado: true, rol: { idRol: data.idRol, nombre: 'Vendedor' } };
+              usuarios.push(usuario);
+              void response(requestId, 201, { data: usuario });
+            } else {
+              const usuario = usuarios.find((item) => item.idUsuario === Number(path.split('/').at(-1)));
+              Object.assign(usuario, data);
+              void response(requestId, 200, { data: usuario });
+            }
+          }
         } else {
           void response(requestId, 200, { data: [], message: 'Operación completada' });
         }
@@ -154,6 +179,25 @@ test('CU09: flujo público y compatibilidad en navegador, con API simulada', { t
     const submit = () => evaluate('document.querySelector("form").requestSubmit()');
     const alertContains = (text) => waitFor(`document.querySelector('form')?.getAttribute('aria-busy') !== 'true' && document.querySelector('[role="alert"]')?.textContent.includes(${JSON.stringify(text)})`);
     const recoveryRequests = () => requests.filter((request) => request.path.includes('/recuperacion/'));
+    const usuarioWrites = () => requests.filter((request) =>
+      (request.path === '/api/usuarios' && request.method === 'POST') ||
+      (/^\/api\/usuarios\/\d+$/.test(request.path) && request.method === 'PATCH'));
+    const openCreateUsuario = async (nombreUsuario) => {
+      await evaluate(`document.querySelector('a[href="/usuarios/nuevo"]').click()`);
+      await waitFor('!!document.getElementById("correo")');
+      await input('nombreUsuario', nombreUsuario);
+      await evaluate(`(() => {
+        const select = document.getElementById('idRol');
+        select.value = '3';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      })()`);
+      await input('password', testPassword);
+      await input('confirmPassword', testPassword);
+    };
+    const openEditUsuario = async () => {
+      await evaluate(`document.querySelector('a[href="/usuarios/2/editar"]').click()`);
+      await waitFor('document.getElementById("nombreUsuario")?.value === "cu08-prueba" && document.getElementById("idRol")?.value === "3"');
+    };
     await navigate('http://127.0.0.1:5176/login');
     await waitFor('!!document.getElementById("nombreUsuario")');
 
@@ -366,6 +410,89 @@ test('CU09: flujo público y compatibilidad en navegador, con API simulada', { t
       assert.deepEqual(Object.keys(request.body), ['password']);
       assert.ok(request.body.password === testPassword);
       await waitFor('document.querySelector(".usuarios-page").textContent.includes("fue restablecida")');
+    });
+    await t.test('Crear usuario valida formato y longitud del correo antes de enviar', async () => {
+      await openCreateUsuario('usuario-correo');
+      assert.equal(await evaluate('document.getElementById("correo").required'), false);
+      assert.equal(await evaluate('document.getElementById("correo").maxLength'), 255);
+      const count = usuarioWrites().length;
+      await input('correo', 'correo-invalido');
+      await submit();
+      await alertContains('correo electrónico válido');
+      await input('correo', 'a'.repeat(250) + '@example.invalid');
+      await submit();
+      await alertContains('255 caracteres');
+      assert.equal(usuarioWrites().length, count);
+    });
+    await t.test('Correo duplicado al crear muestra 409 y conserva el formulario', async () => {
+      await input('correo', 'registrado+prueba@example.invalid');
+      usuarioError = { status: 409, message: 'El correo ya está en uso' };
+      await submit();
+      await alertContains('El correo ya está en uso');
+      assert.equal(await evaluate('location.pathname'), '/usuarios/nuevo');
+      assert.ok(await evaluate('document.getElementById("correo").value === "registrado+prueba@example.invalid"'));
+    });
+    await t.test('Crear envía correo normalizado conservando puntos y +', async () => {
+      await input('correo', ' Nuevo.Usuario+prueba@Example.Invalid ');
+      await submit();
+      await waitFor('!!document.querySelector(".usuario-table")');
+      const request = usuarioWrites().at(-1);
+      assert.equal(request.method, 'POST');
+      assert.deepEqual(Object.keys(request.body).sort(), ['correo', 'idRol', 'nombreUsuario', 'password']);
+      assert.equal(request.body.correo, 'nuevo.usuario+prueba@example.invalid');
+      assert.ok(request.body.password === testPassword);
+    });
+    await t.test('Crear sin correo envía null y sigue siendo permitido', async () => {
+      await openCreateUsuario('usuario-sin-correo');
+      await input('correo', '   ');
+      await submit();
+      await waitFor('!!document.querySelector(".usuario-table")');
+      assert.equal(usuarioWrites().at(-1).body.correo, null);
+    });
+    await t.test('Editar precarga el correo y omite el campo si no cambia', async () => {
+      await openEditUsuario();
+      assert.equal(await evaluate('document.getElementById("correo").value'), 'registrado+prueba@example.invalid');
+      await input('correo', ' Registrado+prueba@Example.Invalid ');
+      await submit();
+      await waitFor('!!document.querySelector(".usuario-table")');
+      const request = usuarioWrites().at(-1);
+      assert.equal(request.path, '/api/usuarios/2');
+      assert.equal(request.method, 'PATCH');
+      assert.deepEqual(Object.keys(request.body).sort(), ['idRol', 'nombreUsuario']);
+      assert.equal(usuarios[0].correo, 'registrado+prueba@example.invalid');
+    });
+    await t.test('Editar valida correo, muestra duplicados y permite actualizarlo', async () => {
+      await openEditUsuario();
+      const count = usuarioWrites().length;
+      await input('correo', 'invalido');
+      await submit();
+      await alertContains('correo electrónico válido');
+      assert.equal(usuarioWrites().length, count);
+      await input('correo', 'nuevo.usuario+prueba@example.invalid');
+      usuarioError = { status: 409, message: 'El correo ya está en uso' };
+      await submit();
+      await alertContains('El correo ya está en uso');
+      assert.equal(await evaluate('location.pathname'), '/usuarios/2/editar');
+      await input('correo', ' Editado.Usuario+prueba@Example.Invalid ');
+      await submit();
+      await waitFor('!!document.querySelector(".usuario-table")');
+      const request = usuarioWrites().at(-1);
+      assert.deepEqual(Object.keys(request.body).sort(), ['correo', 'idRol', 'nombreUsuario']);
+      assert.equal(request.body.correo, 'editado.usuario+prueba@example.invalid');
+      await openEditUsuario();
+      assert.equal(await evaluate('document.getElementById("correo").value'), 'editado.usuario+prueba@example.invalid');
+    });
+    await t.test('Vaciar el correo en edición envía null; un correo ya vacío se conserva', async () => {
+      await input('correo', '');
+      await submit();
+      await waitFor('!!document.querySelector(".usuario-table")');
+      assert.equal(usuarioWrites().at(-1).body.correo, null);
+      await openEditUsuario();
+      assert.equal(await evaluate('document.getElementById("correo").value'), '');
+      await submit();
+      await waitFor('!!document.querySelector(".usuario-table")');
+      assert.ok(!Object.hasOwn(usuarioWrites().at(-1).body, 'correo'));
+      assert.equal(usuarios[0].correo, null);
     });
     await t.test('La ruta privada continúa requiriendo autenticación después de recargar', async () => {
       await navigate('http://127.0.0.1:5176/usuarios');
