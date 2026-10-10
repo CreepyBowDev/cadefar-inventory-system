@@ -7,6 +7,7 @@ import { getPasswordValidationError } from '../utils/passwordPolicy.js';
 
 const EMPTY_FORM = {
   nombreUsuario: '',
+  correo: '',
   idRol: '',
   password: '',
   confirmPassword: ''
@@ -28,6 +29,7 @@ export const UsuarioForm = ({
     setForm({
       ...EMPTY_FORM,
       nombreUsuario: initialData?.nombreUsuario || '',
+      correo: initialData?.correo || '',
       idRol: initialData?.rol?.idRol?.toString() || ''
     });
     setValidationError('');
@@ -58,6 +60,19 @@ export const UsuarioForm = ({
       return;
     }
 
+    const correo = form.correo.trim().toLowerCase() || null;
+
+    if (correo && correo.length > 255) {
+      setValidationError('El correo no puede superar los 255 caracteres.');
+      return;
+    }
+
+    if (correo && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ||
+        event.currentTarget.elements.correo.validity.typeMismatch)) {
+      setValidationError('Ingresa un correo electrónico válido o deja el campo vacío.');
+      return;
+    }
+
     if (isCreate) {
       const passwordError = getPasswordValidationError(form.password);
 
@@ -75,6 +90,7 @@ export const UsuarioForm = ({
     onSubmit({
       idRol,
       nombreUsuario,
+      ...(isCreate || correo !== (initialData?.correo ?? null) ? { correo } : {}),
       ...(isCreate ? { password: form.password } : {})
     });
   };
@@ -99,6 +115,27 @@ export const UsuarioForm = ({
           />
           <p className="form-field__help">
             Será el identificador utilizado para iniciar sesión.
+          </p>
+        </div>
+
+        <div className="form-field usuario-form__wide">
+          <label htmlFor="correo">Correo electrónico (opcional)</label>
+          <input
+            id="correo"
+            name="correo"
+            type="email"
+            value={form.correo}
+            onChange={updateField}
+            maxLength={255}
+            autoComplete="off"
+            placeholder="Ej. usuario@dominio.com"
+            aria-describedby="correo-help"
+            disabled={submitting}
+          />
+          <p id="correo-help" className="form-field__help">
+            {isCreate
+              ? 'Permite recuperar la contraseña mediante un código enviado a este correo.'
+              : 'Déjalo vacío para retirar el correo. Cambiarlo o retirarlo invalida los códigos de recuperación pendientes.'}
           </p>
         </div>
 

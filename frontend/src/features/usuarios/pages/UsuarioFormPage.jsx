@@ -132,7 +132,7 @@ export const UsuarioFormPage = ({ mode }) => {
           <p>
             {isCreate
               ? 'Registra una cuenta y asígnale uno de los roles existentes.'
-              : 'Modifica únicamente el nombre de usuario o su rol.'}
+              : 'Modifica el nombre de usuario, el correo electrónico o su rol.'}
           </p>
         </div>
       </header>
