@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage.jsx';
+import { RecuperacionPasswordPage } from '../features/auth/pages/RecuperacionPasswordPage.jsx';
 import { DashboardPage } from '../features/dashboard/pages/DashboardPage.jsx';
 import { ProveedoresPage } from '../features/proveedores/pages/ProveedoresPage.jsx';
 import { ProveedorLaboratorioDetailPage } from '../features/proveedores/pages/ProveedorLaboratorioDetailPage.jsx';
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: '/login',
         element: <LoginPage />
+      },
+      {
+        path: '/recuperar-contrasena',
+        element: <RecuperacionPasswordPage />
       }
     ]
   },
