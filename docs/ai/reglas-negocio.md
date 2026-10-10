@@ -176,7 +176,7 @@ Al registrar un proveedor o laboratorio se puede indicar su estado. Si no se ind
 
 Un proveedor o laboratorio inactivo conserva su información, sus relaciones con medicamentos y sus compras anteriores. Puede seguir consultándose y no debe eliminarse físicamente.
 
-Mientras esté inactivo, no puede seleccionarse para nuevas compras ni asignarse a nuevos medicamentos o nuevamente al modificar un medicamento. Su inactivación no elimina ni modifica las relaciones existentes o las compras anteriores, ni impide vender medicamentos que ya se encuentran en el inventario.
+Mientras esté inactivo, no puede utilizarse para nuevas compras ni asignarse a nuevos medicamentos o nuevamente al modificar un medicamento. Su inactivación no elimina ni modifica las relaciones existentes o las compras anteriores, ni impide vender medicamentos que ya se encuentran en el inventario.
 
 ## RN11. Verificación del proveedor
 
@@ -214,6 +214,8 @@ El estado se modifica únicamente mediante su operación específica, fuera de l
 ## RN14. Estado del medicamento
 
 Solo los medicamentos activos pueden utilizarse en nuevas operaciones que requieran un medicamento disponible.
+
+Esto incluye la recepción de compras ordinarias. Si algún medicamento está inactivo, la compra completa debe rechazarse.
 
 Un medicamento inactivo conserva su información y su historial.
 
@@ -412,6 +414,10 @@ El cálculo se realiza utilizando la suma de sus existencias que todavía sean v
 
 Cada compra debe pertenecer a un único proveedor o laboratorio.
 
+El sistema lo obtiene automáticamente de las relaciones de los medicamentos en el catálogo; el Administrador no selecciona un proveedor independiente. Todos los medicamentos incluidos deben pertenecer al mismo proveedor. Si pertenecen a proveedores diferentes, la compra completa se rechaza y deben registrarse compras separadas. El sistema no divide automáticamente la solicitud.
+
+El proveedor utilizado queda relacionado con la cabecera para conservar el historial de la operación.
+
 ## RN34. Responsable de compra
 
 Cada compra debe identificar al usuario responsable de su registro.
@@ -431,13 +437,15 @@ Cada detalle debe identificar:
 - Costo unitario.
 - Subtotal.
 
+Para las nuevas compras, cada detalle conserva también el saldo físico y el costo promedio anteriores de su existencia. Cuando varios detalles corresponden a la misma existencia, todos conservan el mismo estado previo a la compra completa, no estados intermedios. Esta información respalda la restauración prevista en RN76.
+
 ## RN37. Cantidad comprada
 
 La cantidad recibida en una compra debe ser mayor que cero.
 
 ## RN38. Costo de compra
 
-El costo unitario debe ser un valor válido mayor que cero.
+El costo unitario debe ser un valor válido mayor que cero, con un máximo de seis decimales. Una entrada con mayor precisión debe rechazarse, sin truncarla ni redondearla silenciosamente.
 
 ## RN39. Subtotal de compra
 
@@ -447,11 +455,13 @@ El subtotal de cada detalle se calcula mediante:
 cantidad × costoUnitario
 ```
 
+El resultado se redondea a dos decimales conforme a RN40. Un costo unitario positivo puede producir un subtotal de 0.00 por efecto de ese redondeo.
+
 ## RN40. Total de compra
 
-El total de una compra corresponde a la suma de los subtotales de sus detalles.
+El total de una compra corresponde a la suma de los subtotales de sus detalles ya redondeados.
 
-Los valores monetarios deben manejarse con la precisión definida para el sistema.
+Los subtotales y el total se conservan con dos decimales. Cuando corresponda redondear un valor no negativo, se utiliza el valor más cercano y, en caso de empate, se redondea hacia arriba.
 
 ## RN41. Efecto de una compra
 
@@ -463,9 +473,13 @@ Cuando una compra queda confirmada:
 - Se generan movimientos de entrada.
 - Se actualiza el costo promedio cuando corresponda.
 
+Una compra ordinaria solo puede confirmarse con medicamentos activos y vencimientos todavía admitidos conforme a RN29. El vencimiento se evalúa con el día comercial del registro, no con una fecha de adquisición retroactiva. Si falla un detalle, se rechaza toda la operación.
+
+La fecha de adquisición es obligatoria y puede ser anterior o igual al día comercial del registro en America/La_Paz, pero no posterior. Los efectos de inventario se registran al ejecutar la operación; no se generan movimientos retroactivos por indicar una fecha de adquisición anterior.
+
 ## RN42. Compra y existencia
 
-Durante una compra, el sistema debe determinar si corresponde utilizar una existencia existente o crear una nueva existencia según el medicamento y su vencimiento.
+Durante una compra, el sistema debe determinar si corresponde utilizar una existencia existente o crear una nueva según el medicamento, la fecha de vencimiento almacenada y su precisión. Una existencia con saldo cero se reutiliza cuando corresponde a esa misma combinación.
 
 Cuando deba crearse una nueva existencia, se genera automáticamente su código de existencia.
 
@@ -474,6 +488,8 @@ Cuando deba crearse una nueva existencia, se genera automáticamente su código 
 La compra, sus detalles, los movimientos de inventario y las modificaciones de saldo deben registrarse como una sola operación lógica.
 
 Si una parte de la operación falla, no deben quedar cambios parciales.
+
+La captura y conservación del estado anterior de las existencias forma parte de la misma operación transaccional.
 
 ---
 
@@ -492,6 +508,20 @@ Cuando una compra incorpora nuevas unidades a una existencia que ya tiene saldo,
 - Cantidad recibida.
 - Costo de las nuevas unidades.
 
+Todos los detalles de una misma compra dirigidos a una existencia se calculan agrupadamente:
+
+```text
+saldoFinal = saldoAnterior + sumaCantidades
+
+promedioFinal = redondear6(
+  (saldoAnterior × promedioAnterior
+   + suma(cantidad × costoUnitario))
+  / saldoFinal
+)
+```
+
+Se redondea una sola vez a seis decimales por existencia y compra, conforme a RN40. El orden de los detalles no debe alterar el resultado. Los detalles y movimientos se conservan individualmente. Si el saldo anterior es cero, el promedio histórico no aporta valor a la nueva entrada.
+
 ## RN46. Salidas de inventario
 
 Las salidas por venta, vencimiento, daño u otros motivos deben conservar el costo aplicado en el momento en que se realizó el movimiento.
@@ -506,6 +536,8 @@ Los movimientos deben conservar su costo aplicado para permitir conocer posterio
 - Retiros.
 - Pérdidas.
 - Reversiones.
+
+El costo unitario aplicado a los movimientos se conserva con seis decimales.
 
 ---
 
@@ -747,11 +779,31 @@ Debe conservar:
 - Motivo.
 - Usuario responsable.
 
+El motivo es obligatorio. La actividad actual del medicamento o proveedor y el vencimiento de la existencia no son condiciones de recepción aplicables a la anulación de una compra histórica.
+
 ## RN76. Efecto de anular compra
 
 La anulación de una compra debe compensar los movimientos de entrada generados originalmente.
 
-Si la reversión provocaría un stock negativo debido a que las unidades ya fueron utilizadas, la anulación no debe realizarse de forma que deje inconsistente el inventario.
+La valoración se determina por existencia:
+
+- **B1:** si no existen movimientos ajenos posteriores, los originales están íntegros, el estado anterior está disponible y es consistente entre los detalles, y el estado actual coincide con el resultado esperado de la compra, se restauran exactamente el saldo y el costo promedio anteriores.
+- **A:** si existen movimientos posteriores, se calcula una reversión conservadora desde el saldo y promedio actuales:
+
+```text
+cantidadRevertida = suma(cantidades originales)
+valorRevertido = suma(cantidadOriginal × costoOriginal)
+saldoFinal = saldoActual − cantidadRevertida
+valorResidual = saldoActual × promedioActual − valorRevertido
+```
+
+Si el saldo final es positivo, el nuevo promedio se obtiene dividiendo el valor residual por el saldo final y redondeando a seis decimales conforme a RN40. Se rechazan saldo negativo, valor residual negativo o promedio no representable. Si el saldo final es cero, el valor residual debe ser cero; el promedio almacenado puede conservarse sin efecto valorizado.
+
+No se aplican tolerancias arbitrarias ni se modifican costos históricos. La alternativa A puede rechazar una anulación aun cuando exista cantidad suficiente y no reconstruye el pasado como si la compra nunca hubiera ocurrido.
+
+La ausencia de estado anterior en compras históricas no autoriza inferirlo desde el estado actual. B1 no puede utilizarse cuando falta esa información o no puede demostrarse la coherencia del estado. Una compra histórica sin estado anterior y sin movimientos posteriores no puede restaurarse exactamente y su anulación debe rechazarse por información insuficiente. Si existen movimientos posteriores, puede utilizarse A siempre que los originales y el historial sean íntegros.
+
+Un estado anterior parcialmente disponible o contradictorio, originales incompletos o reversiones previas incompatibles impiden la anulación; no se utiliza A para eludir una inconsistencia.
 
 ## RN77. Anulación de venta
 
@@ -779,6 +831,8 @@ Una compra o venta no puede anularse más de una vez.
 La modificación del estado de la operación, los movimientos de reversión y los cambios de inventario deben realizarse conjuntamente.
 
 No deben quedar anulaciones parciales.
+
+Una compra puede aplicar B1 a unas existencias y A a otras. Todos los grupos se validan dentro de la misma transacción; si alguno falla, se rechaza la anulación completa.
 
 ---
 

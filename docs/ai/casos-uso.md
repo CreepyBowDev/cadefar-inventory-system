@@ -471,19 +471,22 @@ Registrar una adquisición realizada a un proveedor o laboratorio.
 
 **Condiciones principales:**
 
-- El proveedor o laboratorio debe existir.
-- Los medicamentos deben existir.
+- El proveedor único se obtiene de los medicamentos y debe cumplir RN10 y RN33.
+- Los medicamentos deben existir y estar activos.
+- Los vencimientos y la fecha de adquisición deben cumplir RN29 y RN41.
 - La compra debe contener al menos un detalle.
+- La clave de operación no debe estar registrada previamente.
 
 **Durante la operación el sistema debe:**
 
 - Registrar la compra.
 - Registrar sus detalles.
+- Conservar el estado anterior común de cada existencia conforme a RN36.
 - Identificar o crear las existencias correspondientes.
 - Generar el código de existencia cuando sea necesario.
 - Incrementar los saldos.
 - Generar movimientos de entrada.
-- Actualizar el costo promedio.
+- Actualizar el costo promedio agrupadamente conforme a RN45.
 - Calcular subtotales y total.
 
 **Resultado:**  
@@ -505,6 +508,9 @@ Consultar compras registradas.
 - Período.
 - Proveedor o laboratorio.
 - Estado.
+- Clave de operación.
+
+La búsqueda específica por clave devuelve únicamente operaciones del usuario autenticado. Esta búsqueda no modifica los permisos generales de consulta del Administrador y del Regente.
 
 ---
 
@@ -520,7 +526,10 @@ Anular una compra sin eliminarla físicamente.
 
 - La compra debe existir.
 - No debe estar anulada previamente.
+- El Administrador debe indicar un motivo obligatorio.
 - La reversión no puede dejar inconsistencias ni stock negativo.
+- La valoración se determina por existencia mediante B1 o A, con las condiciones y límites de RN76.
+- La actividad actual de medicamentos/proveedor y el vencimiento no impiden compensar una compra histórica.
 
 **Resultado:**
 
@@ -528,6 +537,8 @@ Anular una compra sin eliminarla físicamente.
 - Se generan movimientos de reversión.
 - Se compensan los efectos originales.
 - La compra permanece en el historial como anulada.
+
+La anulación completa se confirma dentro de una única transacción. Si una existencia no puede compensarse, se conserva toda la compra sin cambios. Una segunda anulación se rechaza.
 
 ---
 

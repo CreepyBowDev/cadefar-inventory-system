@@ -55,6 +55,14 @@ module.exports = (sequelize, DataTypes) => {
             subtotal: {
                 type: DataTypes.DECIMAL(14, 2),
                 allowNull: false
+            },
+            saldo_anterior: {
+                type: DataTypes.INTEGER,
+                allowNull: true
+            },
+            costo_promedio_anterior: {
+                type: DataTypes.DECIMAL(14, 6),
+                allowNull: true
             }
         },
         {
