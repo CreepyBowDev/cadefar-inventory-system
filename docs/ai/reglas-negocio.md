@@ -104,35 +104,41 @@ Esto incluye, según corresponda:
 
 El Administrador, Regente o Vendedor puede recuperar una contraseña olvidada mediante el correo electrónico asociado a su cuenta, sin iniciar sesión ni conocer la contraseña anterior.
 
-Esta recuperación corresponde a CU09 y es independiente del cambio propio y del restablecimiento administrativo de CU08. Para utilizarla se requiere un correo registrado; no se establece todavía que sea obligatorio para todos los usuarios existentes.
+Esta recuperación corresponde a CU09 y es independiente del cambio propio y del restablecimiento administrativo de CU08. Para utilizarla se requiere un correo registrado; es opcional para las cuentas. Un cambio efectivo o retirada de correo por el Administrador invalida las recuperaciones pendientes; el mismo correo normalizado las conserva. Las cuotas pertenecen a la cuenta y no se reinician por cambiar correo.
 
 ## RN108. Código temporal de recuperación
 
 El código de recuperación debe tener un período de validez limitado, permitir un solo uso y almacenarse de manera protegida.
 
-La longitud del código, el tiempo exacto de expiración y la forma concreta de almacenamiento se definirán antes de implementar CU09.
+Se utilizan seis dígitos aleatorios y diez minutos de vencimiento absoluto. Se persiste solo HMAC-SHA-256 vinculado a propósito, cuenta, correo normalizado, nonce y vencimiento; no el código ni el mensaje. No se extiende el vencimiento por el envío.
 
 ## RN109. Intentos de verificación del código
 
 Los intentos de verificación de un código de recuperación deben estar limitados. Al alcanzar el límite definido no se debe permitir continuar verificándolo.
 
-La cantidad máxima exacta y el mecanismo de control quedan pendientes de definición. Este límite no reemplaza ni modifica el bloqueo de inicio de sesión de RN07.
+Se permiten cinco fallos por emisión, persistidos incluso cuando la respuesta pública es un error. El quinto invalida el código. Este límite no reemplaza ni modifica el bloqueo de inicio de sesión de RN07.
 
 ## RN110. Solicitudes de recuperación
 
 Las solicitudes de recuperación deben estar limitadas para evitar abusos del mecanismo y del envío de correos.
 
-Los límites y períodos concretos se definirán antes de implementar CU09.
+Se exige un intervalo de 60 segundos y un máximo de tres emisiones por cuenta en ventana móvil de 15 minutos. Por IP se permiten 20 solicitudes y 30 restablecimientos en ventanas independientes de 15 minutos desde la primera petición. Las cuotas se almacenan en MySQL, sin fallback a memoria; desconocidos e inactivos consumen cuota IP. La IP se obtiene del socket, sin confiar en cabeceras.
+
+Una emisión persistida conserva su cuota aunque falle el envío. Se intenta enviar una vez después del commit, sin reintentos automáticos. Rechazo explícito invalida solo esa emisión; timeout/aceptación incierta conservan el código hasta vencimiento. Tras una caída entre commit y envío se requiere otra solicitud manual sujeta a límites.
 
 ## RN111. Respuesta pública de recuperación
 
 La respuesta pública a una solicitud de recuperación no debe revelar si el correo electrónico pertenece a una cuenta registrada.
+
+Desconocidos, inactivos y emisiones suprimidas reciben la misma respuesta. Una solicitud válida dentro de cuota IP espera al menos cinco segundos para mitigar diferencias evidentes con un timeout de correo; no se afirma tiempo constante. Logs y respuestas nunca contienen códigos, contraseñas, HMAC, mensajes o secretos.
 
 ## RN112. Verificación y nueva contraseña
 
 No se puede restablecer una contraseña mediante CU09 sin superar la verificación de un código correspondiente a la cuenta, válido, no vencido y no utilizado.
 
 La nueva contraseña debe cumplir la política de complejidad de RN07 y almacenarse únicamente mediante su hash.
+
+Toda contraseña nueva debe respetar además el máximo de 72 bytes UTF-8, sin truncar ni normalizar. El consumo revalida cuenta, código, vencimiento y versión de credenciales después de calcular bcrypt fuera de la transacción.
 
 ## RN113. Efectos del restablecimiento exitoso
 
@@ -150,7 +156,7 @@ Una cuenta inactiva continúa sin poder iniciar sesión ni registrar operaciones
 
 Debe contemplarse una estrategia segura para invalidar las sesiones previamente emitidas después de cambiar la contraseña mediante el restablecimiento de CU09.
 
-La estrategia técnica para invalidar JWT anteriores queda pendiente de definición antes de implementar la recuperación. No se decide todavía crear una tabla de sesiones ni adoptar otro mecanismo concreto, y esta regla no representa una revocación ya implementada.
+La revocación está implementada mediante `Usuario.version_credenciales` y `versionCredenciales` obligatorio en JWT. CU08 y CU09 incrementan la versión transaccionalmente e invalidan recuperaciones. CU08 propio renueva su cookie; CU08 administrativo y CU09 revocan sesiones previas sin iniciar otra sesión. No se agrega tabla de sesiones ni blacklist; JWT antiguos o desactualizados son rechazados.
 
 ---
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { newPasswordSchema } from './password.schema.js';
 
 const idUsuarioSchema = z.object({
     idUsuario: z.coerce
@@ -17,17 +18,15 @@ const currentPasswordSchema = z
     .min(1, 'La contraseña actual es obligatoria')
     .max(100, 'La contraseña no puede superar los 100 caracteres');
 
-const newPasswordSchema = z
+const correoSchema = z
     .string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .max(100, 'La contraseña no puede superar los 100 caracteres')
-    .regex(/\p{Lu}/u, 'La contraseña debe contener al menos una letra mayúscula')
-    .regex(/\p{Ll}/u, 'La contraseña debe contener al menos una letra minúscula')
-    .regex(/\p{N}/u, 'La contraseña debe contener al menos un número')
-    .regex(
-        /[\p{P}\p{S}]/u,
-        'La contraseña debe contener al menos un carácter especial'
-    );
+    .trim()
+    .toLowerCase()
+    .min(1, 'El correo no puede estar vacío')
+    .max(255, 'El correo no puede superar los 255 caracteres')
+    .email('El correo debe tener un formato válido')
+    .nullable()
+    .optional();
 
 export const createUsuarioSchema = z.object({
     idRol: z
@@ -35,7 +34,8 @@ export const createUsuarioSchema = z.object({
         .int()
         .positive(),
     nombreUsuario: nombreUsuarioSchema,
-    password: newPasswordSchema
+    password: newPasswordSchema,
+    correo: correoSchema
 }).strict();
 
 const updateUsuarioSchema = z.object({
@@ -44,7 +44,8 @@ const updateUsuarioSchema = z.object({
         .int()
         .positive()
         .optional(),
-    nombreUsuario: nombreUsuarioSchema.optional()
+    nombreUsuario: nombreUsuarioSchema.optional(),
+    correo: correoSchema
 }).strict().refine(
     (data) => Object.keys(data).length > 0,
     { message: 'Debe enviar al menos un dato para modificar' }

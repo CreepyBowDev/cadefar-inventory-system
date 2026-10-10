@@ -170,6 +170,7 @@ Modificar la contraseña de una cuenta.
 
 - La nueva contraseña se almacena únicamente mediante su hash.
 - El cambio propio exitoso y el restablecimiento administrativo eliminan cualquier bloqueo temporal y reinician los intentos fallidos.
+- Ambos incrementan la versión de credenciales e invalidan recuperaciones pendientes. El cambio propio renueva su cookie actual; el restablecimiento administrativo revoca sesiones anteriores.
 
 ---
 
@@ -188,11 +189,23 @@ Permitir que un usuario que olvidó su contraseña pueda establecer una nueva me
 - El código de verificación debe ser válido, no estar vencido y no haber sido utilizado.
 - La nueva contraseña debe cumplir la política de complejidad definida.
 
+**Flujo implementado en backend:**
+
+1. Solicitar con `{ correo }` en `POST /api/auth/recuperacion/solicitar`.
+2. Validar cuotas IP/cuenta y cuenta activa; persistir HMAC del código con vencimiento de diez minutos e invalidar el anterior en transacción.
+3. Después del commit, intentar el envío una vez mediante mock local/test o Brevo HTTPS con timeout de cinco segundos.
+4. Devolver respuesta genérica con espera pública mínima de cinco segundos, también para desconocidos, inactivos y solicitudes suprimidas; sin garantía de tiempo constante.
+5. Enviar `{ correo, codigo, passwordNueva }` a `POST /api/auth/recuperacion/restablecer`. Verificar/consumir en esta operación, con máximo cinco fallos y límite persistente IP; contraseña nueva de máximo 72 bytes UTF-8.
+
+Si el correo es rechazado explícitamente, se invalida solo esa emisión. Ante timeout/resultado incierto se conserva hasta vencimiento; no se reenvía automáticamente. Una nueva solicitud manual requiere respetar cuotas, incluso si falló el envío anterior.
+
 **Resultado:**
 
 - La nueva contraseña se almacena únicamente mediante su hash.
 - El código de verificación utilizado queda invalidado.
 - Se reinician los intentos fallidos y se elimina el bloqueo temporal de inicio de sesión.
+- Se invalidan las otras recuperaciones pendientes y se incrementa la versión de credenciales, revocando JWT anteriores.
+- No se inicia sesión automáticamente ni se emite cookie; no se activa una cuenta inactiva ni se cambia el rol.
 
 ---
 

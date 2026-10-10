@@ -1019,7 +1019,8 @@ Payload mínimo:
 ```js
 {
   idUsuario,
-  idRol
+  idRol,
+  versionCredenciales
 }
 ```
 
@@ -1042,21 +1043,48 @@ La nueva contraseña deberá cumplir la política de seguridad existente y segui
 
 Este mecanismo es independiente del cambio propio y del restablecimiento administrativo existentes en CU08; ambas operaciones se conservan. La recuperación no activará cuentas desactivadas administrativamente ni modificará roles o permisos, y no deberá debilitar los controles de autenticación y autorización.
 
-Antes de implementar CU09 deberá definirse una estrategia segura para invalidar las sesiones previamente emitidas después de un restablecimiento exitoso. La estrategia técnica concreta queda pendiente; no se modifican todavía las decisiones ni el funcionamiento actual de JWT y cookies HttpOnly.
+Decisiones aprobadas e implementadas en el backend:
 
-A nivel conceptual se requiere un correo asociado a `Usuario` y un mecanismo seguro para gestionar códigos temporales. Podría requerirse una entidad independiente para las solicitudes de recuperación, pero todavía no se aprueba una estructura física ni se modifican las entidades o tablas actuales.
+- `Usuario.correo`: opcional, nullable, único, `VARCHAR(255)` con `utf8mb4_bin`. Se normaliza con trim exterior y minúsculas, conservando puntos y `+`. Lo asigna el Administrador de forma supervisada, sin `correo_verificado`. Un PATCH omitido conserva el correo, `null` lo retira y un cambio efectivo invalida recuperaciones sin reiniciar cuotas de cuenta.
+- `Usuario.version_credenciales`: `INT UNSIGNED DEFAULT 0`. JWT exige `versionCredenciales`; firma válida no basta si la versión difiere de la cuenta. Tokens antiguos sin versión se rechazan sin transición.
+- CU08 y CU09 incrementan esa versión, invalidan recuperaciones y limpian intentos/bloqueo de login. CU08 propio renueva la cookie actual; CU08 administrativo y CU09 revocan sesiones anteriores. CU09 no inicia sesión automáticamente.
+- Códigos de seis dígitos generados con `crypto.randomInt`, diez minutos de vigencia absoluta, cinco fallos máximos y un solo uso. Se almacena únicamente HMAC-SHA-256 vinculado a propósito, cuenta, correo normalizado, nonce y vencimiento; la comparación utiliza `timingSafeEqual`.
+- El secreto HMAC es estable, explícito e independiente de JWT, sin generación automática ni fallback. No se requiere clave AES.
+- Política compartida de contraseñas nuevas: 8–100 caracteres, complejidad existente y máximo 72 bytes UTF-8. No se truncan ni normalizan contraseñas; login y contraseña actual mantienen compatibilidad histórica.
+- Cuotas persistentes: 60 segundos entre emisiones y tres por cuenta en ventana móvil de 15 minutos; 20 solicitudes y 30 restablecimientos por IP en ventanas de 15 minutos desde la primera petición. Una emisión persistida consume cuota aunque falle el correo.
+- La IP procede exclusivamente del socket. IPv4 mapped se unifica con IPv4; IPv6 se agrupa por /56. Las claves IP se almacenan como HMAC por ámbito, sin IP en claro. No se confía en cabeceras ni se usa fallback de cuotas a memoria.
 
-Quedan pendientes de implementación:
+Flujo simplificado de envío:
 
-- Si el correo será obligatorio para todos los usuarios existentes.
-- La longitud o cantidad de dígitos del código.
-- El tiempo exacto de expiración.
-- La cantidad máxima de intentos y los límites de solicitudes.
-- El servicio de envío de correos.
-- La estructura física definitiva para almacenar solicitudes y códigos.
-- La estrategia técnica concreta para invalidar JWT anteriores.
+```text
+validar entrada/cuota IP → buscar cuenta activa → bloquear Usuario
+→ comprobar cuota de cuenta → invalidar anterior/persistir HMAC/vencimiento
+→ COMMIT → un intento de correo → resultado sanitizado → respuesta genérica
+```
 
-La funcionalidad está documentada, pero no implementada. Sus requisitos corresponden a RF40–RF42, RI15 y RNF15–RNF17; sus reglas específicas son RN107–RN115.
+El componente `recuperacion-mail.js` soporta mock local/test y Brevo mediante `fetch` HTTPS, sin SDK, con timeout de cinco segundos y cancelación. No hay procesador persistente, polling, reservas, reconciliación, reintentos automáticos ni mensajes cifrados pendientes. Un rechazo explícito invalida exclusivamente la emisión correspondiente; timeout, fallo de red, respuesta 5xx o aceptación incierta conservan el código hasta vencimiento. Una caída entre commit y envío requiere una nueva solicitud manual sujeta a cuotas. Aceptación del proveedor no garantiza entrega al buzón.
+
+Las solicitudes válidas dentro de la cuota IP tienen una espera pública mínima de cinco segundos, incluso para correos desconocidos, inactivos o emisiones suprimidas. Reduce diferencias evidentes con el timeout, sin afirmar tiempo constante. Los errores de validación, indisponibilidad y cuota IP son uniformes e independientes de la existencia de la cuenta.
+
+La tabla `recuperacion_password` tiene nueve atributos definitivos:
+
+```text
+id_recuperacion, id_usuario, codigo_hmac, nonce, fecha_solicitud,
+expira_en, intentos_fallidos, consumida_en, invalidada_en
+```
+
+Se conserva `limite_recuperacion_ip` con `ambito`, `clave_ip_hmac`, `ventana_hasta`, `cantidad` y PK compuesta por ámbito/HMAC. El consumo hace preverificación corta, bcrypt fuera de transacción y revalidación final, manteniendo orden de bloqueo Usuario → Recuperación y confirmando los fallos antes del error público.
+
+API pública, sin cookie de autenticación en la respuesta:
+
+- `POST /api/auth/recuperacion/solicitar`: `{ correo }`.
+- `POST /api/auth/recuperacion/restablecer`: `{ correo, codigo, passwordNueva }`; valida y consume el código junto con el cambio de contraseña.
+
+Estado local actualizado el 09/10/2026: las tres migraciones originales y la correctiva `20261009120300-simplify-recuperacion-password.js` están aplicadas en `cadefar_test` y en desarrollo local (`prueba`), con nueve columnas físicas de recuperación e historial conservado. La actualización de `prueba` fue autorizada y comprobó conservación de los registros y campos anteriores de las 13 tablas existentes, incluidos los hashes de los 16 usuarios. Los usuarios anteriores reciben correo NULL y versión inicial 0. La base configurada de producción local no existe; no se comprobó ni modificó Railway.
+
+La correctiva conserva las migraciones originales y las filas, elimina cuatro columnas de envío y su índice en un único ALTER, y se detiene si contienen datos. Se ejecuta con el backend detenido y autorización; MySQL DDL hace commit implícito y no se proporciona rollback automático. Para otra base, revisar migraciones/datos y autorizar previamente; no reconstruir bases ni borrar historial. Las pruebas de integración crean/eliminan bases temporales con datos sintéticos autorizados, sin correos reales.
+
+Pendientes: frontend de CU09, remitente/Brevo real y prueba de envío expresamente autorizada, y validación de infraestructura si se requiere otra fuente IP. CU09 continúa deshabilitado en la configuración local hasta su activación explícita. Requisitos RF40–RF42, RI15 y RNF15–RNF17; reglas RN107–RN115.
 
 ---
 
@@ -1087,6 +1115,7 @@ El navegador almacena la cookie y la envía automáticamente en las peticiones c
 
 - Obtiene el JWT desde la cookie.
 - Verifica la firma y expiración.
+- Comprueba cuenta activa y coincidencia de `versionCredenciales` con la base de datos.
 - Extrae el payload.
 - Agrega la información a `req.usuario`.
 
@@ -1095,7 +1124,8 @@ Ejemplo:
 ```js
 req.usuario = {
   idUsuario,
-  idRol
+  idRol,
+  versionCredenciales
 };
 ```
 
@@ -1159,13 +1189,13 @@ res.clearCookie(...)
 
 En esta versión no existe una tabla de sesiones ni una blacklist de tokens.
 
-Por lo tanto, una copia externa del JWT seguiría siendo válida hasta su expiración.
+Por lo tanto, una copia externa del JWT seguiría siendo válida hasta su expiración mientras la cuenta continúe activa y no cambie su versión de credenciales.
 
 Para el alcance actual se considera suficiente.
 
 `SesionUsuario` solo sería una mejora futura si apareciera el requisito de revocación inmediata.
 
-Estas consideraciones describen el funcionamiento actual del logout. CU09 incorpora el requisito de contemplar la invalidación segura de sesiones anteriores después del restablecimiento; su solución deberá definirse antes de implementarlo, sin asumir que requiere `SesionUsuario` ni modificar todavía el logout existente.
+Estas consideraciones describen el logout. CU08 y CU09 revocan sesiones anteriores incrementando `version_credenciales`, sin tabla de sesiones ni blacklist; logout sigue eliminando la cookie.
 
 ---
 
@@ -1549,11 +1579,24 @@ Implementado o diseñado:
 
 El módulo Usuarios se encuentra implementado para el alcance actual del backend.
 
-La recuperación de contraseña por correo (CU09) se incorpora como funcionalidad documentada y pendiente de implementación; todavía no incluye cambios en frontend, backend ni base de datos.
+La recuperación de contraseña por correo (CU09) está implementada en el backend con HMAC, cuotas MySQL, envío único mock/Brevo y JWT versionado. El frontend y la validación de correo real están pendientes. El estado local de las migraciones se detalla en la sección de CU09.
 
 También se encuentra implementado el backend de Medicamentos, Principios Activos y Composición (CU14–CU20), con autorización por rol, búsqueda por código/nombre, búsqueda AND por principios activos y bloqueo de identidad/composición desde el primer movimiento de inventario. La corrección de un ingrediente utiliza retiro y alta antes de existir historial.
 
 Las pruebas de integración de este bloque se ejecutan con `pnpm test`, requieren MySQL configurado y utilizan datos temporales dentro de una transacción que se revierte. Se comprueban las rutas HTTP, JWT, permisos, validación, referencias, unicidad y reglas históricas sin modificar registros históricos.
+
+Verificación de la simplificación CU09 (09/10/2026): suite completa con 146 pruebas aprobadas, cero fallidas, canceladas u omitidas; Brevo simulado y mock sin correos reales. En PowerShell, seleccionar explícitamente el entorno de pruebas antes de ejecutar:
+
+```powershell
+$env:NODE_ENV = 'test'
+pnpm test
+```
+
+Las suites de credenciales, correo y recuperación crean, migran y eliminan únicamente sus bases aleatorias con fixtures sintéticos. La suite de esquema verifica la correctiva y su rechazo ante datos de envío, sin ciclos down/up. Catálogo y contraseñas usan `DB_NAME_TEST` con rollback exterior; esta base debe estar migrada y ser distinta de desarrollo/producción.
+
+Correcciones posteriores a la revisión general del backend (09/10/2026): el middleware global traduce errores `entity.parse.failed` a 400 y `entity.too.large` a 413 con mensajes propios, sin registrar el body; los errores técnicos siguen siendo 500 genéricos. La prueba de catálogo ahora selecciona y comprueba `DB_NAME_TEST` antes de importar Sequelize, igual que las demás suites de integración.
+
+Verificación de estas correcciones: suite completa con 151 pruebas aprobadas, cero fallidas, canceladas u omitidas, ejecutada partiendo de `NODE_ENV=development` para comprobar la selección interna del entorno de pruebas. La consulta de Usuario en desarrollo ya no falla por columnas ausentes y las comprobaciones HTTP del backend real confirman 400/413 para entradas malformadas/excesivas. No se enviaron correos reales.
 
 ---
 
