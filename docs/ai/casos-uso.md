@@ -396,6 +396,8 @@ Consultar la disponibilidad de medicamentos y sus existencias.
 - Medicamento.
 - Código de existencia.
 - Fecha de vencimiento.
+- Precisión de vencimiento.
+- Fecha efectiva desde la cual la existencia deja de ser vendible.
 - Saldo físico.
 - Stock vendible.
 - Costo promedio.
@@ -542,6 +544,7 @@ Preparar, guardar y confirmar la venta de medicamentos.
 **Registro pendiente:**
 
 - El Vendedor guarda la venta en estado `PENDIENTE` con sus detalles y recetas cuando correspondan.
+- Los medicamentos incluidos en una nueva venta deben estar activos, conforme a RN14.
 - Se calcula el total y se registra la fecha de registro, sin fecha de venta todavía.
 - Las existencias indicadas en los detalles son una selección provisional.
 - No se descuenta ni reserva stock ni se generan movimientos de inventario.
@@ -670,7 +673,7 @@ Administrador o Regente.
 Identificar existencias próximas a vencer.
 
 **Condición:**  
-Se consideran próximas a vencer aquellas con saldo físico positivo cuyo vencimiento se encuentre entre la fecha actual y los próximos tres meses.
+Se consideran próximas a vencer aquellas con saldo físico positivo, todavía no vencidas, cuya fecha normalizada de etiqueta esté comprendida entre la fecha comercial actual y los próximos tres meses calendario, conforme a RN85.
 
 ---
 
@@ -741,6 +744,7 @@ Identificar medicamentos cuya cantidad disponible necesita reposición.
 
 **El sistema debe:**
 
+- Considerar únicamente medicamentos activos.
 - Calcular el stock vendible total del medicamento.
 - Compararlo con su stock mínimo.
 

@@ -254,6 +254,10 @@ El vencimiento no pone automáticamente el saldo en cero.
 
 El saldo disminuye cuando se registra el retiro físico.
 
+Un medicamento inactivo conserva visible su stock físico y su información histórica, pero su stock vendible es cero. No puede incluirse en nuevas ventas.
+
+Las fechas comerciales se determinan en `America/La_Paz`. Con precisión `DIA`, la existencia deja de ser vendible desde el inicio de la fecha indicada; con precisión `MES`, se almacena el último día del mes y deja de ser vendible desde el primer día del mes siguiente. La fecha efectiva se calcula conforme a RN29, sin una columna adicional.
+
 ---
 
 ### 4.6. Unidades individuales
@@ -326,6 +330,8 @@ Alertas principales:
 - Próximo a vencer.
 - Vencido pendiente de retiro.
 - Stock bajo.
+
+Los criterios se detallan en RN85, RN95 y RN32/RN96. La exclusión de medicamentos inactivos corresponde únicamente a stock bajo; sus existencias pueden seguir apareciendo en las consultas de próximos a vencer y vencidos si cumplen las condiciones respectivas.
 
 Reportes principales:
 
@@ -745,6 +751,32 @@ Ejemplo:
 
 - Generar JWT.
 - Verificar JWT.
+
+### Diseño técnico de API — Fase 1A
+
+Diseño aprobado; consultas implementadas en el backend e integración verificada en una base MySQL temporal aislada.
+
+| Método y ruta | Casos de uso | Actores autorizados |
+|---|---|---|
+| `GET /api/inventario` | CU21 | Administrador, Regente o Vendedor |
+| `GET /api/inventario/medicamentos/:idMedicamento/existencias` | CU22 | Administrador, Regente o Vendedor |
+| `GET /api/inventario/movimientos` | CU24 y CU40 | Administrador o Regente |
+
+CU24 y CU40 comparten la consulta de movimientos e historial. Estas rutas son decisiones técnicas de API y no agregan casos de uso ni modifican permisos.
+
+### Diseño técnico de API — Fase 1B
+
+Consultas implementadas en el backend e integración verificada en una base MySQL temporal aislada.
+
+| Método y ruta | Caso de uso | Actores autorizados |
+|---|---|---|
+| `GET /api/inventario/proximos-a-vencer` | CU33 | Administrador o Regente |
+| `GET /api/inventario/vencidos` | CU34 | Administrador o Regente |
+| `GET /api/inventario/stock-bajo` | CU37 | Administrador, Regente o Vendedor |
+
+Estas consultas reutilizan la disponibilidad de Fase 1A y aplican RN85, RN95 y RN32/RN96. No persisten alertas ni modifican saldos. Admiten los filtros `idMedicamento`, `codigoMedicamento` y `nombreComercial` de Inventario.
+
+Las respuestas mantienen `{ data, meta }`, con `meta.fechaComercial` y `meta.zonaHoraria`. Próximos a vencer agrega `meta.fechaHasta` y, por existencia, la `fechaEtiquetaNormalizada` calculada; conserva la fecha almacenada sin corregir registros históricos. El límite de tres meses calendario conserva el día de origen o utiliza el último día del mes destino si ese día no existe allí.
 
 ---
 

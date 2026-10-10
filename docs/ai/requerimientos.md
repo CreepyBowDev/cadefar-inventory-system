@@ -112,7 +112,7 @@ El sistema debe permitir consultar la cantidad física existente de cada medicam
 
 ## RF18. Consultar stock vendible
 
-El sistema debe permitir consultar el stock realmente disponible para venta, excluyendo existencias vencidas.
+El sistema debe permitir consultar el stock realmente disponible para venta, excluyendo existencias vencidas y considerando stock vendible cero para medicamentos inactivos, conforme a RN28 y RN29.
 
 ## RF19. Registrar ajustes de inventario
 
@@ -180,7 +180,7 @@ El sistema debe permitir registrar la salida de unidades dañadas y conservar su
 
 ## RF32. Consultar productos próximos a vencer
 
-El sistema debe mostrar existencias con saldo físico positivo cuyo vencimiento se encuentre entre la fecha actual y los próximos tres meses.
+El sistema debe mostrar existencias con saldo físico positivo, todavía no vencidas, cuya fecha normalizada de etiqueta esté comprendida entre la fecha comercial actual y los próximos tres meses calendario, conforme a RN85.
 
 ## RF33. Consultar productos vencidos
 
@@ -188,7 +188,7 @@ El sistema debe mostrar existencias vencidas que todavía tengan saldo físico p
 
 ## RF34. Consultar stock bajo
 
-El sistema debe mostrar medicamentos cuyo stock vendible sea menor o igual al stock mínimo definido.
+El sistema debe mostrar medicamentos activos cuyo stock vendible sea menor o igual al stock mínimo definido.
 
 ## RF35. Consultar reportes de ventas
 
@@ -317,6 +317,8 @@ Permitir consultar:
 
 - Stock físico.
 - Stock vendible.
+
+La precisión utiliza `DIA` y `MES`; el almacenamiento y la interpretación comercial de la fecha se rigen por RN29. La fecha efectiva desde la cual la existencia deja de ser vendible es información calculada y consultable, no un nuevo atributo persistido.
 
 ## RI06. Compras
 
