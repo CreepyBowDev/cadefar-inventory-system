@@ -1,6 +1,7 @@
 import { usuarioService } from '../../business/services/usuario.service.js';
 import { usuarioValidator } from '../../business/validators/usuario.validator.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { AUTH_COOKIE_OPTIONS, AUTH_COOKIE_MAX_AGE } from '../../shared/constants/auth-cookie.js';
 
 const getValidatedData = (result) => {
     if (!result.success) {
@@ -115,10 +116,16 @@ export class usuarioController {
                 usuarioValidator.validateUpdateOwnPassword(req.body)
             );
 
-            await usuarioService.updateOwnPassword(
+            const resultado = await usuarioService.updateOwnPassword(
                 req.usuario.idUsuario,
-                data
+                data,
+                req.usuario.versionCredenciales
             );
+
+            res.cookie('token', resultado.token, {
+                ...AUTH_COOKIE_OPTIONS,
+                maxAge: AUTH_COOKIE_MAX_AGE
+            });
 
             return res.status(200).json({
                 message: 'Contraseña modificada exitosamente'

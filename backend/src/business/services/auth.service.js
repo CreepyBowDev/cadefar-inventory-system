@@ -3,7 +3,7 @@ import db from '../../data/models/index.js';
 import { usuarioRepository } from '../../data/repositories/usuario.repository.js';
 import { LOGIN_SECURITY } from '../../shared/constants/security.js';
 import { AppError } from '../../shared/errors/app-error.js';
-import { generarToken } from '../../shared/utils/jwt.js';
+import { generarToken, esVersionCredencialesValida } from '../../shared/utils/jwt.js';
 
 const { sequelize } = db;
 
@@ -105,7 +105,8 @@ export class authService {
 
             return {
                 type: LOGIN_RESULT.SUCCESS,
-                usuario: toSessionUsuario(usuario)
+                usuario: toSessionUsuario(usuario),
+                versionCredenciales: usuario.version_credenciales
             };
         });
 
@@ -123,7 +124,8 @@ export class authService {
 
         const token = generarToken({
             idUsuario: result.usuario.idUsuario,
-            idRol: result.usuario.idRol
+            idRol: result.usuario.idRol,
+            versionCredenciales: result.versionCredenciales
         });
 
         return {
@@ -132,10 +134,13 @@ export class authService {
         };
     }
 
-    static async getSessionUsuario(idUsuario) {
-        const usuario = await usuarioRepository.findById({ idUsuario });
+    static async getSessionUsuario(idUsuario, versionCredenciales) {
+        if (!esVersionCredencialesValida(versionCredenciales)) {
+            throw new AppError('Sesión no válida', 401);
+        }
+        const usuario = await usuarioRepository.findByIdForSession({ idUsuario });
 
-        if (!usuario || !usuario.estado) {
+        if (!usuario || !usuario.estado || usuario.version_credenciales !== versionCredenciales) {
             throw new AppError('Sesión no válida', 401);
         }
 

@@ -62,6 +62,8 @@ El sistema debe permitir cambiar la contraseña de un usuario, almacenando únic
 
 Toda contraseña nueva debe tener entre 8 y 100 caracteres e incluir al menos una letra mayúscula, una letra minúscula, un número y un carácter especial.
 
+Además debe respetar un máximo de 72 bytes UTF-8 para bcrypt, sin truncarse ni normalizarse. La política se comparte entre creación, CU08 y CU09; login y comprobación de contraseña actual conservan compatibilidad con hashes históricos.
+
 ## RF10. Gestionar proveedores o laboratorios
 
 El sistema debe permitir registrar, consultar, modificar y activar o desactivar proveedores o laboratorios.
@@ -435,7 +437,7 @@ Para utilizar la recuperación de CU09, la cuenta debe disponer de un correo ele
 
 El sistema debe conservar de manera protegida la información necesaria para vincular el código temporal con la cuenta y comprobar su validez, vencimiento, uso e intentos de verificación.
 
-Este requerimiento es conceptual: la obligatoriedad del correo para todos los usuarios existentes y la estructura física para gestionar las solicitudes y códigos quedan pendientes de definición. No se establece todavía una nueva entidad o tabla.
+El correo es opcional, nullable y único; su asignación administrativa supervisada normaliza trim exterior/minúsculas y conserva puntos y `+`. Un cambio efectivo o retirada invalida recuperaciones, sin reiniciar cuotas. Se utilizan `recuperacion_password` (nueve atributos funcionales, HMAC y estados) y `limite_recuperacion_ip` (cuotas persistentes por ámbito/IP protegida mediante HMAC).
 
 ---
 
@@ -533,13 +535,15 @@ La recuperación no debe debilitar los controles de autenticación, autorizació
 
 ## RNF16. Prevención de abusos en la recuperación
 
-El sistema debe limitar las solicitudes de recuperación y los intentos de verificación del código para evitar abusos. Los límites concretos y el período de validez se definirán antes de implementar CU09.
+El código tiene seis dígitos, diez minutos absolutos y cinco fallos máximos. Las emisiones requieren 60 segundos entre sí y se limitan a tres por cuenta en ventana móvil de 15 minutos. Se admiten 20 solicitudes y 30 restablecimientos por IP en ventanas independientes de 15 minutos. Las cuotas son persistentes y un fallo de correo no devuelve la cuota de una emisión confirmada.
+
+El envío se intenta una sola vez fuera de transacciones MySQL, con timeout de cinco segundos, sin procesador ni reintentos automáticos. Un rechazo explícito invalida esa emisión; timeout/resultado incierto conservan su vigencia. La espera pública mínima de cinco segundos reduce diferencias evidentes, sin prometer tiempo constante.
 
 ## RNF17. Seguridad de sesiones después del restablecimiento
 
 La implementación de CU09 debe contemplar una estrategia segura para invalidar las sesiones previamente emitidas después de un restablecimiento exitoso, de acuerdo con RN115.
 
-La estrategia técnica concreta queda pendiente de definición; este requerimiento no modifica todavía el funcionamiento actual de JWT ni de las cookies HttpOnly.
+Se exige `versionCredenciales` en JWT y se contrasta con `Usuario.version_credenciales`. CU08 y CU09 incrementan la versión de forma transaccional; JWT anteriores, ausentes o desactualizados se rechazan. CU08 propio renueva su cookie; CU09 no inicia sesión automáticamente. Se conserva la cookie HttpOnly y no se agrega tabla de sesiones.
 
 ---
 

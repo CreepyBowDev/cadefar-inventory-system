@@ -18,12 +18,14 @@ export const authMiddleware = async (req, res, next) => {
         const payload = verificarToken(token);
 
         const usuario = await authService.getSessionUsuario(
-            payload.idUsuario
+            payload.idUsuario,
+            payload.versionCredenciales
         );
 
         req.usuario = {
             idUsuario: usuario.idUsuario,
-            idRol: usuario.idRol
+            idRol: usuario.idRol,
+            versionCredenciales: payload.versionCredenciales
         };
 
         next();

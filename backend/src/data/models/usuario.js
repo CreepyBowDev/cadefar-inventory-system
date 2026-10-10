@@ -59,6 +59,13 @@ module.exports = (sequelize, DataTypes) => {
         onUpdate: 'RESTRICT'
       });
 
+      Usuario.hasMany(models.RecuperacionPassword, {
+        foreignKey: 'id_usuario',
+        as: 'recuperacionesPassword',
+        onDelete: 'RESTRICT',
+        onUpdate: 'RESTRICT'
+      });
+
     }
   }
 
@@ -87,6 +94,18 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false
       },
 
+      correo: {
+        // La migración establece utf8mb4_bin para esta columna.
+        type: DataTypes.STRING(255),
+        allowNull: true
+      },
+
+      version_credenciales: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0
+      },
+
       estado: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -108,7 +127,14 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: 'Usuario',
       tableName: 'usuario',
-      timestamps: false
+      timestamps: false,
+      indexes: [
+        {
+          name: 'uq_usuario_correo',
+          unique: true,
+          fields: ['correo']
+        }
+      ]
     }
   );
 

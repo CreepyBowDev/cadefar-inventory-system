@@ -2,11 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcrypt';
-import db from '../src/data/models/index.js';
-import { app } from '../src/app.js';
-import { generarToken } from '../src/shared/utils/jwt.js';
-import { AppError } from '../src/shared/errors/app-error.js';
-import { ROLES } from '../src/shared/constants/roles.js';
+import dotenv from 'dotenv';
+
+// Seleccionar y comprobar el entorno antes de cargar Sequelize y la app.
+dotenv.config({ quiet: true });
+const testDatabase = process.env.DB_NAME_TEST;
+assert.equal(Boolean(testDatabase), true, 'Configurar DB_NAME_TEST para ejecutar integración');
+assert.equal([process.env.DB_NAME, process.env.DB_NAME_PRODUCTION].filter(Boolean).some(
+    name => name.toLowerCase() === testDatabase.toLowerCase()
+), false, 'La base de pruebas debe ser distinta de desarrollo y producción');
+process.env.NODE_ENV = 'test';
+
+const { default: db } = await import('../src/data/models/index.js');
+const { app } = await import('../src/app.js');
+const { generarToken } = await import('../src/shared/utils/jwt.js');
+const { ROLES } = await import('../src/shared/constants/roles.js');
 
 // Integración con MySQL configurado por el backend. Todos los datos de prueba
 // viven en una transacción exterior que se revierte; los Services mantienen
@@ -22,6 +32,7 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
 
     try {
         db.sequelize.options.logging = false;
+        assert.equal(db.sequelize.config.database === testDatabase, true, 'Sequelize debe usar DB_NAME_TEST');
         transaction = await originalTransaction();
         db.sequelize.query = (sql, options = {}) => originalQuery(sql, {
             ...options, transaction: options.transaction ?? transaction
@@ -30,7 +41,7 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
             { transaction }, typeof options === 'function' ? options : callback
         );
         console.error = (...args) => {
-            if (!(args[0] instanceof AppError)) originalConsoleError(...args);
+            if (args[0]?.name !== 'AppError') originalConsoleError(...args);
         };
 
         const tokens = {};
@@ -40,7 +51,7 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
                 nombre_usuario: `${prefix}_${nombre}`, id_rol: idRol, password_hash: hash
             });
             created.usuarios.push(usuario.id_usuario);
-            tokens[nombre] = generarToken({ idUsuario: usuario.id_usuario, idRol });
+            tokens[nombre] = generarToken({ idUsuario: usuario.id_usuario, idRol, versionCredenciales: usuario.version_credenciales });
         }
         const proveedor = await db.ProveedorLaboratorio.create({ nombre: `${prefix} proveedor` });
         const inactivo = await db.ProveedorLaboratorio.create({ nombre: `${prefix} inactivo`, estado: false });
