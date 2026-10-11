@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { AppIcon } from '../../../components/AppIcon.jsx';
 import { getNavigationForRole } from '../../../constants/navigation.js';
-import { getRoleName } from '../../../constants/roles.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import '../styles/dashboard.css';
 
@@ -16,10 +15,11 @@ const formatDate = () =>
 export const DashboardPage = () => {
   const { usuario } = useAuth();
   const location = useLocation();
-  const roleName = getRoleName(usuario.idRol);
   const modules = getNavigationForRole(usuario.idRol).filter(
     (item) => item.key !== 'dashboard'
   );
+  const availableModules = modules.filter((item) => item.available);
+  const pendingModules = modules.filter((item) => !item.available);
 
   return (
     <div className="dashboard-page">
@@ -31,66 +31,35 @@ export const DashboardPage = () => {
       )}
 
       <section className="dashboard-welcome" aria-labelledby="dashboard-title">
-        <div className="dashboard-welcome__accent" aria-hidden="true" />
         <div className="dashboard-welcome__content">
-          <p className="dashboard-welcome__date">{formatDate()}</p>
-          <h2 id="dashboard-title">Bienvenido, {usuario.nombreUsuario}</h2>
-          <p>
-            Accede a las funciones disponibles para tu trabajo dentro de
-            Farmacia CADEFAR.
-          </p>
+          <h2 id="dashboard-title">
+            Bienvenido, <span className="dashboard-welcome__name">{usuario.nombreUsuario}</span>
+          </h2>
+          <p>Elige un módulo para comenzar tu trabajo en Farmacia CADEFAR.</p>
         </div>
-        <div className="dashboard-welcome__session">
-          <span>Sesión activa</span>
-          <strong>{roleName}</strong>
-        </div>
+        <p className="dashboard-welcome__date">{formatDate()}</p>
       </section>
 
       <section className="dashboard-modules" aria-labelledby="modules-title">
         <header className="dashboard-section-heading">
-          <div>
-            <h2 id="modules-title">Tu espacio de trabajo</h2>
-            <p>Los módulos visibles corresponden a tu rol actual.</p>
-          </div>
+          <h2 id="modules-title">Accesos de trabajo</h2>
+          <p>Abre una sección para consultar información o registrar una operación.</p>
         </header>
 
-        {modules.length > 0 ? (
+        {availableModules.length > 0 ? (
           <div className="dashboard-module-list">
-            {modules.map((module) => {
-              const content = (
-                <>
-                  <span className="dashboard-module__icon">
-                    <AppIcon name={module.icon} size={22} />
-                  </span>
-                  <span className="dashboard-module__copy">
-                    <strong>{module.label}</strong>
-                    <small>{module.description}</small>
-                  </span>
-                  {module.available ? (
-                    <AppIcon name="arrowRight" size={19} />
-                  ) : (
-                    <span className="dashboard-module__status">Próximamente</span>
-                  )}
-                </>
-              );
-
-              return module.available ? (
-                <Link
-                  className="dashboard-module"
-                  to={module.path}
-                  key={module.key}
-                >
-                  {content}
-                </Link>
-              ) : (
-                <div
-                  className="dashboard-module dashboard-module--pending"
-                  key={module.key}
-                >
-                  {content}
-                </div>
-              );
-            })}
+            {availableModules.map((module) => (
+              <Link className="dashboard-module" to={module.path} key={module.key}>
+                <span className="dashboard-module__icon">
+                  <AppIcon name={module.icon} size={22} />
+                </span>
+                <span className="dashboard-module__copy">
+                  <strong>{module.label}</strong>
+                  <small>{module.description}</small>
+                </span>
+                <AppIcon name="arrowRight" size={18} />
+              </Link>
+            ))}
           </div>
         ) : (
           <div className="dashboard-empty">
@@ -99,13 +68,31 @@ export const DashboardPage = () => {
         )}
       </section>
 
+      {pendingModules.length > 0 && (
+        <section className="dashboard-pending" aria-labelledby="pending-title">
+          <h2 id="pending-title">En preparación</h2>
+          <ul>
+            {pendingModules.map((module) => (
+              <li className="dashboard-pending__module" key={module.key}>
+                <AppIcon name={module.icon} size={20} />
+                <div className="dashboard-module__copy">
+                  <h3>{module.label}</h3>
+                  <p>{module.description}</p>
+                </div>
+                <span className="dashboard-module__status">Próximamente</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <aside className="dashboard-note">
         <AppIcon name="inventory" size={20} />
         <div>
-          <strong>Información confiable, operaciones trazables</strong>
+          <strong>Catálogo y existencias</strong>
           <p>
-            CADEFAR conserva el responsable de cada operación y mantiene la
-            seguridad real en el backend.
+            Consulta los productos en Medicamentos y sus unidades físicas y
+            vendibles en Inventario.
           </p>
         </div>
       </aside>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getPageTitle } from '../constants/navigation.js';
 import { getRoleName } from '../constants/roles.js';
@@ -7,15 +7,29 @@ import { useAuth } from '../hooks/useAuth.js';
 import { AppHeader } from './components/AppHeader.jsx';
 import { AppSidebar } from './components/AppSidebar.jsx';
 import '../styles/app-shell.css';
+import '../styles/app-foundations.css';
 
 export const MainLayout = () => {
   const [closingSession, setClosingSession] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileNavigation, setMobileNavigation] = useState(() => window.matchMedia('(max-width: 960px)').matches);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const roleName = getRoleName(usuario.idRol);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const navigationOpen = mobileNavigation && sidebarOpen;
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 960px)');
+    const handleChange = (event) => {
+      setMobileNavigation(event.matches);
+      setSidebarOpen(false);
+    };
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -38,21 +52,21 @@ export const MainLayout = () => {
         usuario={usuario}
         roleName={roleName}
         open={sidebarOpen}
+        mobile={mobileNavigation}
         closingSession={closingSession}
-        onNavigate={() => setSidebarOpen(false)}
+        onNavigate={closeSidebar}
         onLogout={handleLogout}
-        onClose={() => setSidebarOpen(false)}
+        onClose={closeSidebar}
       />
       <AppHeader
         title={getPageTitle(location.pathname)}
-        usuario={usuario}
-        roleName={roleName}
+        navigationOpen={navigationOpen}
         closingSession={closingSession}
         onOpenMenu={() => setSidebarOpen(true)}
         onChangePassword={() => setPasswordDialogOpen(true)}
         onLogout={handleLogout}
       />
-      <main className="main-content">
+      <main className="main-content" inert={navigationOpen}>
         <div className="main-content__inner">
           <Outlet />
         </div>
