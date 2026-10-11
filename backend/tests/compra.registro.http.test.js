@@ -126,6 +126,7 @@ test('Fase 2.3: registro completo, reglas, SQL y rollback simulado sin MySQL', a
             const model = options.model, pk = model.primaryKeyAttribute;
             const values = Object.fromEntries(Object.entries(options.instance.get({ plain: true }))
                 .map(([key, value]) => [key, civil(value)]));
+            if (name === 'MovimientoInventario') assert.equal(values.motivo, 'COMPRA');
             if (name === 'Compra' && current.compras.some(row => row.clave_operacion.toLowerCase() === values.clave_operacion.toLowerCase())) {
                 throw unique('uq_compra_clave_operacion', { clave_operacion: values.clave_operacion });
             }
@@ -187,8 +188,8 @@ test('Fase 2.3: registro completo, reglas, SQL y rollback simulado sin MySQL', a
                 [[100, '0.500000'], [100, '0.500000']]);
             assert.deepEqual(estado.movimientos.map(m => [m.id_usuario, m.id_existencia, m.cantidad,
                 m.costo_unitario_aplicado, m.fecha_movimiento, m.direccion, m.motivo]),
-            [[4, 8, 100, '0.700000', '2026-10-31 23:59:59', 'ENTRADA', 'Compra'],
-                [4, 8, 50, '0.900000', '2026-10-31 23:59:59', 'ENTRADA', 'Compra']]);
+            [[4, 8, 100, '0.700000', '2026-10-31 23:59:59', 'ENTRADA', 'COMPRA'],
+                [4, 8, 50, '0.900000', '2026-10-31 23:59:59', 'ENTRADA', 'COMPRA']]);
             assert.deepEqual(estado.movimientos.map(m => m.id_detalle_compra), estado.detalles.map(d => d.id_detalle_compra));
             assert.ok(estado.movimientos.every(m => m.id_detalle_venta === null && m.id_movimiento_original === null));
             assert.match(queries.at(-1).sql, /^COMMIT/);

@@ -200,7 +200,7 @@ test('Compras CU25–CU27: HTTP/MySQL, persistencia, rollback y concurrencia en 
             const originales = await movimientosCompra(data.idCompra);
             assert.deepEqual(originales.map(m => [m.cantidad, m.costo_unitario_aplicado, m.id_existencia]),
                 [[100, '0.700000', existente.id_existencia], [50, '0.900000', existente.id_existencia]]);
-            assert.ok(originales.every(m => m.direccion === 'ENTRADA' && m.motivo === 'Compra' && m.id_detalle_venta === null && m.id_movimiento_original === null));
+            assert.ok(originales.every(m => m.direccion === 'ENTRADA' && m.motivo === 'COMPRA' && m.id_detalle_venta === null && m.id_movimiento_original === null));
             assert.deepEqual(originales.map(m => m.id_detalle_compra), detalles.map(d => d.id_detalle_compra));
             const [{ zonaSesion }] = await select('SELECT @@SESSION.time_zone AS zonaSesion');
             assert.equal(zonaSesion, '+00:00', 'La escritura civil no cambia el timezone global de Sequelize');
@@ -631,6 +631,7 @@ test('Compras CU25–CU27: HTTP/MySQL, persistencia, rollback y concurrencia en 
                     assert.deepEqual((await db.MovimientoInventario.findByPk(original.id_movimiento, { raw: true })), original);
                     const reversion = await db.MovimientoInventario.findOne({ where: { id_movimiento_original: original.id_movimiento }, raw: true });
                     assert.equal(reversion.direccion, 'SALIDA'); assert.equal(reversion.cantidad, original.cantidad);
+                    assert.equal(reversion.motivo, 'ANULACION_COMPRA');
                     assert.equal(reversion.costo_unitario_aplicado, original.costo_unitario_aplicado);
                     assert.equal(reversion.id_existencia, original.id_existencia); assert.equal(reversion.id_detalle_compra, original.id_detalle_compra);
                     assert.equal(reversion.id_usuario, usuarios.ADMINISTRADOR.id_usuario); assert.equal(reversion.observacion, 'Corrección de compra');
@@ -758,7 +759,7 @@ test('Compras CU25–CU27: HTTP/MySQL, persistencia, rollback y concurrencia en 
                 const consultada = (await request('GET', `/compras/${compra.idCompra}`, 200, undefined, 'REGENTE')).data;
                 assert.equal(consultada.estadoOperacion, 'ANULADA'); assert.equal(consultada.proveedorLaboratorio.estado, false);
                 const historial = (await request('GET', `/inventario/movimientos?idExistencia=${e.id_existencia}`, 200, undefined, 'REGENTE')).data;
-                assert.ok(historial.some(m => m.motivo === 'Reversión'));
+                assert.ok(historial.some(m => m.motivo === 'ANULACION_COMPRA'));
             } finally { await db.ProveedorLaboratorio.update({ estado: true }, { where: { id_proveedor_laboratorio: proveedor.id_proveedor_laboratorio } }); }
         });
 

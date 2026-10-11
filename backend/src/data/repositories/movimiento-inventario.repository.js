@@ -1,7 +1,7 @@
 import db from '../models/index.js';
 
 const { MovimientoInventario, ExistenciaMedicamento, Medicamento, Usuario,
-    DetalleCompra, DetalleVenta, Sequelize } = db;
+    DetalleCompra, DetalleVenta, Compra, Venta, Sequelize } = db;
 const { Op, fn, col, where } = Sequelize;
 
 export class movimientoInventarioRepository {
@@ -18,6 +18,24 @@ export class movimientoInventarioRepository {
     static async findReversiones({ idsOriginales, transaction }) {
         return MovimientoInventario.findAll({ where: { id_movimiento_original: { [Op.in]: idsOriginales } },
             transaction, lock: transaction.LOCK.UPDATE, order: [['id_movimiento', 'ASC']] });
+    }
+
+    static async findReferenciasParaAnular({ idsDetallesCompra, idsDetallesVenta, transaction }) {
+        // Se consulta después de bloquear existencias e historial. Es la primera
+        // lectura consistente de CU27; no añade bloqueos de otras cabeceras al
+        // protocolo existente. Las anulaciones confirman estado y movimientos
+        // atómicamente, manteniendo el bloqueo de la existencia hasta el commit.
+        const detallesCompra = idsDetallesCompra.length ? await DetalleCompra.findAll({
+            where: { id_detalle_compra: { [Op.in]: idsDetallesCompra } }, transaction,
+            attributes: ['id_detalle_compra', 'id_compra', 'id_existencia', 'cantidad', 'costo_unitario'],
+            include: [{ model: Compra, as: 'compra', attributes: ['id_compra', 'estado_operacion'] }]
+        }) : [];
+        const detallesVenta = idsDetallesVenta.length ? await DetalleVenta.findAll({
+            where: { id_detalle_venta: { [Op.in]: idsDetallesVenta } }, transaction,
+            attributes: ['id_detalle_venta', 'id_venta', 'id_existencia', 'cantidad'],
+            include: [{ model: Venta, as: 'venta', attributes: ['id_venta', 'estado_operacion'] }]
+        }) : [];
+        return { detallesCompra, detallesVenta };
     }
 
     static async create({ data, transaction }) {

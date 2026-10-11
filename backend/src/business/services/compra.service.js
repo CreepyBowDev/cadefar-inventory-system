@@ -8,6 +8,7 @@ import { decimalAEntero, enteroADecimal, dividirYRedondear,
     MAXIMO_COEFICIENTE_DECIMAL_14 } from '../../shared/utils/decimal.js';
 import { calcularVencimiento } from '../../shared/utils/vencimiento.js';
 import { obtenerFechaOperacion } from '../../shared/utils/fecha-operacion.js';
+import { MOTIVOS_MOVIMIENTO, MOTIVOS_MOVIMIENTO_HISTORICOS } from '../../shared/constants/motivos-movimiento.js';
 
 const MAXIMO_INT = 2147483647n;
 const validarImporte = (valor, nombre) => {
@@ -61,13 +62,41 @@ const costoHistorico = (valor) => {
     }
 };
 
+const esMotivoCompra = (motivo) => motivo === MOTIVOS_MOVIMIENTO.COMPRA ||
+    motivo === MOTIVOS_MOVIMIENTO_HISTORICOS.COMPRA;
+const esMotivoAnulacionCompra = (motivo) => motivo === MOTIVOS_MOVIMIENTO.ANULACION_COMPRA ||
+    motivo === MOTIVOS_MOVIMIENTO_HISTORICOS.ANULACION_COMPRA;
+const validarReferenciaCompensacion = (movimiento, original, referencias) => {
+    if (esMotivoAnulacionCompra(movimiento.motivo)) {
+        const detalle = referencias.detallesCompra.get(movimiento.id_detalle_compra);
+        if (!esMotivoCompra(original.motivo) || original.direccion !== 'ENTRADA' ||
+            movimiento.direccion !== 'SALIDA' || movimiento.id_detalle_compra === null ||
+            movimiento.id_detalle_compra !== original.id_detalle_compra ||
+            movimiento.id_detalle_venta !== null || original.id_detalle_venta !== null ||
+            !detalle || detalle.id_existencia !== original.id_existencia || detalle.cantidad !== original.cantidad ||
+            costoHistorico(detalle.costo_unitario) !== costoHistorico(original.costo_unitario_aplicado) ||
+            !detalle.compra || detalle.compra.id_compra !== detalle.id_compra ||
+            detalle.compra.estado_operacion !== 'ANULADA') throw inconsistenciaAnulacion();
+    } else if (movimiento.motivo === MOTIVOS_MOVIMIENTO.ANULACION_VENTA) {
+        const detalle = referencias.detallesVenta.get(movimiento.id_detalle_venta);
+        if (original.motivo !== MOTIVOS_MOVIMIENTO.VENTA || original.direccion !== 'SALIDA' ||
+            movimiento.direccion !== 'ENTRADA' || movimiento.id_detalle_venta === null ||
+            movimiento.id_detalle_venta !== original.id_detalle_venta ||
+            movimiento.id_detalle_compra !== null || original.id_detalle_compra !== null ||
+            !detalle || detalle.id_existencia !== original.id_existencia || detalle.cantidad !== original.cantidad ||
+            !detalle.venta || detalle.venta.id_venta !== detalle.id_venta ||
+            detalle.venta.estado_operacion !== 'ANULADA') throw inconsistenciaAnulacion();
+    } else throw inconsistenciaAnulacion();
+};
+
 // B1 restaura el snapshot sin aplicar residuos. A utiliza el estado actual;
 // nunca se usa para eludir originales, snapshots o secuencias inconsistentes.
-const calcularCompensacion = (existencia, detalles, movimientos) => {
+const calcularCompensacion = (existencia, detalles, movimientos, referencias) => {
     const saldoActual = cantidadHistorica(existencia.cantidad_fisica, true);
     const promedioActual = costoHistorico(existencia.costo_unitario_promedio);
     const historial = movimientos.filter(m => m.id_existencia === existencia.id_existencia);
     const porId = new Map(historial.map(m => [m.id_movimiento, m]));
+    const revertidos = new Set();
     let saldoHistorial = 0n;
     for (const movimiento of historial) {
         const cantidad = cantidadHistorica(movimiento.cantidad);
@@ -80,7 +109,11 @@ const calcularCompensacion = (existencia, detalles, movimientos) => {
             if (!original || original.id_movimiento >= movimiento.id_movimiento || original.id_movimiento_original !== null ||
                 original.direccion === movimiento.direccion || original.cantidad !== movimiento.cantidad ||
                 costoHistorico(original.costo_unitario_aplicado) !== costoHistorico(movimiento.costo_unitario_aplicado) ||
-                movimiento.motivo !== 'Reversión') throw inconsistenciaAnulacion();
+                revertidos.has(original.id_movimiento)) throw inconsistenciaAnulacion();
+            validarReferenciaCompensacion(movimiento, original, referencias);
+            revertidos.add(original.id_movimiento);
+        } else if (esMotivoAnulacionCompra(movimiento.motivo) || movimiento.motivo === MOTIVOS_MOVIMIENTO.ANULACION_VENTA) {
+            throw inconsistenciaAnulacion();
         }
     }
     if (saldoHistorial !== saldoActual) throw inconsistenciaAnulacion();
@@ -96,7 +129,7 @@ const calcularCompensacion = (existencia, detalles, movimientos) => {
         if (asociados.length !== 1) throw inconsistenciaAnulacion();
         const [original] = asociados;
         if (original.id_existencia !== existencia.id_existencia || original.direccion !== 'ENTRADA' ||
-            original.motivo !== 'Compra' || original.id_movimiento_original !== null || original.id_detalle_venta !== null ||
+            !esMotivoCompra(original.motivo) || original.id_movimiento_original !== null || original.id_detalle_venta !== null ||
             original.cantidad !== detalle.cantidad || costoHistorico(original.costo_unitario_aplicado) !== costo) {
             throw inconsistenciaAnulacion();
         }
@@ -206,7 +239,7 @@ export class compraService {
                 if (compra.estado_operacion !== 'CONFIRMADA' || compra.fecha_anulacion !== null ||
                     compra.motivo_anulacion !== null || compra.id_usuario_anulador !== null) throw inconsistenciaAnulacion();
                 const detalles = (await compraRepository.findDetallesParaAnular({ idCompra, transaction })).map(toPlain);
-                if (!detalles.length) throw inconsistenciaAnulacion();
+                if (!detalles.length || detalles.some(d => d.id_compra !== compra.id_compra)) throw inconsistenciaAnulacion();
                 // No se exige actividad del catálogo/proveedor ni vencimiento
                 // vendible: se compensa una operación histórica ya registrada.
                 const idsExistencias = [...new Set(detalles.map(d => d.id_existencia))].sort((a, b) => a - b);
@@ -218,9 +251,18 @@ export class compraService {
                 }
                 const movimientos = (await movimientoInventarioRepository.findParaAnular({ idsExistencias,
                     idsDetalles: detalles.map(d => d.id_detalle_compra), transaction })).map(toPlain);
+                const compensaciones = movimientos.filter(m => m.id_movimiento_original !== null);
+                const relaciones = await movimientoInventarioRepository.findReferenciasParaAnular({
+                    idsDetallesCompra: [...new Set(compensaciones.map(m => m.id_detalle_compra).filter(id => id !== null))],
+                    idsDetallesVenta: [...new Set(compensaciones.map(m => m.id_detalle_venta).filter(id => id !== null))], transaction
+                });
+                const referencias = {
+                    detallesCompra: new Map(relaciones.detallesCompra.map(toPlain).map(d => [d.id_detalle_compra, d])),
+                    detallesVenta: new Map(relaciones.detallesVenta.map(toPlain).map(d => [d.id_detalle_venta, d]))
+                };
                 // Validar todos los grupos antes de producir cualquier efecto.
                 const grupos = existencias.map(e => calcularCompensacion(e,
-                    detalles.filter(d => d.id_existencia === e.id_existencia), movimientos));
+                    detalles.filter(d => d.id_existencia === e.id_existencia), movimientos, referencias));
                 const originales = grupos.flatMap(g => g.originales).sort((a, b) => a.id_movimiento - b.id_movimiento);
                 if ((await movimientoInventarioRepository.findReversiones({
                     idsOriginales: originales.map(m => m.id_movimiento), transaction })).length) throw inconsistenciaAnulacion();
@@ -235,7 +277,7 @@ export class compraService {
                         id_existencia: original.id_existencia, id_usuario: idUsuarioAutenticado,
                         id_detalle_compra: original.id_detalle_compra, id_detalle_venta: null,
                         id_movimiento_original: original.id_movimiento, direccion: 'SALIDA', cantidad: original.cantidad,
-                        costo_unitario_aplicado: original.costo_unitario_aplicado, motivo: 'Reversión',
+                        costo_unitario_aplicado: original.costo_unitario_aplicado, motivo: MOTIVOS_MOVIMIENTO.ANULACION_COMPRA,
                         observacion: motivo, fecha_movimiento: fechaHoraComercial
                     } });
                 }
@@ -379,7 +421,7 @@ export class compraService {
                         id_detalle_compra: detalle.id_detalle_compra, id_detalle_venta: null,
                         id_movimiento_original: null, direccion: 'ENTRADA', cantidad: linea.cantidad,
                         costo_unitario_aplicado: linea.costoUnitario, fecha_movimiento: fechaHoraComercial,
-                        motivo: 'Compra', observacion: null
+                        motivo: MOTIVOS_MOVIMIENTO.COMPRA, observacion: null
                     } });
                 }
                 // Leer la respuesta dentro de la transacción: si falla, rollback.
