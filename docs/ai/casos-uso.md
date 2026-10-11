@@ -429,11 +429,33 @@ Registrar diferencias encontradas durante un conteo físico.
 
 - La existencia debe existir.
 - El ajuste no puede producir saldo negativo.
+- El saldo físico y el último movimiento deben coincidir con los observados al preparar la solicitud, incluso si no existe diferencia (RN103).
+- El saldo contado es entero no negativo; la observación es obligatoria. Si corresponde una entrada, se exige costo unitario positivo con hasta seis decimales.
+- Se permiten existencias vencidas o de medicamentos inactivos, sin crear existencias, reactivar productos ni modificar vencimientos.
+
+**Entrada:**
+
+- Existencia seleccionada, saldo físico contado, stock físico observado y último movimiento observado (null si nunca tuvo movimientos).
+- Observación obligatoria y costo unitario únicamente cuando corresponde una entrada. Responsable y fecha/hora no los define el cliente.
+
+**Flujo principal:**
+
+1. El Regente consulta la existencia y registra el conteo y la observación.
+2. El sistema comprueba dentro de una transacción las precondiciones sobre la existencia bloqueada y calcula `saldoContado - saldoRegistrado`.
+3. Si la diferencia es positiva, registra una entrada y calcula el promedio ponderado según RN82; si es negativa, registra una salida al promedio vigente, conservándolo según RN83.
+4. Confirma el saldo, la valoración aplicable y el movimiento de forma atómica, con usuario autenticado y fecha/hora del backend.
+
+**Casos alternativos:**
+
+- Sin diferencia, tras comprobar precondiciones y observación, informa que no fue necesario ajustar; no modifica saldo/promedio ni genera movimiento u otro registro histórico.
+- Saldo o historial desactualizado: rechaza por conflicto y exige volver a consultar la existencia.
+- Existencia inexistente, entrada inválida o error: rechaza sin cambios parciales. Un daño identificado o vencimiento se registra mediante CU36 o CU35, no mediante ajuste genérico.
 
 **Resultado:**  
 
-- Se genera un movimiento de inventario.
-- Se actualiza el saldo de la existencia.
+- Cuando existe diferencia, se genera un movimiento de inventario de cantidad positiva y se actualiza el saldo de la existencia al contado, con valoración según RN82/RN83.
+- Sin diferencia, se devuelve la conciliación sin efectos; su observación y respuesta no constituyen una auditoría persistida del conteo.
+- Se conserva el historial y se cumple RN103; un ajuste efectivo es posterior para RN76, mientras la conciliación sin diferencia no agrega posteriores.
 
 ---
 
@@ -713,13 +735,36 @@ Registrar la salida física de medicamentos vencidos.
 
 - La existencia debe estar vencida.
 - Debe existir saldo físico suficiente.
+- Debe ser una existencia registrada y la cantidad debe ser un entero positivo.
+- Saldo físico y último movimiento deben coincidir con los observados al preparar la solicitud (RN103).
+- El vencimiento efectivo se determina según DIA/MES y el día comercial America/La_Paz de RN29; MES vence desde el primer día del mes siguiente.
+- Se permite el retiro aunque el medicamento esté inactivo. La observación es opcional.
+
+**Entrada:**
+
+- Existencia, cantidad a retirar, stock físico observado y último movimiento observado (null si nunca tuvo movimientos).
+- Observación opcional. Responsable, fecha/hora, costo aplicado y pérdida los determina el backend.
+
+**Flujo principal:**
+
+1. El Regente consulta la existencia y proporciona cantidad y, opcionalmente, observación.
+2. El sistema inicia una transacción, bloquea la existencia y comprueba las precondiciones.
+3. Con el instante comercial posterior a los bloqueos verifica el vencimiento efectivo y el saldo suficiente.
+4. Calcula la salida al promedio vigente, admitido cero, conserva el promedio almacenado y deriva la pérdida conforme a RN91.
+5. Confirma atómicamente la disminución del saldo y el movimiento de salida con responsable y fecha/hora del backend.
+
+**Casos alternativos:**
+
+- Saldo o historial desactualizado, existencia no vencida o stock insuficiente: rechaza por conflicto sin efectos.
+- Existencia inexistente, entrada inválida o error: rechaza sin cambios parciales.
 
 **Resultado:**
 
 - Se genera un movimiento de salida.
 - Se disminuye el saldo físico.
 - Se conserva el costo aplicado.
-- Se registra la pérdida correspondiente.
+- Se presenta la pérdida derivada del movimiento con dos decimales, sin columna adicional.
+- Se conserva el promedio incluso al agotar la existencia, y no se modifica el vencimiento ni se elimina el historial. El retiro es posterior para RN76 y puede condicionar la anulación de una compra.
 
 ---
 
@@ -734,12 +779,35 @@ Registrar la salida de unidades que ya no pueden utilizarse por daño.
 **Condición:**  
 Debe existir saldo suficiente.
 
+- La existencia debe estar registrada y la cantidad debe ser un entero positivo.
+- Saldo físico y último movimiento deben coincidir con los observados al preparar la solicitud (RN103).
+- La observación del daño es obligatoria.
+- No se exige vencimiento: se admiten existencias vencidas y medicamentos inactivos, sin cambiar vencimientos o reactivar productos.
+
+**Entrada:**
+
+- Existencia, cantidad dañada a retirar, stock físico observado y último movimiento observado (null si nunca tuvo movimientos).
+- Observación obligatoria. Responsable, fecha/hora, costo aplicado y pérdida los determina el backend.
+
+**Flujo principal:**
+
+1. El Regente identifica las unidades dañadas y registra cantidad y observación.
+2. El sistema inicia una transacción, bloquea la existencia y comprueba las precondiciones y el saldo suficiente.
+3. Calcula la salida al promedio vigente, admitido cero, conserva el promedio almacenado y deriva la pérdida conforme a RN91.
+4. Confirma atómicamente la disminución del saldo y el movimiento por daño, con responsable y fecha/hora del backend.
+
+**Casos alternativos:**
+
+- Saldo o historial desactualizado o stock insuficiente: rechaza por conflicto sin efectos.
+- Existencia inexistente, cantidad inválida, observación ausente o error: rechaza sin cambios parciales.
+
 **Resultado:**
 
 - Se genera un movimiento de salida.
 - Se actualiza el saldo.
 - Se conserva el costo aplicado.
-- Se registra la pérdida correspondiente.
+- Se presenta la pérdida derivada con dos decimales, sin columna adicional, diferenciada de vencimientos y ajustes negativos.
+- Se conserva el promedio incluso al agotar la existencia y el historial original. El retiro es posterior para RN76 y puede condicionar la anulación de una compra.
 
 ---
 

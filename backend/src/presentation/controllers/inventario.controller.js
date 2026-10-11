@@ -8,6 +8,36 @@ const getValidatedData = (result) => {
 };
 
 export class inventarioController {
+    static async registrarRetiroVencimiento(req, res, next) {
+        try {
+            getValidatedData(inventarioValidator.validateSinFiltros(req.query));
+            const datos = getValidatedData(inventarioValidator.validateRetiroVencimiento(req.body));
+            const data = await inventarioService.registrarRetiroVencimiento(datos, req.usuario.idUsuario);
+            return res.status(201).json({ message: 'Retiro por vencimiento registrado exitosamente', data });
+        } catch (error) { next(error); }
+    }
+
+    static async registrarRetiroDano(req, res, next) {
+        try {
+            getValidatedData(inventarioValidator.validateSinFiltros(req.query));
+            const datos = getValidatedData(inventarioValidator.validateRetiroDano(req.body));
+            const data = await inventarioService.registrarRetiroDano(datos, req.usuario.idUsuario);
+            return res.status(201).json({ message: 'Retiro por daño registrado exitosamente', data });
+        } catch (error) { next(error); }
+    }
+
+    static async registrarAjuste(req, res, next) {
+        try {
+            getValidatedData(inventarioValidator.validateSinFiltros(req.query));
+            const datos = getValidatedData(inventarioValidator.validateAjuste(req.body));
+            const data = await inventarioService.registrarAjuste(datos, req.usuario.idUsuario);
+            return res.status(data.ajusteRealizado ? 201 : 200).json({
+                message: data.ajusteRealizado ? 'Ajuste registrado exitosamente' : 'No fue necesario ajustar la existencia',
+                data
+            });
+        } catch (error) { next(error); }
+    }
+
     static async getInventario(req, res, next) {
         try {
             const filtros = getValidatedData(inventarioValidator.validateFiltrosInventario(req.query));

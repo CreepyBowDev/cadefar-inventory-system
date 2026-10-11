@@ -118,6 +118,10 @@ El sistema debe permitir consultar el stock realmente disponible para venta, exc
 
 El sistema debe permitir registrar ajustes derivados de diferencias detectadas durante conteos físicos.
 
+El Regente proporciona el saldo físico contado, incluido cero, y una observación obligatoria; el sistema calcula diferencia, dirección y cantidad conforme a RN26 y RN82–RN84. Una entrada requiere costo positivo y actualiza el promedio ponderado; una salida aplica el promedio vigente y lo conserva. Sin diferencia se informa que no fue necesario ajustar, sin movimiento ni modificación de saldo/promedio ni auditoría persistida del conteo.
+
+Se comprueban las precondiciones de saldo e historial de RN103 incluso sin diferencia. Se admiten existencias registradas vencidas o de medicamentos inactivos, sin reactivación ni cambio de vencimiento; los daños identificados y vencimientos se registran mediante RF30/RF31.
+
 ## RF20. Registrar compras
 
 El sistema debe permitir registrar compras realizadas a proveedores o laboratorios, incluyendo sus detalles, cantidades y costos.
@@ -176,9 +180,13 @@ El sistema debe permitir consultar el historial de entradas, salidas, ajustes, r
 
 El sistema debe permitir registrar la salida de unidades vencidas y conservar su pérdida valorizada.
 
+La operación corresponde al Regente sobre una existencia registrada, con cantidad positiva, saldo suficiente y precondiciones vigentes. Comprueba el vencimiento efectivo DIA/MES según RN29 y RN88, con observación opcional. Aplica el promedio vigente y conserva ese costo en el movimiento; la pérdida se deriva conforme a RN91/RN92, sin almacenarla en una columna adicional. La inactividad del medicamento no impide el retiro.
+
 ## RF31. Registrar retiros por daño
 
 El sistema debe permitir registrar la salida de unidades dañadas y conservar su pérdida valorizada.
+
+La operación corresponde al Regente sobre una existencia registrada, con cantidad positiva, saldo suficiente, observación obligatoria y precondiciones vigentes. Puede realizarse aunque la existencia esté vencida o el medicamento inactivo, conforme a RN89. Aplica el promedio vigente y conserva ese costo en el movimiento; la pérdida se deriva según RN91/RN92, separada de los ajustes negativos y retiros por vencimiento.
 
 ## RF32. Consultar productos próximos a vencer
 
@@ -322,6 +330,8 @@ Permitir consultar:
 
 La precisión utiliza `DIA` y `MES`; el almacenamiento y la interpretación comercial de la fecha se rigen por RN29. La fecha efectiva desde la cual la existencia deja de ser vendible es información calculada y consultable, no un nuevo atributo persistido.
 
+La consulta de existencias CU22 debe proporcionar conjuntamente el stock físico y el identificador de su último movimiento, o null si nunca hubo movimientos. Este marcador se calcula desde el historial, sin columna nueva, y permite comprobar junto con el saldo las precondiciones de ajustes y retiros de RN103. La ampliación de la consulta está implementada desde Fase 3.1 y su uso en escrituras desde Fases 3.2/3.3; la lectura coherente y las precondiciones se verificaron con concurrencia real de MySQL en Fase 3.4, según la sección de API de Fase 3.
+
 ## RI06. Compras
 
 Registrar:
@@ -393,6 +403,8 @@ Registrar:
 - Referencia a compra cuando corresponda.
 - Referencia a venta cuando corresponda.
 - Referencia a movimiento original cuando exista una reversión.
+
+En ajustes y retiros efectivos, el responsable autenticado y la fecha/hora los determina el backend. La observación es obligatoria para ajustes y daño, y opcional para vencimiento, conforme a RN84, RN88 y RN89. El costo aplicado se conserva con seis decimales; las pérdidas de retiro se derivan y presentan según RN91, sin un atributo persistido adicional. Las conciliaciones sin diferencia no crean movimiento ni registro histórico de conteo. La atomicidad y conservación histórica se mantienen conforme a RN103/RN104 y RNF05/RNF07.
 
 ## RI10. Anulaciones
 

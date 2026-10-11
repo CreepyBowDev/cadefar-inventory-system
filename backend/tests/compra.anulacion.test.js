@@ -236,6 +236,54 @@ test('CU27: motivos, referencias e integridad con B1/A, sin MySQL', async t => {
             await rechazar(mensaje);
         }
     });
+    await t.test('AJUSTE oficial de entrada posterior: A conserva unidades agregadas y snapshots', async () => {
+        reset();
+        estado.movimientos.push(movimiento(21, { cantidad: 2, motivo: 'AJUSTE' }));
+        Object.assign(estado.existencias[0], { cantidad_fisica: 10, costo_unitario_promedio: '1.300000' });
+        const originales = structuredClone(estado.movimientos), snapshots = structuredClone(estado.detalles);
+        await anular();
+        assert.equal(estado.existencias[0].cantidad_fisica, 7);
+        assert.equal(estado.existencias[0].costo_unitario_promedio, '1.000000');
+        assert.deepEqual(estado.movimientos.slice(0, originales.length), originales);
+        assert.deepEqual(estado.detalles, snapshots);
+    });
+    await t.test('AJUSTE oficial de salida posterior: A usa valoración residual, sin restaurar B1', async () => {
+        reset();
+        estado.movimientos.push(movimiento(21, { direccion: 'SALIDA', cantidad: 1,
+            costo_unitario_aplicado: '1.375000', motivo: 'AJUSTE' }));
+        estado.existencias[0].cantidad_fisica = 7;
+        await anular();
+        assert.equal(estado.existencias[0].cantidad_fisica, 4);
+        assert.equal(estado.existencias[0].costo_unitario_promedio, '0.906250');
+    });
+    await t.test('AJUSTE oficial agotó saldo: rechaza CU27 por stock sin compensaciones parciales', async () => {
+        reset();
+        estado.movimientos.push(movimiento(21, { direccion: 'SALIDA', cantidad: 8,
+            costo_unitario_aplicado: '1.375000', motivo: 'AJUSTE' }));
+        estado.existencias[0].cantidad_fisica = 0;
+        await rechazar(/stock físico insuficiente/);
+    });
+    for (const motivo of ['VENCIMIENTO', 'DAÑO']) {
+        await t.test(`${motivo} posterior: A respeta el retiro y conserva movimiento/costo/snapshots`, async () => {
+            reset();
+            estado.movimientos.push(movimiento(21, { direccion: 'SALIDA', cantidad: 1,
+                costo_unitario_aplicado: '1.375000', motivo }));
+            estado.existencias[0].cantidad_fisica = 7;
+            const historial = structuredClone(estado.movimientos), snapshots = structuredClone(estado.detalles);
+            await anular();
+            assert.equal(estado.existencias[0].cantidad_fisica, 4);
+            assert.equal(estado.existencias[0].costo_unitario_promedio, '0.906250');
+            assert.deepEqual(estado.movimientos.slice(0, historial.length), historial);
+            assert.deepEqual(estado.detalles, snapshots);
+        });
+        await t.test(`${motivo} agotó saldo: CU27 rechaza sin compensaciones parciales`, async () => {
+            reset();
+            estado.movimientos.push(movimiento(21, { direccion: 'SALIDA', cantidad: 8,
+                costo_unitario_aplicado: '1.375000', motivo }));
+            estado.existencias[0].cantidad_fisica = 0;
+            await rechazar(/stock físico insuficiente/);
+        });
+    }
     await t.test('Legado sin snapshots: motivo válido no elude B1; A permite historial posterior íntegro', async () => {
         for (const motivo of ['COMPRA', 'Compra']) {
             reset(); estado.movimientos[1].motivo = motivo;

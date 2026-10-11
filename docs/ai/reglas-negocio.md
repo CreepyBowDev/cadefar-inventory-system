@@ -343,6 +343,8 @@ Las cantidades compradas, vendidas, ajustadas o retiradas deben ser enteros posi
 
 El saldo físico de una existencia nunca puede ser negativo.
 
+El saldo físico contado para una conciliación puede ser un entero no negativo, incluido cero. No es la cantidad de un movimiento: el sistema calcula la diferencia y solo registra movimientos de cantidad positiva cuando existe diferencia, conforme a RN82.
+
 ---
 
 # 5. Stock físico y stock vendible
@@ -850,9 +852,17 @@ Cuando exista una diferencia entre el saldo registrado y el conteo físico, la c
 
 No debe modificarse el saldo directamente sin dejar trazabilidad.
 
+El Regente proporciona el saldo físico contado y el sistema calcula `diferencia = saldoContado - saldoRegistrado` después de comprobar las precondiciones de RN103. La dirección y cantidad del ajuste no las decide el cliente: una diferencia positiva genera entrada y una negativa, salida por su valor absoluto. Sin diferencia no se genera movimiento ni se modifica saldo o promedio; se informa que no fue necesario ajustar, después de verificar igualmente las precondiciones.
+
+Una entrada exige costo unitario estrictamente positivo, con hasta seis decimales. Su promedio ponderado se calcula con precisión exacta y un único redondeo a seis decimales, al más cercano con empate hacia arriba, conforme al criterio de RN40. Si el saldo anterior es cero, el promedio histórico no aporta valor a esa entrada.
+
+Se permiten conciliaciones de existencias registradas aunque el medicamento esté inactivo o la existencia vencida. No crean existencias arbitrarias, reactivan medicamentos, cambian vencimientos ni convierten unidades vencidas en vendibles. Los ajustes concilian conteos; un daño identificado o un vencimiento debe registrarse mediante el retiro específico de RN88/RN89, no como ajuste genérico.
+
 ## RN83. Ajuste negativo
 
 Un ajuste de salida no puede dejar el saldo físico de la existencia por debajo de cero.
+
+Se aplica el costo promedio vigente, admitido cero, y se conserva el promedio almacenado incluso al agotar la existencia. El cliente no proporciona un costo alternativo. Un ajuste negativo no se clasifica como pérdida por daño o vencimiento.
 
 ## RN84. Responsable del ajuste
 
@@ -862,7 +872,9 @@ Todo ajuste debe registrar:
 - Fecha.
 - Cantidad.
 - Motivo.
-- Observación cuando corresponda.
+- Observación obligatoria.
+
+El responsable es el Regente autenticado y la fecha/hora real la determina el backend. La observación se exige también en una conciliación sin diferencia; como esta no genera movimiento ni otro registro histórico, su observación y respuesta no constituyen una auditoría persistida del conteo. No se crea una entidad adicional para registrarla.
 
 ---
 
@@ -900,9 +912,17 @@ Las unidades permanecen registradas hasta que se realice el retiro correspondien
 
 Las unidades vencidas deben retirarse mediante un movimiento de salida con motivo de vencimiento.
 
+El Regente debe seleccionar una existencia registrada y una cantidad positiva que cumpla RN90. El vencimiento efectivo se comprueba según DIA/MES y el día comercial America/La_Paz de RN29, después de verificar las precondiciones de RN103; MES vence al comenzar el primer día del mes siguiente, no durante el último día de su etiqueta. La inactividad del medicamento no impide la baja física.
+
+Se utiliza el promedio vigente como costo aplicado, admitido cero, con seis decimales; se conserva el promedio almacenado incluso al agotar la existencia. La observación es opcional. Responsable y fecha/hora los determina el backend. El retiro no modifica el vencimiento ni elimina el historial; su pérdida se obtiene conforme a RN91/RN92.
+
 ## RN89. Retiro por daño
 
 Las unidades dañadas deben retirarse mediante un movimiento de salida con motivo de daño.
+
+El retiro corresponde al Regente, sobre una existencia registrada, con cantidad positiva, saldo suficiente según RN90 y precondiciones vigentes según RN103. Puede realizarse aunque el medicamento esté inactivo o la existencia vencida; no exige vencimiento, no cambia esa fecha ni reactiva el medicamento. La reducción del saldo físico se refleja en el stock vendible cuando corresponda, sin volver vendibles unidades vencidas o de un medicamento inactivo.
+
+La observación del daño es obligatoria. Responsable y fecha/hora los determina el backend. Se aplica el promedio vigente, admitido cero, con seis decimales y se conserva el promedio almacenado incluso al agotar la existencia. Su pérdida se obtiene según RN91/RN92, separada de vencimientos y ajustes negativos.
 
 ## RN90. Cantidad retirada
 
@@ -915,6 +935,8 @@ La pérdida producida por un retiro se calcula mediante:
 ```text
 cantidadRetirada × costoUnitarioAplicado
 ```
+
+El costo aplicado corresponde al promedio vigente al retirar y queda conservado en el movimiento con seis decimales. Los cálculos intermedios mantienen precisión monetaria exacta; la pérdida se presenta a dos decimales, al más cercano con empate hacia arriba, según el criterio de RN40. No se agrega una columna de pérdida: el importe se deriva del movimiento. Las pérdidas por daño y vencimiento se distinguen por su motivo; los ajustes negativos no se incluyen en esas categorías.
 
 ## RN92. Historial de pérdidas
 
@@ -1007,6 +1029,10 @@ Esto incluye principalmente:
 - Anulaciones.
 - Ajustes.
 - Retiros.
+
+En ajustes y retiros debe verificarse, dentro de la operación atómica y antes de efectos, que el saldo físico y el último movimiento de la existencia continúan coincidiendo con los observados al preparar la solicitud. Si cambiaron, se rechaza la solicitud por conflicto sin modificar saldo ni historial. La comprobación también se exige para una conciliación sin diferencia; un saldo que volvió al valor observado no basta si el historial cambió. Este control no equivale a idempotencia ni a una auditoría persistida del conteo sin movimiento.
+
+Los ajustes y retiros efectivos confirman juntos saldo, valoración aplicable y movimiento. Cuentan como posteriores para RN76 sobre su existencia y pueden impedir B1 o hacer que A rechace la anulación; una conciliación sin diferencia no agrega movimientos posteriores. No se modifican snapshots ni costos históricos para facilitar una anulación.
 
 ## RN104. Consistencia entre saldo y movimientos
 
