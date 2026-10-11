@@ -2,7 +2,10 @@
 
 Sistema web de uso interno para la administración de inventario, ventas y control de vencimientos de la farmacia CADEFAR. El repositorio contiene un backend y un frontend independientes. Están disponibles las interfaces y API de autenticación, usuarios, proveedores/laboratorios, medicamentos/composición, Inventario y Compras. Inventario incluye consultas, ajustes, retiros y vencimientos; Compras incluye registro, consulta y anulación. Ventas, Recetas y Reportes permanecen pendientes como módulos funcionales.
 
-La guía de uso y verificación del bloque entregado está en [Inventario y Compras](docs/uso/inventario-compras.md).
+Guías de uso y verificación:
+
+- [Medicamentos y composición](docs/uso/medicamentos.md): código automático e inmutable, registro integral y prevención de duplicados.
+- [Inventario y Compras](docs/uso/inventario-compras.md): consultas, ajustes, retiros, recepción y anulación.
 
 ## Requisitos previos
 
@@ -177,6 +180,25 @@ pnpm build
 ```
 
 Las tres primeras suites utilizan API simulada. La aceptación integrada utiliza React, Express y MySQL local reales: crea, migra y elimina únicamente una base aleatoria, usa fixtures sintéticos sin seeders y compara los datos/esquemas de las bases configuradas antes/después. Requiere `DB_NAME_TEST`, una cuenta local con permisos para esas operaciones y lectura de `performance_schema.data_lock_waits`, Node.js >=22 y Chrome/Edge. Puede indicarse su ejecutable mediante `CADEFAR_TEST_BROWSER`. La aceptación usa el puerto frontend 5179 y un puerto efímero para su backend; no necesita detener la aplicación local en 3000/5173.
+
+## Verificar Medicamentos y Composición
+
+El Regente registra el producto y al menos un componente en un único POST; el código lo genera el backend y no se puede editar. La API comprueba identidad comercial y composición completa en creación, edición y operaciones independientes de composición, incluidos registros inactivos. El formulario permite preparar componentes y consultar el existente si recibe un conflicto de duplicado.
+
+Desde `backend/`, pruebas puras/simuladas sin MySQL:
+
+```bash
+node --test tests/medicamento.codigo.test.js tests/medicamento.integral.test.js
+```
+
+Desde `frontend/`, con Chrome/Edge o `CADEFAR_TEST_BROWSER` configurado:
+
+```bash
+node --test tests/medicamentos.browser.test.mjs
+pnpm build
+```
+
+La integración real de este bloque está en `backend/tests/medicamento.integral.integration.test.js`, deshabilitada por defecto. El comando de autorización y los requisitos para crear/migrar/eliminar su base aleatoria aislada se describen en [la guía de Medicamentos](docs/uso/medicamentos.md#pruebas-automatizadas). La suite verifica concurrencia InnoDB, colación, rollback y conservación de bases protegidas, sin seeders. El contrato HTTP y el protocolo de bloqueos están en [el contexto maestro](docs/ai/contexto-maestro.md#api-de-medicamentos-y-composición--registro-integral).
 
 ## Arquitectura
 

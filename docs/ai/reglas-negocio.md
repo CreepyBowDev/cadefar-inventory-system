@@ -203,13 +203,49 @@ Un proveedor o laboratorio puede estar relacionado con varios medicamentos.
 
 Cada medicamento debe tener un código que permita identificarlo dentro del sistema.
 
-El código de medicamento debe ser único.
+El código de medicamento debe ser único y se genera automáticamente al registrar el producto; no lo proporciona el usuario ni se admite `codigoMedicamento` en POST o PATCH.
 
-El código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación no pueden cambiar efectivamente desde que exista al menos un movimiento de inventario en cualquiera de las existencias del medicamento. Estos campos pueden editarse antes de existir ese historial, respetando las demás reglas de referencia y unicidad.
+### Generación y conservación del código
+
+- Prefijo: las primeras tres letras ASCII del nombre comercial después de convertir a mayúsculas, descomponer acentos y omitir símbolos y números. `Ñ` se convierte en `N`. Esta transformación genera el identificador, no reescribe el nombre almacenado.
+- Un nombre con menos de tres letras válidas se rechaza con 400.
+- Correlativo: tres dígitos, desde `001` hasta `999`, compartido por todos los productos del mismo prefijo. Paracetamol y Paroxetina comparten `PAR`.
+- Se toma el mayor sufijo numérico válido de los códigos conservados para el prefijo más uno; no se utiliza COUNT, el ID, el nombre actual ni se rellenan huecos. Participan medicamentos activos e inactivos.
+- Solo se interpretan como correlativos los códigos de longitud seis con tres dígitos ASCII al final; el prefijo se compara según la colación de la columna. Además se comprueba que el candidato no colisione con códigos históricos equivalentes según MySQL.
+- Al agotarse `999`, se rechaza el registro con 409. Los históricos irregulares no se normalizan ni renumeran.
+
+El código es inmutable desde la creación, aun sin historial. Cambiar el nombre comercial no lo regenera ni altera los códigos de sus existencias.
+
+### Edición e historial
+
+El proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación no pueden cambiar efectivamente desde que exista al menos un movimiento de inventario en cualquiera de las existencias del medicamento. Estos campos pueden editarse antes de existir ese historial, respetando las demás reglas de referencia y unicidad.
 
 El nombre comercial, stock mínimo y condición de venta siguen siendo modificables con historial. Una corrección tipográfica del nombre no implica otro medicamento. Si cambia realmente la identidad comercial del producto, debe registrarse un nuevo medicamento.
 
 El estado se modifica únicamente mediante su operación específica, fuera de la edición normal.
+
+### Unicidad de identidad comercial
+
+No se permite registrar otro medicamento ni modificar uno existente de modo que coincidan todos estos atributos con otro registro:
+
+- Nombre comercial.
+- Proveedor/laboratorio, identificado por su ID.
+- Forma farmacéutica.
+- Presentación.
+- Unidad de inventario.
+- Vía de administración.
+- Tipo de liberación.
+- Composición completa, conforme a RN16: principios activos identificados por ID y todas sus cantidades y unidades, incluidas las de referencia.
+
+Código, IDs técnicos del medicamento y sus relaciones de composición, stock mínimo, estado, condición de venta, fechas, existencias, stock físico y movimientos no diferencian productos. La condición de venta conserva su naturaleza administrativa editable. Un medicamento inactivo también impide registrar su duplicado.
+
+Para comparar textos se recortan espacios exteriores y se reducen secuencias de espacios en blanco a un espacio. La igualdad de caja y acentos utiliza la colación real de las columnas; en el entorno local verificado es `utf8mb4_0900_ai_ci`. Esta normalización de comparación no reescribe textos históricos ni agrega conversiones de unidades.
+
+La composición se compara independientemente del orden, con igual número de componentes y coincidencia de todos sus atributos. Las cantidades son equivalentes numéricamente a escala de cuatro decimales (`500` y `500.0000` coinciden). `mg` y `g` no se convierten entre sí; compartir ingredientes no establece igualdad comercial ni sustitución terapéutica.
+
+La comprobación se aplica al alta, a cambios efectivos de los atributos comerciales anteriores —incluido el nombre— y al agregar, modificar o retirar componentes. Se excluye el propio medicamento de la búsqueda y se evalúa su estado completo resultante. Un conflicto devuelve 409 con el mensaje «Ya existe un medicamento registrado con estas características y composición.» y revierte la operación.
+
+Los duplicados históricos y medicamentos sin composición se conservan; no se fusionan ni eliminan automáticamente. Cambiar únicamente stock mínimo, condición de venta o estado no corrige esos duplicados ni impide administrar esos atributos. Completar una composición histórica requiere ausencia de movimientos y no puede producir un duplicado.
 
 ## RN14. Estado del medicamento
 
@@ -221,7 +257,9 @@ Un medicamento inactivo conserva su información y su historial.
 
 ## RN15. Composición del medicamento
 
-Cada medicamento puede estar relacionado con uno o más principios activos mediante su composición.
+Cada medicamento nuevo debe registrarse con una composición que contenga al menos un principio activo. Medicamento y todos sus componentes se confirman en una sola transacción; si falla cualquier parte, no se conserva un medicamento incompleto ni componentes parciales.
+
+No existe un alta alternativa sin composición. La obligación de composición no vacía corresponde al registro inicial: se conservan los históricos incompletos y, sin movimientos, pueden retirarse relaciones conforme a RN16, incluida la última si el estado resultante respeta la unicidad de RN13.
 
 ## RN16. Datos de composición
 
@@ -237,9 +275,13 @@ Las cantidades utilizadas en la composición deben ser positivas.
 
 El mismo principio activo no puede repetirse para el mismo medicamento, conforme al UNIQUE compuesto existente. Las cantidades respetan el tipo `DECIMAL(12,4)` y las unidades las longitudes definidas en el esquema.
 
+Las cantidades son positivas, hasta `99999999.9999` y con un máximo de cuatro decimales; cada unidad admite hasta 30 caracteres. La API recibe cantidades como números JSON y las devuelve como cadenas decimales. Los principios activos referenciados deben existir; su estado inactivo no impide por sí solo una relación de composición en el contrato actual.
+
 Mientras no exista historial, el Regente puede agregar ingredientes, editar cantidades y unidades (incluidas las de referencia) y retirar una relación de composición. Se autoriza la eliminación física de esa relación únicamente en esa etapa. Un ingrediente registrado por error se corrige retirando la relación incorrecta y creando la correcta, sin modificar silenciosamente su FK.
 
 Desde el primer movimiento del medicamento, se prohíbe agregar o retirar ingredientes y cambiar principios activos, cantidades o unidades de su composición. Si la composición correcta representa otro producto, se registra un nuevo medicamento.
+
+Toda alta, edición o retirada de un componente debe comprobar la identidad comercial y la composición completa resultante conforme a RN13, dentro de la misma transacción. Compartir solo una parte de los ingredientes con otro producto no constituye un duplicado.
 
 ## RN17. Consulta por composición
 

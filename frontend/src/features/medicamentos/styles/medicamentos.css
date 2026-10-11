@@ -16,6 +16,11 @@
 .medicamento-detail-actions { display: flex; gap: .7rem; flex-wrap: wrap; }
 .composicion-principio { margin: 0; padding: .8rem; background: var(--color-surface-subtle); border-radius: .42rem; font-size: .88rem; overflow-wrap: anywhere; }
 .composicion-table { min-width: 34rem; }
+.medicamento-composicion-draft { min-width: 0; padding-top: 1rem; border-top: 1px solid var(--color-line); }
+.medicamento-composicion-draft .medicamento-detail-actions { align-items: center; justify-content: space-between; }
+.medicamento-composicion-draft h3 { margin: 0; }
+.medicamento-duplicados { padding: 1rem 1.5rem; border-top: 1px solid var(--color-line); overflow-wrap: anywhere; }
+.medicamento-duplicados h3 { margin-top: 0; }
 @media (max-width: 620px) {
   .medicamento-filters__text { grid-template-columns: 1fr; }
   .medicamento-filters__actions { flex-direction: column-reverse; }

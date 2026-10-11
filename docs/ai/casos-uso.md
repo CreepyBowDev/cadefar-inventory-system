@@ -269,11 +269,10 @@ Cambiar su estado sin eliminar el registro ni perder su historial.
 Regente.
 
 **Objetivo:**  
-Agregar un medicamento al catálogo.
+Agregar un medicamento al catálogo con su composición completa en una sola operación.
 
 **Datos principales:**
 
-- Código.
 - Nombre comercial.
 - Forma farmacéutica.
 - Presentación.
@@ -284,6 +283,33 @@ Agregar un medicamento al catálogo.
 - Tipo de liberación.
 - Estado.
 - Proveedor o laboratorio relacionado.
+- Composición con al menos un principio activo, cantidad/unidad del ingrediente y cantidad/unidad de referencia.
+
+El código se genera automáticamente conforme a RN13, no se solicita al usuario. `stockMinimo` y `estado` son opcionales en la API; sus valores predeterminados son cero y activo. El formulario utiliza stock mínimo cero por defecto y no envía estado.
+
+**Precondiciones:**
+
+- Sesión autenticada de Regente.
+- Proveedor/laboratorio existente y activo.
+- Principios activos existentes, sin IDs repetidos en la composición.
+- Datos y cantidades válidos conforme a RN13/RN16.
+
+**Flujo principal:**
+
+1. El Regente abre «Crear medicamento» e introduce los datos comerciales y el proveedor.
+2. Agrega uno o más componentes. Puede corregir cantidades/unidades o retirar componentes del borrador; estas acciones todavía no persisten datos.
+3. Envía el medicamento y todos los componentes mediante un único POST.
+4. El backend valida estructura, referencias e identidad comercial/composición completa, incluidos registros inactivos y solicitudes concurrentes.
+5. Si no hay duplicado, genera el código y crea medicamento y composición dentro de la misma transacción.
+6. Después del commit, devuelve 201 con el medicamento y su composición. La interfaz abre la ficha y muestra el código confirmado.
+
+**Alternativas y errores:**
+
+- Composición ausente/vacía, principio repetido en el arreglo, código manual, cantidades inválidas o nombre sin tres letras válidas: 400.
+- Referencia inexistente: 404. Proveedor inactivo: 409.
+- Identidad comercial y composición completas coincidentes: 409 conforme a RN13. El formulario conserva el borrador y ofrece consultar los medicamentos existentes indicados por la API, incluso inactivos.
+- Correlativo agotado o conflicto temporal de bloqueos: 409. La interfaz conserva los datos para corrección o un nuevo envío manual.
+- Fallo durante la operación: rollback completo, sin medicamento huérfano ni componentes parciales. No se reenvía automáticamente desde React.
 
 ---
 
@@ -308,11 +334,18 @@ Actualizar los datos permitidos de un medicamento existente.
 **Condiciones de edición:**
 
 - El medicamento debe existir.
+- El código es inmutable desde el alta y no se acepta en el PATCH, aun sin historial; cambiar el nombre no lo regenera.
 - El estado se modifica mediante CU17, no en esta edición.
-- Sin movimientos de inventario pueden editarse los datos del catálogo respetando referencias y unicidad.
-- Con al menos un movimiento en cualquiera de sus existencias, se bloquean cambios efectivos de código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación.
+- Sin movimientos de inventario pueden editarse los demás datos del catálogo respetando referencias y unicidad.
+- Con al menos un movimiento en cualquiera de sus existencias, se bloquean cambios efectivos de proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación.
 - Con historial pueden seguir modificándose nombre comercial, stock mínimo y condición de venta.
 - Una corrección tipográfica del nombre no crea un nuevo medicamento. Si cambia realmente la identidad del producto, corresponde otro registro.
+- Un cambio efectivo de nombre u otro atributo de identidad debe compararse con la composición completa actual. Si coincide con otro medicamento, devuelve 409 y revierte el PATCH; se excluye el propio registro de la comparación.
+- El PATCH comercial no recibe `composicion`; las relaciones existentes se gestionan mediante CU19.
+
+**Resultado:**
+
+La interfaz envía solo los campos comerciales modificados y conserva el código. Si el servidor rechaza la edición, conserva los valores del formulario; un conflicto de identidad con referencias públicas permite consultar el producto existente. Cambios únicamente de stock mínimo, condición de venta o estado no fusionan ni corrigen duplicados históricos.
 
 ---
 
@@ -363,6 +396,10 @@ Relacionar un medicamento con uno o más principios activos.
 - Una vez que exista al menos un movimiento en cualquier existencia del medicamento, no se puede agregar, retirar ni modificar su composición.
 - La relación debe pertenecer al medicamento indicado; no se puede modificar o retirar una relación de otro medicamento mediante su ID.
 - No se permite repetir el mismo principio activo dentro del mismo medicamento.
+- Se comprueba la identidad comercial con toda la composición resultante, sin depender del orden de los componentes, conforme a RN13/RN16. Agregar, modificar o retirar una relación no puede producir un duplicado con otro medicamento, activo o inactivo; si ocurre, devuelve 409 y revierte la operación completa.
+- Un histórico sin composición puede completarse si no tiene movimientos y el resultado respeta la unicidad. La retirada de la última relación antes del historial sigue admitida cuando el resultado no coincide con otro registro; no habilita un alta nueva sin composición.
+
+El registro inicial de todos los componentes pertenece al POST integral de CU14. CU19 mantiene las operaciones independientes sobre medicamentos existentes, con transacción y comprobación del estado completo resultante.
 
 ---
 

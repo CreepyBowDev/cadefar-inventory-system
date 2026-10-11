@@ -1,12 +1,30 @@
-// PENDIENTE DE AUTORIZACIÓN. No crea conexiones/bases salvo opt-in explícito.
+// Integración autorizada solo mediante opt-in; no conecta ni escribe por defecto.
 // CADEFAR_AUTORIZAR_CATALOGO_AISLADO=1 node --test tests/medicamento.integral.integration.test.js
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 
 const autorizado = process.env.CADEFAR_AUTORIZAR_CATALOGO_AISLADO === '1';
+const quote = name => `\`${name.replaceAll('`', '``')}\``;
+const fingerprint = async (cn, name) => {
+    const [schemas] = await cn.query('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=?', [name]);
+    if (!schemas.length) return { existe: false };
+    const [tables] = await cn.query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_TYPE='BASE TABLE' ORDER BY TABLE_NAME", [name]);
+    const state = [];
+    await cn.query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
+    try {
+        for (const { TABLE_NAME: table } of tables) {
+            const target = `${quote(name)}.${quote(table)}`;
+            const [schema] = await cn.query(`SHOW CREATE TABLE ${target}`);
+            const [rows] = await cn.query(`SELECT * FROM ${target}`);
+            state.push({ table, schema: schema[0]['Create Table'],
+                rows: rows.map(row => JSON.stringify(Object.fromEntries(Object.keys(row).sort().map(k => [k, row[k]])))).sort() });
+        }
+    } finally { await cn.rollback(); }
+    return { existe: true, tablas: tables.length, sha256: createHash('sha256').update(JSON.stringify(state)).digest('hex') };
+};
 test('Registro integral con Express/MySQL reales en base aleatoria aislada', {
     skip: autorizado ? false : 'Requiere autorización adicional para crear/migrar/eliminar una base aislada', timeout: 180000
 }, async t => {
@@ -15,9 +33,14 @@ test('Registro integral con Express/MySQL reales en base aleatoria aislada', {
     const nombre = `cadefar_catalogo_${randomBytes(8).toString('hex')}`;
     assert.match(nombre, /^cadefar_catalogo_[a-f0-9]{16}$/);
     assert.ok(![process.env.DB_NAME, process.env.DB_NAME_TEST, process.env.DB_NAME_PRODUCTION].includes(nombre));
-    const admin = await mysql.createConnection({ host: process.env.DB_HOST, user: process.env.DB_USER, password: process.env.PASSWORD_DB });
+    const protegidas = [...new Set(['prueba', 'cadefar_test', process.env.DB_NAME, process.env.DB_NAME_TEST,
+        process.env.DB_NAME_PRODUCTION].filter(Boolean))];
+    const admin = await mysql.createConnection({ host: process.env.DB_HOST, user: process.env.DB_USER, password: process.env.PASSWORD_DB,
+        dateStrings: true, supportBigNumbers: true, bigNumberStrings: true });
     let db, server, creada = false;
+    const before = new Map();
     try {
+        for (const name of protegidas) before.set(name, await fingerprint(admin, name));
         await admin.query(`CREATE DATABASE \`${nombre}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`); creada = true;
         process.env.NODE_ENV = 'test'; process.env.DB_NAME_TEST = nombre;
         process.env.JWT_SECRET = randomBytes(32).toString('hex');
@@ -52,8 +75,37 @@ test('Registro integral con Express/MySQL reales en base aleatoria aislada', {
             });
             return { status: response.status, body: await response.json() };
         };
+        const carreraBloqueada = async callbacks => {
+            await admin.beginTransaction();
+            await admin.query(`SELECT id_proveedor_laboratorio FROM ${quote(nombre)}.proveedor_laboratorio WHERE id_proveedor_laboratorio=? FOR UPDATE`, [proveedor.id_proveedor_laboratorio]);
+            const pending = callbacks.map(callback => callback());
+            // Observar dos transacciones independientes esperando la fila real,
+            // antes de soltar el bloqueo. No depender de la velocidad de Promise.all.
+            let observado = false, ultimaEspera;
+            try {
+                const limite = Date.now() + 10000;
+                while (Date.now() < limite) {
+                    const [waiters] = await admin.query(`SELECT DISTINCT solicitante.PROCESSLIST_ID AS connectionId, tx.ISOLATION_LEVEL AS nivel
+                        FROM performance_schema.data_lock_waits w JOIN performance_schema.threads th ON th.THREAD_ID=w.BLOCKING_THREAD_ID
+                        JOIN performance_schema.threads solicitante ON solicitante.THREAD_ID=w.REQUESTING_THREAD_ID
+                        JOIN performance_schema.events_transactions_current tx ON tx.THREAD_ID=solicitante.THREAD_ID AND tx.STATE='ACTIVE'
+                        WHERE th.PROCESSLIST_ID=?`, [admin.threadId]);
+                    ultimaEspera = { waiters };
+                    if (waiters.length === 2) {
+                        // @@transaction_isolation informa el default de la sesión,
+                        // no el nivel de la transacción SET TRANSACTION en curso.
+                        assert.ok(waiters.every(tx => tx.nivel === 'READ COMMITTED'), JSON.stringify(waiters));
+                        observado = true; break;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                }
+            } finally { await admin.rollback(); }
+            const results = await Promise.all(pending);
+            assert.ok(observado, `Dos transacciones deben esperar el bloqueo InnoDB del proveedor: ${JSON.stringify(ultimaEspera)}`);
+            return results;
+        };
         await t.test('Dos creaciones idénticas simultáneas: 201/409; solo un medicamento completo', async () => {
-            const results = await Promise.all([request('POST', '', datos()), request('POST', '', datos())]);
+            const results = await carreraBloqueada([() => request('POST', '', datos()), () => request('POST', '', datos())]);
             assert.deepEqual(results.map(r => r.status).sort(), [201, 409]);
             assert.equal(await db.Medicamento.count(), 1); assert.equal(await db.ComposicionMedicamento.count(), 2);
         });
@@ -86,8 +138,8 @@ test('Registro integral con Express/MySQL reales en base aleatoria aislada', {
         await t.test('Edición concurrente hacia la misma identidad: un éxito y un rechazo', async () => {
             const a = await request('POST', '', datos({ nombreComercial: 'Marca A' }));
             const b = await request('POST', '', datos({ nombreComercial: 'Marca B' }));
-            const results = await Promise.all([request('PATCH', `/${a.body.data.idMedicamento}`, { nombreComercial: 'Marca destino' }),
-                request('PATCH', `/${b.body.data.idMedicamento}`, { nombreComercial: 'Marca destino' })]);
+            const results = await carreraBloqueada([() => request('PATCH', `/${a.body.data.idMedicamento}`, { nombreComercial: 'Marca destino' }),
+                () => request('PATCH', `/${b.body.data.idMedicamento}`, { nombreComercial: 'Marca destino' })]);
             assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
         });
         await t.test('Composición independiente no permite converger a producto existente', async () => {
@@ -97,9 +149,18 @@ test('Registro integral con Express/MySQL reales en base aleatoria aislada', {
             assert.equal((await db.ComposicionMedicamento.findByPk(comp.idComposicion)).cantidad_principio_activo, '1000.0000');
         });
     } finally {
+        await admin.rollback();
         if (server) await new Promise(resolve => server.close(resolve));
         if (db) await db.sequelize.close();
-        try { if (creada) await admin.query(`DROP DATABASE \`${nombre}\``); }
+        try {
+            if (creada) {
+                await admin.query(`DROP DATABASE \`${nombre}\``);
+                const [rows] = await admin.query('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=?', [nombre]);
+                assert.equal(rows.length, 0);
+            }
+            for (const [name, huella] of before) assert.deepEqual(await fingerprint(admin, name), huella, `Base protegida ${name} preservada`);
+            t.diagnostic('Base temporal eliminada; esquema y datos de las bases protegidas conservan sus huellas SHA-256.');
+        }
         finally { await admin.end(); }
     }
 });
