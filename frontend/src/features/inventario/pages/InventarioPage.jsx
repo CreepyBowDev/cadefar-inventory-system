@@ -12,7 +12,7 @@ import { getInventario, getProximosAVencer, getStockBajo, getVencidos } from '..
 import '../styles/inventario.css';
 
 const vistas = {
-  inventario: { titulo: 'Inventario', descripcion: 'Consulta las unidades físicas y las disponibles para venta, incluso de medicamentos inactivos.', consultar: getInventario, empty: 'No hay medicamentos que coincidan con la consulta. Ajusta o limpia los filtros.' },
+  inventario: { titulo: 'Inventario', descripcion: 'Medicamentos con existencias registradas, incluidos agotados e inactivos. Consulta su stock físico y vendible.', consultar: getInventario, empty: 'No hay medicamentos con existencias registradas que coincidan con la consulta. Revisa los filtros; crear un producto en el catálogo no registra existencias.' },
   stockBajo: { titulo: 'Stock bajo', descripcion: 'Medicamentos activos cuyo stock vendible es menor o igual al mínimo definido.', consultar: getStockBajo, empty: 'No hay medicamentos con stock bajo para estos filtros.' },
   proximos: { titulo: 'Próximos a vencer', descripcion: 'Existencias con unidades físicas, todavía no vencidas, con etiqueta dentro de los próximos tres meses calendario.', consultar: getProximosAVencer, empty: 'No hay existencias próximas a vencer para estos filtros.', existencias: true },
   vencidos: { titulo: 'Vencidos pendientes de retiro', descripcion: 'Unidades vencidas que permanecen físicamente registradas, también de medicamentos inactivos.', consultar: getVencidos, empty: 'No hay unidades vencidas pendientes de retiro para estos filtros.', existencias: true }

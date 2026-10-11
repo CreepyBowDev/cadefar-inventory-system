@@ -118,6 +118,8 @@ PAR001-003
 
 El sistema debe permitir consultar la cantidad física existente de cada medicamento y de cada existencia.
 
+El listado de Inventario debe incluir únicamente medicamentos con al menos una existencia registrada. Crear un medicamento en el catálogo no lo incorpora a este listado. Se conservan los medicamentos con existencias agotadas, vencidas o de productos inactivos, así como existencias iniciales o históricas sin compra vinculada, conforme a RN18 y RN24. La consulta de Stock bajo mantiene su criterio independiente y puede incluir productos activos sin existencias.
+
 ## RF18. Consultar stock vendible
 
 El sistema debe permitir consultar el stock realmente disponible para venta, excluyendo existencias vencidas y considerando stock vendible cero para medicamentos inactivos, conforme a RN28 y RN29.

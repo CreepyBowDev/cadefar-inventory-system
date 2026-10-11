@@ -1,4 +1,5 @@
 import { api } from '../../../api/api.js';
+import { getMedicamento } from '../../medicamentos/services/medicamento.service.js';
 
 const filtrosStock = ['idMedicamento', 'codigoMedicamento', 'nombreComercial'];
 const filtrosHistorial = ['idMedicamento', 'idExistencia', 'desde', 'hasta', 'direccion', 'motivo'];
@@ -34,14 +35,14 @@ export const registrarRetiroDano = async (data) => {
 };
 
 export const getExistenciasMedicamento = async (idMedicamento) => {
-  const [existencias, inventario] = await Promise.all([
+  const [existencias, medicamento] = await Promise.all([
     api.get(`/inventario/medicamentos/${idMedicamento}/existencias`),
-    getInventario({ idMedicamento })
+    getMedicamento(idMedicamento)
   ]);
-  // CU22 es la fuente del saldo y marcador. La otra consulta aporta únicamente
-  // la identificación del medicamento, también cuando no tiene existencias.
+  // CU22 es la fuente del saldo y marcador. El catálogo aporta la identificación
+  // incluso cuando el producto todavía no tiene existencias registradas.
   return {
-    data: { medicamento: inventario.data[0], existencias: existencias.data.data },
+    data: { medicamento, existencias: existencias.data.data },
     meta: existencias.data.meta
   };
 };

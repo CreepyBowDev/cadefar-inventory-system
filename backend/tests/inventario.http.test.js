@@ -37,6 +37,11 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
         id_medicamento: 3, codigo_medicamento: 'SIN', nombre_comercial: 'Sin existencias',
         forma_farmaceutica: 'Tableta', presentacion: '100 mg', unidad_inventario: 'tableta',
         stock_minimo: 0, estado: true, existencias: []
+    }, {
+        id_medicamento: 4, codigo_medicamento: 'AGO', nombre_comercial: 'Agotado histórico',
+        forma_farmaceutica: 'Tableta', presentacion: '100 mg', unidad_inventario: 'tableta',
+        stock_minimo: 0, estado: true,
+        existencias: [{ ...existencia(7, '2027-01-01', 'DIA', 0), id_medicamento: 4 }]
     }];
     const historialExistencia = {
         id_existencia: 6, id_medicamento: 2, codigo_existencia: 'INA-6',
@@ -81,8 +86,11 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
             const idUsuario = Number(sql.match(/`Usuario`.`id_usuario` = (\d+)/)[1]);
             rows = usuarios.filter(u => u.id_usuario === idUsuario);
         } else if (options.model === db.Medicamento) {
-            const idMedicamento = options.plain ? Number(sql.match(/`Medicamento`.`id_medicamento` = (\d+)/)[1]) : null;
-            rows = options.plain ? medicamentos.filter(m => m.id_medicamento === idMedicamento) : selectedMedicamentos;
+            const idMatch = sql.match(/`Medicamento`.`id_medicamento` = (\d+)/);
+            rows = options.plain ? medicamentos : selectedMedicamentos;
+            if (idMatch) rows = rows.filter(m => m.id_medicamento === Number(idMatch[1]));
+            // Simular el resultado del JOIN realmente generado por Sequelize.
+            if (sql.includes('INNER JOIN `existencia_medicamento`')) rows = rows.filter(m => m.existencias.length);
         } else if (options.model === db.MovimientoInventario) {
             rows = selectedMovimientos;
         } else throw new Error('Consulta inesperada');
@@ -106,11 +114,12 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
         return result;
     };
     try {
-        await t.test('Inventario conserva agotadas, vencidas, inactivos y productos sin existencias', async () => {
+        await t.test('Inventario excluye el catálogo sin existencias y conserva agotados, vencidos e inactivos', async () => {
             const result = await request('VENDEDOR', '');
             assert.deepEqual(result.meta, { fechaComercial: '2026-10-31', zonaHoraria: 'America/La_Paz' });
             assert.equal(result.data.length, 3);
-            const [activo, inactivo, sinExistencias] = result.data;
+            assert.deepEqual(result.data.map(m => m.idMedicamento), [1, 2, 4]);
+            const [activo, inactivo, agotado] = result.data;
             assert.equal(activo.stockFisico, 19);
             assert.equal(activo.stockVendible, 9);
             assert.deepEqual(activo.existencias.map(e => e.idExistencia), [4, 2, 1, 3, 5]);
@@ -121,14 +130,38 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
             assert.equal(inactivo.stockVendible, 0);
             assert.equal(inactivo.existencias[0].vencida, false);
             assert.equal(inactivo.existencias[0].stockVendible, 0);
-            assert.deepEqual(sinExistencias.existencias, []);
-            assert.equal(sinExistencias.stockFisico, 0);
-            assert.equal(sinExistencias.stockVendible, 0);
+            assert.equal(agotado.stockFisico, 0);
+            assert.equal(agotado.stockVendible, 0);
+            assert.equal(agotado.existencias.length, 1);
             assert.equal(activo.existencias.some(e => Object.hasOwn(e, 'ultimoMovimiento')), false);
             const sql = queries.at(-1);
-            assert.match(sql, /LEFT OUTER JOIN `existencia_medicamento`/);
+            assert.match(sql, /INNER JOIN `existencia_medicamento`/);
             assert.doesNotMatch(sql, /WHERE|cantidad_fisica`\s*>/);
+            assert.doesNotMatch(sql, /JOIN `(?:detalle_compra|compra|movimiento_inventario)`/);
             assert.doesNotMatch(sql, /ultimo_movimiento/);
+        });
+
+        await t.test('Inventario por ID sin existencias devuelve 200 vacío para todos los roles; Stock bajo conserva el producto', async () => {
+            for (const rol of Object.keys(ROLES)) {
+                const inventario = await request(rol, '?idMedicamento=3');
+                assert.deepEqual(inventario.data, []);
+                assert.deepEqual(inventario.meta, { fechaComercial: '2026-10-31', zonaHoraria: 'America/La_Paz' });
+                assert.match(queries.at(-1), /INNER JOIN `existencia_medicamento`/);
+                const bajos = await request(rol, '/stock-bajo?idMedicamento=3');
+                assert.deepEqual(bajos.data.map(m => m.idMedicamento), [3]);
+                assert.deepEqual(bajos.data[0].existencias, []);
+                assert.equal(bajos.data[0].stockVendible, 0);
+                assert.match(queries.at(-1), /LEFT OUTER JOIN `existencia_medicamento`/);
+            }
+        });
+
+        await t.test('Medicamento completamente agotado sigue en Inventario aunque no tenga compra vinculada', async () => {
+            const result = await request('REGENTE', '?idMedicamento=4');
+            assert.equal(result.data.length, 1);
+            assert.equal(result.data[0].stockFisico, 0);
+            assert.equal(result.data[0].stockVendible, 0);
+            assert.deepEqual(result.data[0].existencias.map(e => e.idExistencia), [7]);
+            assert.equal(result.data[0].existencias[0].costoUnitarioPromedio, '1.250000');
         });
 
         await t.test('Existencias: medicamento inexistente 404; existente sin existencias 200 y lista vacía', async () => {
@@ -143,6 +176,7 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
             assert.match(queries.at(-1), /`ultimo_movimiento`.`id_existencia` = `existencias`.`id_existencia`/);
             assert.equal(result.data.every(e => !Object.hasOwn(e, 'ultimo_movimiento')), true);
             assert.deepEqual((await request('REGENTE', '/medicamentos/3/existencias')).data, []);
+            assert.match(queries.at(-1), /LEFT OUTER JOIN `existencia_medicamento`/);
             await request('REGENTE', '/medicamentos/2147483647/existencias', 404);
             const inactivo = await request('REGENTE', '/medicamentos/2/existencias');
             assert.equal(inactivo.data[0].stockVendible, 0);
@@ -191,7 +225,7 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
         });
 
         await t.test('Validación HTTP estricta rechaza datos antes de consultar inventario', async () => {
-            for (const path of ['?estado=true', '?idMedicamento=1e2', '?idMedicamento=1&idMedicamento=2',
+            for (const path of ['?estado=true', '?soloConExistencias=false', '?idMedicamento=1e2', '?idMedicamento=1&idMedicamento=2',
                 '?codigoMedicamento=', '?nombreComercial=a&nombreComercial=b',
                 '/medicamentos/0/existencias', '/medicamentos/abc/existencias',
                 '/medicamentos/1/existencias?estado=true',
@@ -233,9 +267,10 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
             assert.deepEqual(vencidos.data.map(e => e.idExistencia), [4, 2]);
             assert.equal(vencidos.data.every(e => e.stockFisico > 0 && e.vencida), true);
             const bajos = await request('VENDEDOR', '/stock-bajo');
-            assert.deepEqual(bajos.data.map(m => m.idMedicamento), [1, 3]);
+            assert.deepEqual(bajos.data.map(m => m.idMedicamento), [1, 3, 4]);
             assert.equal(bajos.data[1].stockVendible, bajos.data[1].stockMinimo);
             assert.equal(bajos.data.every(m => m.estado), true);
+            assert.match(queries.at(-1), /LEFT OUTER JOIN `existencia_medicamento`/);
         });
 
         await t.test('Fase 1B: permisos y filtros estrictos de las tres consultas', async () => {

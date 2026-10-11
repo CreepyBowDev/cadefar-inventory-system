@@ -171,6 +171,8 @@ Abre `http://localhost:5173`. `--strictPort` evita que Vite cambie silenciosamen
 
 ## Verificar Inventario y Compras
 
+Inventario lista medicamentos con al menos una existencia registrada, incluidos agotados, inactivos y vencidos; registrar un producto únicamente en el catálogo no lo incorpora al listado. Stock bajo mantiene su criterio y puede incluir productos activos sin existencias. La pantalla de existencias obtiene la identificación desde el catálogo y conserva la ficha y los enlaces permitidos cuando la lista está vacía. El uso y la revisión manual se detallan en [la guía de Inventario y Compras](docs/uso/inventario-compras.md).
+
 Desde `frontend/`, con las dependencias de ambos proyectos instaladas:
 
 ```bash
@@ -180,6 +182,8 @@ pnpm build
 ```
 
 Las tres primeras suites utilizan API simulada. La aceptación integrada utiliza React, Express y MySQL local reales: crea, migra y elimina únicamente una base aleatoria, usa fixtures sintéticos sin seeders y compara los datos/esquemas de las bases configuradas antes/después. Requiere `DB_NAME_TEST`, una cuenta local con permisos para esas operaciones y lectura de `performance_schema.data_lock_waits`, Node.js >=22 y Chrome/Edge. Puede indicarse su ejecutable mediante `CADEFAR_TEST_BROWSER`. La aceptación usa el puerto frontend 5179 y un puerto efímero para su backend; no necesita detener la aplicación local en 3000/5173.
+
+La corrección del listado de Inventario del 11/10/2026 aprobó 325 pruebas backend puras/simuladas y 128 frontend con API simulada (incluida la regresión de Medicamentos), además del build. Su suite específica `backend/tests/inventario.integration.test.js` está adaptada, pero la ejecución MySQL de esta corrección permanece pendiente de autorización; la aceptación integrada anterior del bloque no la acredita.
 
 ## Verificar Medicamentos y Composición
 

@@ -303,6 +303,8 @@ La búsqueda por varios principios activos aplica AND: debe contener todos los s
 
 Un medicamento puede tener varias existencias.
 
+El listado de Inventario incluye un medicamento si tiene al menos una `ExistenciaMedicamento` registrada. No exige saldo positivo, estado activo, movimientos ni compra vinculada; las existencias agotadas, vencidas e iniciales o históricas se conservan. Un producto registrado únicamente en el catálogo queda fuera del listado, pero mantiene su ficha y la consulta de existencias vacía. Este criterio no restringe Stock bajo, que puede incluir medicamentos activos sin existencias con stock vendible cero.
+
 ## RN19. No se manejan lotes
 
 El sistema no utilizará una entidad `Lote`.

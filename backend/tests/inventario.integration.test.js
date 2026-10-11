@@ -76,6 +76,7 @@ test('Fases 1A/1B: integración real HTTP/MySQL en base temporal aislada', { tim
         const historico = await crearMedicamento('HIS', 'MES histórico no canónico');
         const alertas = await crearMedicamento('ALR', 'Límites de alertas', true, 0);
         const alertasInactivo = await crearMedicamento('ALI', 'Alertas de inactivo', false);
+        const productoAgotado = await crearMedicamento('AGO', 'Agotado sin compra vinculada', true, 0);
         const crearExistencia = (medicamento, correlativo, fecha, precision, saldo, costo = '1.250000') =>
             db.ExistenciaMedicamento.create({
                 id_medicamento: medicamento.id_medicamento,
@@ -100,6 +101,7 @@ test('Fases 1A/1B: integración real HTTP/MySQL en base temporal aislada', { tim
         const agotadaVencida = await crearExistencia(alertas, '007', '2026-10-30', 'DIA', 0);
         const proximaInactiva = await crearExistencia(alertasInactivo, '001', '2026-10-31', 'MES', 2);
         const vencidaInactiva = await crearExistencia(alertasInactivo, '002', '2026-10-30', 'DIA', 3);
+        const existenciaAgotada = await crearExistencia(productoAgotado, '001', '2027-01-01', 'DIA', 0);
 
         // Horas civiles sintéticas exactas: no pasar estos DATETIME por Date.
         // Son fixtures históricos, no una implementación de operaciones de escritura.
@@ -185,10 +187,11 @@ test('Fases 1A/1B: integración real HTTP/MySQL en base temporal aislada', { tim
         const existenciasPath = id => `/medicamentos/${id}/existencias`;
         const movimientosPath = `/movimientos?idExistencia=${existenciaInactiva.id_existencia}`;
 
-        await t.test('Inventario: LEFT JOIN, totales, fechas civiles y DECIMAL sin pérdida', async () => {
+        await t.test('Inventario: INNER JOIN conserva existencias, totales y DECIMAL; excluye catálogo sin existencias', async () => {
             const result = await request('VENDEDOR', '');
             assert.deepEqual(result.meta, { fechaComercial: '2026-10-31', zonaHoraria: 'America/La_Paz' });
             assert.equal(result.data.length, 7);
+            assert.match(queries.at(-1), /INNER JOIN `existencia_medicamento`/);
             const producto = result.data.find(m => m.idMedicamento === activo.id_medicamento);
             assert.equal(producto.stockFisico, 19);
             assert.equal(producto.stockVendible, 9);
@@ -201,10 +204,11 @@ test('Fases 1A/1B: integración real HTTP/MySQL en base temporal aislada', { tim
             assert.equal(existenciaMes.vencida, false);
             assert.equal(producto.existencias.find(e => e.idExistencia === dia.id_existencia).vencida, true);
             assert.equal(producto.existencias.find(e => e.idExistencia === agotada.id_existencia).stockFisico, 0);
-            const sin = result.data.find(m => m.idMedicamento === sinExistencias.id_medicamento);
-            assert.deepEqual(sin.existencias, []);
-            assert.equal(sin.stockFisico, 0);
-            assert.equal(sin.stockVendible, 0);
+            assert.equal(result.data.some(m => m.idMedicamento === sinExistencias.id_medicamento), false);
+            const agotado = result.data.find(m => m.idMedicamento === productoAgotado.id_medicamento);
+            assert.equal(agotado.stockFisico, 0);
+            assert.equal(agotado.stockVendible, 0);
+            assert.deepEqual(agotado.existencias.map(e => e.idExistencia), [existenciaAgotada.id_existencia]);
         });
 
         await t.test('Inactivos conservan saldo físico e historial y tienen vendible cero', async () => {
@@ -219,6 +223,9 @@ test('Fases 1A/1B: integración real HTTP/MySQL en base temporal aislada', { tim
 
         await t.test('Existente vacío devuelve 200; inexistente 404; filtros sin coincidencias devuelven []', async () => {
             assert.deepEqual((await request('REGENTE', existenciasPath(sinExistencias.id_medicamento))).data, []);
+            for (const rol of Object.keys(ROLES)) {
+                assert.deepEqual((await request(rol, `?idMedicamento=${sinExistencias.id_medicamento}`)).data, []);
+            }
             await request('REGENTE', existenciasPath(2147483647), 404);
             assert.deepEqual((await request('VENDEDOR', '?idMedicamento=2147483647')).data, []);
             assert.deepEqual((await request('REGENTE', '/movimientos?idExistencia=2147483647')).data, []);
@@ -334,7 +341,7 @@ test('Fases 1A/1B: integración real HTTP/MySQL en base temporal aislada', { tim
         await t.test('Fase 1B: stock bajo utiliza suma vendible, incluye igualdad y productos sin existencias', async () => {
             const result = await request('VENDEDOR', '/stock-bajo');
             assert.deepEqual(result.data.map(m => m.idMedicamento),
-                [activo, sinExistencias, literal, historico].map(m => m.id_medicamento));
+                [activo, sinExistencias, literal, historico, productoAgotado].map(m => m.id_medicamento));
             const producto = result.data.find(m => m.idMedicamento === activo.id_medicamento);
             assert.equal(producto.stockFisico, 19);
             assert.equal(producto.stockVendible, 9);

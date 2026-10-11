@@ -2,6 +2,8 @@
 
 Este bloque está implementado en React y Express y cuenta con aceptación automatizada contra MySQL local en bases temporales. Utiliza tu cuenta existente para la revisión manual de las pantallas.
 
+La corrección posterior del listado de Inventario para exigir existencias registradas está verificada con pruebas backend puras/simuladas y frontend con API simulada. Su integración MySQL está pendiente de autorización y ejecución; la aceptación anterior del bloque no acredita esta corrección.
+
 ## Arranque local
 
 1. Mantén MySQL iniciado.
@@ -25,9 +27,9 @@ Los permisos se comprueban también en la API. Una sesión deja de estar disponi
 
 ## Consultas de Inventario
 
-- **Inventario** (`/inventario`): stock físico y vendible por medicamento, incluidos inactivos.
-- **Existencias**: abre «Ver existencias» en Inventario o en la ficha del medicamento para consultar sus saldos, vencimientos, costos y último movimiento.
-- **Stock bajo** (`/inventario/stock-bajo`): medicamentos activos cuyo stock vendible es menor o igual al mínimo.
+- **Inventario** (`/inventario`): stock físico y vendible de medicamentos con al menos una existencia registrada, incluidos agotados, inactivos y vencidos. También incluye existencias iniciales o históricas sin compra vinculada. Crear un producto en el catálogo no registra existencias ni lo incorpora a este listado.
+- **Existencias**: abre «Ver existencias» en Inventario o en la ficha del medicamento para consultar sus saldos, vencimientos, costos y último movimiento. Un producto sin existencias muestra una lista vacía y conserva su nombre, código y enlace a la ficha; Administrador y Regente también pueden abrir su historial. La identificación procede del catálogo y los datos de existencias de su consulta específica.
+- **Stock bajo** (`/inventario/stock-bajo`): medicamentos activos cuyo stock vendible es menor o igual al mínimo, incluidos productos sin existencias. Su criterio es independiente del listado de Inventario.
 - **Movimientos** (`/inventario/movimientos`): historial con dirección, motivo, responsable, costo aplicado y referencias a compra/venta, original y reversión.
 - **Próximos a vencer** (`/vencimientos`) y **Vencidos** (`/vencimientos/vencidos`): resultados calculados por el backend.
 
@@ -93,6 +95,9 @@ En la aplicación local puedes verificar mediante consultas:
 
 - Con cada rol, que se muestren los módulos y acciones de la tabla de permisos.
 - Que los filtros, el detalle y el regreso al listado mantengan el contexto de consulta.
+- Que un producto registrado únicamente en el catálogo no aparezca en Inventario; desde su ficha, «Ver existencias» debe mostrar el estado vacío con su nombre y enlaces correspondientes al rol.
+- Que un producto con existencias agotadas siga visible en Inventario con físico y vendible cero, y que una existencia inicial o histórica sin compra vinculada también se incluya.
+- Que Stock bajo pueda seguir mostrando productos activos sin existencias.
 - Que una existencia vencida/inactiva tenga físico separado de vendible y conserve sus fechas históricas.
 - Que las compras confirmadas/anuladas y sus referencias de historial sigan visibles.
 - Que las pantallas sean utilizables desde el teléfono y permitan desplazar sus tablas.
@@ -104,3 +109,5 @@ node --test tests/aceptacion-real.browser.test.mjs
 ```
 
 La suite completa también registra compras, conteos, retiros y anulaciones reales sobre sus fixtures, compara datos/esquemas de las bases protegidas y elimina la base temporal. Su configuración y las regresiones simuladas se describen en el [README](../../README.md). La revisión manual del usuario con sus datos complementa esa evidencia; no se da por realizada automáticamente.
+
+Verificación de la corrección del listado (11/10/2026): 325 pruebas backend puras/simuladas y 128 frontend con API simulada aprobadas, incluidas 50 de Inventario; build y revisión de diff aprobados. La suite específica `backend/tests/inventario.integration.test.js` está adaptada al nuevo criterio, pero no se ha ejecutado contra MySQL para esta corrección.

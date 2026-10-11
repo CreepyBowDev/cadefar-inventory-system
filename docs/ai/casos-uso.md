@@ -428,6 +428,10 @@ Administrador, Regente o Vendedor.
 **Objetivo:**  
 Consultar la disponibilidad de medicamentos y sus existencias.
 
+**Criterio del listado:**
+
+Mostrar medicamentos con al menos una existencia registrada, incluidos agotados, inactivos y vencidos. No exigir compra vinculada ni movimientos para incluir existencias iniciales o históricas. Un medicamento registrado únicamente en el catálogo no aparece en este listado; si los filtros no encuentran medicamentos con existencias, se presenta un resultado vacío. Stock bajo conserva su criterio independiente y puede incluir productos activos sin existencias.
+
 **Información principal:**
 
 - Medicamento.
@@ -451,6 +455,8 @@ Consultar las diferentes existencias asociadas a un medicamento.
 
 **Consideración:**  
 Un mismo medicamento puede tener varias existencias diferenciadas principalmente por vencimiento.
+
+Un medicamento existente sin existencias devuelve una lista vacía, conservando en la interfaz su identificación y el enlace a la ficha del catálogo, así como el enlace al historial para Administrador o Regente. La identificación se consulta desde la ficha del catálogo; los saldos, vencimientos, costos y último movimiento proceden del endpoint de existencias. Un medicamento inexistente devuelve 404.
 
 ---
 

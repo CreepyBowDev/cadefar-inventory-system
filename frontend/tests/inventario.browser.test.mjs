@@ -28,11 +28,12 @@ const waitUntil = async (predicate) => {
 const meta = { fechaComercial: '2026-02-15', zonaHoraria: 'America/La_Paz' };
 const med = (id, nombre, estado = true) => ({ idMedicamento: id, codigoMedicamento: `PAR00${id}`, nombreComercial: nombre,
   formaFarmaceutica: 'Tableta', presentacion: '500 mg', unidadInventario: 'tableta', stockMinimo: 10, estado });
-const medicamentos = [med(1, 'Paracetamol'), med(2, 'Producto inactivo', false), med(3, 'Sin existencias')];
+const medicamentos = [med(1, 'Paracetamol'), med(2, 'Producto inactivo', false), med(3, 'Sin existencias'), med(4, 'Producto agotado')];
 const existencias = [
   { idExistencia: 11, idMedicamento: 1, codigoExistencia: 'PAR001-001', fechaVencimiento: '2026-02-01', precisionVencimiento: 'MES', fechaEfectivaVencimiento: '2026-03-01', vencida: false, stockFisico: 10, stockVendible: 10, costoUnitarioPromedio: '0.000001', ultimoMovimiento: 101 },
   { idExistencia: 12, idMedicamento: 1, codigoExistencia: 'PAR001-002', fechaVencimiento: '2026-02-15', precisionVencimiento: 'DIA', fechaEfectivaVencimiento: '2026-02-15', vencida: true, stockFisico: 5, stockVendible: 0, costoUnitarioPromedio: '1.123456', ultimoMovimiento: 102 },
-  { idExistencia: 21, idMedicamento: 2, codigoExistencia: 'PAR002-001', fechaVencimiento: '2026-03-01', precisionVencimiento: 'DIA', fechaEfectivaVencimiento: '2026-03-01', vencida: false, stockFisico: 4, stockVendible: 0, costoUnitarioPromedio: '99999999.999999', ultimoMovimiento: null }
+  { idExistencia: 21, idMedicamento: 2, codigoExistencia: 'PAR002-001', fechaVencimiento: '2026-03-01', precisionVencimiento: 'DIA', fechaEfectivaVencimiento: '2026-03-01', vencida: false, stockFisico: 4, stockVendible: 0, costoUnitarioPromedio: '99999999.999999', ultimoMovimiento: null },
+  { idExistencia: 41, idMedicamento: 4, codigoExistencia: 'PAR004-001', fechaVencimiento: '2026-03-01', precisionVencimiento: 'DIA', fechaEfectivaVencimiento: '2026-03-01', vencida: false, stockFisico: 0, stockVendible: 0, costoUnitarioPromedio: '1.250000', ultimoMovimiento: 104 }
 ];
 const inventario = medicamentos.map((m) => ({ ...m,
   stockFisico: m.idMedicamento === 1 ? 15 : m.idMedicamento === 2 ? 4 : 0,
@@ -59,7 +60,7 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
   let browser, socket, send;
   const requests = [], errors = [], unexpected = [];
   let pageDiagnostics = [];
-  let rol = 2, nextResponse, heldRequest, postResponse, heldPost;
+  let rol = 2, nextResponse, heldRequest, postResponse, heldPost, catalogoResponse;
   let overrides = {}, consultaMeta = meta;
   try {
     await new Promise((resolve, reject) => {
@@ -103,6 +104,16 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
         if (path === '/api/auth/me') {
           finish(rol ? 200 : 401, rol ? { data: { idUsuario: rol, idRol: rol, nombreUsuario: 'inventario-prueba' } } : { message: 'No autenticado' }); return;
         }
+        if (/^\/api\/medicamentos\/\d+$/.test(path)) {
+          if (catalogoResponse) {
+            const planned = catalogoResponse; catalogoResponse = null;
+            if (planned.networkError) void send('Fetch.failRequest', { requestId, errorReason: 'ConnectionRefused' });
+            else finish(planned.status, planned.body);
+            return;
+          }
+          const medicamento = medicamentos.find(m => m.idMedicamento === Number(path.split('/')[3]));
+          finish(medicamento ? 200 : 404, medicamento ? { data: medicamento } : { message: 'Medicamento no encontrado' }); return;
+        }
         if (!path.startsWith('/api/inventario')) { unexpected.push(path); finish(404, { message: 'Endpoint inesperado' }); return; }
         if (['/api/inventario/ajustes', '/api/inventario/retiros/vencimiento', '/api/inventario/retiros/dano'].includes(path) && request.method === 'POST') {
           const planned = postResponse; postResponse = null;
@@ -125,9 +136,9 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
         } else if (path.endsWith('/movimientos')) finish(200, { data: movimientos });
         else if (path.endsWith('/proximos-a-vencer') || path.endsWith('/vencidos')) {
           const expired = path.endsWith('/vencidos');
-          finish(200, { data: existencias.filter((e) => e.vencida === expired).map((e) => ({ ...e, medicamento: medicamentos.find((m) => m.idMedicamento === e.idMedicamento) })), meta: expired ? meta : { ...meta, fechaHasta: '2026-05-15' } });
+          finish(200, { data: existencias.filter((e) => e.stockFisico > 0 && e.vencida === expired).map((e) => ({ ...e, medicamento: medicamentos.find((m) => m.idMedicamento === e.idMedicamento) })), meta: expired ? meta : { ...meta, fechaHasta: '2026-05-15' } });
         } else {
-          let data = path.endsWith('/stock-bajo') ? inventario.filter((m) => m.estado && m.stockVendible <= m.stockMinimo) : inventario;
+          let data = path.endsWith('/stock-bajo') ? inventario.filter((m) => m.estado && m.stockVendible <= m.stockMinimo) : inventario.filter(m => m.existencias.length);
           if (params.has('idMedicamento')) data = data.filter((m) => m.idMedicamento === Number(params.get('idMedicamento')));
           if (params.has('nombreComercial')) data = data.filter((m) => m.nombreComercial.toLowerCase().includes(params.get('nombreComercial').toLowerCase()));
           finish(200, { data, meta });
@@ -180,6 +191,9 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       const rows = await evaluate('[...document.querySelectorAll(".inventario-table tbody tr")].map(tr => [...tr.querySelectorAll("td")].map(td => td.textContent))');
       assert.equal(rows[0][3], '15'); assert.equal(rows[0][4], '10');
       assert.equal(rows[1][1].trim(), 'Inactivo'); assert.equal(rows[1][3], '4'); assert.equal(rows[1][4], '0');
+      assert.ok(rows[2][0].includes('Producto agotado')); assert.equal(rows[2][3], '0'); assert.equal(rows[2][4], '0');
+      assert.equal(await evaluate('document.querySelector(".inventario-table").textContent.includes("Sin existencias")'), false);
+      assert.ok(await evaluate('document.querySelector(".page-heading").textContent.includes("existencias registradas")'));
       assert.ok(await evaluate(`!!document.querySelector('.app-sidebar a[href="/inventario"]')`));
       await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1050, deviceScaleFactor: 1, mobile: false });
       await screenshot('inventario-desktop.png');
@@ -208,6 +222,7 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       nextResponse = { status: 200, body: { data: [], meta } };
       await input('inv-nombre', 'No existe'); await submit(); await waitFor('location.search.includes("No+existe")'); await ready();
       await bodyContains('Sin resultados');
+      await bodyContains('crear un producto en el catálogo no registra existencias');
       assert.equal(await evaluate('document.querySelectorAll(".inventario-table tbody tr").length'), 0);
       await click('.inventario-filters button[type="button"]'); await waitFor('location.search === ""'); await ready();
     });
@@ -234,6 +249,7 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       assert.equal(await evaluate('!!document.querySelector(".inventario-page [role=alert]")'), false);
     });
     await t.test('CU22 usa endpoint propio, conserva MES histórico y costos diminutos sin reinterpretar fechas', async () => {
+      const inicio = requests.length;
       await changeRoute('a[href="/inventario/medicamentos/1/existencias"]', '/inventario/medicamentos/1/existencias');
       const rows = await evaluate('[...document.querySelectorAll(".inventario-table tbody tr")].map(tr => [...tr.querySelectorAll("td")].map(td => td.textContent))');
       assert.equal(rows.length, 2);
@@ -241,6 +257,8 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       assert.equal(rows[0][2], '01/03/2026'); assert.equal(rows[0][5], '0,000001');
       assert.equal(rows[1][2], '15/02/2026'); assert.equal(rows[1][4], '0'); assert.equal(rows[1][5], '1,123456');
       assert.ok(requests.some((r) => r.path === '/api/inventario/medicamentos/1/existencias' && !Object.keys(r.query).length));
+      assert.ok(requests.slice(inicio).some(r => r.path === '/api/medicamentos/1' && r.method === 'GET' && !Object.keys(r.query).length));
+      assert.equal(requests.slice(inicio).some(r => r.path === '/api/inventario'), false);
       assert.ok(await evaluate('document.querySelector(".inventario-table").textContent.includes("Último: #101")'));
       await screenshot('existencias-desktop.png');
     });
@@ -251,12 +269,35 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       assert.ok(cells[6].includes('Sin movimientos'));
     });
     await t.test('Existente sin existencias es vacío; inexistente es 404; ID inválido no genera peticiones', async () => {
+      const inicio = requests.length;
       await navigate('/inventario/medicamentos/3/existencias'); await ready(); await bodyContains('todavía no tiene existencias');
       assert.equal(await evaluate('document.querySelector(".page-heading h2").textContent'), 'Sin existencias');
+      assert.ok(await evaluate('!!document.querySelector(\'.inventario-detail-links a[href="/medicamentos/3"]\')'));
+      assert.ok(await evaluate('!!document.querySelector(\'.inventario-detail-links a[href="/inventario/movimientos?idMedicamento=3"]\')'));
+      assert.ok(requests.slice(inicio).some(r => r.path === '/api/medicamentos/3'));
+      assert.equal(requests.slice(inicio).some(r => r.path === '/api/inventario'), false);
       await navigate('/inventario/medicamentos/999/existencias'); await ready(); await bodyContains('Medicamento no encontrado');
-      const count = requests.filter((r) => r.path.startsWith('/api/inventario')).length;
+      const count = requests.filter((r) => r.path !== '/api/auth/me').length;
       await navigate('/inventario/medicamentos/1x/existencias'); await ready(); await bodyContains('identificador del medicamento no es válido');
-      assert.equal(requests.filter((r) => r.path.startsWith('/api/inventario')).length, count);
+      assert.equal(requests.filter((r) => r.path !== '/api/auth/me').length, count);
+    });
+    await t.test('Ficha del catálogo con error no deja nombre ni existencias anteriores; reintento recupera ambos', async () => {
+      await navigate('/inventario/medicamentos/1/existencias'); await ready();
+      for (const planned of [
+        { status: 500, body: { message: 'Sequelize: SELECT secreto' }, expected: 'No fue posible cargar' },
+        { networkError: true, expected: 'No se pudo conectar' },
+        { status: 404, body: { message: 'Medicamento no encontrado' }, expected: 'Medicamento no encontrado' }
+      ]) {
+        catalogoResponse = planned;
+        await click('.catalogo-toolbar button'); await ready(); await bodyContains(planned.expected);
+        assert.equal(await evaluate('!!document.querySelector(".inventario-table")'), false);
+        assert.equal(await evaluate('document.querySelector(".page-heading h2").textContent'), 'Existencias del medicamento');
+        assert.equal(await evaluate('!!document.querySelector(".inventario-detail-links")'), false);
+        assert.equal(await evaluate('document.querySelector(".inventario-page").textContent.includes("SELECT secreto")'), false);
+      }
+      await click('.catalogo-toolbar button'); await ready();
+      assert.equal(await evaluate('document.querySelector(".page-heading h2").textContent'), 'Paracetamol');
+      assert.equal(await evaluate('document.querySelectorAll(".inventario-table tbody tr").length'), 2);
     });
     await t.test('Historial conserva motivos históricos, fecha civil, originales, reversiones y referencias', async () => {
       await navigate('/inventario/movimientos?idExistencia=11'); await ready();
@@ -329,7 +370,11 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
         assert.equal(await evaluate(`!!document.querySelector('.inventario-nav a[href="/inventario/movimientos"]')`), role !== 3);
         await changeRoute('.inventario-nav a[href="/inventario/stock-bajo"]', '/inventario/stock-bajo');
         await navigate('/inventario/medicamentos/1/existencias'); await ready();
+        assert.ok(requests.some(r => r.path === '/api/medicamentos/1'));
         assert.equal(await evaluate(`!!document.querySelector('.inventario-table a[href^="/inventario/movimientos"]')`), role !== 3);
+        await navigate('/inventario/medicamentos/3/existencias'); await ready(); await bodyContains('todavía no tiene existencias');
+        assert.equal(await evaluate('document.querySelector(".page-heading h2").textContent'), 'Sin existencias');
+        assert.equal(await evaluate('!!document.querySelector(\'.inventario-detail-links a[href="/inventario/movimientos?idMedicamento=3"]\')'), role !== 3);
         if (role === 3) for (const path of ['/inventario/movimientos', '/vencimientos', '/vencimientos/vencidos']) {
           const count = requests.filter((r) => r.path.startsWith('/api/inventario')).length;
           await navigate(path); await waitFor('location.pathname === "/dashboard"');

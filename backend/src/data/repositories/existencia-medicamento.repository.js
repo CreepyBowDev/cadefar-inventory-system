@@ -42,18 +42,20 @@ export class existenciaMedicamentoRepository {
         }, { where: { id_existencia: idExistencia }, transaction });
     }
 
-    static async findInventario({ idMedicamento, codigoMedicamento, nombreComercial } = {}) {
+    static async findInventario({ idMedicamento, codigoMedicamento, nombreComercial } = {},
+        { soloConExistencias = false } = {}) {
         const filtros = {};
         if (idMedicamento !== undefined) filtros.id_medicamento = idMedicamento;
         if (codigoMedicamento !== undefined) filtros.codigo_medicamento = { [Op.like]: contiene(codigoMedicamento) };
         if (nombreComercial !== undefined) filtros.nombre_comercial = { [Op.like]: contiene(nombreComercial) };
 
-        // Un único SELECT conserva medicamentos sin existencias, inactivos y
-        // existencias agotadas; los totales se calculan sobre la misma lectura.
+        // El listado de Inventario exige una existencia; las alertas pueden
+        // consultar también el catálogo sin existencias. No filtrar por saldo,
+        // estado ni compras: conservar agotadas e iniciales/históricas.
         return Medicamento.findAll({
             attributes: medicamentoAttributes,
             where: filtros,
-            include: [existenciasInclude],
+            include: [{ ...existenciasInclude, required: soloConExistencias }],
             order: [['id_medicamento', 'ASC'], ['existencias', 'id_existencia', 'ASC']]
         });
     }

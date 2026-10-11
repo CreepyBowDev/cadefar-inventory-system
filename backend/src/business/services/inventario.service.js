@@ -68,6 +68,14 @@ const toPublicInventario = (registro, fechaComercial) => {
     };
 };
 
+const consultarDisponibilidad = async (filtros, fechaComercial, opciones) => {
+    const medicamentos = await existenciaMedicamentoRepository.findInventario(filtros, opciones);
+    return {
+        data: medicamentos.map((medicamento) => toPublicInventario(medicamento, fechaComercial)),
+        meta: disponibilidadMeta(fechaComercial)
+    };
+};
+
 const existenciasDeInventario = (medicamentos) => medicamentos.flatMap((medicamento) =>
     medicamento.existencias.map((existencia) => ({
         ...existencia,
@@ -292,11 +300,7 @@ export class inventarioService {
     }
 
     static async getInventario(filtros, fechaComercial = obtenerFechaComercial()) {
-        const medicamentos = await existenciaMedicamentoRepository.findInventario(filtros);
-        return {
-            data: medicamentos.map((medicamento) => toPublicInventario(medicamento, fechaComercial)),
-            meta: disponibilidadMeta(fechaComercial)
-        };
+        return consultarDisponibilidad(filtros, fechaComercial, { soloConExistencias: true });
     }
 
     static async getExistencias(idMedicamento, fechaComercial = obtenerFechaComercial()) {
@@ -309,7 +313,7 @@ export class inventarioService {
     }
 
     static async getProximosAVencer(filtros, fechaComercial = obtenerFechaComercial()) {
-        const inventario = await this.getInventario(filtros, fechaComercial);
+        const inventario = await consultarDisponibilidad(filtros, fechaComercial);
         const fechaHasta = sumarMesesCalendario(fechaComercial, 3);
         const data = existenciasDeInventario(inventario.data)
             .filter((existencia) => existencia.stockFisico > 0 && !existencia.vencida)
@@ -326,7 +330,7 @@ export class inventarioService {
     }
 
     static async getVencidos(filtros, fechaComercial = obtenerFechaComercial()) {
-        const inventario = await this.getInventario(filtros, fechaComercial);
+        const inventario = await consultarDisponibilidad(filtros, fechaComercial);
         const data = existenciasDeInventario(inventario.data)
             .filter((existencia) => existencia.stockFisico > 0 && existencia.vencida)
             .sort(compararVencimientos);
@@ -334,7 +338,7 @@ export class inventarioService {
     }
 
     static async getStockBajo(filtros, fechaComercial = obtenerFechaComercial()) {
-        const inventario = await this.getInventario(filtros, fechaComercial);
+        const inventario = await consultarDisponibilidad(filtros, fechaComercial);
         const data = inventario.data.filter((medicamento) => medicamento.estado &&
             medicamento.stockVendible <= medicamento.stockMinimo);
         return { data, meta: inventario.meta };
