@@ -9,7 +9,6 @@ const paramsSchema = z.object({
 
 const datosSchema = z.object({
     idProveedorLaboratorio: idSchema,
-    codigoMedicamento: texto(20),
     nombreComercial: texto(150),
     formaFarmaceutica: texto(80),
     presentacion: texto(150),

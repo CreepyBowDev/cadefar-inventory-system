@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FeedbackMessage } from '../../../components/FeedbackMessage.jsx';
 
 const TEXT_FIELDS = [
-  ['codigoMedicamento', 'Código', 20], ['nombreComercial', 'Nombre comercial', 150],
+  ['nombreComercial', 'Nombre comercial', 150],
   ['formaFarmaceutica', 'Forma farmacéutica', 80], ['presentacion', 'Presentación', 150],
   ['unidadInventario', 'Unidad de inventario', 50], ['condicionVenta', 'Condición de venta', 40],
   ['viaAdministracion', 'Vía de administración', 80], ['tipoLiberacion', 'Tipo de liberación', 80]
@@ -45,6 +45,7 @@ export const MedicamentoForm = ({ initialData, proveedores, submitting, apiError
   };
 
   return <form className="catalogo-form" onSubmit={submit} noValidate aria-busy={submitting}>
+    {initialData ? <div className="form-field"><span className="form-field__label">Código del medicamento</span><p>{initialData.codigoMedicamento}</p><p className="form-field__help">El código se conserva y no puede modificarse.</p></div> : <p className="form-field__help">El código del medicamento se generará automáticamente al registrar.</p>}
     <div className="catalogo-form__grid">
       {TEXT_FIELDS.map(([key, label, max]) => <div className="form-field" key={key}><label htmlFor={key}>{label}</label><input id={key} name={key} value={form[key]} onChange={update} maxLength={max} disabled={submitting} required /></div>)}
       <div className="form-field"><label htmlFor="stockMinimo">Stock mínimo</label><input id="stockMinimo" name="stockMinimo" type="number" min="0" max="2147483647" step="1" value={form.stockMinimo} onChange={update} disabled={submitting} required /></div>

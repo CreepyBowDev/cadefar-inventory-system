@@ -60,6 +60,19 @@ export class medicamentoRepository {
         return Medicamento.findOne({ where: { codigo_medicamento: codigoMedicamento }, transaction });
     }
 
+    static async findMayorCorrelativo({ prefijo, transaction }) {
+        // Comparar el prefijo con la colación real de la columna, sin filtrar estado
+        // ni nombre actual. Solo interpretar códigos de tres caracteres + tres dígitos.
+        const [fila] = await db.sequelize.query(`
+            SELECT COALESCE(MAX(CAST(SUBSTRING(codigo_medicamento, 4) AS UNSIGNED)), 0) AS mayor
+            FROM medicamento
+            WHERE CHAR_LENGTH(codigo_medicamento) = 6
+              AND LEFT(codigo_medicamento, 3) = :prefijo
+              AND REGEXP_LIKE(SUBSTRING(codigo_medicamento, 4), '^[0-9]{3}$', 'c')
+        `, { replacements: { prefijo }, type: Sequelize.QueryTypes.SELECT, transaction });
+        return Number(fila.mayor);
+    }
+
     static async findProveedorById({ idProveedorLaboratorio, transaction }) {
         return ProveedorLaboratorio.findByPk(idProveedorLaboratorio, {
             attributes: ['id_proveedor_laboratorio', 'estado'],

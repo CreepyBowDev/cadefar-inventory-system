@@ -79,7 +79,6 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
         };
         const medData = (suffix, extra = {}) => ({
             idProveedorLaboratorio: proveedor.id_proveedor_laboratorio,
-            codigoMedicamento: `${prefix}${suffix}`,
             nombreComercial: `${prefix} producto ${suffix}`,
             formaFarmaceutica: 'Tableta', presentacion: '500 mg', unidadInventario: 'tableta',
             condicionVenta: 'Con receta', viaAdministracion: 'Oral', tipoLiberacion: 'Inmediata', ...extra
@@ -175,10 +174,10 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
         });
 
         await t.test('Unicidad, referencias inexistentes y proveedor inactivo', async () => {
-            await request('REGENTE', 'POST', '/medicamentos', 409, medData('A'));
+            await request('REGENTE', 'POST', '/medicamentos', 400, medData('A', { codigoMedicamento: medicamento.codigoMedicamento }));
             await request('REGENTE', 'POST', '/medicamentos', 404, medData('X', { idProveedorLaboratorio: 2147483647 }));
             await request('REGENTE', 'POST', '/medicamentos', 409, medData('X', { idProveedorLaboratorio: inactivo.id_proveedor_laboratorio }));
-            await request('REGENTE', 'PATCH', `/medicamentos/${otro.idMedicamento}`, 409, { codigoMedicamento: medicamento.codigoMedicamento });
+            await request('REGENTE', 'PATCH', `/medicamentos/${otro.idMedicamento}`, 400, { codigoMedicamento: medicamento.codigoMedicamento });
             await request('REGENTE', 'POST', '/principios-activos', 409, { nombre: principio.nombre });
             await request('REGENTE', 'PATCH', `/principios-activos/${segundo.idPrincipioActivo}`, 409, { nombre: principio.nombre });
             const c = `/medicamentos/${medicamento.idMedicamento}/composicion`;
@@ -231,7 +230,7 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
         });
 
         await t.test('Búsqueda por código, nombre y varios principios con AND, composición completa', async () => {
-            const common = `codigoMedicamento=${prefix}`;
+            const common = `codigoMedicamento=${medicamento.codigoMedicamento.slice(0, 3)}&nombreComercial=${prefix}`;
             for (const rol of Object.keys(ROLES)) {
                 const ids = [principio.idPrincipioActivo, segundo.idPrincipioActivo];
                 const result = await request(rol, 'GET', `/medicamentos?${common}&idPrincipioActivo=${ids[0]}&idPrincipioActivo=${ids[1]}`, 200);
@@ -275,7 +274,7 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
             assert.equal(await db.MovimientoInventario.count({ where: { id_existencia: existencia.id_existencia } }), 0);
             const before = (await request('REGENTE', 'GET', m, 200)).data;
             const cambios = {
-                codigoMedicamento: `${prefix}N`, idProveedorLaboratorio: inactivo.id_proveedor_laboratorio,
+                idProveedorLaboratorio: inactivo.id_proveedor_laboratorio,
                 formaFarmaceutica: 'Cápsula', presentacion: 'Otra presentación', unidadInventario: 'cápsula',
                 viaAdministracion: 'Otra vía', tipoLiberacion: 'Prolongada'
             };
@@ -286,11 +285,12 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
             }
             await request('REGENTE', 'DELETE', `${c}/${composicion.idComposicion}`, 409);
             assert.deepEqual((await request('REGENTE', 'GET', m, 200)).data, before);
-            await request('REGENTE', 'PATCH', m, 200, { codigoMedicamento: before.codigoMedicamento });
+            await request('REGENTE', 'PATCH', m, 400, { codigoMedicamento: before.codigoMedicamento });
             const allowed = await request('REGENTE', 'PATCH', m, 200, {
                 nombreComercial: `${prefix} corrección tipográfica`, stockMinimo: 10, condicionVenta: 'Venta libre'
             });
             assert.equal(allowed.data.stockMinimo, 10);
+            assert.equal(allowed.data.codigoMedicamento, before.codigoMedicamento);
             await request('REGENTE', 'PATCH', `${m}/estado`, 200, { estado: false });
             const after = (await request('REGENTE', 'GET', m, 200)).data;
             assert.deepEqual(after.composicion, before.composicion);

@@ -1,10 +1,10 @@
 import db from '../../data/models/index.js';
 import { medicamentoRepository } from '../../data/repositories/medicamento.repository.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { obtenerPrefijoMedicamento } from '../../shared/utils/codigo-medicamento.js';
 
 const campos = {
     idProveedorLaboratorio: 'id_proveedor_laboratorio',
-    codigoMedicamento: 'codigo_medicamento',
     nombreComercial: 'nombre_comercial',
     formaFarmaceutica: 'forma_farmaceutica',
     presentacion: 'presentacion',
@@ -16,7 +16,7 @@ const campos = {
     estado: 'estado'
 };
 const camposIdentidad = [
-    'codigo_medicamento', 'id_proveedor_laboratorio', 'forma_farmaceutica',
+    'id_proveedor_laboratorio', 'forma_farmaceutica',
     'presentacion', 'unidad_inventario', 'via_administracion', 'tipo_liberacion'
 ];
 const toModelData = (data) => Object.fromEntries(
@@ -71,19 +71,32 @@ const validateProveedorActivo = async (idProveedorLaboratorio, transaction) => {
     if (!proveedor.estado) throw new AppError('El proveedor o laboratorio está inactivo', 409);
 };
 
-const validateCodigoDisponible = async (codigoMedicamento, transaction, idMedicamento) => {
-    const existente = await medicamentoRepository.findByCodigo({ codigoMedicamento, transaction });
-    if (existente && existente.id_medicamento !== idMedicamento) {
-        throw new AppError('El código de medicamento ya está en uso', 409);
+const validateCodigoNoEnviado = (data) => {
+    if (Object.hasOwn(data, 'codigoMedicamento')) {
+        throw new AppError('El código del medicamento lo genera el sistema y no puede modificarse', 400);
     }
 };
 
-const handleDuplicateDatabaseError = (error) => {
-    if (error?.name === 'SequelizeUniqueConstraintError') {
-        throw new AppError('El código de medicamento ya está en uso', 409);
-    }
-    throw error;
+const esColisionCodigo = (error) => {
+    const mensaje = error.parent?.sqlMessage || error.original?.sqlMessage || '';
+    return error.name === 'SequelizeUniqueConstraintError' &&
+        /for key ['`](?:[^'`]+\.)?uq_medicamento_codigo['`]/i.test(mensaje);
 };
+
+const generarCodigo = async (prefijo, transaction) => {
+    const mayor = await medicamentoRepository.findMayorCorrelativo({ prefijo, transaction });
+    for (let numero = mayor + 1; numero <= 999; numero++) {
+        const codigoMedicamento = `${prefijo}${String(numero).padStart(3, '0')}`;
+        // También proteger equivalencias de históricos irregulares según MySQL
+        // (p. ej. letras Unicode equivalentes); jamás normalizar esas filas.
+        if (!await medicamentoRepository.findByCodigo({ codigoMedicamento, transaction })) {
+            return codigoMedicamento;
+        }
+    }
+    throw new AppError(`Se agotaron los códigos del prefijo ${prefijo}: el correlativo máximo es 999`, 409);
+};
+
+const MAXIMOS_INTENTOS_CODIGO = 5;
 
 export class medicamentoService {
     static async getMedicamentos(filtros) {
@@ -111,39 +124,50 @@ export class medicamentoService {
     }
 
     static async createMedicamento(data) {
-        try {
-            return await db.sequelize.transaction(async (transaction) => {
-                await validateProveedorActivo(data.idProveedorLaboratorio, transaction);
-                await validateCodigoDisponible(data.codigoMedicamento, transaction);
-                const medicamento = await medicamentoRepository.create({ data: toModelData(data), transaction });
-                return this.getMedicamentoById(medicamento.id_medicamento, transaction);
-            });
-        } catch (error) {
-            handleDuplicateDatabaseError(error);
+        validateCodigoNoEnviado(data);
+        const prefijo = obtenerPrefijoMedicamento(data.nombreComercial);
+        for (let intento = 0; intento < MAXIMOS_INTENTOS_CODIGO; intento++) {
+            try {
+                return await db.sequelize.transaction(async (transaction) => {
+                    await validateProveedorActivo(data.idProveedorLaboratorio, transaction);
+                    const codigo = await generarCodigo(prefijo, transaction);
+                    const medicamento = await medicamentoRepository.create({
+                        data: { ...toModelData(data), codigo_medicamento: codigo }, transaction
+                    });
+                    return this.getMedicamentoById(medicamento.id_medicamento, transaction);
+                });
+            } catch (error) {
+                // La transacción gestionada ya terminó su rollback. Cada vuelta
+                // abre otra transacción y otro snapshot; nunca repetir solo el INSERT.
+                if (esColisionCodigo(error)) continue;
+                const codigo = error.parent?.code || error.original?.code;
+                if (codigo === 'ER_LOCK_DEADLOCK') {
+                    throw new AppError('Conflicto temporal al registrar el medicamento: se detectó un bloqueo mutuo. Intente nuevamente', 409);
+                }
+                if (codigo === 'ER_LOCK_WAIT_TIMEOUT') {
+                    throw new AppError('Se agotó la espera de bloqueo al registrar el medicamento. Intente nuevamente', 409);
+                }
+                throw error;
+            }
         }
+        throw new AppError('No se pudo asignar un código por registros simultáneos. Intente nuevamente', 409);
     }
 
     static async updateMedicamento(idMedicamento, data) {
-        try {
-            return await db.sequelize.transaction(async (transaction) => {
-                const medicamento = await this.getMedicamentoForUpdate(idMedicamento, transaction);
-                const values = toModelData(data);
-                const cambiaIdentidad = camposIdentidad.some((campo) =>
-                    values[campo] !== undefined && values[campo] !== medicamento.get(campo)
-                );
-                if (cambiaIdentidad) await this.validateSinHistorial(idMedicamento, transaction);
-                if (data.idProveedorLaboratorio !== undefined) {
-                    await validateProveedorActivo(data.idProveedorLaboratorio, transaction);
-                }
-                if (data.codigoMedicamento !== undefined) {
-                    await validateCodigoDisponible(data.codigoMedicamento, transaction, idMedicamento);
-                }
-                await medicamentoRepository.update({ idMedicamento, data: values, transaction });
-                return this.getMedicamentoById(idMedicamento, transaction);
-            });
-        } catch (error) {
-            handleDuplicateDatabaseError(error);
-        }
+        validateCodigoNoEnviado(data);
+        return db.sequelize.transaction(async (transaction) => {
+            const medicamento = await this.getMedicamentoForUpdate(idMedicamento, transaction);
+            const values = toModelData(data);
+            const cambiaIdentidad = camposIdentidad.some((campo) =>
+                values[campo] !== undefined && values[campo] !== medicamento.get(campo)
+            );
+            if (cambiaIdentidad) await this.validateSinHistorial(idMedicamento, transaction);
+            if (data.idProveedorLaboratorio !== undefined) {
+                await validateProveedorActivo(data.idProveedorLaboratorio, transaction);
+            }
+            await medicamentoRepository.update({ idMedicamento, data: values, transaction });
+            return this.getMedicamentoById(idMedicamento, transaction);
+        });
     }
 
     static async updateEstado(idMedicamento, { estado }) {

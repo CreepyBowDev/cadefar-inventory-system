@@ -39,7 +39,7 @@ export const MedicamentoFormPage = ({ mode }) => {
     setSubmitting(true); setError('');
     try {
       const saved = isCreate ? await createMedicamento(data) : await updateMedicamento(Number(idMedicamento), data);
-      navigate(`/medicamentos/${saved.idMedicamento}`, { replace: true, state: { message: `${saved.nombreComercial} fue ${isCreate ? 'creado' : 'actualizado'} correctamente.` } });
+      navigate(`/medicamentos/${saved.idMedicamento}`, { replace: true, state: { message: `${saved.nombreComercial} fue ${isCreate ? 'creado' : 'actualizado'} correctamente. Código: ${saved.codigoMedicamento}.` } });
     } catch (error) { setError(getApiErrorMessage(error)); }
     finally { setSubmitting(false); }
   };
