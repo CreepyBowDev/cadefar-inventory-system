@@ -1,0 +1,62 @@
+@import '../../../styles/catalogo.css';
+
+.compra-filters { display: grid; gap: 1rem; padding: 1.25rem; border-bottom: 1px solid var(--color-line); }
+.compra-filters__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.compra-filters__clave { grid-column: span 2; }
+.compra-filters__actions { display: flex; justify-content: flex-end; gap: .6rem; }
+.compras-page .catalogo-table-wrap { min-width: 0; max-width: 100%; contain: content; }
+.compra-table { min-width: 58rem; }
+.compra-table td { vertical-align: top; }
+.compra-table th { white-space: nowrap; }
+.compra-table .compra-number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.compra-link { color: var(--color-ink); font-weight: 650; text-decoration-color: var(--color-accent); text-underline-offset: .22em; }
+.compra-link:hover { text-decoration-thickness: 2px; }
+.compra-clave { overflow-wrap: anywhere; max-width: 20rem; }
+.compra-estado { display: inline-flex; width: fit-content; padding: .35rem .65rem; border: 1px solid #c8dec2; border-radius: .3rem; color: #3f653f; background: #f1f7ef; font-size: .76rem; font-weight: 650; white-space: nowrap; }
+.compra-estado--anulada { border-color: #ecc4bf; color: var(--color-danger); background: #fff0ed; }
+.compra-detail dd small { display: block; margin-top: .35rem; color: var(--color-muted); font-size: .76rem; }
+.compra-detail .compra-total { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.compra-anulacion { margin: 1.25rem; padding: 1.25rem; border-left: 3px solid var(--color-danger); background: #fff8f6; }
+.compra-anulacion h3 { margin: 0 0 1rem; color: var(--color-danger); font-size: 1rem; }
+.compra-anulacion dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 0; }
+.compra-anulacion dt { margin-bottom: .4rem; color: var(--color-muted); font-size: .75rem; }
+.compra-anulacion dd { margin: 0; font-size: .86rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+.compra-anulacion__motivo { grid-column: 1 / -1; }
+.compras-page a:focus-visible, .compras-page .catalogo-table-wrap:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+.compra-form { display: grid; gap: 1.5rem; padding: clamp(1rem, 3vw, 2rem); }
+.compra-form__cabecera, .compra-linea { min-width: 0; margin: 0; padding: 1.25rem; border: 1px solid var(--color-line); border-radius: .4rem; }
+.compra-form__cabecera legend, .compra-linea legend { padding-inline: .4rem; font-weight: 650; font-size: .9rem; }
+.compra-form__proveedor { margin: 1.25rem 0 0; font-size: .86rem; }
+.compra-form__heading h3, .compra-recuperacion h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.compra-form__heading p, .compra-form__note, .compra-recuperacion p { max-width: 75ch; margin: 0 0 1rem; color: var(--color-muted); font-size: .82rem; line-height: 1.6; }
+.compra-linea { margin-bottom: 1rem; border-left: 3px solid var(--color-accent); }
+.compra-linea__fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.compra-linea__medicamento { grid-column: 1 / -1; }
+.compra-linea__actions { display: flex; justify-content: flex-end; margin-top: 1rem; }
+.compra-form input, .compra-form select { min-width: 0; width: 100%; }
+.compra-form input[readonly] { background: var(--color-surface-subtle); }
+.compra-recuperacion { padding: 1.25rem; background: var(--color-accent-pale); border: 1px solid var(--color-accent-soft); border-radius: .4rem; }
+.compra-recuperacion__result { margin-top: 1rem; }
+.compra-recuperacion > p:last-child { margin: 1rem 0 0; }
+.compra-review { display: grid; gap: 1rem; margin: 0 0 1rem; }
+.compra-review dt { color: var(--color-muted); font-size: .8rem; }
+.compra-review dd { margin: .25rem 0 0; overflow-wrap: anywhere; font-size: .9rem; }
+.compra-review__lineas { padding-left: 1.5rem; max-height: 40vh; overflow-y: auto; }
+.compra-review__lineas li { padding: .75rem .25rem; border-top: 1px solid var(--color-line); font-size: .86rem; }
+.compra-review__lineas p { margin: .3rem 0 0; line-height: 1.5; }
+.compra-anulacion p { margin: 1rem 0 0; color: var(--color-muted); font-size: .82rem; line-height: 1.6; }
+.compra-anular-form fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.compra-anular-form legend { margin-bottom: 1rem; font-size: .95rem; font-weight: 650; }
+.compra-anular-form textarea { width: 100%; padding: .8rem; font: inherit; color: var(--color-ink); border: 1px solid var(--color-line-strong); border-radius: .4rem; resize: vertical; }
+.compra-anular-form textarea:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+.compra-anular-review dd { white-space: pre-wrap; }
+@media (max-width: 1000px) { .compra-linea__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .compra-filters__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .compra-filters__clave { grid-column: span 1; } }
+@media (max-width: 620px) {
+  .compra-filters__fields, .compra-anulacion dl { grid-template-columns: 1fr; }
+  .compra-anulacion__motivo { grid-column: auto; }
+  .compra-filters__actions { flex-direction: column; }
+  .compra-linea__fields { grid-template-columns: 1fr; }
+  .compra-linea__medicamento { grid-column: auto; }
+  .compra-recuperacion .button { width: 100%; white-space: normal; }
+}

@@ -1,6 +1,8 @@
 # CADEFAR Inventory System
 
-Sistema web de uso interno para la administración de inventario, ventas y control de vencimientos de la farmacia CADEFAR. El repositorio contiene un backend y un frontend independientes. Actualmente están disponibles las interfaces y API de autenticación, usuarios y proveedores/laboratorios; la existencia de otras tablas y datos de demostración no implica que sus módulos de aplicación estén implementados.
+Sistema web de uso interno para la administración de inventario, ventas y control de vencimientos de la farmacia CADEFAR. El repositorio contiene un backend y un frontend independientes. Están disponibles las interfaces y API de autenticación, usuarios, proveedores/laboratorios, medicamentos/composición, Inventario y Compras. Inventario incluye consultas, ajustes, retiros y vencimientos; Compras incluye registro, consulta y anulación. Ventas, Recetas y Reportes permanecen pendientes como módulos funcionales.
+
+La guía de uso y verificación del bloque entregado está en [Inventario y Compras](docs/uso/inventario-compras.md).
 
 ## Requisitos previos
 
@@ -31,14 +33,14 @@ cadefar-inventory-system/
 ├── backend/
 │   ├── .env.example
 │   ├── .sequelizerc
-│   ├── server.js
 │   ├── package.json
 │   └── src/
 │       ├── presentation/       # Rutas, middlewares y controllers
 │       ├── business/           # Services y validators
 │       ├── data/               # Modelos, repositories, config, migraciones y seeders
 │       ├── shared/             # Errores, constantes y utilidades
-│       └── app.js
+│       ├── app.js
+│       └── server.js            # Punto de entrada de pnpm start
 ├── frontend/
 │   ├── .env.example
 │   ├── package.json
@@ -46,7 +48,7 @@ cadefar-inventory-system/
 │       ├── api/                # Configuración de Axios
 │       ├── app/                # Rutas de React
 │       ├── components/
-│       ├── features/           # auth, dashboard, usuarios y proveedores
+│       ├── features/           # auth, usuarios, catálogo, proveedores, inventario y compras
 │       ├── layouts/
 │       ├── routes/             # Protección de vistas
 │       └── styles/
@@ -146,23 +148,35 @@ Los dos primeros comandos deshacen, respectivamente, la última migración y tod
 
 Mantén MySQL Server funcionando y abre **dos terminales** desde la raíz del repositorio:
 
-**Terminal 1 — backend** (ejecuta `node server.js` dentro de `backend/`, no desde la raíz):
+**Terminal 1 — backend** (desde `backend/`):
 
 ```bash
 cd backend
-node server.js
+pnpm start
 ```
 
-El backend muestra su dirección al iniciar; por defecto utiliza `http://localhost:3000`. No hay un script `start` configurado en `backend/package.json`.
+El script ejecuta `node src/server.js`. El backend muestra su puerto al iniciar; por defecto utiliza `http://localhost:3000`.
 
 **Terminal 2 — frontend** (ejecuta `pnpm dev` dentro de `frontend/`):
 
 ```bash
 cd frontend
-pnpm dev
+pnpm dev --host localhost --port 5173 --strictPort
 ```
 
-Abre la URL que indique Vite en la consola (habitualmente `http://localhost:5173`). En el frontend también están disponibles `pnpm build` para generar la compilación y `pnpm preview` para previsualizarla.
+Abre `http://localhost:5173`. `--strictPort` evita que Vite cambie silenciosamente de puerto y deje de coincidir con `FRONTEND_URL`. Mantén el mismo hostname en la URL del navegador y `VITE_API_URL` para las cookies. En el frontend también están disponibles `pnpm build` para generar la compilación y `pnpm preview` para previsualizarla; su origen debe coincidir con `FRONTEND_URL` si consume la API.
+
+## Verificar Inventario y Compras
+
+Desde `frontend/`, con las dependencias de ambos proyectos instaladas:
+
+```bash
+node --test --test-concurrency=1 tests/inventario.browser.test.mjs tests/compras.browser.test.mjs tests/cu09.browser.test.mjs
+node --test tests/aceptacion-real.browser.test.mjs
+pnpm build
+```
+
+Las tres primeras suites utilizan API simulada. La aceptación integrada utiliza React, Express y MySQL local reales: crea, migra y elimina únicamente una base aleatoria, usa fixtures sintéticos sin seeders y compara los datos/esquemas de las bases configuradas antes/después. Requiere `DB_NAME_TEST`, una cuenta local con permisos para esas operaciones y lectura de `performance_schema.data_lock_waits`, Node.js >=22 y Chrome/Edge. Puede indicarse su ejecutable mediante `CADEFAR_TEST_BROWSER`. La aceptación usa el puerto frontend 5179 y un puerto efímero para su backend; no necesita detener la aplicación local en 3000/5173.
 
 ## Arquitectura
 
@@ -180,8 +194,8 @@ El frontend se organiza por funcionalidades y componentes. Las páginas y compon
 2. Ejecuta `pnpm install` y configura `backend/.env` tomando como referencia `backend/.env.example`.
 3. Inicia MySQL Server; prepara la base indicada en `DB_NAME` y verifica las credenciales.
 4. Desde `backend/`, ejecuta `pnpm exec sequelize-cli db:migrate` y, si necesitas los datos de demostración, `pnpm exec sequelize-cli db:seed:all` (requiere `SEED_USERS_PASSWORD`).
-5. En esa terminal, inicia el backend con `node server.js`.
+5. En esa terminal, inicia el backend con `pnpm start`.
 6. Abre otra terminal, entra en `cadefar-inventory-system/frontend`, ejecuta `pnpm install` y configura `frontend/.env` a partir de `frontend/.env.example`.
-7. Desde `frontend/`, ejecuta `pnpm dev` y abre la URL que muestre Vite.
+7. Desde `frontend/`, ejecuta `pnpm dev --host localhost --port 5173 --strictPort` y abre `http://localhost:5173`.
 
 Para trabajar con el sistema deben permanecer funcionando **MySQL Server, backend y frontend**.

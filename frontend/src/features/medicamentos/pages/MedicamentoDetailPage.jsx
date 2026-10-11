@@ -42,6 +42,7 @@ export const MedicamentoDetailPage = () => {
     {loading ? <CatalogoState loading message="Cargando medicamento…" /> : !med ? <CatalogoState title="No se pudo abrir el medicamento" message={error} onRetry={() => setRevision((current) => current + 1)} /> : <>
       <FeedbackMessage message={location.state?.message} tone="success" />
       <header className="page-heading"><div><h2>{med.nombreComercial}</h2><p>{med.codigoMedicamento} · {med.presentacion}</p></div><div className="medicamento-detail-actions">
+        <Link className="button button--secondary" to={`/inventario/medicamentos/${med.idMedicamento}/existencias`}><AppIcon name="inventory" size={18} />Ver existencias</Link>
         <Link className="button button--secondary" to={`/medicamentos/${med.idMedicamento}/composicion`}><AppIcon name="prescription" size={18} />Ver composición</Link>
         {usuario.idRol === ROLES.REGENTE && <Link className="button button--primary" to={`/medicamentos/${med.idMedicamento}/editar`}><AppIcon name="edit" size={18} />Editar datos</Link>}
       </div></header>
