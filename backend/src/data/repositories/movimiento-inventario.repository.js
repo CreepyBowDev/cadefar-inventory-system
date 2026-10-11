@@ -5,6 +5,17 @@ const { MovimientoInventario, ExistenciaMedicamento, Medicamento, Usuario,
 const { Op, fn, col, where } = Sequelize;
 
 export class movimientoInventarioRepository {
+    static async findUltimoIdParaExistencia({ idExistencia, transaction }) {
+        // El Service debe bloquear primero la existencia y conservar ese
+        // bloqueo hasta terminar. FOR UPDATE evita un snapshot previo en RR.
+        const movimiento = await MovimientoInventario.findOne({
+            attributes: ['id_movimiento'], where: { id_existencia: idExistencia },
+            order: [['id_movimiento', 'DESC']],
+            transaction, lock: transaction.LOCK.UPDATE, raw: true
+        });
+        return movimiento?.id_movimiento ?? null;
+    }
+
     static async findParaAnular({ idsExistencias, idsDetalles, transaction }) {
         // Lectura actual bajo bloqueo, incluso si la transacción esperó otra
         // compra. Incluir enlaces a detalles fuera de su existencia detecta

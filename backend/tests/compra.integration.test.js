@@ -118,6 +118,7 @@ test('Compras CU25–CU27: HTTP/MySQL, persistencia, rollback y concurrencia en 
         const originalAnulado = await movimientoFixture(anuladaExistencia, 1, 'ENTRADA', {
             motivo: 'Compra', id_detalle_compra: detalleAnulado.id_detalle_compra });
         await movimientoFixture(anuladaExistencia, 1, 'SALIDA', { motivo: 'Reversión',
+            id_detalle_compra: detalleAnulado.id_detalle_compra,
             id_movimiento_original: originalAnulado.id_movimiento, fecha_movimiento: civil('2026-10-31 12:34:56') });
         const snapshot = async () => {
             const result = {};
@@ -612,6 +613,103 @@ test('Compras CU25–CU27: HTTP/MySQL, persistencia, rollback y concurrencia en 
             });
         };
 
+        // Fixtures exclusivas de esta base: no implementan endpoints de Ventas.
+        const ventaCompensada = async e => db.sequelize.transaction(async transaction => {
+            const actual = await db.ExistenciaMedicamento.findByPk(e.id_existencia, { transaction, lock: transaction.LOCK.UPDATE });
+            assert.ok(actual.cantidad_fisica >= 1);
+            const venta = await db.Venta.create({ id_usuario: usuarios.VENDEDOR.id_usuario,
+                clave_operacion: `fixture-venta-${e.id_existencia}`,
+                fecha_registro: civil('2026-11-01 00:15:00'), fecha_venta: civil('2026-11-01 00:15:00'),
+                estado_operacion: 'ANULADA', total: '2.00', motivo_anulacion: 'Fixture de venta compensada',
+                fecha_anulacion: civil('2026-11-01 00:15:00'), id_usuario_anulador: usuarios.ADMINISTRADOR.id_usuario }, { transaction });
+            const detalle = await db.DetalleVenta.create({ id_venta: venta.id_venta, id_existencia: e.id_existencia,
+                cantidad: 1, precio_unitario: '2.00', subtotal: '2.00' }, { transaction });
+            const datos = { id_existencia: e.id_existencia, id_usuario: usuarios.VENDEDOR.id_usuario,
+                id_detalle_compra: null, id_detalle_venta: detalle.id_detalle_venta, cantidad: 1,
+                costo_unitario_aplicado: actual.costo_unitario_promedio, fecha_movimiento: civil('2026-11-01 00:15:00') };
+            const original = await db.MovimientoInventario.create({ ...datos, direccion: 'SALIDA', motivo: 'VENTA' }, { transaction });
+            const compensacion = await db.MovimientoInventario.create({ ...datos, direccion: 'ENTRADA',
+                motivo: 'ANULACION_VENTA', id_movimiento_original: original.id_movimiento }, { transaction });
+            return { venta, detalle, original, compensacion };
+        });
+
+        await t.test('Motivos: COMPRA/Compra en B1 y legado sin snapshots mantienen identificación y límites', async () => {
+            for (const motivo of ['COMPRA', 'Compra']) {
+                const primera = await prepararAnulacion(['2'], 1, '2.000000');
+                const [original] = await movimientosCompra(primera.compra.idCompra);
+                await db.MovimientoInventario.update({ motivo }, { where: { id_movimiento: original.id_movimiento } });
+                const antes = await db.MovimientoInventario.findByPk(original.id_movimiento, { raw: true });
+                await anular(primera.compra);
+                assert.deepEqual(await db.MovimientoInventario.findByPk(original.id_movimiento, { raw: true }), antes);
+                const reversa = await db.MovimientoInventario.findOne({ where: { id_movimiento_original: original.id_movimiento } });
+                assert.equal(reversa.motivo, 'ANULACION_COMPRA');
+                const legado = await prepararAnulacion(['2'], 1, '2.000000');
+                await db.MovimientoInventario.update({ motivo }, { where: { id_detalle_compra: legado.compra.detalles[0].idDetalleCompra } });
+                await db.DetalleCompra.update({ saldo_anterior: null, costo_promedio_anterior: null }, { where: { id_compra: legado.compra.idCompra } });
+                const before = await snapshot();
+                assert.match((await anular(legado.compra, 409)).message, /falta el estado anterior/);
+                assert.deepEqual(await snapshot(), before);
+                await posterior(legado.e, 'ENTRADA', 1, '2.000000');
+                await anular(legado.compra);
+                assert.equal((await detallesCompra(legado.compra.idCompra))[0].saldo_anterior, null);
+            }
+        });
+
+        await t.test('Motivos: historial con ANULACION_COMPRA/Reversión legítima permite otra anulación sin reescribirlo', async () => {
+            for (const motivo of ['ANULACION_COMPRA', 'Reversión']) {
+                const { med, e, compra } = await prepararAnulacion(['2'], 1, '2.000000');
+                await anular(compra);
+                const [original] = (await movimientosCompra(compra.idCompra)).filter(m => m.id_movimiento_original === null);
+                await db.MovimientoInventario.update({ motivo }, { where: { id_movimiento_original: original.id_movimiento } });
+                const anterior = await movimientosCompra(compra.idCompra);
+                const segunda = (await post(body(`compatibilidad-${motivo === 'Reversión' ? 'legado' : 'oficial'}`,
+                    [linea(med, { cantidad: 1, costoUnitario: '2' })]))).data;
+                await anular(segunda);
+                assert.deepEqual(await movimientosCompra(compra.idCompra), anterior);
+                assert.equal((await db.ExistenciaMedicamento.findByPk(e.id_existencia)).cantidad_fisica, 1);
+                const before = await snapshot(); await anular(compra, 409); assert.deepEqual(await snapshot(), before);
+            }
+        });
+
+        await t.test('Motivos: ANULACION_VENTA legítima permite A, conserva venta y movimientos e impide doble reversión', async () => {
+            const { e, compra } = await prepararAnulacion(['2'], 1, '2.000000');
+            const { venta, detalle, original, compensacion } = await ventaCompensada(e);
+            const antes = await db.MovimientoInventario.findAll({ where: { id_detalle_venta: detalle.id_detalle_venta }, raw: true, order: [['id_movimiento', 'ASC']] });
+            const ventaAntes = await db.Venta.findByPk(venta.id_venta, { raw: true });
+            const detalleAntes = await db.DetalleVenta.findByPk(detalle.id_detalle_venta, { raw: true });
+            await anular(compra);
+            assert.deepEqual(await db.MovimientoInventario.findAll({ where: { id_detalle_venta: detalle.id_detalle_venta }, raw: true, order: [['id_movimiento', 'ASC']] }), antes);
+            assert.deepEqual(await db.Venta.findByPk(venta.id_venta, { raw: true }), ventaAntes);
+            assert.deepEqual(await db.DetalleVenta.findByPk(detalle.id_detalle_venta, { raw: true }), detalleAntes);
+            const before = await snapshot();
+            await assert.rejects(db.MovimientoInventario.create({ id_usuario: usuarios.ADMINISTRADOR.id_usuario,
+                id_existencia: e.id_existencia, id_detalle_venta: detalle.id_detalle_venta,
+                id_movimiento_original: original.id_movimiento, direccion: 'ENTRADA', cantidad: 1,
+                costo_unitario_aplicado: compensacion.costo_unitario_aplicado, motivo: 'ANULACION_VENTA' }),
+            error => error.name === 'SequelizeUniqueConstraintError');
+            assert.deepEqual(await snapshot(), before);
+        });
+
+        await t.test('Motivos: compensaciones de venta con identidad, referencias o estado incompatibles rechazan toda CU27', async () => {
+            for (const tipo of ['motivo-compra', 'motivo-legado', 'referencia-detalle', 'estado-venta']) {
+                const { e, compra } = await prepararAnulacion(['2'], 1, '2.000000');
+                const { venta, detalle, compensacion } = await ventaCompensada(e);
+                if (tipo === 'motivo-compra' || tipo === 'motivo-legado') {
+                    await db.MovimientoInventario.update({ motivo: tipo === 'motivo-compra' ? 'ANULACION_COMPRA' : 'Reversión' },
+                        { where: { id_movimiento: compensacion.id_movimiento } });
+                }
+                if (tipo === 'referencia-detalle') {
+                    const otro = await db.DetalleVenta.create({ id_venta: venta.id_venta, id_existencia: e.id_existencia,
+                        cantidad: detalle.cantidad, precio_unitario: '2.00', subtotal: '2.00' });
+                    await db.MovimientoInventario.update({ id_detalle_venta: otro.id_detalle_venta }, { where: { id_movimiento: compensacion.id_movimiento } });
+                }
+                if (tipo === 'estado-venta') await db.Venta.update({ estado_operacion: 'CONFIRMADA' }, { where: { id_venta: venta.id_venta } });
+                const before = await snapshot();
+                assert.match((await anular(compra, 409)).message, /inconsistente/);
+                assert.deepEqual(await snapshot(), before);
+            }
+        });
+
         await t.test('CU27 B1 restaura exactamente promedio redondeado, agotada histórica y existencia nueva; conserva originales', async () => {
             for (const [costos, saldo, promedio] of [[['0.000002'], 1, '0.000001'], [['8', '9'], 0, '5.000000'], [['2'], 0, '0.000000']]) {
                 const { e, compra } = await prepararAnulacion(costos, saldo, promedio);
@@ -825,6 +923,38 @@ test('Compras CU25–CU27: HTTP/MySQL, persistencia, rollback y concurrencia en 
             await Promise.all([anular(compra), anular(segunda)]);
             const actual = await db.ExistenciaMedicamento.findByPk(e.id_existencia);
             assert.equal(actual.cantidad_fisica, 1); assert.equal(actual.costo_unitario_promedio, '2.000000');
+        });
+
+        await t.test('Motivos: espera a otra anulación y lee la compensación y su cabecera ANULADA después del commit', async () => {
+            const { med, e, compra } = await prepararAnulacion(['2'], 1, '2.000000');
+            const segunda = (await post(body('espera-referencia-anulada', [linea(med, { cantidad: 1, costoUnitario: '2' })]))).data;
+            let liberar, escrita, transactionConcurrente;
+            const barrera = new Promise(resolve => { liberar = resolve; });
+            const llego = new Promise(resolve => { escrita = resolve; });
+            const original = compraRepository.anular.bind(compraRepository);
+            const mocked = t.mock.method(compraRepository, 'anular', async args => {
+                const result = await original(args);
+                if (args.idCompra === compra.idCompra) {
+                    transactionConcurrente = args.transaction; escrita(); await barrera;
+                }
+                return result;
+            });
+            const primera = anular(compra); primera.catch(() => {}); let pendiente;
+            try {
+                await llego;
+                pendiente = anular(segunda); pendiente.catch(() => {});
+                await waitForBlocker(transactionConcurrente);
+                liberar(); await primera; await pendiente;
+                const actual = await db.ExistenciaMedicamento.findByPk(e.id_existencia);
+                assert.equal(actual.cantidad_fisica, 1); assert.equal(actual.costo_unitario_promedio, '2.000000');
+                for (const c of [compra, segunda]) {
+                    assert.equal((await db.Compra.findByPk(c.idCompra)).estado_operacion, 'ANULADA');
+                    const rows = await movimientosCompra(c.idCompra);
+                    assert.equal(rows.filter(m => m.id_movimiento_original !== null && m.motivo === 'ANULACION_COMPRA').length, 1);
+                }
+            } finally {
+                liberar(); mocked.mock.restore(); await primera.catch(() => {}); if (pendiente) await pendiente.catch(() => {});
+            }
         });
 
         await t.test('CU27 un grupo inválido impide toda anulación; A redondea empate hacia arriba una sola vez', async () => {

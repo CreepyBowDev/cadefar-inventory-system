@@ -14,6 +14,10 @@ const existenciasInclude = {
 const contiene = (texto) => `%${texto.replace(/[\\%_]/g, '\\$&')}%`;
 
 export class existenciaMedicamentoRepository {
+    static async findByIdParaMovimiento({ idExistencia, transaction }) {
+        return ExistenciaMedicamento.findByPk(idExistencia, { transaction, lock: transaction.LOCK.UPDATE });
+    }
+
     static async findByIdParaAnular({ idExistencia, transaction }) {
         return ExistenciaMedicamento.findByPk(idExistencia, { transaction, lock: transaction.LOCK.UPDATE });
     }
@@ -55,9 +59,16 @@ export class existenciaMedicamentoRepository {
     }
 
     static async findMedicamentoConExistencias(idMedicamento) {
+        // Saldo y marcador en el mismo SELECT; MAX es solo la proyección de
+        // consulta, no la lectura actual bloqueante de las futuras escrituras.
         return Medicamento.findByPk(idMedicamento, {
             attributes: medicamentoAttributes,
-            include: [existenciasInclude],
+            include: [{ ...existenciasInclude, attributes: [...existenciasInclude.attributes,
+                [Sequelize.literal('(SELECT MAX(`ultimo_movimiento`.`id_movimiento`) ' +
+                    'FROM `movimiento_inventario` AS `ultimo_movimiento` ' +
+                    'WHERE `ultimo_movimiento`.`id_existencia` = `existencias`.`id_existencia`)'),
+                'ultimo_movimiento']
+            ] }],
             order: [['existencias', 'id_existencia', 'ASC']]
         });
     }

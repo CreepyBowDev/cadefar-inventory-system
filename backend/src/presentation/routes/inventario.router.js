@@ -7,6 +7,10 @@ import { ROLES } from '../../shared/constants/roles.js';
 export const inventarioRouter = Router();
 inventarioRouter.use(authMiddleware);
 
+inventarioRouter.post('/ajustes', requireRole(ROLES.REGENTE), inventarioController.registrarAjuste);
+inventarioRouter.post('/retiros/vencimiento', requireRole(ROLES.REGENTE), inventarioController.registrarRetiroVencimiento);
+inventarioRouter.post('/retiros/dano', requireRole(ROLES.REGENTE), inventarioController.registrarRetiroDano);
+
 inventarioRouter.get('/',
     requireRole(ROLES.ADMINISTRADOR, ROLES.REGENTE, ROLES.VENDEDOR),
     inventarioController.getInventario);

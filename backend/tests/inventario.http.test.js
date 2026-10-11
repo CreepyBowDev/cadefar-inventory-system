@@ -18,7 +18,8 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
     const existencia = (id, fecha, precision, cantidad, costo = '1.250000') => ({
         id_existencia: id, id_medicamento: 1, codigo_existencia: `PAR-${id}`,
         fecha_vencimiento: fecha, precision_vencimiento: precision,
-        cantidad_fisica: cantidad, costo_unitario_promedio: costo
+        cantidad_fisica: cantidad, costo_unitario_promedio: costo,
+        ultimo_movimiento: id === 5 ? null : id * 10
     });
     const medicamentos = [{
         id_medicamento: 1, codigo_medicamento: 'PAR', nombre_comercial: 'Paracetamol',
@@ -123,17 +124,29 @@ test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conect
             assert.deepEqual(sinExistencias.existencias, []);
             assert.equal(sinExistencias.stockFisico, 0);
             assert.equal(sinExistencias.stockVendible, 0);
+            assert.equal(activo.existencias.some(e => Object.hasOwn(e, 'ultimoMovimiento')), false);
             const sql = queries.at(-1);
             assert.match(sql, /LEFT OUTER JOIN `existencia_medicamento`/);
             assert.doesNotMatch(sql, /WHERE|cantidad_fisica`\s*>/);
+            assert.doesNotMatch(sql, /ultimo_movimiento/);
         });
 
         await t.test('Existencias: medicamento inexistente 404; existente sin existencias 200 y lista vacía', async () => {
+            const count = queries.length;
             const result = await request('REGENTE', '/medicamentos/1/existencias');
             assert.equal(result.data.length, 5);
             assert.equal(result.meta.fechaComercial, '2026-10-31');
+            assert.equal(queries.length, count + 2, 'Sesión y un único SELECT para saldo y marcador');
+            assert.deepEqual(result.data.map(e => [e.idExistencia, e.stockFisico, e.ultimoMovimiento]),
+                [[4, 3, 40], [2, 7, 20], [1, 5, 10], [3, 4, 30], [5, 0, null]]);
+            assert.match(queries.at(-1), /SELECT MAX\(`ultimo_movimiento`.`id_movimiento`\)/);
+            assert.match(queries.at(-1), /`ultimo_movimiento`.`id_existencia` = `existencias`.`id_existencia`/);
+            assert.equal(result.data.every(e => !Object.hasOwn(e, 'ultimo_movimiento')), true);
             assert.deepEqual((await request('REGENTE', '/medicamentos/3/existencias')).data, []);
             await request('REGENTE', '/medicamentos/2147483647/existencias', 404);
+            const inactivo = await request('REGENTE', '/medicamentos/2/existencias');
+            assert.equal(inactivo.data[0].stockVendible, 0);
+            assert.equal(inactivo.data[0].ultimoMovimiento, 60);
         });
 
         await t.test('Matriz de roles, sin sesión, token inválido, versión revocada y cuenta inactiva', async () => {
