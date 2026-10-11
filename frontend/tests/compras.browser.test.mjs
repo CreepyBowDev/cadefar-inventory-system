@@ -104,7 +104,7 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
       } else if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails);
       else if (message.method === 'Fetch.requestPaused') {
         const { requestId, request } = message.params, url = new URL(request.url), path = url.pathname;
-        requests.push({ path, query: Object.fromEntries(url.searchParams), method: request.method, ...(request.postData ? { body: JSON.parse(request.postData) } : {}) });
+        requests.push({ path, query: Object.fromEntries(url.searchParams), method: request.method, at: Date.now(), ...(request.postData ? { body: JSON.parse(request.postData) } : {}) });
         const finish = (status, data) => { void respond(requestId, status, data).catch((error) => errors.push(error.message)); };
         if (path === '/api/auth/me') { finish(rol ? 200 : 401, rol ? { data: { idUsuario: rol, idRol: rol, nombreUsuario: `usuario-${rol}` } } : { message: 'No autenticado' }); return; }
         if (path === '/api/proveedores-laboratorios') {
@@ -170,10 +170,7 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
     const click = (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
     const input = (id, value) => evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el, ${JSON.stringify(value)}); el.dispatchEvent(new Event('input',{bubbles:true})); })()`);
     const select = (id, value) => evaluate(`(() => { const el=document.getElementById(${JSON.stringify(id)}); el.value=${JSON.stringify(value)}; el.dispatchEvent(new Event('change',{bubbles:true})); })()`);
-    const submit = async () => {
-      await evaluate('document.querySelector(".compra-filters").requestSubmit()');
-      await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
-    };
+    const pausa = (ms) => evaluate(`new Promise(resolve => setTimeout(resolve, ${ms}))`);
     const contains = (text) => waitFor(`document.querySelector('.compras-page')?.textContent.includes(${JSON.stringify(text)})`);
     const settled = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
     const screenshot = async (name) => { if (process.env.CADEFAR_SCREENSHOT_DIR) { const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }); await writeFile(join(process.env.CADEFAR_SCREENSHOT_DIR, name), Buffer.from(data, 'base64')); } };
@@ -189,13 +186,38 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
     });
     await t.test('Período/proveedor/estado/clave se combinan, normalizan y no envían usuario del cliente', async () => {
       await waitFor(`document.querySelector('#compra-proveedor option[value="2"]')?.textContent.includes('inactivo')`);
-      const count = comprasRequests().length;
       await input('compra-desde', '2026-02-01'); await input('compra-hasta', '2026-02-01');
       await select('compra-proveedor', '2'); await select('compra-estado', 'CONFIRMADA'); await input('compra-clave', ' COMPRA-1 ');
-      assert.equal(comprasRequests().length, count);
-      await submit(); await waitFor('location.search.includes("claveOperacion=compra-1")'); await ready();
+      await waitFor('location.search.includes("claveOperacion=compra-1")'); await ready();
       assert.deepEqual(comprasRequests().at(-1).query, { desde: '2026-02-01', hasta: '2026-02-01', idProveedorLaboratorio: '2', estadoOperacion: 'CONFIRMADA', claveOperacion: 'compra-1' });
       assert.equal(await evaluate('document.querySelectorAll(".compra-table tbody tr").length'), 1);
+    });
+    await t.test('Clave automática: debounce de 300 ms, texto inmediato, foco conservado y ausencia de Consultar', async () => {
+      await navigate('/compras'); await ready();
+      const count = comprasRequests().length;
+      await evaluate('window.searchInput = document.getElementById("compra-clave"); searchInput.focus(); window.historyLength = history.length');
+      for (const value of ['C', 'CO', 'COM', 'COMPRA-1']) {
+        await input('compra-clave', value);
+        assert.equal(await evaluate('document.getElementById("compra-clave").value'), value);
+        await pausa(40);
+      }
+      const lastChange = Date.now() - 40;
+      await pausa(120); assert.equal(comprasRequests().length, count);
+      await ready();
+      assert.equal(comprasRequests().length, count + 1);
+      assert.ok(comprasRequests().at(-1).at - lastChange >= 270);
+      assert.deepEqual(comprasRequests().at(-1).query, { claveOperacion: 'compra-1' });
+      assert.ok(await evaluate('searchInput === document.getElementById("compra-clave") && document.activeElement === searchInput'));
+      assert.equal(await evaluate('document.getElementById("compra-clave").value'), 'COMPRA-1');
+      assert.equal(await evaluate('history.length'), await evaluate('window.historyLength'));
+      assert.equal(await evaluate('[...document.querySelectorAll(".compra-filters button")].some(b => /^(Buscar|Consultar)$/.test(b.textContent.trim()))'), false);
+      await input('compra-clave', ' compra-1 '); await pausa(350);
+      assert.equal(comprasRequests().length, count + 1);
+      await input('compra-clave', ''); await ready();
+      assert.deepEqual(comprasRequests().at(-1).query, {});
+      await input('compra-desde', '2026-02-01'); await input('compra-hasta', '2026-02-01');
+      await select('compra-proveedor', '2'); await select('compra-estado', 'CONFIRMADA');
+      await input('compra-clave', 'compra-1'); await ready();
     });
     await t.test('Recarga, detalle y volver conservan los filtros; GET por ID no envía query', async () => {
       const search = await evaluate('location.search');
@@ -209,11 +231,14 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
       assert.equal(await evaluate('document.getElementById("compra-proveedor").value'), '2');
     });
     await t.test('Rango invertido y claves inválidas se rechazan antes de consultar', async () => {
+      await input('compra-hasta', '2026-02-01'); await ready();
+      const validCount = comprasRequests().length;
+      await input('compra-desde', '2026-02-02'); await contains('no puede ser posterior');
+      assert.equal(comprasRequests().length, validCount);
+      await input('compra-desde', '2026-02-01'); await ready();
       const count = comprasRequests().length;
-      await input('compra-desde', '2026-02-02'); await submit(); await contains('no puede ser posterior');
-      await input('compra-desde', '2026-02-01');
       for (const value of ['clave con espacio', 'ácento', 'a'.repeat(65)]) {
-        await input('compra-clave', value); await submit(); await contains('La clave admite');
+        await input('compra-clave', value); await contains('La clave admite');
       }
       assert.equal(comprasRequests().length, count);
       await click('.compra-filters__actions button[type="button"]'); await waitFor('location.search === ""'); await ready();
@@ -254,13 +279,64 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
     await t.test('Respuesta y error tardíos no sustituyen una consulta más reciente', async () => {
       await navigate('/compras'); await ready();
       for (const status of [200, 500]) {
-        nextResponse = { hold: true }; await input('compra-clave', 'anterior'); await submit(); await waitUntil(() => heldRequest);
+        nextResponse = { hold: true }; await input('compra-clave', 'anterior'); await waitUntil(() => heldRequest);
         assert.equal(await evaluate('!!document.querySelector(".compra-table")'), false);
-        await input('compra-clave', 'compra-1'); await submit(); await waitFor('location.search.includes("compra-1")'); await ready();
+        await input('compra-clave', 'compra-1'); await waitFor('location.search.includes("compra-1")'); await ready();
         await respond(heldRequest, status, status === 200 ? { data: [compras[0]] } : { message: 'Error antiguo' }); heldRequest = null; await settled();
         assert.equal(await evaluate('document.querySelectorAll(".compra-table tbody tr").length'), 1);
         assert.ok(await evaluate('document.querySelector(".compra-table").textContent.includes("Confirmada")'));
       }
+    });
+    await t.test('Proveedor/estado/fechas se aplican inmediatamente con la clave pendiente y sin duplicados', async () => {
+      await navigate('/compras'); await ready();
+      await waitFor(`!!document.querySelector('#compra-proveedor option[value="2"]')`);
+      const count = comprasRequests().length;
+      await input('compra-clave', ' COMPRA-1 ');
+      const start = Date.now(); await select('compra-proveedor', '2'); await ready();
+      assert.ok(comprasRequests().at(-1).at - start < 280);
+      assert.deepEqual(comprasRequests().at(-1).query, { claveOperacion: 'compra-1', idProveedorLaboratorio: '2' });
+      await pausa(350); assert.equal(comprasRequests().length, count + 1);
+      await select('compra-estado', 'CONFIRMADA'); await ready();
+      await input('compra-desde', '2026-02-01'); await ready();
+      await input('compra-hasta', '2026-02-01'); await ready();
+      assert.equal(comprasRequests().length, count + 4);
+      assert.deepEqual(comprasRequests().at(-1).query, { claveOperacion: 'compra-1', idProveedorLaboratorio: '2', estadoOperacion: 'CONFIRMADA', desde: '2026-02-01', hasta: '2026-02-01' });
+      assert.equal(await evaluate('document.getElementById("compra-clave").value'), ' COMPRA-1 ');
+    });
+    await t.test('Respuestas y errores anteriores durante el debounce no sustituyen la búsqueda más reciente', async () => {
+      for (const status of [200, 500]) {
+        await navigate('/compras'); await ready();
+        nextResponse = { hold: true }; await input('compra-clave', 'anterior'); await waitUntil(() => heldRequest);
+        const count = comprasRequests().length;
+        await input('compra-clave', 'compra-1');
+        await respond(heldRequest, status, status === 200 ? { data: [compras[0]] } : { message: 'Error obsoleto' }); heldRequest = null;
+        await pausa(80);
+        assert.equal(comprasRequests().length, count);
+        assert.equal(await evaluate('document.querySelector("[aria-busy]").getAttribute("aria-busy")'), 'true');
+        assert.equal(await evaluate('!!document.querySelector(".compra-table")'), false);
+        assert.equal(await evaluate('!!document.querySelector(".compras-page [role=alert]")'), false);
+        await ready();
+        assert.ok(await evaluate('document.querySelector(".compra-table").textContent.includes("Confirmada")'));
+      }
+    });
+    await t.test('Limpiar durante el debounce y navegar a detalle cancelan la búsqueda pendiente', async () => {
+      await navigate('/compras'); await ready();
+      await input('compra-clave', 'no-enviar');
+      await click('.compra-filters__actions button'); await ready(); await pausa(350);
+      assert.deepEqual(comprasRequests().at(-1).query, {});
+      await input('compra-clave', 'compra-1'); await ready();
+      const search = await evaluate('location.search');
+      await evaluate('window.historyLength = history.length');
+      await click('a[href="/compras/1"]'); await ready();
+      await evaluate('history.back()'); await waitFor('location.pathname === "/compras"'); await ready();
+      assert.equal(await evaluate('location.search'), search);
+      assert.equal(await evaluate('document.getElementById("compra-clave").value'), 'compra-1');
+      await input('compra-clave', 'no-consultar');
+      await evaluate('history.forward()'); await waitFor('location.pathname === "/compras/1"'); await ready();
+      const count = comprasRequests().length;
+      await pausa(350);
+      assert.equal(comprasRequests().length, count);
+      assert.deepEqual(comprasRequests().at(-1).query, {});
     });
     await t.test('Opciones de proveedor con error no bloquean compras; reintento conserva selección y filtros', async () => {
       proveedorResponse = { status: 500, body: { message: 'Fallo interno' }, persist: true };

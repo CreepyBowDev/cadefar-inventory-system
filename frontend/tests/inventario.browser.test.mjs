@@ -99,7 +99,7 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       else if (message.method === 'Fetch.requestPaused') {
         const { requestId, request } = message.params;
         const url = new URL(request.url), path = url.pathname, params = url.searchParams;
-        requests.push({ path, query: Object.fromEntries(params), method: request.method, ...(request.postData ? { body: JSON.parse(request.postData) } : {}) });
+        requests.push({ path, query: Object.fromEntries(params), method: request.method, at: Date.now(), ...(request.postData ? { body: JSON.parse(request.postData) } : {}) });
         const finish = (status, data) => { void respond(requestId, status, data).catch((error) => errors.push(error.message)); };
         if (path === '/api/auth/me') {
           finish(rol ? 200 : 401, rol ? { data: { idUsuario: rol, idRol: rol, nombreUsuario: 'inventario-prueba' } } : { message: 'No autenticado' }); return;
@@ -136,7 +136,11 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
         } else if (path.endsWith('/movimientos')) finish(200, { data: movimientos });
         else if (path.endsWith('/proximos-a-vencer') || path.endsWith('/vencidos')) {
           const expired = path.endsWith('/vencidos');
-          finish(200, { data: existencias.filter((e) => e.stockFisico > 0 && e.vencida === expired).map((e) => ({ ...e, medicamento: medicamentos.find((m) => m.idMedicamento === e.idMedicamento) })), meta: expired ? meta : { ...meta, fechaHasta: '2026-05-15' } });
+          let data = existencias.filter((e) => e.stockFisico > 0 && e.vencida === expired).map((e) => ({ ...e, medicamento: medicamentos.find((m) => m.idMedicamento === e.idMedicamento) }));
+          if (params.has('idMedicamento')) data = data.filter(e => e.idMedicamento === Number(params.get('idMedicamento')));
+          if (params.has('nombreComercial')) data = data.filter(e => e.medicamento.nombreComercial.toLowerCase().includes(params.get('nombreComercial').toLowerCase()));
+          if (params.has('codigoMedicamento')) data = data.filter(e => e.medicamento.codigoMedicamento.includes(params.get('codigoMedicamento')));
+          finish(200, { data, meta: expired ? meta : { ...meta, fechaHasta: '2026-05-15' } });
         } else {
           let data = path.endsWith('/stock-bajo') ? inventario.filter((m) => m.estado && m.stockVendible <= m.stockMinimo) : inventario.filter(m => m.existencias.length);
           if (params.has('idMedicamento')) data = data.filter((m) => m.idMedicamento === Number(params.get('idMedicamento')));
@@ -168,12 +172,9 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
     };
     const click = (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
     const input = (id, value) => evaluate(`(() => { const input = document.getElementById(${JSON.stringify(id)}); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event('input', { bubbles:true })); })()`);
-    const submit = async () => {
-      await evaluate('document.querySelector(".inventario-filters").requestSubmit()');
-      // Esperar el render de la navegación antes de inspeccionar aria-busy;
-      // cambiar la URL puede preceder al commit de React bajo carga paralela.
-      await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
-    };
+    const select = (id, value) => evaluate(`(() => { const el=document.getElementById(${JSON.stringify(id)}); el.value=${JSON.stringify(value)}; el.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+    const pausa = (ms) => evaluate(`new Promise(resolve => setTimeout(resolve, ${ms}))`);
+    const inventoryRequests = () => requests.filter(r => r.path.startsWith('/api/inventario'));
     const bodyContains = (text) => waitFor(`document.querySelector('.inventario-page')?.textContent.includes(${JSON.stringify(text)})`);
     const changeRoute = async (selector, path) => { await click(selector); await waitFor(`location.pathname === ${JSON.stringify(path)}`); await ready(); };
     const screenshot = async (name) => {
@@ -198,21 +199,46 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1050, deviceScaleFactor: 1, mobile: false });
       await screenshot('inventario-desktop.png');
     });
-    await t.test('Filtros se aplican al consultar; normalizan espacios y preservan caracteres literales en la URL', async () => {
+    await t.test('Filtros automáticos combinan código/nombre/ID, normalizan espacios y conservan la URL al recargar', async () => {
       const count = requests.length;
       await input('inv-codigo', ' PAR%_001 '); await input('inv-nombre', ' Paracetamol '); await input('inv-id-med', '1');
       assert.equal(requests.length, count);
-      await submit(); await waitFor('location.search.includes("codigoMedicamento")'); await ready();
+      await waitFor('location.search.includes("codigoMedicamento")'); await ready();
       assert.deepEqual(requests.at(-1).query, { codigoMedicamento: 'PAR%_001', nombreComercial: 'Paracetamol', idMedicamento: '1' });
       assert.equal(await evaluate('document.querySelectorAll(".inventario-table tbody tr").length'), 1);
       await navigate(`/inventario${await evaluate('location.search')}`); await ready();
       assert.equal(await evaluate('document.getElementById("inv-codigo").value'), 'PAR%_001');
       assert.equal(await evaluate('document.getElementById("inv-nombre").value'), 'Paracetamol');
     });
+    await t.test('Debounce de 300 ms: texto inmediato, una petición por ráfaga, sin remonte ni botón Consultar', async () => {
+      await navigate('/inventario'); await ready();
+      const count = inventoryRequests().length;
+      await evaluate('window.searchInput = document.getElementById("inv-nombre"); searchInput.focus(); window.historyLength = history.length');
+      for (const value of ['P', 'Pa', 'Par', 'Para']) {
+        await input('inv-nombre', value);
+        assert.equal(await evaluate('document.getElementById("inv-nombre").value'), value);
+        await pausa(40);
+      }
+      const lastChange = Date.now() - 40;
+      await pausa(120);
+      assert.equal(inventoryRequests().length, count);
+      await ready();
+      assert.equal(inventoryRequests().length, count + 1);
+      assert.ok(inventoryRequests().at(-1).at - lastChange >= 270);
+      assert.equal(inventoryRequests().at(-1).query.nombreComercial, 'Para');
+      assert.ok(await evaluate('searchInput === document.getElementById("inv-nombre") && document.activeElement === searchInput'));
+      assert.equal(await evaluate('history.length'), await evaluate('window.historyLength'));
+      assert.equal(await evaluate('[...document.querySelectorAll(".inventario-filters button")].some(b => /^(Buscar|Consultar)$/.test(b.textContent.trim()))'), false);
+      await input('inv-nombre', ' Para '); await pausa(350);
+      assert.equal(inventoryRequests().length, count + 1);
+      assert.equal(await evaluate('document.getElementById("inv-nombre").value'), ' Para ');
+      await input('inv-nombre', ''); await ready();
+      assert.deepEqual(inventoryRequests().at(-1).query, {});
+    });
     await t.test('IDs inválidos no consultan la API y limpiar restaura listado', async () => {
       const count = requests.length;
       for (const value of ['0', '01', '1.5', '-1', '2147483648']) {
-        await input('inv-id-med', value); await submit(); await bodyContains('enteros positivos');
+        await input('inv-id-med', value); await bodyContains('enteros positivos');
       }
       assert.equal(requests.length, count);
       await click('.inventario-filters button[type="button"]'); await waitFor('location.search === ""'); await ready();
@@ -220,7 +246,7 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
     });
     await t.test('Respuesta vacía ofrece dirección y no conserva filas de la consulta anterior', async () => {
       nextResponse = { status: 200, body: { data: [], meta } };
-      await input('inv-nombre', 'No existe'); await submit(); await waitFor('location.search.includes("No+existe")'); await ready();
+      await input('inv-nombre', 'No existe'); await waitFor('location.search.includes("No+existe")'); await ready();
       await bodyContains('Sin resultados');
       await bodyContains('crear un producto en el catálogo no registra existencias');
       assert.equal(await evaluate('document.querySelectorAll(".inventario-table tbody tr").length'), 0);
@@ -228,10 +254,10 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
     });
     await t.test('Una respuesta tardía no sustituye los filtros nuevos ni sus resultados', async () => {
       nextResponse = { hold: true };
-      await input('inv-nombre', 'Antiguo'); await submit(); await waitUntil(() => heldRequest);
+      await input('inv-nombre', 'Antiguo'); await waitUntil(() => heldRequest);
       await waitFor('document.querySelector("[aria-busy]").getAttribute("aria-busy") === "true"');
       assert.equal(await evaluate('!!document.querySelector(".inventario-table")'), false);
-      await input('inv-nombre', 'Paracetamol'); await submit(); await waitFor('location.search.includes("Paracetamol")'); await ready();
+      await input('inv-nombre', 'Paracetamol'); await waitFor('location.search.includes("Paracetamol")'); await ready();
       await respond(heldRequest, 200, { data: [inventario[1]], meta }); heldRequest = null;
       // Barrera de microtareas/render después de la resolución de la respuesta antigua.
       await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
@@ -241,12 +267,41 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
     });
     await t.test('Un error tardío de filtros anteriores tampoco sustituye el resultado actual', async () => {
       nextResponse = { hold: true };
-      await input('inv-nombre', 'Error antiguo'); await submit(); await waitUntil(() => heldRequest);
-      await input('inv-nombre', 'Paracetamol'); await submit(); await waitFor('location.search.includes("Paracetamol")'); await ready();
+      await input('inv-nombre', 'Error antiguo'); await waitUntil(() => heldRequest);
+      await input('inv-nombre', 'Paracetamol'); await waitFor('location.search.includes("Paracetamol")'); await ready();
       await respond(heldRequest, 500, { message: 'Error técnico antiguo' }); heldRequest = null;
       await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
       assert.ok(await evaluate('document.querySelector(".inventario-table").textContent.includes("Paracetamol")'));
       assert.equal(await evaluate('!!document.querySelector(".inventario-page [role=alert]")'), false);
+    });
+    await t.test('Una respuesta o error antiguo durante el debounce no muestra datos ni interrumpe la espera', async () => {
+      for (const status of [200, 500]) {
+        await navigate('/inventario'); await ready();
+        nextResponse = { hold: true }; await input('inv-nombre', 'Antigua'); await waitUntil(() => heldRequest);
+        const count = inventoryRequests().length;
+        await input('inv-nombre', 'Paracetamol');
+        await respond(heldRequest, status, status === 200 ? { data: [inventario[1]], meta } : { message: 'Error obsoleto' }); heldRequest = null;
+        await pausa(80);
+        assert.equal(inventoryRequests().length, count);
+        assert.equal(await evaluate('document.querySelector("[aria-busy]").getAttribute("aria-busy")'), 'true');
+        assert.equal(await evaluate('!!document.querySelector(".inventario-table")'), false);
+        assert.equal(await evaluate('!!document.querySelector(".inventario-page [role=alert]")'), false);
+        await ready();
+        assert.ok(await evaluate('document.querySelector(".inventario-table").textContent.includes("Paracetamol")'));
+        assert.equal(await evaluate('document.getElementById("inv-nombre").value'), 'Paracetamol');
+      }
+    });
+    await t.test('Limpiar y cambiar de vista cancelan un debounce pendiente sin enviar el borrador anterior', async () => {
+      await navigate('/inventario'); await ready();
+      await input('inv-nombre', 'No enviar');
+      await click('.inventario-filters button'); await ready(); await pausa(350);
+      assert.equal(inventoryRequests().at(-1).query.nombreComercial, undefined);
+      assert.equal(await evaluate('document.getElementById("inv-nombre").value'), '');
+      await input('inv-nombre', 'No filtrar alertas');
+      await changeRoute('.inventario-nav a[href="/vencimientos"]', '/vencimientos'); await pausa(350);
+      assert.deepEqual(inventoryRequests().at(-1).query, {});
+      assert.equal(await evaluate('document.getElementById("inv-nombre").value'), '');
+      await navigate('/inventario'); await ready();
     });
     await t.test('CU22 usa endpoint propio, conserva MES histórico y costos diminutos sin reinterpretar fechas', async () => {
       const inicio = requests.length;
@@ -310,15 +365,16 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       await screenshot('movimientos-desktop.png');
     });
     await t.test('Historial valida rango, envía filtros exactos y restaura al retroceder', async () => {
-      const count = requests.length;
-      await input('inv-desde', '2026-02-02'); await input('inv-hasta', '2026-02-01'); await submit(); await bodyContains('no puede ser posterior');
-      assert.equal(requests.length, count);
+      await input('inv-hasta', '2026-02-01'); await ready();
+      const validCount = requests.length;
+      await input('inv-desde', '2026-02-02'); await bodyContains('no puede ser posterior');
+      assert.equal(requests.length, validCount);
       await input('inv-desde', '2026-02-01'); await input('inv-motivo', ' Compra ');
       await evaluate('const select = document.getElementById("inv-direccion"); select.value="ENTRADA"; select.dispatchEvent(new Event("change", {bubbles:true}));');
-      await submit(); await waitFor('location.search.includes("desde")'); await ready();
+      await waitFor('location.search.includes("motivo")'); await ready();
       assert.deepEqual(requests.at(-1).query, { idExistencia: '11', desde: '2026-02-01', hasta: '2026-02-01', direccion: 'ENTRADA', motivo: 'Compra' });
-      await click('.inventario-filters button[type="button"]'); await waitFor('location.search === ""'); await ready();
-      await evaluate('history.back()'); await waitFor('location.search.includes("desde")'); await ready();
+      await changeRoute('.inventario-nav a[href="/inventario"]', '/inventario');
+      await evaluate('history.back()'); await waitFor('location.pathname === "/inventario/movimientos" && location.search.includes("desde")'); await ready();
       assert.equal(await evaluate('document.getElementById("inv-motivo").value'), 'Compra');
       assert.equal(await evaluate('document.getElementById("inv-direccion").value'), 'ENTRADA');
     });
@@ -336,6 +392,61 @@ test('Inventario React: consultas, CU23/CU35/CU36 y permisos en Chrome con API s
       assert.equal(await evaluate('document.querySelectorAll(".inventario-table tbody tr").length'), 1);
       assert.ok(await evaluate('document.querySelector(".inventario-table").textContent.includes("PAR001-002")'));
       assert.ok(requests.some((r) => r.path === '/api/inventario/vencidos'));
+    });
+    await t.test('Stock bajo, próximos y vencidos buscan automáticamente con filtros combinados y limpieza', async () => {
+      for (const [ruta, endpoint] of [['/inventario/stock-bajo', '/stock-bajo'], ['/vencimientos', '/proximos-a-vencer'], ['/vencimientos/vencidos', '/vencidos']]) {
+        await navigate(ruta); await ready();
+        const count = inventoryRequests().length;
+        await input('inv-nombre', ' Paracetamol '); await input('inv-codigo', 'PAR001'); await input('inv-id-med', '1');
+        await ready();
+        assert.equal(inventoryRequests().length, count + 1);
+        assert.ok(inventoryRequests().at(-1).path.endsWith(endpoint));
+        assert.deepEqual(inventoryRequests().at(-1).query, { nombreComercial: 'Paracetamol', codigoMedicamento: 'PAR001', idMedicamento: '1' });
+        assert.equal(await evaluate('document.querySelectorAll(".inventario-table tbody tr").length'), 1);
+        assert.equal(await evaluate('!!document.querySelector(".inventario-filters button[type=submit]")'), false);
+        await input('inv-nombre', 'No existe'); await ready(); await bodyContains('Sin resultados');
+        await click('.inventario-filters button'); await ready();
+        assert.deepEqual(inventoryRequests().at(-1).query, {});
+        assert.ok(await evaluate('!!document.querySelector(".inventario-table")'));
+      }
+    });
+    await t.test('Dirección y fechas son inmediatas; la selección incorpora el motivo pendiente sin petición duplicada', async () => {
+      await navigate('/inventario/movimientos'); await ready();
+      const count = inventoryRequests().length;
+      await input('inv-motivo', ' Compra ');
+      const start = Date.now(); await select('inv-direccion', 'ENTRADA'); await ready();
+      assert.ok(inventoryRequests().at(-1).at - start < 280);
+      assert.deepEqual(inventoryRequests().at(-1).query, { motivo: 'Compra', direccion: 'ENTRADA' });
+      await pausa(350); assert.equal(inventoryRequests().length, count + 1);
+      await input('inv-desde', '2026-02-01'); await ready();
+      assert.deepEqual(inventoryRequests().at(-1).query, { motivo: 'Compra', direccion: 'ENTRADA', desde: '2026-02-01' });
+      assert.equal(await evaluate('document.getElementById("inv-motivo").value'), ' Compra ');
+      assert.equal(await evaluate('!!document.querySelector(".inventario-filters button[type=submit]")'), false);
+    });
+    await t.test('Alertas conservan carga inicial, errores/reintentos y descartan respuestas tardías durante la búsqueda', async () => {
+      for (const ruta of ['/vencimientos', '/vencimientos/vencidos']) {
+        nextResponse = { hold: true };
+        await navigate(ruta); await waitUntil(() => heldRequest);
+        assert.equal(await evaluate('document.querySelector("[aria-busy]").getAttribute("aria-busy")'), 'true');
+        await respond(heldRequest, 200, { data: [], meta }); heldRequest = null; await ready();
+        const count = inventoryRequests().length;
+        await input('inv-nombre', 'P'); await input('inv-nombre', 'Par'); await input('inv-nombre', 'Paracetamol');
+        await pausa(100); assert.equal(inventoryRequests().length, count);
+        await ready(); assert.equal(inventoryRequests().length, count + 1);
+        assert.ok(await evaluate('document.querySelector(".inventario-table").textContent.includes("Paracetamol")'));
+        nextResponse = { status: 500, body: { message: 'SELECT secreto' } };
+        await input('inv-nombre', 'Error'); await ready(); await bodyContains('No fue posible cargar');
+        assert.equal(await evaluate('document.querySelector(".inventario-page").textContent.includes("SELECT secreto")'), false);
+        await click('.catalogo-state button'); await ready(); await bodyContains('Sin resultados');
+        nextResponse = { hold: true }; await input('inv-nombre', 'Antigua'); await waitUntil(() => heldRequest);
+        await input('inv-nombre', 'Paracetamol');
+        await respond(heldRequest, 500, { message: 'Error obsoleto' }); heldRequest = null;
+        await pausa(80);
+        assert.equal(await evaluate('document.querySelector("[aria-busy]").getAttribute("aria-busy")'), 'true');
+        assert.equal(await evaluate('!!document.querySelector(".inventario-page [role=alert]")'), false);
+        await ready();
+        assert.ok(await evaluate('document.querySelector(".inventario-table").textContent.includes("Paracetamol")'));
+      }
     });
     await t.test('Errores 400/403/500 y red: mensajes útiles, sin detalles técnicos y sin mostrar datos antiguos', async () => {
       await navigate('/inventario'); await ready();

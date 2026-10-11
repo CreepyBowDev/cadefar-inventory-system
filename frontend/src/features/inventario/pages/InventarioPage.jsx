@@ -1,4 +1,3 @@
-import { useSearchParams } from 'react-router-dom';
 import { ROLES } from '../../../constants/roles.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { ConsultaMeta } from '../components/ConsultaMeta.jsx';
@@ -7,8 +6,9 @@ import { ExistenciasTable } from '../components/ExistenciasTable.jsx';
 import { InventarioFilters } from '../components/InventarioFilters.jsx';
 import { InventarioNav } from '../components/InventarioNav.jsx';
 import { InventarioTable } from '../components/InventarioTable.jsx';
-import { useConsulta } from '../../../hooks/useConsulta.js';
+import { useConsultaAutomatica } from '../../../hooks/useConsultaAutomatica.js';
 import { getInventario, getProximosAVencer, getStockBajo, getVencidos } from '../services/inventario.service.js';
+import { validarFiltrosInventario } from '../utils/filtrosInventario.js';
 import '../styles/inventario.css';
 
 const vistas = {
@@ -19,23 +19,15 @@ const vistas = {
 };
 
 export const InventarioPage = ({ vista = 'inventario' }) => {
-  const [params, setParams] = useSearchParams();
   const { usuario } = useAuth();
   const config = vistas[vista];
-  const query = params.toString();
-  const filtros = Object.fromEntries(params);
-  const consulta = useConsulta(config.consultar, `${vista}:${query}`, filtros);
-  const search = (values) => {
-    const next = new URLSearchParams(Object.entries(values).filter(([, value]) => value));
-    if (next.toString() === query) consulta.retry();
-    else setParams(next);
-  };
+  const { filtros, consulta, errorFiltros, onChange, onClear } = useConsultaAutomatica(config.consultar, validarFiltrosInventario);
   return <div className="catalogo-page inventario-page">
     <header className="page-heading"><div><h2>{config.titulo}</h2><p>{config.descripcion}</p></div></header>
     <InventarioNav />
     <section className="catalogo-panel" aria-label={config.titulo}>
-      <InventarioFilters key={`${vista}:${query}`} filtros={filtros} onSearch={search} onClear={() => search({})} />
-      <div className="catalogo-toolbar"><div><h3>Resultados</h3><p role="status" aria-live="polite">{consulta.loading ? 'Consultando…' : consulta.error ? 'Consulta no disponible' : `${consulta.data?.length || 0} ${config.existencias ? 'existencias' : 'medicamentos'}`}</p></div><button className="button button--secondary" type="button" onClick={consulta.retry} disabled={consulta.loading}>Actualizar</button></div>
+      <InventarioFilters filtros={filtros} error={errorFiltros} onChange={onChange} onClear={onClear} />
+      <div className="catalogo-toolbar"><div><h3>Resultados</h3><p role="status" aria-live="polite">{consulta.loading ? 'Consultando…' : consulta.error ? 'Consulta no disponible' : `${consulta.data?.length || 0} ${config.existencias ? 'existencias' : 'medicamentos'}`}</p></div><button className="button button--secondary" type="button" onClick={consulta.retry} disabled={consulta.loading || Boolean(errorFiltros)}>Actualizar</button></div>
       <ConsultaMeta meta={consulta.meta} />
       {!config.existencias && <p className="catalogo-note">Físico: unidades registradas en la farmacia. Vendible: unidades que pueden venderse según el estado y el vencimiento.</p>}
       <div aria-busy={consulta.loading}><ConsultaResultado consulta={consulta} empty={config.empty}>
