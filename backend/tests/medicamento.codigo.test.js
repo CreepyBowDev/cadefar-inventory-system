@@ -10,6 +10,7 @@ process.env.JWT_SECRET = 'secreto_sintetico_medicamentos_pruebas';
 const { default: db } = await import('../src/data/models/index.js');
 const { medicamentoService: service } = await import('../src/business/services/medicamento.service.js');
 const { medicamentoRepository: repo } = await import('../src/data/repositories/medicamento.repository.js');
+const { composicionMedicamentoRepository: compRepo } = await import('../src/data/repositories/composicion-medicamento.repository.js');
 const { usuarioRepository } = await import('../src/data/repositories/usuario.repository.js');
 const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
@@ -17,7 +18,9 @@ const { generarToken } = await import('../src/shared/utils/jwt.js');
 const datos = (nombreComercial = 'Paracetamol 500 mg') => ({
     idProveedorLaboratorio: 1, nombreComercial, formaFarmaceutica: 'Tableta',
     presentacion: '500 mg', unidadInventario: 'tableta', stockMinimo: 0,
-    condicionVenta: 'Libre', viaAdministracion: 'Oral', tipoLiberacion: 'Inmediata'
+    condicionVenta: 'Libre', viaAdministracion: 'Oral', tipoLiberacion: 'Inmediata',
+    composicion: [{ idPrincipioActivo: 1, cantidadPrincipioActivo: 500, unidadPrincipioActivo: 'mg',
+        cantidadReferencia: 1, unidadReferencia: 'tableta' }]
 });
 const fila = (codigo, id = 1, estado = true) => ({
     id_medicamento: id, codigo_medicamento: codigo, estado, id_proveedor_laboratorio: 1,
@@ -34,7 +37,7 @@ const almacenamiento = (t, inicial = []) => {
     let registros = structuredClone(inicial), sequence = 100, antesDeInsertar;
     const eventos = [], transacciones = [];
     t.mock.method(db.sequelize.connectionManager, 'getConnection', () => { throw new Error('MySQL prohibido'); });
-    t.mock.method(db.sequelize, 'transaction', async callback => {
+    t.mock.method(db.sequelize, 'transaction', async (_options, callback) => {
         const transaction = { id: transacciones.length + 1, snapshot: structuredClone(registros),
             nuevas: [], cambios: [], LOCK: { UPDATE: 'UPDATE' } };
         transacciones.push(transaction); eventos.push(['inicio', transaction.id]);
@@ -48,6 +51,14 @@ const almacenamiento = (t, inicial = []) => {
         } catch (error) { eventos.push(['rollback', transaction.id]); throw error; }
     });
     t.mock.method(repo, 'findProveedorById', async () => ({ estado: true }));
+    t.mock.method(repo, 'findDuplicadosIdentidad', async () => []);
+    t.mock.method(compRepo, 'findPrincipioById', async () => ({ id_principio_activo: 1 }));
+    t.mock.method(compRepo, 'create', async ({ data, transaction }) => {
+        const r = transaction.nuevas.find(r => r.id_medicamento === data.id_medicamento);
+        r.composiciones.push({ ...data, id_composicion: 1 });
+    });
+    t.mock.method(compRepo, 'findAllForMedicamento', async ({ idMedicamento, transaction }) =>
+        transaction.snapshot.find(r => r.id_medicamento === idMedicamento)?.composiciones || []);
     t.mock.method(repo, 'findMayorCorrelativo', async ({ prefijo, transaction }) => {
         eventos.push(['maximo', transaction.id]);
         return Math.max(0, ...transaction.snapshot.map(r => normalizar(r.codigo_medicamento))
@@ -278,7 +289,7 @@ test('HTTP real sin MySQL: POST/PATCH, consultas, composición y permisos', asyn
             for (const rol of [1, 2, 3]) {
                 assert.equal((await request('GET', `/${data.idMedicamento}`, undefined, 200, rol)).data.codigoMedicamento, 'PAR001');
                 assert.equal((await request('GET', '?codigoMedicamento=PAR', undefined, 200, rol)).data[0].codigoMedicamento, 'PAR001');
-                assert.deepEqual((await request('GET', `/${data.idMedicamento}/composicion`, undefined, 200, rol)).data, []);
+                assert.equal((await request('GET', `/${data.idMedicamento}/composicion`, undefined, 200, rol)).data[0].idPrincipioActivo, 1);
             }
         });
         await t.test('Código manual rechazado en POST y PATCH; nombre no regenera código', async () => {
@@ -304,13 +315,16 @@ test('Transacciones Sequelize gestionadas reales con transporte SQL simulado', a
     t.mock.method(db.sequelize.connectionManager, 'releaseConnection', async () => {});
     t.mock.method(db.sequelize.connectionManager, 'destroyConnection', async () => {});
     t.mock.method(db.sequelize, 'query', async (sql, options) => {
-        assert.match(sql, /^(START TRANSACTION|COMMIT|ROLLBACK)/);
+        assert.match(sql, /^(START TRANSACTION|COMMIT|ROLLBACK|SET TRANSACTION ISOLATION LEVEL READ COMMITTED)/);
         const id = options.transaction.id;
         eventos.push([sql, id]);
         if (sql.startsWith('START')) snapshots.set(id, confirmado);
         return [];
     });
     t.mock.method(repo, 'findProveedorById', async () => ({ estado: true }));
+    t.mock.method(repo, 'findDuplicadosIdentidad', async () => []);
+    t.mock.method(compRepo, 'findPrincipioById', async () => ({ id_principio_activo: 1 }));
+    t.mock.method(compRepo, 'create', async () => {});
     t.mock.method(repo, 'findMayorCorrelativo', async ({ transaction }) => snapshots.get(transaction.id) ? 1 : 0);
     t.mock.method(repo, 'findByCodigo', async () => null);
     t.mock.method(repo, 'create', async ({ data, transaction }) => {
@@ -319,7 +333,9 @@ test('Transacciones Sequelize gestionadas reales con transporte SQL simulado', a
     });
     t.mock.method(repo, 'findById', async () => fila('PAR002', 2));
     assert.equal((await service.createMedicamento(datos())).codigoMedicamento, 'PAR002');
-    assert.deepEqual(eventos.map(e => e[0]), ['START TRANSACTION;', 'ROLLBACK;', 'START TRANSACTION;', 'COMMIT;']);
-    assert.notEqual(eventos[0][1], eventos[2][1]);
+    const limites = eventos.filter(e => !e[0].startsWith('SET'));
+    assert.equal(eventos.filter(e => e[0] === 'SET TRANSACTION ISOLATION LEVEL READ COMMITTED;').length, 2);
+    assert.deepEqual(limites.map(e => e[0]), ['START TRANSACTION;', 'ROLLBACK;', 'START TRANSACTION;', 'COMMIT;']);
+    assert.notEqual(limites[0][1], limites[2][1]);
     assert.equal(db.sequelize.connectionManager.releaseConnection.mock.callCount(), 2);
 });
