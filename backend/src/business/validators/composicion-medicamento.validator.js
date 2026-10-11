@@ -21,9 +21,10 @@ const cantidadesSchema = z.object({
     cantidadReferencia: cantidadSchema,
     unidadReferencia: unidadSchema
 });
-const createSchema = cantidadesSchema.extend({
+export const componenteComposicionSchema = cantidadesSchema.extend({
     idPrincipioActivo: z.number().int().positive().max(2147483647)
 }).strict();
+const createSchema = componenteComposicionSchema;
 const updateSchema = cantidadesSchema.partial().strict().refine(
     (data) => Object.keys(data).length > 0,
     { message: 'Debe enviar al menos un dato para modificar' }

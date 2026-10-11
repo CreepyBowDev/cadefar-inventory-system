@@ -33,12 +33,15 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
     try {
         db.sequelize.options.logging = false;
         assert.equal(db.sequelize.config.database === testDatabase, true, 'Sequelize debe usar DB_NAME_TEST');
-        transaction = await originalTransaction();
+        transaction = await originalTransaction({
+            isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED
+        });
         db.sequelize.query = (sql, options = {}) => originalQuery(sql, {
             ...options, transaction: options.transaction ?? transaction
         });
         db.sequelize.transaction = (options, callback) => originalTransaction(
-            { transaction }, typeof options === 'function' ? options : callback
+            { transaction, isolationLevel: transaction.options.isolationLevel },
+            typeof options === 'function' ? options : callback
         );
         console.error = (...args) => {
             if (args[0]?.name !== 'AppError') originalConsoleError(...args);
@@ -81,7 +84,9 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
             idProveedorLaboratorio: proveedor.id_proveedor_laboratorio,
             nombreComercial: `${prefix} producto ${suffix}`,
             formaFarmaceutica: 'Tableta', presentacion: '500 mg', unidadInventario: 'tableta',
-            condicionVenta: 'Con receta', viaAdministracion: 'Oral', tipoLiberacion: 'Inmediata', ...extra
+            condicionVenta: 'Con receta', viaAdministracion: 'Oral', tipoLiberacion: 'Inmediata',
+            composicion: [{ idPrincipioActivo: principio.idPrincipioActivo, cantidadPrincipioActivo: 500,
+                unidadPrincipioActivo: 'mg', cantidadReferencia: 1, unidadReferencia: 'tableta' }], ...extra
         });
         const createMed = async (suffix, extra) => {
             const { data } = await request('REGENTE', 'POST', '/medicamentos', 201, medData(suffix, extra));
@@ -114,10 +119,10 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
             otro = await createMed('B', { estado: false });
             assert.equal(medicamento.estado, true);
             assert.equal(medicamento.stockMinimo, 0);
-            assert.deepEqual(medicamento.composicion, []);
+            assert.equal(medicamento.composicion.length, 1);
             assert.deepEqual(Object.keys(medicamento.proveedorLaboratorio).sort(), ['idProveedorLaboratorio', 'nombre']);
             assert.equal(otro.estado, false);
-            composicion = await createComp(medicamento, principio);
+            composicion = medicamento.composicion[0];
             assert.equal(composicion.principioActivo.nombre, principio.nombre);
             assert.equal(composicion.cantidadPrincipioActivo, '500.0000');
             assert.equal('id_composicion' in composicion, false);
@@ -170,7 +175,7 @@ test('Catálogo: HTTP, autorización, reglas históricas y búsqueda AND en MySQ
             composicion = await createComp(medicamento, principio);
             await createComp(medicamento, segundo, { cantidadPrincipioActivo: 30 });
             await createComp(medicamento, tercero, { cantidadPrincipioActivo: 10 });
-            await createComp(otro, principio);
+            assert.equal(otro.composicion[0].idPrincipioActivo, principio.idPrincipioActivo);
         });
 
         await t.test('Unicidad, referencias inexistentes y proveedor inactivo', async () => {

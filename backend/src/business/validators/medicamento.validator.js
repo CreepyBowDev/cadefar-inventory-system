@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { componenteComposicionSchema } from './composicion-medicamento.validator.js';
 
 const idSchema = z.number().int().positive().max(2147483647);
 const texto = (maximo) => z.string().trim().min(1).max(maximo);
@@ -21,7 +22,11 @@ const datosSchema = z.object({
 
 const createSchema = datosSchema.extend({
     stockMinimo: datosSchema.shape.stockMinimo.optional(),
-    estado: z.boolean().optional()
+    estado: z.boolean().optional(),
+    composicion: z.array(componenteComposicionSchema).min(1).refine(
+        componentes => new Set(componentes.map(c => c.idPrincipioActivo)).size === componentes.length,
+        { message: 'No se permite repetir un principio activo en la composición' }
+    )
 }).strict();
 
 const updateSchema = datosSchema.partial().strict().refine(

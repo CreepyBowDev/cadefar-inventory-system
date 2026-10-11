@@ -2,6 +2,9 @@ import db from '../../data/models/index.js';
 import { medicamentoRepository } from '../../data/repositories/medicamento.repository.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { obtenerPrefijoMedicamento } from '../../shared/utils/codigo-medicamento.js';
+import { composicionMedicamentoRepository } from '../../data/repositories/composicion-medicamento.repository.js';
+import { transaccionCatalogo, bloquearProveedoresIdentidad, validarIdentidadDisponible,
+    convertirErrorContencionCatalogo } from './identidad-medicamento.js';
 
 const campos = {
     idProveedorLaboratorio: 'id_proveedor_laboratorio',
@@ -65,12 +68,6 @@ const toPublicMedicamento = (medicamento) => {
     };
 };
 
-const validateProveedorActivo = async (idProveedorLaboratorio, transaction) => {
-    const proveedor = await medicamentoRepository.findProveedorById({ idProveedorLaboratorio, transaction });
-    if (!proveedor) throw new AppError('Proveedor o laboratorio no encontrado', 404);
-    if (!proveedor.estado) throw new AppError('El proveedor o laboratorio está inactivo', 409);
-};
-
 const validateCodigoNoEnviado = (data) => {
     if (Object.hasOwn(data, 'codigoMedicamento')) {
         throw new AppError('El código del medicamento lo genera el sistema y no puede modificarse', 400);
@@ -125,29 +122,50 @@ export class medicamentoService {
 
     static async createMedicamento(data) {
         validateCodigoNoEnviado(data);
+        const { composicion, ...datosMedicamento } = data;
+        if (!Array.isArray(composicion) || !composicion.length) {
+            throw new AppError('La composición debe contener al menos un principio activo', 400);
+        }
+        if (new Set(composicion.map(c => c.idPrincipioActivo)).size !== composicion.length) {
+            throw new AppError('No se permite repetir un principio activo en la composición', 400);
+        }
         const prefijo = obtenerPrefijoMedicamento(data.nombreComercial);
         for (let intento = 0; intento < MAXIMOS_INTENTOS_CODIGO; intento++) {
             try {
-                return await db.sequelize.transaction(async (transaction) => {
-                    await validateProveedorActivo(data.idProveedorLaboratorio, transaction);
+                return await transaccionCatalogo(async (transaction) => {
+                    const proveedores = await bloquearProveedoresIdentidad([data.idProveedorLaboratorio], transaction);
+                    if (!proveedores.get(data.idProveedorLaboratorio).estado) {
+                        throw new AppError('El proveedor o laboratorio está inactivo', 409);
+                    }
+                    for (const componente of [...composicion].sort((a, b) => a.idPrincipioActivo - b.idPrincipioActivo)) {
+                        const principio = await composicionMedicamentoRepository.findPrincipioById({
+                            idPrincipioActivo: componente.idPrincipioActivo, transaction
+                        });
+                        if (!principio) throw new AppError('Principio activo no encontrado', 404);
+                    }
+                    const values = toModelData(datosMedicamento);
+                    await validarIdentidadDisponible(values, composicion, transaction);
                     const codigo = await generarCodigo(prefijo, transaction);
                     const medicamento = await medicamentoRepository.create({
-                        data: { ...toModelData(data), codigo_medicamento: codigo }, transaction
+                        data: { ...values, codigo_medicamento: codigo }, transaction
                     });
+                    for (const componente of composicion) {
+                        await composicionMedicamentoRepository.create({ transaction, data: {
+                            id_medicamento: medicamento.id_medicamento,
+                            id_principio_activo: componente.idPrincipioActivo,
+                            cantidad_principio_activo: componente.cantidadPrincipioActivo,
+                            unidad_principio_activo: componente.unidadPrincipioActivo,
+                            cantidad_referencia: componente.cantidadReferencia,
+                            unidad_referencia: componente.unidadReferencia
+                        } });
+                    }
                     return this.getMedicamentoById(medicamento.id_medicamento, transaction);
                 });
             } catch (error) {
                 // La transacción gestionada ya terminó su rollback. Cada vuelta
                 // abre otra transacción y otro snapshot; nunca repetir solo el INSERT.
                 if (esColisionCodigo(error)) continue;
-                const codigo = error.parent?.code || error.original?.code;
-                if (codigo === 'ER_LOCK_DEADLOCK') {
-                    throw new AppError('Conflicto temporal al registrar el medicamento: se detectó un bloqueo mutuo. Intente nuevamente', 409);
-                }
-                if (codigo === 'ER_LOCK_WAIT_TIMEOUT') {
-                    throw new AppError('Se agotó la espera de bloqueo al registrar el medicamento. Intente nuevamente', 409);
-                }
-                throw error;
+                throw convertirErrorContencionCatalogo(error);
             }
         }
         throw new AppError('No se pudo asignar un código por registros simultáneos. Intente nuevamente', 409);
@@ -155,15 +173,25 @@ export class medicamentoService {
 
     static async updateMedicamento(idMedicamento, data) {
         validateCodigoNoEnviado(data);
-        return db.sequelize.transaction(async (transaction) => {
+        return transaccionCatalogo(async (transaction) => {
             const medicamento = await this.getMedicamentoForUpdate(idMedicamento, transaction);
+            const actual = medicamento.get({ plain: true });
             const values = toModelData(data);
+            const proveedores = await bloquearProveedoresIdentidad([
+                actual.id_proveedor_laboratorio, values.id_proveedor_laboratorio ?? actual.id_proveedor_laboratorio
+            ], transaction);
             const cambiaIdentidad = camposIdentidad.some((campo) =>
                 values[campo] !== undefined && values[campo] !== medicamento.get(campo)
             );
             if (cambiaIdentidad) await this.validateSinHistorial(idMedicamento, transaction);
             if (data.idProveedorLaboratorio !== undefined) {
-                await validateProveedorActivo(data.idProveedorLaboratorio, transaction);
+                if (!proveedores.get(data.idProveedorLaboratorio).estado) {
+                    throw new AppError('El proveedor o laboratorio está inactivo', 409);
+                }
+            }
+            if (['nombre_comercial', ...camposIdentidad].some(campo => values[campo] !== undefined && values[campo] !== actual[campo])) {
+                const composicion = await composicionMedicamentoRepository.findAllForMedicamento({ idMedicamento, transaction });
+                await validarIdentidadDisponible({ ...actual, ...values }, composicion, transaction, idMedicamento);
             }
             await medicamentoRepository.update({ idMedicamento, data: values, transaction });
             return this.getMedicamentoById(idMedicamento, transaction);

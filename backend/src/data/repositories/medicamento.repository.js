@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import { enteroADecimal } from '../../shared/utils/decimal.js';
 
 const { Medicamento, ProveedorLaboratorio, ComposicionMedicamento,
     PrincipioActivo, ExistenciaMedicamento, MovimientoInventario, Sequelize } = db;
@@ -73,11 +74,47 @@ export class medicamentoRepository {
         return Number(fila.mayor);
     }
 
-    static async findProveedorById({ idProveedorLaboratorio, transaction }) {
+    static async findProveedorById({ idProveedorLaboratorio, transaction, exclusivo = false }) {
         return ProveedorLaboratorio.findByPk(idProveedorLaboratorio, {
             attributes: ['id_proveedor_laboratorio', 'estado'],
             transaction,
-            ...(transaction ? { lock: transaction.LOCK.SHARE } : {})
+            ...(transaction ? { lock: exclusivo ? transaction.LOCK.UPDATE : transaction.LOCK.SHARE } : {})
+        });
+    }
+
+    static async findDuplicadosIdentidad({ medicamento, composicion, transaction, idMedicamento }) {
+        // Lecturas sin FOR UPDATE: el mutex es ProveedorLaboratorio. READ COMMITTED
+        // evita snapshots viejos después de esperar ese mutex y no bloquea candidatos
+        // que otra operación puede tener bloqueados antes de solicitar el proveedor.
+        if (transaction?.options?.isolationLevel !== Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED) {
+            throw new Error('La comprobación de identidad requiere una transacción READ COMMITTED');
+        }
+        const normalizar = valor => `TRIM(REGEXP_REPLACE(${valor}, '[[:space:]]+', ' '))`;
+        const replacements = { proveedor: medicamento.id_proveedor_laboratorio,
+            total: composicion.length, excluido: idMedicamento ?? 0 };
+        const filtros = ['m.id_proveedor_laboratorio = :proveedor', 'm.id_medicamento <> :excluido'];
+        for (const campo of ['nombre_comercial', 'forma_farmaceutica', 'presentacion',
+            'unidad_inventario', 'via_administracion', 'tipo_liberacion']) {
+            replacements[campo] = medicamento[campo];
+            filtros.push(`${normalizar(`m.${campo}`)} = ${normalizar(`:${campo}`)}`);
+        }
+        filtros.push('(SELECT COUNT(*) FROM composicion_medicamento c WHERE c.id_medicamento = m.id_medicamento) = :total');
+        composicion.forEach((c, i) => {
+            Object.assign(replacements, { [`principio${i}`]: c.idPrincipioActivo,
+                [`cantidad${i}`]: enteroADecimal(c.cantidadPrincipioActivo, 4),
+                [`unidad${i}`]: c.unidadPrincipioActivo,
+                [`referencia${i}`]: enteroADecimal(c.cantidadReferencia, 4),
+                [`unidadReferencia${i}`]: c.unidadReferencia });
+            filtros.push(`EXISTS (SELECT 1 FROM composicion_medicamento c
+                WHERE c.id_medicamento = m.id_medicamento AND c.id_principio_activo = :principio${i}
+                  AND c.cantidad_principio_activo = CAST(:cantidad${i} AS DECIMAL(12,4))
+                  AND c.cantidad_referencia = CAST(:referencia${i} AS DECIMAL(12,4))
+                  AND ${normalizar('c.unidad_principio_activo')} = ${normalizar(`:unidad${i}`)}
+                  AND ${normalizar('c.unidad_referencia')} = ${normalizar(`:unidadReferencia${i}`)})`);
+        });
+        return db.sequelize.query(`SELECT m.id_medicamento, m.codigo_medicamento, m.nombre_comercial, m.estado
+            FROM medicamento m WHERE ${filtros.join(' AND ')} ORDER BY m.id_medicamento`, {
+            replacements, transaction, type: Sequelize.QueryTypes.SELECT
         });
     }
 

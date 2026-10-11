@@ -5,6 +5,11 @@ const principioInclude = { model: PrincipioActivo, as: 'principioActivo',
     attributes: ['id_principio_activo', 'nombre'] };
 
 export class composicionMedicamentoRepository {
+    static async findAllForMedicamento({ idMedicamento, transaction }) {
+        return ComposicionMedicamento.findAll({ where: { id_medicamento: idMedicamento },
+            transaction, raw: true, order: [['id_principio_activo', 'ASC']] });
+    }
+
     static async findById({ idMedicamento, idComposicion, transaction }) {
         return ComposicionMedicamento.findOne({
             where: { id_medicamento: idMedicamento, id_composicion: idComposicion },
