@@ -57,8 +57,9 @@ export const NAVIGATION_ITEMS = Object.freeze([
     label: 'Compras',
     description: 'Adquisiciones y recepción de productos',
     icon: 'cart',
-    roles: [ROLES.ADMINISTRADOR],
-    available: false
+    path: '/compras',
+    roles: [ROLES.ADMINISTRADOR, ROLES.REGENTE],
+    available: true
   },
   {
     key: 'ventas',
@@ -73,16 +74,18 @@ export const NAVIGATION_ITEMS = Object.freeze([
     label: 'Inventario',
     description: 'Existencias y movimientos',
     icon: 'inventory',
-    roles: [ROLES.REGENTE],
-    available: false
+    path: '/inventario',
+    roles: ALL_ROLES,
+    available: true
   },
   {
     key: 'vencimientos',
     label: 'Vencimientos',
-    description: 'Próximos a vencer y retiros',
+    description: 'Próximos a vencer y vencidos pendientes de retiro',
     icon: 'calendar',
-    roles: [ROLES.REGENTE],
-    available: false
+    path: '/vencimientos',
+    roles: [ROLES.ADMINISTRADOR, ROLES.REGENTE],
+    available: true
   },
   {
     key: 'recetas',
@@ -106,6 +109,16 @@ export const getNavigationForRole = (idRol) =>
   NAVIGATION_ITEMS.filter((item) => item.roles.includes(idRol));
 
 export const getPageTitle = (pathname) => {
+  if (pathname.startsWith('/inventario/medicamentos/') && pathname.endsWith('/retiro-vencimiento')) return 'Retirar por vencimiento';
+  if (pathname.startsWith('/inventario/medicamentos/') && pathname.endsWith('/retiro-dano')) return 'Retirar por daño';
+  if (pathname.startsWith('/inventario/medicamentos/') && pathname.endsWith('/ajuste')) return 'Conciliar conteo físico';
+  if (pathname === '/compras/nueva') return 'Registrar compra';
+  if (pathname.startsWith('/compras/')) return 'Detalle de la compra';
+  if (pathname === '/inventario/movimientos') return 'Movimientos de inventario';
+  if (pathname === '/inventario/stock-bajo') return 'Stock bajo';
+  if (pathname.startsWith('/inventario/medicamentos/')) return 'Existencias del medicamento';
+  if (pathname === '/vencimientos') return 'Próximos a vencer';
+  if (pathname === '/vencimientos/vencidos') return 'Vencidos pendientes de retiro';
   if (pathname.startsWith('/medicamentos/')) {
     if (pathname === '/medicamentos/nuevo') return 'Nuevo medicamento';
     if (pathname.endsWith('/editar')) return 'Editar medicamento';
