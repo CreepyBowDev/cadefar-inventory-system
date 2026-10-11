@@ -24,11 +24,9 @@
 .inventario-trace dt { color: var(--color-muted); margin-bottom: .2rem; }
 .inventario-trace dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .inventario-detail-links { display: flex; flex-wrap: wrap; gap: .7rem; }
-.inventario-page a:focus-visible, .inventario-page summary:focus-visible, .inventario-page .catalogo-table-wrap:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
 .ajuste-form fieldset, .retiro-form fieldset { min-width: 0; padding: 0; margin: 0; border: 0; }
 .ajuste-form legend, .retiro-form legend { margin-bottom: 1.2rem; font-size: 1rem; font-weight: 650; }
 .ajuste-form textarea, .retiro-form textarea { width: 100%; padding: .8rem; font: inherit; color: var(--color-ink); border: 1px solid var(--color-line-strong); border-radius: .4rem; resize: vertical; }
-.ajuste-form textarea:focus-visible, .retiro-form textarea:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
 .ajuste-form input, .retiro-form input { min-width: 0; width: 100%; }
 .ajuste-form__explicacion, .retiro-form__explicacion { max-width: 75ch; margin: 0; color: var(--color-muted); font-size: .82rem; line-height: 1.6; }
 .existencia-observada > div:first-child { border-left: 3px solid var(--color-accent); }

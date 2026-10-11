@@ -22,7 +22,6 @@
 .compra-anulacion dt { margin-bottom: .4rem; color: var(--color-muted); font-size: .75rem; }
 .compra-anulacion dd { margin: 0; font-size: .86rem; overflow-wrap: anywhere; white-space: pre-wrap; }
 .compra-anulacion__motivo { grid-column: 1 / -1; }
-.compras-page a:focus-visible, .compras-page .catalogo-table-wrap:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
 .compra-form { display: grid; gap: 1.5rem; padding: clamp(1rem, 3vw, 2rem); }
 .compra-form__cabecera, .compra-linea { min-width: 0; margin: 0; padding: 1.25rem; border: 1px solid var(--color-line); border-radius: .4rem; }
 .compra-form__cabecera legend, .compra-linea legend { padding-inline: .4rem; font-weight: 650; font-size: .9rem; }
@@ -48,7 +47,6 @@
 .compra-anular-form fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .compra-anular-form legend { margin-bottom: 1rem; font-size: .95rem; font-weight: 650; }
 .compra-anular-form textarea { width: 100%; padding: .8rem; font: inherit; color: var(--color-ink); border: 1px solid var(--color-line-strong); border-radius: .4rem; resize: vertical; }
-.compra-anular-form textarea:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
 .compra-anular-review dd { white-space: pre-wrap; }
 @media (max-width: 1000px) { .compra-linea__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .compra-filters__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .compra-filters__clave { grid-column: span 1; } }

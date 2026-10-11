@@ -4,29 +4,6 @@
   gap: 1.25rem;
 }
 
-.page-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding-bottom: 0.4rem;
-}
-
-.page-heading h2 {
-  margin: 0;
-  color: var(--color-ink);
-  font-size: clamp(1.55rem, 3vw, 2.15rem);
-  font-weight: 730;
-  letter-spacing: -0.045em;
-}
-
-.page-heading p {
-  margin: 0.45rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.88rem;
-  line-height: 1.55;
-}
-
 .usuarios-panel {
   overflow: hidden;
   background: #fff;
@@ -61,51 +38,6 @@
   gap: 0.65rem;
 }
 
-.search-control {
-  display: grid;
-  grid-template-columns: 1.2rem minmax(11rem, 17rem);
-  gap: 0.45rem;
-  align-items: center;
-  min-height: 2.65rem;
-  padding-inline: 0.75rem;
-  color: #787b80;
-  background: #fff;
-  border: 1px solid var(--color-line-strong);
-  border-radius: 0.42rem;
-}
-
-.search-control:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(239, 139, 0, 0.13);
-}
-
-.search-control input {
-  width: 100%;
-  min-height: 2.5rem;
-  padding: 0;
-  color: var(--color-ink);
-  background: transparent;
-  border: 0;
-  outline: 0;
-  font-size: 0.8rem;
-}
-
-.status-filter select {
-  min-height: 2.65rem;
-  padding: 0.55rem 2rem 0.55rem 0.75rem;
-  color: var(--color-ink);
-  background: #fff;
-  border: 1px solid var(--color-line-strong);
-  border-radius: 0.42rem;
-  outline: 0;
-  font-size: 0.8rem;
-}
-
-.status-filter select:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(239, 139, 0, 0.13);
-}
-
 .usuario-table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -124,17 +56,11 @@
 }
 
 .usuario-table th {
-  color: #74777b;
-  background: #f7f7f6;
   border-bottom: 1px solid var(--color-line);
-  font-size: 0.7rem;
-  font-weight: 680;
 }
 
 .usuario-table td {
-  color: var(--color-ink);
   border-bottom: 1px solid #ebebea;
-  font-size: 0.82rem;
 }
 
 .usuario-table tbody tr:last-child td {
@@ -246,12 +172,6 @@
 .table-action:hover {
   color: var(--color-ink);
   background: var(--color-surface-subtle);
-}
-
-.table-action:focus-visible,
-.back-link:focus-visible {
-  outline: 3px solid rgba(239, 139, 0, 0.28);
-  outline-offset: 2px;
 }
 
 .table-action--danger:hover {
@@ -505,21 +425,8 @@
 }
 
 @media (max-width: 620px) {
-  .page-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .page-heading .button {
-    width: 100%;
-  }
-
   .usuarios-toolbar__filters {
     flex-direction: column;
-  }
-
-  .search-control {
-    grid-template-columns: 1.2rem minmax(0, 1fr);
   }
 
   .status-filter select {
