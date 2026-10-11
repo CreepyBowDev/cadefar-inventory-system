@@ -183,7 +183,11 @@ Se crean dos existencias pertenecientes al mismo medicamento.
 
 ### 4.3. Código de medicamento y código de existencia
 
-Cada medicamento posee un código identificable.
+Cada medicamento posee un código único generado automáticamente al registrarlo. El usuario no introduce `codigoMedicamento`: POST y PATCH lo rechazan. Se compone de las primeras tres letras ASCII del nombre comercial normalizado para este identificador (mayúsculas, sin acentos, `Ñ` → `N`, omitiendo símbolos y números), seguidas de un correlativo de tres dígitos entre `001` y `999`. Un nombre con menos de tres letras válidas produce 400.
+
+El correlativo se obtiene del mayor sufijo numérico válido conservado para el prefijo más uno, incluyendo activos e inactivos, sin COUNT, sin rellenar huecos y sin depender del ID o nombre actual. Paracetamol y Paroxetina comparten la secuencia `PAR`. Se respetan las equivalencias de la colación real y no se normalizan códigos históricos irregulares. Agotar `999` produce 409; las reglas completas se detallan en RN13.
+
+El código es inmutable desde la creación, aun sin movimientos. Una edición del nombre no cambia el código ni los códigos de sus existencias. La normalización para generar el identificador no transforma el nombre comercial almacenado.
 
 Ejemplo:
 
@@ -371,15 +375,29 @@ Esta decisión amplía el diseño anterior, que solo contemplaba ventas confirma
 
 Un medicamento tiene historial cuando existe al menos un `MovimientoInventario` asociado a cualquiera de sus `ExistenciaMedicamento`. Una existencia por sí sola, incluso con saldo, no define este criterio. El historial permanece aunque los movimientos se hayan revertido o el saldo sea cero.
 
-Desde el primer movimiento se bloquean los cambios efectivos de código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación. También queda bloqueada toda la composición: agregar o retirar ingredientes y cambiar principios activos, cantidades o unidades, incluidas las de referencia.
+El código ya es inmutable desde la creación conforme a 4.3. Desde el primer movimiento se bloquean además los cambios efectivos de proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación. También queda bloqueada toda la composición: agregar o retirar ingredientes y cambiar principios activos, cantidades o unidades, incluidas las de referencia.
 
-El nombre comercial, stock mínimo y condición de venta siguen siendo modificables. El estado se cambia únicamente por su operación específica. Una corrección tipográfica del nombre no crea un nuevo medicamento; si cambia realmente la identidad del producto, se registra otro medicamento.
+El nombre comercial, stock mínimo y condición de venta siguen siendo modificables. El estado se cambia únicamente por su operación específica. Una corrección tipográfica del nombre no crea un nuevo medicamento; si cambia realmente la identidad del producto, se registra otro medicamento. La edición del nombre también debe respetar la unicidad comercial de 4.13/RN13.
 
 Antes de existir historial, el Regente puede agregar, editar y retirar relaciones de composición. Se autoriza eliminar físicamente una relación únicamente en esa etapa. Corregir un ingrediente incorrecto se realiza retirando la relación y creando la correcta; la edición normal de la relación modifica cantidades y unidades, sin cambiar sus FK.
 
 La búsqueda por varios principios activos utiliza AND: el medicamento debe contener todos los indicados y puede contener otros adicionales. Es una consulta informativa, sin equivalencia terapéutica ni sustitución automática.
 
 Las reglas se implementan en Services y las consultas de historial en Repositories. Las modificaciones protegidas y la comprobación de historial se coordinan mediante transacciones y bloqueos; este bloque no registra operaciones de inventario.
+
+### 4.13. Registro integral y unicidad comercial del medicamento
+
+El Regente registra medicamento y composición no vacía mediante una sola operación atómica. El POST exige al menos un componente y no admite principios activos repetidos. Se comprueban el proveedor existente/activo y los principios referenciados existentes. Cualquier fallo revierte medicamento y todos sus componentes; no existe un alta alternativa sin composición.
+
+La identidad para detectar duplicados incluye nombre comercial, ID del proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración, tipo de liberación y composición completa. Cada componente incluye ID del principio activo, cantidad/unidad del ingrediente y cantidad/unidad de referencia.
+
+La comparación es independiente del orden del arreglo; exige igual cantidad de componentes y todas sus propiedades coincidentes. Los decimales se canonizan exactamente a escala de cuatro cifras. Los textos y unidades se comparan recortando espacios exteriores y reduciendo secuencias de espacios en blanco, con igualdad de caja/acentos según la colación real de las columnas (`utf8mb4_0900_ai_ci` en el entorno MySQL verificado). La normalización de comparación no reescribe históricos. No se convierten unidades ni se establece sustitución terapéutica.
+
+Código, IDs técnicos del medicamento/composición, stock mínimo, estado, condición de venta, fechas, existencias, saldo físico y movimientos no diferencian productos. Un medicamento inactivo también bloquea su duplicado. Una composición con X no equivale a otra con X e Y; una diferencia en proveedor, marca, presentación, cantidad o unidad puede distinguir productos.
+
+El alta, los cambios efectivos de atributos comerciales —incluido nombre— y cada operación independiente de composición verifican el estado completo resultante, excluyendo el propio medicamento. Un duplicado produce 409 con el mensaje de RN13 y referencias mínimas de todos los medicamentos coincidentes. Se conservan los duplicados históricos y registros sin composición; solo pueden completarse sin movimientos y sin generar otro duplicado. La retirada de la última relación sin historial sigue permitida si el resultado respeta RN13; la obligación de composición inicial no vacía no agrega esa restricción a CU19.
+
+La interfaz permite preparar, corregir y retirar componentes en el borrador sin escribir relaciones por separado. Envía un único POST, bloquea dobles envíos, mantiene el borrador ante errores y muestra el código confirmado al abrir la ficha. Un 409 de identidad permite consultar el medicamento existente, incluido si está inactivo. La edición comercial conserva el PATCH parcial y la composición existente se administra en CU19.
 
 ---
 
@@ -753,6 +771,113 @@ Ejemplo:
 
 - Generar JWT.
 - Verificar JWT.
+
+### API de Medicamentos y Composición — registro integral
+
+Implementado en backend y frontend. Reutiliza las tablas y restricciones existentes, sin migraciones nuevas para código automático o unicidad comercial.
+
+| Método y ruta | Operación | Actores autorizados |
+|---|---|---|
+| `GET /api/medicamentos` | Catálogo y filtros por código, nombre y principios activos AND | Administrador, Regente o Vendedor |
+| `GET /api/medicamentos/:idMedicamento` | Ficha con composición completa | Administrador, Regente o Vendedor |
+| `POST /api/medicamentos` | Registro integral de producto y composición | Regente |
+| `PATCH /api/medicamentos/:idMedicamento` | Edición parcial de datos comerciales | Regente |
+| `PATCH /api/medicamentos/:idMedicamento/estado` | Activar/desactivar | Regente |
+| `GET /api/medicamentos/:idMedicamento/composicion` | Composición completa existente | Administrador, Regente o Vendedor |
+| `POST /api/medicamentos/:idMedicamento/composicion` | Agregar un componente | Regente |
+| `PATCH /api/medicamentos/:idMedicamento/composicion/:idComposicion` | Modificar cantidades y unidades | Regente |
+| `DELETE /api/medicamentos/:idMedicamento/composicion/:idComposicion` | Retirar una relación antes del historial | Regente |
+
+#### Contrato del POST integral
+
+Ejemplo con IDs ilustrativos que deben existir en el catálogo:
+
+```json
+{
+  "nombreComercial": "Paracetamol Demo A",
+  "idProveedorLaboratorio": 1,
+  "formaFarmaceutica": "TABLETA",
+  "presentacion": "TABLETAS",
+  "unidadInventario": "TABLETA",
+  "condicionVenta": "LIBRE",
+  "viaAdministracion": "ORAL",
+  "tipoLiberacion": "INMEDIATA",
+  "stockMinimo": 10,
+  "composicion": [
+    {
+      "idPrincipioActivo": 1,
+      "cantidadPrincipioActivo": 500,
+      "unidadPrincipioActivo": "mg",
+      "cantidadReferencia": 1,
+      "unidadReferencia": "tableta"
+    }
+  ]
+}
+```
+
+El cuerpo es estricto. `stockMinimo` es opcional (cero por defecto) y `estado` es opcional (activo por defecto); el formulario no envía estado. Los demás campos del ejemplo son obligatorios, incluida `composicion` no vacía. IDs son números enteros positivos dentro de INT; stock mínimo es entero no negativo dentro de INT. Las cantidades de cada componente son números JSON positivos hasta `99999999.9999`, con hasta cuatro decimales; las unidades son textos no vacíos de hasta 30 caracteres. No se reciben código, PK del medicamento ni PK de las relaciones. Los principios deben existir; no se exige que estén activos para relacionarlos en el contrato actual.
+
+Respuesta exitosa: 201, `{ message: "Medicamento creado exitosamente", data: ... }`. `data` es el DTO público completo: ID y código generados, datos comerciales, estado, proveedor/laboratorio y arreglo `composicion`. Cada componente contiene sus IDs, ambas cantidades como cadenas decimales, ambas unidades y el ID/nombre público del principio activo. La respuesta se envía solo después del commit; un fallo al insertar componentes o consultar el resultado revierte todo.
+
+Duplicado: 409 con el formato de `AppError`:
+
+```json
+{
+  "message": "Ya existe un medicamento registrado con estas características y composición.",
+  "errors": {
+    "medicamentosExistentes": [
+      {
+        "idMedicamento": 1,
+        "codigoMedicamento": "PAR001",
+        "nombreComercial": "Paracetamol Demo A",
+        "estado": true
+      }
+    ]
+  }
+}
+```
+
+Si existen varios duplicados históricos, se devuelven sus referencias sin fusionarlos. Composición ausente/vacía o repetida en el arreglo, código manual y datos estructurales inválidos producen 400; referencias inexistentes, 404; proveedor inactivo, agotamiento de código y contención temporal, 409. Los errores técnicos conservan el 500 genérico.
+
+El PATCH comercial admite solo campos comerciales modificables: no recibe código, estado ni composición. El estado tiene su endpoint independiente. El POST de composición independiente recibe un único componente con la estructura del ejemplo; su PATCH modifica solo cantidades/unidades, sin cambiar FK. Todas estas escrituras conservan las restricciones históricas de 4.12 y la comprobación resultante de 4.13.
+
+#### Transacciones, bloqueos y concurrencia
+
+`medicamentoService` coordina el registro conjunto; `identidad-medicamento.js` comparte canonización decimal, bloqueos del proveedor y conflictos con el Service de Composición. La búsqueda parametrizada de coincidencias permanece en `medicamentoRepository` y usa igualdad de textos según sus columnas, comparación DECIMAL exacta, COUNT de componentes y existencia de cada componente coincidente.
+
+Las transacciones que modifican identidad utilizan explícitamente `READ COMMITTED`, sin cambiar el aislamiento global del servidor. El proveedor se bloquea con `FOR UPDATE` hasta commit/rollback, incluso cuando todavía no existe un producto candidato. En creación se toma ese bloqueo antes de comprobar referencias/identidad, generar código e insertar. En edición/composición se bloquea primero el medicamento objetivo y después los proveedores involucrados por ID ascendente; se bloquean origen y destino si cambia proveedor. Las consultas de duplicados no bloquean medicamentos candidatos: con lecturas por sentencia en READ COMMITTED observan lo confirmado tras esperar el proveedor y evitan invertir el orden de bloqueos respecto de Compras, que toma medicamento antes de proveedor compartido.
+
+El UNIQUE `uq_medicamento_codigo` continúa como barrera final del código; no es una restricción de identidad comercial. Una colisión específica de ese índice permite hasta cinco intentos totales, cada uno con rollback y nueva transacción que vuelve a comprobar proveedor e identidad. Otros UNIQUE, deadlocks y lock wait timeout no activan ese reintento. La contención se traduce a 409 después del rollback. El UNIQUE `uq_composicion_medicamento_principio` continúa impidiendo repetir un ingrediente dentro de un producto.
+
+La protección comercial corresponde a las escrituras del backend que siguen este protocolo; no hay UNIQUE compuesto comercial, `GET_LOCK` ni bloqueo global. Los cambios se serializan por proveedor y futuras escrituras de identidad deben conservar este protocolo.
+
+#### Frontend y evidencia de verificación
+
+`MedicamentoFormPage` carga proveedores y, al crear, principios activos mediante los servicios existentes. `MedicamentoForm` utiliza el modal de `ComposicionForm` y la tabla de composición como borrador local, sin formularios anidados ni solicitudes de alta de componentes antes del POST integral. Los IDs locales de las filas y los datos de presentación no se envían al backend. Los principios ya agregados se excluyen de la selección. Un catálogo vacío bloquea el alta; un error de carga ofrece reintento. El código solo se muestra después de la respuesta confirmada.
+
+Verificación del bloque (11/10/2026): 323 pruebas backend puras/simuladas, 127 frontend en navegador con API simulada (11 de Medicamentos incluidas) y 7 de integración Express/MySQL reales, todas aprobadas. Las pruebas reales observaron dos transacciones esperando la misma fila mediante `performance_schema.data_lock_waits` y confirmaron su aislamiento en `events_transactions_current`, con el servidor en REPEATABLE READ. Creación idéntica concurrente: un 201 y un 409; edición convergente: un 200 y un 409. También se verificaron colación/orden, medicamento inactivo, códigos distintos, rollback al fallar el tercer componente y edición independiente de composición que intenta duplicar otro producto.
+
+La suite real crea, migra y elimina una base aleatoria `cadefar_catalogo_*`, usa fixtures sin seeders y comprueba huellas SHA-256 de esquema/datos de las bases protegidas antes/después. Una consulta de solo lectura no encontró duplicados exactos en la base local de desarrollo en esa revisión; no es garantía sobre cambios posteriores ni limpieza de históricos. React se verificó con API simulada por separado de la integración Express/MySQL; no se afirma una aceptación integrada de los tres para este bloque. Build y `git diff --check` aprobados; la interfaz se comprobó a 375 px. Permanece el aviso no bloqueante del bundle superior a 500 kB y está pendiente la revisión manual del usuario con sus datos.
+
+Desde `backend/`, sin MySQL:
+
+```powershell
+node --test tests/medicamento.codigo.test.js tests/medicamento.integral.test.js
+```
+
+Desde `frontend/`, con Chrome/Edge y API simulada:
+
+```powershell
+node --test tests/medicamentos.browser.test.mjs
+```
+
+La integración real está deshabilitada por defecto y requiere autorización para crear/migrar/eliminar la base aislada, permisos MySQL para esas operaciones y lectura de las tablas de `performance_schema` anteriores. Desde `backend/`:
+
+```powershell
+$env:CADEFAR_AUTORIZAR_CATALOGO_AISLADO = '1'
+try { node --test tests/medicamento.integral.integration.test.js }
+finally { Remove-Item Env:CADEFAR_AUTORIZAR_CATALOGO_AISLADO }
+```
 
 ### Diseño técnico de API — Fase 1A
 
@@ -1958,9 +2083,11 @@ El módulo Usuarios se encuentra implementado para el alcance actual del backend
 
 La recuperación de contraseña por correo (CU09) está implementada en backend y frontend, con HMAC, cuotas MySQL, envío único mock/Brevo y JWT versionado. El frontend se verifica en la suite CU09/Usuarios; la validación de envío de correo real continúa pendiente. El estado local de las migraciones se detalla en la sección de CU09.
 
-También se encuentra implementado el backend de Medicamentos, Principios Activos y Composición (CU14–CU20), con autorización por rol, búsqueda por código/nombre, búsqueda AND por principios activos y bloqueo de identidad/composición desde el primer movimiento de inventario. La corrección de un ingrediente utiliza retiro y alta antes de existir historial.
+También se encuentran implementados backend y frontend de Medicamentos, Principios Activos y Composición (CU14–CU20), con autorización por rol, código automático e inmutable, registro integral con composición inicial obligatoria, prevención de duplicados de identidad comercial/composición, búsqueda por código/nombre y búsqueda AND por principios activos. Se mantiene el bloqueo histórico desde el primer movimiento para los atributos protegidos y toda la composición. La corrección de un ingrediente utiliza retiro y alta antes de existir historial. El formulario prepara componentes localmente y envía un único POST; conserva errores y muestra enlaces a duplicados existentes.
 
-Las pruebas de integración de este bloque se ejecutan con `pnpm test`, requieren MySQL configurado y utilizan datos temporales dentro de una transacción que se revierte. Se comprueban las rutas HTTP, JWT, permisos, validación, referencias, unicidad y reglas históricas sin modificar registros históricos.
+`tests/catalogo.integration.test.js` requiere `DB_NAME_TEST` migrada y utiliza rollback exterior con savepoints en READ COMMITTED; verifica rutas HTTP, JWT, permisos, validación, referencias y reglas históricas, pero no acredita carreras independientes. La suite `tests/medicamento.integral.integration.test.js` es separada y requiere opt-in: crea una base aleatoria aislada y prueba concurrencia real, colación y rollback. No debe ejecutarse `pnpm test` indiscriminadamente si solo se autorizan pruebas sin escrituras. Los contratos, comandos y resultados del bloque se detallan en la sección «API de Medicamentos y Composición — registro integral».
+
+Actualización del bloque Medicamentos (11/10/2026): 323 pruebas backend puras/simuladas, 127 frontend con API simulada y 7 de integración Express/MySQL aprobadas, build exitoso y base temporal eliminada, con huellas de bases protegidas conservadas. La documentación funcional refleja el registro integral, RN13/RN15/RN16 y CU14/CU16/CU19. La guía de interfaz está en `docs/uso/medicamentos.md`. Estas verificaciones no sustituyen la revisión manual del usuario y no amplían el alcance de Ventas, Recetas o Reportes.
 
 Verificación de la simplificación CU09 (09/10/2026): suite completa con 146 pruebas aprobadas, cero fallidas, canceladas u omitidas; Brevo simulado y mock sin correos reales. En PowerShell, seleccionar explícitamente el entorno de pruebas antes de ejecutar:
 

@@ -72,7 +72,11 @@ El sistema debe permitir registrar, consultar, modificar y activar o desactivar 
 
 El sistema debe permitir registrar, consultar, buscar, modificar y activar o desactivar medicamentos.
 
-La edición normal no modifica estado. Desde el primer movimiento de inventario asociado a alguna existencia del medicamento, se bloquean cambios efectivos de código, proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación. Nombre comercial, stock mínimo y condición de venta siguen siendo editables. Un cambio real de identidad requiere registrar otro medicamento.
+El Regente registra el medicamento y su composición no vacía en una sola operación atómica. El código se genera automáticamente conforme a RN13 y es inmutable desde la creación; no se admite como entrada del alta ni de la edición y no se regenera al cambiar el nombre.
+
+El sistema debe impedir duplicados de identidad comercial y composición completa conforme a RN13, incluidos los que coincidan con medicamentos inactivos. La protección comprende el registro, la edición comercial y las operaciones de composición, también ante solicitudes concurrentes. Un conflicto devuelve 409 sin cambios parciales y permite consultar las referencias públicas del registro existente. Los históricos no se fusionan ni eliminan automáticamente.
+
+La edición normal no modifica estado. Desde el primer movimiento de inventario asociado a alguna existencia del medicamento, se bloquean cambios efectivos de proveedor/laboratorio, forma farmacéutica, presentación, unidad de inventario, vía de administración y tipo de liberación. Nombre comercial, stock mínimo y condición de venta siguen siendo editables, sujetos a RN13. Un cambio real de identidad requiere registrar otro medicamento.
 
 ## RF12. Gestionar principios activos
 
@@ -82,7 +86,11 @@ El sistema debe permitir registrar, consultar, modificar y activar o desactivar 
 
 El sistema debe permitir relacionar medicamentos con sus principios activos, cantidades y unidades correspondientes.
 
+La composición inicial es obligatoria y se envía junto con el medicamento, con al menos un componente y sin principios repetidos. La interfaz permite agregar, editar y retirar componentes del borrador antes de enviar un único POST; mantiene el borrador ante un error y muestra el código confirmado tras el éxito. La validación definitiva pertenece al backend.
+
 Antes de existir movimientos del medicamento, el Regente puede agregar relaciones, editar cantidades y unidades y retirar relaciones físicamente. La corrección de un principio activo incorrecto se realiza retirando la relación y creando la correcta. Desde el primer movimiento, toda la composición queda bloqueada, incluida la incorporación de nuevos ingredientes.
+
+Cada modificación debe validar la identidad comercial y la composición completa resultante conforme a RN13/RN16. Se permite completar históricos sin composición cuando no tienen movimientos y el resultado no es duplicado; la obligación de composición no vacía del alta no elimina ni transforma esos históricos.
 
 ## RF14. Consultar medicamentos por composición
 
@@ -278,7 +286,7 @@ Conservar:
 
 Registrar:
 
-- Código.
+- Código único generado automáticamente e inmutable.
 - Nombre comercial.
 - Forma farmacéutica.
 - Presentación.
@@ -288,6 +296,8 @@ Registrar:
 - Vía de administración.
 - Tipo de liberación.
 - Estado.
+
+Conservar además el proveedor/laboratorio relacionado y la composición completa. El código y las PK se generan en el servidor/base de datos; no forman parte de la identidad comercial utilizada para evitar duplicados. La entrada y salida de la API se detallan en la sección de Medicamentos del contexto maestro.
 
 Permitir búsquedas por:
 
@@ -310,6 +320,8 @@ Relacionarlos con los medicamentos mediante:
 - Unidad de referencia.
 
 Las cantidades de composición utilizan `DECIMAL(12,4)`: valores positivos, hasta cuatro decimales y dentro de su rango. La API recibe cantidades numéricas y las devuelve como cadenas decimales para conservar la precisión del almacenamiento.
+
+Cada relación identifica un principio activo existente; no puede repetirse su ID dentro del medicamento. Las unidades del ingrediente y de referencia admiten hasta 30 caracteres. La composición inicial se persiste junto al medicamento; el orden del arreglo y los IDs técnicos de las relaciones no intervienen en la comparación de duplicados.
 
 ## RI05. Existencias y disponibilidad
 
