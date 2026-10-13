@@ -4,9 +4,9 @@ Sistema de Información Web para la Administración de Inventario, Ventas y Cont
 
 **Materia:** Sistemas de Información I. **Enfoque:** Boundary–Control–Entity (BCE).
 
-> **Corrección según el docente — Fase 1:** CU01–CU09, con funciones locales reales de React, colaboración HTTP resumida y operaciones backend verificables.
+> **Corrección según el docente — Fases 1 y 2:** CU01–CU13, con funciones locales reales de React, colaboración HTTP resumida y operaciones backend verificables.
 > **Cobertura documental:** 33 CU implementados y 34 diagramas; CU08 conserva dos variantes.
-> **Avance de la corrección:** nueve CU y diez diagramas corregidos. Las fases 2–6 conservan la versión conceptual anterior y quedan pendientes de esta corrección.
+> **Avance de la corrección:** trece CU y catorce diagramas corregidos. Las fases 3–6 conservan la versión conceptual anterior y quedan pendientes de esta corrección.
 
 ## 0. Alcance y criterios del análisis académico
 
@@ -24,24 +24,24 @@ Se mantienen dos niveles documentales independientes:
 | Este documento | Conserva BCE y, en las fases corregidas, representa componentes React, clases backend y modelos con nombres verificables en sus archivos fuente. |
 | [Diagrama de clases general](diagrama-clases.md) | Permite comprobar nombres, atributos, tipos y asociaciones del modelo persistente. |
 
-**Criterio del docente aplicado a Fase 1:** los componentes funcionales de React se representan como elementos `«boundary»`. Su compartimento de operaciones muestra las **funciones locales reales** que participan en el CU, con una nota que las distingue de métodos de clases JavaScript. Los callbacks recibidos se representan como props de tipo Function; los eventos inline se identifican en las correspondencias. Las funciones exportadas de servicios HTTP del frontend se documentan como intermediarias en las tablas, sin cajas independientes ni atribución de sus operaciones al componente. Las dependencias Boundary–Controller etiquetadas con verbo/endpoint son **colaboraciones HTTP resumidas**, no llamadas directas entre esos elementos. Los Controllers, Services y Repositories son clases exportadas reales: cada método dibujado pertenece a su clase. Los modelos conservan sus atributos persistentes completos. Los actores son elementos conceptuales UML, expresamente distintos del modelo Usuario.
+**Criterio del docente aplicado a las fases corregidas:** los componentes funcionales de React se representan como elementos `«boundary»`. Su compartimento de operaciones muestra las **funciones locales reales** que participan en el CU, con una nota que las distingue de métodos de clases JavaScript. Los callbacks recibidos se representan como props de tipo Function; los eventos inline se identifican en las correspondencias. Las funciones exportadas de servicios HTTP del frontend se documentan como intermediarias en las tablas, sin cajas independientes ni atribución de sus operaciones al componente. Las dependencias Boundary–Controller etiquetadas con verbo/endpoint son **colaboraciones HTTP resumidas**, no llamadas directas entre esos elementos. Los Controllers, Services y Repositories son clases exportadas reales: cada método dibujado pertenece a su clase. Los modelos conservan sus atributos persistentes completos. Los actores son elementos conceptuales UML, expresamente distintos del modelo Usuario.
 
-**Transición por fases:** los nombres Vista... y Control... de las fases 2–6 son las abstracciones de la versión anterior, todavía pendientes de sustitución; no se consideran nombres implementados. Los cierres históricos posteriores describen aquella entrega, no la verificación de la corrección actual.
+**Transición por fases:** los nombres Vista... y Control... de las fases 3–6 son las abstracciones de la versión anterior, todavía pendientes de sustitución; no se consideran nombres implementados. Los cierres históricos de esas fases describen aquella entrega, no la verificación de la corrección actual.
 
 ### 0.1. Notación y selección de participantes
 
 - `<<actor>>` representa un rol externo: Administrador, Regente o Vendedor. No hay herencia entre actores ni con Usuario; Administrador no hereda automáticamente permisos del Regente.
-- `<<boundary>>` identifica un componente funcional real en Fase 1. Muestra estado/props relevantes y operaciones de análisis con el nombre y parámetros exactos de funciones locales, **sin `$`**. La nota del gráfico aclara que no son métodos de clase. `form.campo` identifica un dato anidado del estado, no una propiedad de clase.
+- `<<boundary>>` identifica un componente funcional real en las fases corregidas. Muestra estado/props relevantes y operaciones de análisis con el nombre y parámetros exactos de funciones locales, **sin `$`**. La nota del gráfico aclara que no son métodos de clase. `form.campo` identifica un dato anidado del estado, no una propiedad de clase.
 - Una prop/callback como onSubmit, onConfirm u onLogout se muestra como dato Function, no como operación propia. La tabla identifica quién la implementa. Los eventos inline, callbacks anónimos de hooks y setters proporcionados por useState no se convierten en operaciones inventadas. Una función local a un efecto, como loadUsuario, se indica expresamente como tal y solo se incluye en el CU que la ejecuta.
 - Los servicios HTTP del frontend son **módulos ES, no clases JavaScript**. Se documentan por archivo y firma exacta en la tabla de cada CU, sin cajas propias ni operaciones importadas en los Boundary. En las etiquetas HTTP, `(resumen)` identifica la colaboración con esos intermediarios; el fuente Mermaid utiliza `#58;` para mostrar el `:` de los parámetros de ruta sin interpretarlo como delimitador del diagrama.
-- `<<control>>` identifica las clases reales Controller y Service en Fase 1; el sufijo de su nombre distingue ambas capas. Se muestran solo operaciones ejecutadas en el CU y caminos condicionales válidos, con `$` para indicar métodos estáticos.
+- `<<control>>` identifica las clases reales Controller y Service en las fases corregidas; el sufijo de su nombre distingue ambas capas. Se muestran solo operaciones ejecutadas en el CU y caminos condicionales válidos, con `$` para indicar métodos estáticos.
 - `<<repository>>` hace explícita la intermediación real entre Service y modelos. Se omiten Validators, utilidades y errores del gráfico principal por legibilidad; sus participaciones verificadas se explican en el texto y las tablas.
-- `<<entity>>` identifica un modelo real. En Fase 1 se muestran todos sus atributos persistentes, sin métodos de negocio inventados. `associate(models)` y los métodos heredados de Sequelize quedan fuera del dibujo.
+- `<<entity>>` identifica un modelo real. En las fases corregidas se muestran todos sus atributos persistentes, sin métodos de negocio inventados. `associate(models)` y los métodos heredados de Sequelize quedan fuera del dibujo.
 - Los atributos de las entidades conservan los nombres persistentes `snake_case`. Los campos de las vistas usan nombres de interfaz `camelCase`; una contraseña introducida en una vista es temporal y nunca una columna de Usuario.
 - Los tipos `VARCHAR_60`, `CHAR_64`, `INT_UNSIGNED`, `TINYINT_UNSIGNED` y `DATETIME_3` abrevian los tipos SQL indicados en el diagrama general. En Boundary, String, Boolean, Object, Array y Function describen los datos JavaScript verificados; no son declaraciones TypeScript del proyecto.
-- `metodo(...)` abrevia exclusivamente los parámetros por legibilidad, nunca el nombre del método. Su **firma exacta**, incluidos objetos desestructurados y valores predeterminados, aparece en la tabla inmediatamente posterior al diagrama. Todos los métodos de Control/Repository de Fase 1 son `static async`.
+- `metodo(...)` abrevia exclusivamente los parámetros por legibilidad, nunca el nombre del método. Su **firma exacta**, incluidos objetos desestructurados y valores predeterminados, aparece en la tabla inmediatamente posterior al diagrama. Todos los métodos de Control/Repository de las fases corregidas son `static async`.
 - `+` en Boundary identifica una operación de análisis respaldada por una función local, no un método público literal de JavaScript; en Control/Repository, un método propio. `-` identifica datos de estado, props o persistencia según el participante; no afirma visibilidad privada en JavaScript ni publicación de atributos de entidad en la API.
-- `-->` une actor e interfaz. `..>` entre componentes identifica uso de props/callbacks o presentación. De Boundary a Controller, con **verbo/endpoint y `(resumen)`**, representa una colaboración HTTP resumida, **no una invocación directa**: la tabla identifica la función exportada, el archivo y el endpoint real. En CU01/CU02 también interviene useAuth / AuthProvider, explicado en nota y tabla. Entre clases backend expresa una dependencia real; únicamente los Repositories se conectan con los modelos para acceder a sus datos. No se utiliza herencia ni composición para llamadas/importaciones.
+- `-->` une actor e interfaz. `..>` entre componentes identifica uso de props/callbacks, presentación o navegación por ruta, según su etiqueta. De Boundary a Controller, con **verbo/endpoint y `(resumen)`**, representa una colaboración HTTP resumida, **no una invocación directa**: la tabla identifica la función exportada, el archivo y el endpoint real. En CU01/CU02 también interviene useAuth / AuthProvider, explicado en nota y tabla. Entre clases backend expresa una dependencia real; únicamente los Repositories se conectan con los modelos para acceder a sus datos. No se utiliza herencia ni composición para llamadas/importaciones.
 - `--` entre entidades representa una asociación del dominio con multiplicidades estructurales. Se conservan `1` y `0..*` donde corresponde; una FK no implica composición UML. No se dibujan rombos ni herencias inexistentes.
 - Cada diagrama utiliza `direction LR` para favorecer la lectura de izquierda a derecha. Mermaid determina la posición exacta de las ramas de entidades.
 - Un método o entidad condicional se incluye cuando participa en un camino real del CU. Las etiquetas y explicaciones indican su condición; no todos los caminos ejecutan todas las operaciones.
@@ -51,7 +51,7 @@ Se mantienen dos niveles documentales independientes:
 | Fase | Agrupación funcional | Casos | Estado académico |
 |---|---|---|---|
 | 1 | Autenticación, Usuarios y Recuperación | CU01–CU09 | Corregida contra código; nueve CU y diez diagramas; para revisión |
-| 2 | Proveedores y Laboratorios | CU10–CU13 | Versión anterior; corrección pendiente |
+| 2 | Proveedores y Laboratorios | CU10–CU13 | Corregida contra código; cuatro CU y cuatro diagramas; para revisión |
 | 3 | Medicamentos, Principios Activos y Composición | CU14–CU20 | Versión anterior; corrección pendiente |
 | 4 | Compras | CU25–CU27 | Versión anterior; corrección pendiente |
 | 5 | Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37 y CU40 | Versión anterior; corrección pendiente |
@@ -1277,11 +1277,11 @@ La solicitud usa `POST /api/auth/recuperacion/solicitar`; el consumo, `POST /api
 
 ### 3.1. Condiciones compartidas y relaciones de contexto
 
-Se conservan las convenciones BCE de la primera entrega. En los nombres conceptuales Vista...Proveedor y Control...Proveedor, **Proveedor representa la entidad unificada ProveedorLaboratorio**, que también puede ser un laboratorio. No se introducen clases separadas para ambos tipos.
+Se aplican las convenciones BCE de Fase 1: componentes React con sus funciones locales, Controller y Service reales, Repository como intermediario de persistencia y **ProveedorLaboratorio como entidad unificada**. Los cuatro diagramas usan llamadas HTTP resumidas con verbo/endpoint; sus funciones frontend y archivos se identifican en las tablas, sin cajas de módulos HTTP.
 
 **Acceso:** CU10, CU12 y CU13 requieren Administrador; CU11 permite Administrador o Regente. Todas las solicitudes requieren sesión válida, cuenta activa y versión de credenciales vigente. La comprobación previa utiliza authMiddleware, authService.getSessionUsuario y usuarioRepository.findByIdForSession; requireRole verifica el rol. Como condición transversal, se explica aquí sin repetir Usuario ni un segundo Control en los cuatro dibujos. Esto no elimina su participación técnica en la autenticación.
 
-**Entidad y datos:** ProveedorLaboratorio tiene ID generado por la base, nombre obligatorio, teléfono/dirección opcionales y estado. Los tipos `VARCHAR_150` y `VARCHAR_30` abrevian `VARCHAR(150)` y `VARCHAR(30)`. Nombre y contactos se recortan; los contactos vacíos se convierten a NULL. Teléfono admite texto de hasta 30 caracteres, sin imponer un patrón numérico. Nombre admite 1–150 caracteres y dirección, hasta 255. No hay restricción de nombre único ni comprobación de duplicados en estas operaciones.
+**Entidad y datos:** ProveedorLaboratorio tiene cinco atributos persistentes, repetidos completos en cada diagrama: id_proveedor_laboratorio, nombre, telefono, direccion y estado. El ID es INT, PK autoincremental; telefono/direccion admiten NULL y estado tiene default true. El modelo utiliza timestamps:false, sin createdAt/updatedAt implícitos. Los tipos `VARCHAR_150` y `VARCHAR_30` abrevian `VARCHAR(150)` y `VARCHAR(30)`. Nombre y contactos se recortan; los contactos vacíos se convierten a NULL. Teléfono admite texto de hasta 30 caracteres, sin imponer un patrón numérico. Nombre admite 1–150 caracteres y dirección, hasta 255. No hay restricción de nombre único ni comprobación de duplicados en estas operaciones.
 
 **Relaciones persistentes de contexto:**
 
@@ -1298,18 +1298,22 @@ RN11 exige al personal comprobar licencia y resolución SEDES. Es una verificaci
 
 Las correspondencias utilizan `proveedorLaboratorioController`, `proveedorLaboratorioValidator`, `proveedorLaboratorioService` y `proveedorLaboratorioRepository`, documentados en el análisis técnico. La comunicación HTTP de las vistas se realiza mediante `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` y la configuración API compartida. Referencias comunes: RF03/RF04/RF10; RN09–RN12.
 
+**Intermediarios y apoyos reales:** el módulo HTTP exporta cinco funciones y utiliza basePath='/proveedores-laboratorios', api de `frontend/src/api/api.js` y response.data.data. El router de `backend/src/presentation/routes/proveedor-laboratorio.router.js` se monta en `/api/proveedores-laboratorios` desde `backend/src/app.js`. Ninguna de estas solicitudes utiliza login/logout de AuthProvider; useAuth aporta el usuario para las restricciones visuales. `toPublicProveedorLaboratorio(proveedorLaboratorio)` es una función de módulo en `backend/src/business/services/proveedor-laboratorio.service.js`, no un método de proveedorLaboratorioService. `getValidatedData(result)` y `getIdProveedorLaboratorio(params)` son funciones de módulo del Controller. El Validator de `backend/src/business/validators/proveedor-laboratorio.validator.js` declara validateCreate(data), validateId(data), validateUpdate(data) y validateUpdateEstado(data); se documenta su uso por CU sin otra caja. Los esquemas Zod y `textoOpcional(maximo, campo)` son externos a esa clase. No se atribuyen al modelo las operaciones heredadas de Sequelize ni a los Services las funciones auxiliares.
+
 ### CU10 — Registrar proveedor o laboratorio
 
 **Actor o actores:** Administrador autenticado.
 
 **Objetivo:** registrar una entidad que suministra medicamentos, con nombre, contactos opcionales y estado inicial.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaRegistrarProveedor | Boundary | Recoge nombre, teléfono, dirección y estado inicial. |
-| ControlRegistrarProveedor | Control | Valida la solicitud, registra la entidad y prepara sus datos públicos. |
+| ProveedorLaboratorioForm / ProveedorLaboratorioFormPage | Boundary; componentes funcionales | Recogen los datos y coordinan el alta en modo create mediante onSubmit. |
+| proveedorLaboratorioController | Control HTTP; clase | Valida la entrada y atiende createProveedorLaboratorio. |
+| proveedorLaboratorioService | Control de negocio; clase | Coordina la creación y convierte el registro creado a datos públicos. |
+| proveedorLaboratorioRepository | Repository; clase | Inserta nombre y los campos opcionales presentes. |
 | ProveedorLaboratorio | Entity | Representa al proveedor o laboratorio registrado. |
 
 **Diagrama de clases:**
@@ -1318,20 +1322,35 @@ Las correspondencias utilizan `proveedorLaboratorioController`, `proveedorLabora
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaRegistrarProveedor {
+    class ProveedorLaboratorioForm {
         <<boundary>>
-        -String nombre
-        -String telefono
-        -String direccion
-        -Boolean estado
-        +seleccionarEstadoInicial()
-        +enviarRegistro()
+        -String form.nombre
+        -String form.telefono
+        -String form.direccion
+        -Boolean form.estado
+        -Function onSubmit
+        -Function onCancel
+        +updateField(event)
+        +handleSubmit(event)
     }
-    class ControlRegistrarProveedor {
+    class ProveedorLaboratorioFormPage {
+        <<boundary>>
+        -String mode
+        -Boolean submitting
+        -String errorMessage
+        +handleSubmit(data)
+    }
+    class proveedorLaboratorioController {
         <<control>>
-        +validarDatos()
-        +registrarProveedor()
-        +prepararDatosPublicos()
+        +createProveedorLaboratorio(req, res, next)$
+    }
+    class proveedorLaboratorioService {
+        <<control>>
+        +createProveedorLaboratorio(data)$
+    }
+    class proveedorLaboratorioRepository {
+        <<repository>>
+        +create(...)$
     }
     class ProveedorLaboratorio {
         <<entity>>
@@ -1341,22 +1360,36 @@ classDiagram
         -VARCHAR_255 direccion
         -BOOLEAN estado
     }
-    Administrador --> VistaRegistrarProveedor
-    VistaRegistrarProveedor ..> ControlRegistrarProveedor : solicita
-    ControlRegistrarProveedor ..> ProveedorLaboratorio : registra
+    Administrador --> ProveedorLaboratorioForm
+    ProveedorLaboratorioForm ..> ProveedorLaboratorioFormPage : callback onSubmit
+    ProveedorLaboratorioFormPage ..> proveedorLaboratorioController : POST /api/proveedores-laboratorios (resumen)
+    proveedorLaboratorioController ..> proveedorLaboratorioService : createProveedorLaboratorio
+    proveedorLaboratorioService ..> proveedorLaboratorioRepository : create
+    proveedorLaboratorioRepository ..> ProveedorLaboratorio : insercion Sequelize
+    note for ProveedorLaboratorioForm "Operaciones = funciones locales React; no metodos de clase.\nonSubmit y onCancel son props."
+    note for ProveedorLaboratorioFormPage "handleSubmit(data) es funcion local React;\nfuncion HTTP importada y archivo en tabla."
 ```
 
-**Descripción de relaciones:** el Administrador introduce los datos en la vista y el Control coordina la creación de ProveedorLaboratorio. El ID no se introduce ni se calcula manualmente. El formulario ofrece estado inicial, activo por defecto; la API admite omitirlo. El estado pertenece a la entidad, no a un tipo diferente de proveedor.
+**Correspondencia verificable y firmas exactas:**
 
-El Control prepara la respuesta a partir del registro recién creado, sin una segunda consulta por ID. Este CU no registra compras ni medicamentos y no exige unicidad del nombre. Tras éxito se vuelve al listado, cuya carga corresponde a CU11; ante error se conserva el borrador.
+| CU | Elemento / intermediario | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU10 | ProveedorLaboratorioForm | Componente funcional | `frontend/src/features/proveedores/components/ProveedorLaboratorioForm.jsx` | Locales `updateField(event)`; `handleSubmit(event)` | updateField atiende onChange, convirtiendo estado a booleano; handleSubmit recorta/valida y llama a la prop onSubmit. Envía contactos vacíos como null. |
+| CU10 | ProveedorLaboratorioFormPage | Componente funcional | `frontend/src/features/proveedores/pages/ProveedorLaboratorioFormPage.jsx` | Local `handleSubmit(data)` | mode=create; pasa esta función como onSubmit y llama a createProveedorLaboratorio(data). onCancel recibe `() => navigate('/proveedores')`; no existe handleCancel. |
+| CU10 | proveedorLaboratorioController | Clase proveedorLaboratorioController | `backend/src/presentation/controllers/proveedor-laboratorio.controller.js` | `createProveedorLaboratorio(req, res, next)` | Utiliza proveedorLaboratorioValidator.validateCreate(data) mediante getValidatedData; responde 201 con mensaje y datos. |
+| CU10 | proveedorLaboratorioService | Clase proveedorLaboratorioService | `backend/src/business/services/proveedor-laboratorio.service.js` | `createProveedorLaboratorio(data)` | Llama a Repository.create; usa toPublicProveedorLaboratorio, función externa al Service. |
+| CU10 | proveedorLaboratorioRepository | Clase proveedorLaboratorioRepository | `backend/src/data/repositories/proveedor-laboratorio.repository.js` | `create({ nombre, telefono, direccion, estado })` | Solo incluye contactos/estado si no son undefined; no consulta por ID ni comprueba nombre duplicado. |
+| CU10 | ProveedorLaboratorio | Modelo ProveedorLaboratorio | `backend/src/data/models/proveedor-laboratorio.js` | — | Cinco atributos persistentes completos; create es heredado de Sequelize. |
+| CU10 | Función HTTP intermediaria | Módulo ES; función exportada | `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` | `createProveedorLaboratorio(data)` | Importada por la página; api.post(basePath, data). No es una función local del formulario ni un método de la página. |
+| CU10 | API, relación HTTP resumida | Endpoint Express | `backend/src/presentation/routes/proveedor-laboratorio.router.js`; `backend/src/app.js` | `POST /api/proveedores-laboratorios` | POST '/' con prefijo /api/proveedores-laboratorios; authMiddleware y requireRole de Administrador. |
+
+**Descripción de relaciones:** el Administrador utiliza ProveedorLaboratorioForm. La página recibe sus datos por onSubmit y llama a createProveedorLaboratorio del módulo HTTP; la dependencia hacia el Controller resume esa petición y no representa una llamada directa. El Controller llama al Service; este inserta por Repository y convierte la instancia devuelta. El ID no se introduce ni se calcula manualmente. El formulario ofrece estado inicial, activo por defecto; la API admite omitirlo. El estado pertenece a la entidad, no a un tipo diferente de proveedor.
+
+El Service prepara la respuesta a partir del registro recién creado, sin una segunda consulta por ID. Este CU no registra compras ni medicamentos y no exige unicidad del nombre. Tras éxito se vuelve al listado, cuya carga corresponde a CU11; ante error se conserva el borrador.
 
 **Correspondencia con la implementación:** `/proveedores/nuevo`, `frontend/src/features/proveedores/pages/ProveedorLaboratorioFormPage.jsx` en modo create y `frontend/src/features/proveedores/components/ProveedorLaboratorioForm.jsx` representan la vista.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarDatos | `proveedorLaboratorioController.createProveedorLaboratorio` utiliza `proveedorLaboratorioValidator.validateCreate`; admite nombre obligatorio, contactos y estado opcionales, y rechaza campos extra. |
-| registrarProveedor | `proveedorLaboratorioService.createProveedorLaboratorio` coordina `proveedorLaboratorioRepository.create`, enviando los campos opcionales presentes. |
-| prepararDatosPublicos | La función externa `toPublicProveedorLaboratorio` transforma directamente la instancia creada al DTO público. No es un método del modelo. |
+**Interacción Boundary:** el submit del elemento form ejecuta handleSubmit(event); la prop onSubmit es la función handleSubmit(data) de la página. loadProveedor, local al efecto de la página, solo se ejecuta en edición: no se incorpora a CU10. Los callbacks anónimos del efecto y los setters de useState no se convierten en operaciones propias adicionales. validateCreate es estricto: rechaza ID y campos extra; estado, telefono y direccion son opcionales para la API.
 
 La función HTTP `createProveedorLaboratorio` invoca `POST /api/proveedores-laboratorios`; devuelve 201 con mensaje y datos. Entrada inválida, sesión/permisos o fallo inesperado se comunican como error. Referencias: RF10; RN09–RN11 y CU10.
 
@@ -1366,12 +1399,14 @@ La función HTTP `createProveedorLaboratorio` invoca `POST /api/proveedores-labo
 
 **Objetivo:** consultar el listado de proveedores/laboratorios y los datos de un registro seleccionado.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarProveedores | Boundary | Representa listado y detalle; muestra datos públicos y aplica filtros locales al listado. |
-| ControlConsultarProveedores | Control | Coordina la consulta general o por ID y prepara los datos públicos. |
+| ProveedoresPage / ProveedorLaboratorioTable | Boundary; componentes funcionales | Cargan y presentan el listado con filtros locales y enlaces reales. |
+| ProveedorLaboratorioDetailPage | Boundary; componente funcional | Carga la entidad por ID y presenta sus datos públicos. |
+| proveedorLaboratorioController / proveedorLaboratorioService | Control; clases | Atienden listado y consulta por ID, con validación de ID/existencia cuando corresponde. |
+| proveedorLaboratorioRepository | Repository; clase | Lee todos los registros o el seleccionado por PK. |
 | ProveedorLaboratorio | Entity | Representa los registros activos e inactivos consultados. |
 
 **Diagrama de clases:**
@@ -1381,22 +1416,41 @@ classDiagram
     direction LR
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
-    class VistaConsultarProveedores {
+    class ProveedoresPage {
         <<boundary>>
-        -String busqueda
-        -String filtroEstado
-        -Lista proveedores
-        -Integer idProveedorLaboratorio
-        +solicitarListado()
-        +aplicarFiltrosLocales()
-        +solicitarDetalle()
+        -String search
+        -String statusFilter
+        -Array proveedores
+        -Boolean loading
+        +loadProveedores()
     }
-    class ControlConsultarProveedores {
+    class ProveedorLaboratorioTable {
+        <<boundary>>
+        -Array proveedores
+        -Boolean canManage
+    }
+    class ProveedorLaboratorioDetailPage {
+        <<boundary>>
+        -String idProveedorLaboratorio
+        -Object proveedor
+        -Boolean loading
+        -String errorMessage
+        +loadProveedor()
+    }
+    class proveedorLaboratorioController {
         <<control>>
-        +consultarListado()
-        +validarIdentificador()
-        +consultarProveedor()
-        +prepararDatosPublicos()
+        +getProveedoresLaboratorios(req, res, next)$
+        +getProveedorLaboratorioById(req, res, next)$
+    }
+    class proveedorLaboratorioService {
+        <<control>>
+        +getProveedoresLaboratorios()$
+        +getProveedorLaboratorioById(idProveedorLaboratorio)$
+    }
+    class proveedorLaboratorioRepository {
+        <<repository>>
+        +findAll()$
+        +findById(...)$
     }
     class ProveedorLaboratorio {
         <<entity>>
@@ -1406,30 +1460,52 @@ classDiagram
         -VARCHAR_255 direccion
         -BOOLEAN estado
     }
-    Administrador --> VistaConsultarProveedores
-    Regente --> VistaConsultarProveedores
-    VistaConsultarProveedores ..> ControlConsultarProveedores : solicita
-    ControlConsultarProveedores ..> ProveedorLaboratorio : consulta
+    Administrador --> ProveedoresPage
+    Regente --> ProveedoresPage
+    Administrador --> ProveedorLaboratorioDetailPage
+    Regente --> ProveedorLaboratorioDetailPage
+    ProveedoresPage ..> ProveedorLaboratorioTable : renderiza listado filtrado
+    ProveedorLaboratorioTable ..> ProveedorLaboratorioDetailPage : enlace via React Router
+    ProveedoresPage ..> proveedorLaboratorioController : GET /api/proveedores-laboratorios (resumen)
+    ProveedorLaboratorioDetailPage ..> proveedorLaboratorioController : GET /api/proveedores-laboratorios/#58;idProveedorLaboratorio (resumen)
+    proveedorLaboratorioController ..> proveedorLaboratorioService : consulta de listado o por ID
+    proveedorLaboratorioService ..> proveedorLaboratorioRepository : findAll o findById
+    proveedorLaboratorioRepository ..> ProveedorLaboratorio : lectura Sequelize
+    note for ProveedoresPage "loadProveedores es funcion local React; no metodo de clase."
+    note for ProveedorLaboratorioTable "Sin funcion local de consulta;\nel enlace navega a la ruta de detalle."
+    note for ProveedorLaboratorioDetailPage "loadProveedor es local al efecto React;\nno metodo de clase."
 ```
 
-**Descripción de relaciones:** ambos actores utilizan la vista conceptual para solicitar listado o detalle al mismo Control. La vista agrupa las interfaces de consulta del CU, sin afirmar que ambas sean un componente React único. La entidad aporta nombre, contactos y estado; las colecciones de compras/medicamentos no se cargan.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU11 | ProveedoresPage | Componente funcional | `frontend/src/features/proveedores/pages/ProveedoresPage.jsx` | Local `loadProveedores()` | Invocada desde useEffect y Reintentar; llama a getProveedoresLaboratorios. loadRequest, referencia de useRef, descarta respuestas obsoletas. |
+| CU11 | ProveedorLaboratorioTable | Componente funcional | `frontend/src/features/proveedores/components/ProveedorLaboratorioTable.jsx` | — | Recibe proveedores/canManage; el Link de detalle navega por React Router, no llama a una función del componente de detalle. No hay handler local de consulta. |
+| CU11 | ProveedorLaboratorioDetailPage | Componente funcional | `frontend/src/features/proveedores/pages/ProveedorLaboratorioDetailPage.jsx` | Local al efecto `loadProveedor()` | idProveedorLaboratorio viene como cadena de useParams; valida y convierte a numericId antes de getProveedorLaboratorio(numericId). |
+| CU11 | Carga de edición, documentada sin otra caja | Componente ProveedorLaboratorioFormPage | `frontend/src/features/proveedores/pages/ProveedorLaboratorioFormPage.jsx` | Local al efecto `loadProveedor()` | Camino preparatorio de CU12, solo para Administrador. Modo edit; usa el mismo GET por ID y pasa proveedor como initialData a ProveedorLaboratorioForm. Es distinta de la función homónima del detalle. |
+| CU11 | proveedorLaboratorioController | Clase proveedorLaboratorioController | `backend/src/presentation/controllers/proveedor-laboratorio.controller.js` | `getProveedoresLaboratorios(req, res, next)`; `getProveedorLaboratorioById(req, res, next)` | validateId(data), mediante getIdProveedorLaboratorio, solo en la consulta por ID. |
+| CU11 | proveedorLaboratorioService | Clase proveedorLaboratorioService | `backend/src/business/services/proveedor-laboratorio.service.js` | `getProveedoresLaboratorios()`; `getProveedorLaboratorioById(idProveedorLaboratorio)` | Convierte mediante toPublicProveedorLaboratorio; por ID rechaza inexistencia con 404. |
+| CU11 | proveedorLaboratorioRepository | Clase proveedorLaboratorioRepository | `backend/src/data/repositories/proveedor-laboratorio.repository.js` | `findAll()`; `findById({ idProveedorLaboratorio })` | Orden ascendente por ID; sin include de compras/medicamentos ni escrituras. |
+| CU11 | ProveedorLaboratorio | Modelo ProveedorLaboratorio | `backend/src/data/models/proveedor-laboratorio.js` | — | Cinco atributos completos; findAll/findByPk son heredados de Sequelize. |
+| CU11 | Función HTTP de listado | Módulo ES; función exportada | `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` | `getProveedoresLaboratorios()` | Importada por ProveedoresPage; api.get(basePath). |
+| CU11 | Función HTTP por ID | Módulo ES; función exportada | `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` | `getProveedorLaboratorio(idProveedorLaboratorio)` | Importada por las páginas de detalle/edición; api.get con basePath e ID. No es getProveedorLaboratorioById del Service backend. |
+| CU11 | API, listado resumido | Endpoint Express | `backend/src/presentation/routes/proveedor-laboratorio.router.js`; `backend/src/app.js` | `GET /api/proveedores-laboratorios` | GET '/' → proveedorLaboratorioController.getProveedoresLaboratorios; Administrador/Regente. |
+| CU11 | API, consulta por ID resumida | Endpoint Express | `backend/src/presentation/routes/proveedor-laboratorio.router.js`; `backend/src/app.js` | `GET /api/proveedores-laboratorios/:idProveedorLaboratorio` | GET '/:idProveedorLaboratorio' → proveedorLaboratorioController.getProveedorLaboratorioById; Administrador/Regente. |
+
+**Descripción de relaciones:** ambos actores acceden al listado y al detalle, representados por sus componentes reales. ProveedoresPage renderiza la tabla; su Link conduce al detalle mediante React Router. Cada página llama a su función HTTP importada y las dependencias hacia el Controller resumen las solicitudes, sin llamadas directas. El Controller llama al Service, que lee por Repository. La entidad aporta nombre, contactos y estado; las colecciones de compras/medicamentos no se cargan.
 
 | Camino | Responsabilidades y condiciones |
 |---|---|
-| Listado | `consultarListado` obtiene todos los registros ordenados por ID ascendente; `prepararDatosPublicos` transforma cada resultado. No valida un ID. Activos/inactivos y un resultado vacío son válidos. |
-| Detalle | `validarIdentificador` comprueba el ID antes de `consultarProveedor`; se verifica existencia y se prepara el resultado público. ID inválido produce 400 y registro inexistente, 404. |
-| Filtros de interfaz | `aplicarFiltrosLocales` busca por nombre, teléfono o dirección y filtra por estado sobre el listado recibido. No genera una consulta de filtros al backend ni una escritura. |
+| Listado | getProveedoresLaboratorios llama a findAll y convierte cada resultado mediante toPublicProveedorLaboratorio. No valida un ID. Activos/inactivos y un resultado vacío son válidos. |
+| Detalle | getIdProveedorLaboratorio usa validateId antes de getProveedorLaboratorioById; este llama a findById y verifica existencia. ID inválido produce 400 y registro inexistente, 404. |
+| Filtros de interfaz | filteredProveedores es un valor calculado por un callback anónimo de useMemo: busca por nombre/teléfono/dirección y filtra por estado. Los onChange de search/statusFilter son inline; no existe aplicarFiltrosLocales como función implementada. No genera una consulta de filtros al backend ni una escritura. |
 
 El Regente consulta; las acciones administrativas del listado/detalle se reservan al Administrador. Se muestran carga, vacío y error cuando corresponde. La lectura por ID también prepara la edición de CU12, sin efectuar su escritura.
 
 **Correspondencia con la implementación:** `/proveedores`, `frontend/src/features/proveedores/pages/ProveedoresPage.jsx` y `frontend/src/features/proveedores/components/ProveedorLaboratorioTable.jsx` representan el listado; `/proveedores/:idProveedorLaboratorio` y `frontend/src/features/proveedores/pages/ProveedorLaboratorioDetailPage.jsx`, el detalle.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| consultarListado | `proveedorLaboratorioController.getProveedoresLaboratorios` → `proveedorLaboratorioService.getProveedoresLaboratorios` → `proveedorLaboratorioRepository.findAll`. |
-| validarIdentificador | El Controller utiliza `proveedorLaboratorioValidator.validateId` mediante su auxiliar de lectura del ID, únicamente en el camino por ID. |
-| consultarProveedor | `proveedorLaboratorioController.getProveedorLaboratorioById` → `proveedorLaboratorioService.getProveedorLaboratorioById` → `proveedorLaboratorioRepository.findById`; el Service rechaza un registro inexistente. |
-| prepararDatosPublicos | Los métodos de consulta del Service utilizan la función externa `toPublicProveedorLaboratorio` para convertir instancia o listado. |
+**Interacción Boundary:** loadProveedores pertenece a ProveedoresPage y loadProveedor es local al efecto del detalle. La función homónima del efecto de ProveedorLaboratorioFormPage participa en la carga preparatoria, no en CU10 ni en la escritura de CU12. ProveedorLaboratorioForm carga initialData con un efecto anónimo. onToggleEstado de la tabla y handleUpdateEstado de la página corresponden a CU13, sin añadirse como operaciones del listado. El Regente no accede a la ruta de edición aunque tenga permiso para consultar el GET por ID.
 
 Las funciones HTTP `getProveedoresLaboratorios` y `getProveedorLaboratorio` invocan `GET /api/proveedores-laboratorios` y `GET /api/proveedores-laboratorios/:idProveedorLaboratorio`. Ambas devuelven 200 con datos; sesión/permisos y errores inesperados se manejan por separado. Referencias: RF10; RN09/RN10 y CU11.
 
@@ -1439,12 +1515,13 @@ Las funciones HTTP `getProveedoresLaboratorios` y `getProveedorLaboratorio` invo
 
 **Objetivo:** actualizar nombre y/o contactos de un proveedor/laboratorio existente, conservando su identidad y estado.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaModificarProveedor | Boundary | Permite editar nombre, teléfono y dirección de la entidad seleccionada. |
-| ControlModificarProveedor | Control | Valida los cambios, comprueba existencia y coordina actualización y lectura del resultado. |
+| ProveedorLaboratorioForm / ProveedorLaboratorioFormPage | Boundary; componentes funcionales | Coordinan la edición de nombre y contactos en modo edit. |
+| proveedorLaboratorioController / proveedorLaboratorioService | Control; clases | Atienden updateProveedorLaboratorio y las lecturas internas de existencia/resultado. |
+| proveedorLaboratorioRepository | Repository; clase | Lee por PK y actualiza los campos permitidos. |
 | ProveedorLaboratorio | Entity | Representa el registro cuyos datos se actualizan. |
 
 **Diagrama de clases:**
@@ -1453,19 +1530,36 @@ Las funciones HTTP `getProveedoresLaboratorios` y `getProveedorLaboratorio` invo
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaModificarProveedor {
+    class ProveedorLaboratorioForm {
         <<boundary>>
-        -Integer idProveedorLaboratorio
-        -String nombre
-        -String telefono
-        -String direccion
-        +enviarCambios()
+        -String form.nombre
+        -String form.telefono
+        -String form.direccion
+        -Function onSubmit
+        -Function onCancel
+        +updateField(event)
+        +handleSubmit(event)
     }
-    class ControlModificarProveedor {
+    class ProveedorLaboratorioFormPage {
+        <<boundary>>
+        -String idProveedorLaboratorio
+        -Boolean submitting
+        -String errorMessage
+        +handleSubmit(data)
+    }
+    class proveedorLaboratorioController {
         <<control>>
-        +validarCambios()
-        +consultarProveedor()
-        +actualizarDatos()
+        +updateProveedorLaboratorio(req, res, next)$
+    }
+    class proveedorLaboratorioService {
+        <<control>>
+        +updateProveedorLaboratorio(idProveedorLaboratorio, data)$
+        +getProveedorLaboratorioById(idProveedorLaboratorio)$
+    }
+    class proveedorLaboratorioRepository {
+        <<repository>>
+        +findById(...)$
+        +update(...)$
     }
     class ProveedorLaboratorio {
         <<entity>>
@@ -1475,22 +1569,36 @@ classDiagram
         -VARCHAR_255 direccion
         -BOOLEAN estado
     }
-    Administrador --> VistaModificarProveedor
-    VistaModificarProveedor ..> ControlModificarProveedor : solicita
-    ControlModificarProveedor ..> ProveedorLaboratorio : actualiza datos
+    Administrador --> ProveedorLaboratorioForm
+    ProveedorLaboratorioForm ..> ProveedorLaboratorioFormPage : callback onSubmit
+    ProveedorLaboratorioFormPage ..> proveedorLaboratorioController : PATCH /api/proveedores-laboratorios/#58;idProveedorLaboratorio (resumen)
+    proveedorLaboratorioController ..> proveedorLaboratorioService : updateProveedorLaboratorio
+    proveedorLaboratorioService ..> proveedorLaboratorioRepository : findById y update
+    proveedorLaboratorioRepository ..> ProveedorLaboratorio : lecturas y actualizacion Sequelize
+    note for ProveedorLaboratorioForm "Operaciones = funciones locales React; no metodos de clase.\nonSubmit y onCancel son props."
+    note for ProveedorLaboratorioFormPage "handleSubmit(data) es funcion local React;\nla carga por ID corresponde a CU11."
 ```
 
-**Descripción de relaciones:** la vista identifica el registro y envía los datos editables al Control. Este consulta ProveedorLaboratorio antes de escribir para comprobar existencia y después para devolver el resultado público. Estado se muestra en la entidad como dato conservado: no forma parte de los campos editables de esta vista.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU12 | ProveedorLaboratorioForm | Componente funcional | `frontend/src/features/proveedores/components/ProveedorLaboratorioForm.jsx` | Locales `updateField(event)`; `handleSubmit(event)` | mode=edit; onChange usa updateField, el submit usa handleSubmit y este invoca la prop onSubmit sin incluir estado. |
+| CU12 | ProveedorLaboratorioFormPage | Componente funcional | `frontend/src/features/proveedores/pages/ProveedorLaboratorioFormPage.jsx` | Local `handleSubmit(data)` | Pasa esta función como onSubmit; llama a updateProveedorLaboratorio(Number(idProveedorLaboratorio), data). onCancel recibe navegación inline. |
+| CU12 | proveedorLaboratorioController | Clase proveedorLaboratorioController | `backend/src/presentation/controllers/proveedor-laboratorio.controller.js` | `updateProveedorLaboratorio(req, res, next)` | validateId(data) mediante getIdProveedorLaboratorio y validateUpdate(data) mediante getValidatedData; responde con mensaje y datos. |
+| CU12 | proveedorLaboratorioService | Clase proveedorLaboratorioService | `backend/src/business/services/proveedor-laboratorio.service.js` | `updateProveedorLaboratorio(idProveedorLaboratorio, data)`; `getProveedorLaboratorioById(idProveedorLaboratorio)` | El segundo método se ejecuta dentro del primero antes/después de escribir; no es un GET HTTP adicional. |
+| CU12 | proveedorLaboratorioRepository | Clase proveedorLaboratorioRepository | `backend/src/data/repositories/proveedor-laboratorio.repository.js` | `findById({ idProveedorLaboratorio })`; `update({ idProveedorLaboratorio, data })` | UPDATE por PK entre dos lecturas; no abre transacción conjunta ni bloquea explícitamente la fila. |
+| CU12 | ProveedorLaboratorio | Modelo ProveedorLaboratorio | `backend/src/data/models/proveedor-laboratorio.js` | — | Cinco atributos completos; conserva ID y estado. |
+| CU12 | Función HTTP intermediaria | Módulo ES; función exportada | `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` | `updateProveedorLaboratorio(idProveedorLaboratorio, data)` | Importada por la página; api.patch con basePath/ID y data. No es método local de la página. |
+| CU12 | API, relación HTTP resumida | Endpoint Express | `backend/src/presentation/routes/proveedor-laboratorio.router.js`; `backend/src/app.js` | `PATCH /api/proveedores-laboratorios/:idProveedorLaboratorio` | PATCH '/:idProveedorLaboratorio' → proveedorLaboratorioController.updateProveedorLaboratorio; Administrador. |
+
+**Descripción de relaciones:** ProveedorLaboratorioForm invoca onSubmit, implementado como handleSubmit(data) en la página. Esta llama a updateProveedorLaboratorio del módulo HTTP, sintetizado por la dependencia hacia el Controller. El Controller llama al Service, que consulta por Repository antes de escribir para comprobar existencia y después para devolver el resultado público. Estado se muestra en la entidad como dato conservado: no forma parte de los campos editables de esta vista.
 
 La API admite uno o varios de nombre/teléfono/dirección; un campo omitido se conserva y un contacto nulo o vacío se limpia. El formulario actual envía los tres campos de datos. También se puede editar una entidad inactiva. El ID y las relaciones históricas permanecen; no se exige unicidad del nombre. Las lecturas y actualización son sentencias independientes, sin transacción conjunta explícita del Service.
 
 **Correspondencia con la implementación:** `/proveedores/:idProveedorLaboratorio/editar`, `frontend/src/features/proveedores/pages/ProveedorLaboratorioFormPage.jsx` en modo edit y `frontend/src/features/proveedores/components/ProveedorLaboratorioForm.jsx` representan la vista. La carga inicial utiliza CU11; no se atribuye a esta operación de escritura.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarCambios | `proveedorLaboratorioController.updateProveedorLaboratorio` utiliza `proveedorLaboratorioValidator.validateId` y `validateUpdate`; el PATCH es estricto, no vacío y excluye ID/estado del body. |
-| consultarProveedor | `proveedorLaboratorioService.updateProveedorLaboratorio` llama a `getProveedorLaboratorioById` antes y después de escribir; este usa `proveedorLaboratorioRepository.findById` y prepara el DTO público. |
-| actualizarDatos | `proveedorLaboratorioService.updateProveedorLaboratorio` coordina `proveedorLaboratorioRepository.update` con los datos permitidos. |
+**Interacción Boundary y validación:** la rama edit de handleSubmit(event) envía nombre/teléfono/dirección y omite estado; aunque form.estado se conserva en el estado interno, no hay selector en edición. El callback onCancel no origina un handleCancel ficticio. loadProveedor y el efecto de initialData pertenecen a la lectura preparatoria de CU11. El PATCH backend es estricto, no vacío y excluye ID/estado del body. toPublicProveedorLaboratorio convierte las lecturas sin ser un método del Service.
 
 La función HTTP `updateProveedorLaboratorio` invoca `PATCH /api/proveedores-laboratorios/:idProveedorLaboratorio`; devuelve 200 con mensaje y datos. Tras éxito se vuelve al listado; ante error se conserva el borrador. Se manejan entrada inválida, sesión/permisos, inexistencia y fallo inesperado. Referencias: RF10; RN09/RN10 y CU12.
 
@@ -1500,12 +1608,13 @@ La función HTTP `updateProveedorLaboratorio` invoca `PATCH /api/proveedores-lab
 
 **Objetivo:** cambiar el estado administrativo de la entidad conservando su registro, relaciones e historial.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaCambiarEstadoProveedor | Boundary | Identifica la entidad y solicita confirmación del estado objetivo. |
-| ControlCambiarEstadoProveedor | Control | Valida el estado, comprueba existencia y coordina el cambio y su resultado. |
+| ProveedoresPage / ProveedorLaboratorioTable / ConfirmDialog | Boundary; componentes funcionales | Coordinan selección del proveedor o laboratorio, confirmación y cambio de estado. |
+| proveedorLaboratorioController / proveedorLaboratorioService | Control; clases | Atienden updateEstado y las lecturas públicas internas. |
+| proveedorLaboratorioRepository | Repository; clase | Consulta por PK y modifica únicamente estado. |
 | ProveedorLaboratorio | Entity | Representa la entidad que se activa o desactiva. |
 
 **Diagrama de clases:**
@@ -1514,40 +1623,80 @@ La función HTTP `updateProveedorLaboratorio` invoca `PATCH /api/proveedores-lab
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaCambiarEstadoProveedor {
+    class ProveedoresPage {
         <<boundary>>
-        -Integer idProveedorLaboratorio
-        -Boolean estadoSolicitado
-        +confirmarCambioEstado()
+        -Object estadoTarget
+        -Boolean updatingEstado
+        +handleUpdateEstado()
     }
-    class ControlCambiarEstadoProveedor {
+    class ProveedorLaboratorioTable {
+        <<boundary>>
+        -Array proveedores
+        -Boolean canManage
+        -Function onToggleEstado
+    }
+    class ConfirmDialog {
+        <<boundary>>
+        -Boolean open
+        -Boolean busy
+        -Function onConfirm
+    }
+    class proveedorLaboratorioController {
         <<control>>
-        +validarCambioEstado()
-        +consultarProveedor()
-        +cambiarEstado()
+        +updateEstado(req, res, next)$
+    }
+    class proveedorLaboratorioService {
+        <<control>>
+        +updateEstado(...)$
+        +getProveedorLaboratorioById(idProveedorLaboratorio)$
+    }
+    class proveedorLaboratorioRepository {
+        <<repository>>
+        +findById(...)$
+        +updateEstado(...)$
     }
     class ProveedorLaboratorio {
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
         -BOOLEAN estado
     }
-    Administrador --> VistaCambiarEstadoProveedor
-    VistaCambiarEstadoProveedor ..> ControlCambiarEstadoProveedor : solicita
-    ControlCambiarEstadoProveedor ..> ProveedorLaboratorio : cambia estado
+    Administrador --> ProveedorLaboratorioTable
+    Administrador --> ConfirmDialog
+    ProveedorLaboratorioTable ..> ProveedoresPage : callback onToggleEstado
+    ConfirmDialog ..> ProveedoresPage : callback onConfirm
+    ProveedoresPage ..> proveedorLaboratorioController : PATCH /api/proveedores-laboratorios/#58;idProveedorLaboratorio/estado (resumen)
+    proveedorLaboratorioController ..> proveedorLaboratorioService : updateEstado
+    proveedorLaboratorioService ..> proveedorLaboratorioRepository : findById y updateEstado
+    proveedorLaboratorioRepository ..> ProveedorLaboratorio : lecturas y cambio de estado Sequelize
+    note for ProveedoresPage "handleUpdateEstado es funcion local React; no metodo de clase."
+    note for ProveedorLaboratorioTable "onToggleEstado es prop;\nseleccion por onClick inline."
+    note for ConfirmDialog "onConfirm es prop;\nsin funcion local de confirmacion."
 ```
 
-**Descripción de relaciones:** el Administrador confirma la acción en la vista; el Control consulta la entidad antes y después de cambiar exclusivamente su estado. Nombre identifica el registro seleccionado; los contactos se conservan, aunque no se repitan como atributos relevantes en este dibujo.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU13 | ProveedoresPage | Componente funcional | `frontend/src/features/proveedores/pages/ProveedoresPage.jsx` | Local `handleUpdateEstado()` | Pasa esta función como onConfirm; llama a updateEstadoProveedorLaboratorio con estadoTarget.idProveedorLaboratorio y !estadoTarget.estado. |
+| CU13 | ProveedorLaboratorioTable | Componente funcional | `frontend/src/features/proveedores/components/ProveedorLaboratorioTable.jsx` | Prop callback onToggleEstado | Recibe setEstadoTarget de la página; onClick inline ejecuta onToggleEstado(proveedor). canManage limita las acciones al Administrador. No define un handler local de cambio. |
+| CU13 | ConfirmDialog | Componente funcional | `frontend/src/components/ConfirmDialog.jsx` | Props onConfirm/onClose | onConfirm recibe handleUpdateEstado; busy recibe updatingEstado. onClose recibe `() => setEstadoTarget(null)`. No tiene función local de confirmación. |
+| CU13 | proveedorLaboratorioController | Clase proveedorLaboratorioController | `backend/src/presentation/controllers/proveedor-laboratorio.controller.js` | `updateEstado(req, res, next)` | Usa validateId(data) y validateUpdateEstado(data); recibe estado booleano objetivo y responde con mensaje/datos. |
+| CU13 | proveedorLaboratorioService | Clase proveedorLaboratorioService | `backend/src/business/services/proveedor-laboratorio.service.js` | `updateEstado(idProveedorLaboratorio, { estado })`; `getProveedorLaboratorioById(idProveedorLaboratorio)` | Consulta internamente antes/después de escribir, sin petición GET adicional; no exige estado diferente del existente. |
+| CU13 | proveedorLaboratorioRepository | Clase proveedorLaboratorioRepository | `backend/src/data/repositories/proveedor-laboratorio.repository.js` | `findById({ idProveedorLaboratorio })`; `updateEstado({ idProveedorLaboratorio, estado })` | Solo modifica estado; sin transacción conjunta explícita de la secuencia. |
+| CU13 | ProveedorLaboratorio | Modelo ProveedorLaboratorio | `backend/src/data/models/proveedor-laboratorio.js` | — | Cinco atributos completos; no elimina registro ni relaciones. |
+| CU13 | Función HTTP intermediaria | Módulo ES; función exportada | `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` | `updateEstadoProveedorLaboratorio(idProveedorLaboratorio, estado)` | Importada por ProveedoresPage; api.patch con basePath/ID/estado y { estado }. El nombre difiere de updateEstado del backend. |
+| CU13 | API, relación HTTP resumida | Endpoint Express | `backend/src/presentation/routes/proveedor-laboratorio.router.js`; `backend/src/app.js` | `PATCH /api/proveedores-laboratorios/:idProveedorLaboratorio/estado` | PATCH '/:idProveedorLaboratorio/estado' → proveedorLaboratorioController.updateEstado; Administrador. |
+
+**Descripción de relaciones:** la tabla selecciona el registro mediante la prop onToggleEstado; ConfirmDialog invoca onConfirm, función handleUpdateEstado de ProveedoresPage. La página solicita el PATCH mediante la función HTTP importada; su dependencia al Controller resume esa colaboración. El Controller llama al Service, que accede por Repository antes/después de modificar exclusivamente estado. Nombre identifica el registro seleccionado; teléfono/dirección permanecen y se muestran completos en la entidad.
 
 La interfaz propone el estado inverso al actual, pero la API recibe un booleano objetivo; el Service no exige que difiera del existente. No se elimina el registro ni se modifican en cascada medicamentos, compras o inventario. Inactivar impide su uso en nuevas compras/asignaciones según los flujos consumidores; no impide vender medicamentos que ya están en inventario. Activar no cambia el estado propio de los medicamentos relacionados.
 
 **Correspondencia con la implementación:** `/proveedores`, `frontend/src/features/proveedores/pages/ProveedoresPage.jsx`, `frontend/src/features/proveedores/components/ProveedorLaboratorioTable.jsx` y `frontend/src/components/ConfirmDialog.jsx` representan selección y confirmación.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarCambioEstado | `proveedorLaboratorioController.updateEstado` utiliza `proveedorLaboratorioValidator.validateId` y `validateUpdateEstado` para ID positivo y body estricto con estado booleano. |
-| consultarProveedor | `proveedorLaboratorioService.updateEstado` llama a `getProveedorLaboratorioById` antes y después del cambio, mediante `proveedorLaboratorioRepository.findById`, y transforma el resultado público. |
-| cambiarEstado | `proveedorLaboratorioService.updateEstado` coordina `proveedorLaboratorioRepository.updateEstado`; se modifica únicamente estado, sin transacción conjunta explícita para toda la secuencia. |
+**Interacción Boundary y validación:** setEstadoTarget es un setter de useState, no una función propia inventada. El callback de cierre es inline y no se dibuja como handleClose. La carga inicial loadProveedores corresponde a CU11; CU13 sustituye la fila local con el resultado del PATCH. El Controller exige ID positivo y body estricto con estado booleano; el Service usa toPublicProveedorLaboratorio como función externa al convertir las lecturas.
 
 La función HTTP `updateEstadoProveedorLaboratorio` invoca `PATCH /api/proveedores-laboratorios/:idProveedorLaboratorio/estado`; devuelve 200 con mensaje y datos. La vista impide envíos duplicados y actualiza la fila con el DTO devuelto, sin un GET adicional inmediato. Ante error muestra el mensaje y cierra la confirmación sin aplicar un cambio local exitoso. Referencias: RF10; RN09/RN10/RN102 y CU13.
 
@@ -1561,13 +1710,13 @@ La función HTTP `updateEstadoProveedorLaboratorio` invoca `PATCH /api/proveedor
 | CU13 — Activar o desactivar proveedor o laboratorio | 1 | Confirmación, estado objetivo y conservación de relaciones/historial. |
 | **Total de Fase 2** | **4** | **Cuatro CU, numeración única CU10–CU13.** |
 
-**Criterio de comprobación:** cada dibujo contiene un Boundary y un Control, con ProveedorLaboratorio como única entidad del objetivo. Las 13 operaciones conceptuales tienen correspondencias explícitas; las 18 apariciones de atributos seleccionados pertenecen a los cinco atributos reales de esa entidad. Los permisos y caminos de CU11 se contrastan con el análisis técnico. Las asociaciones persistentes de contexto conservan `1`–`0..*` y no se convierten en relaciones de composición, cascadas ni métodos del modelo.
+**Criterio de comprobación:** las operaciones de los Boundary pertenecen a sus componentes React; las de Controller, Service y Repository son métodos propios de sus clases, con firmas exactas en las tablas. Las colaboraciones HTTP se identifican como resumidas y conservan función exportada/archivo/endpoint. CU11 reúne listado/detalle y documenta la carga preparatoria de edición; CU12/CU13 distinguen esa petición de sus lecturas internas. ProveedorLaboratorio permanece como única entidad del objetivo, con todos sus atributos. Las asociaciones persistentes de contexto conservan `1`–`0..*` y no se convierten en composición, cascadas ni métodos del modelo.
 
-**Validación de esta entrega:** se comprobaron los nombres y números CU10–CU13 contra el catálogo oficial, la estructura de los cuatro análisis y las correspondencias de sus 13 operaciones conceptuales. Se contrastaron actores/permisos y las 18 apariciones de atributos con los cinco campos reales de ProveedorLaboratorio; la participación transversal de Usuario queda explicada sin duplicar infraestructura. CU11 conserva los caminos de listado/detalle y su validación de ID condicional. Las multiplicidades de contexto se verificaron contra el análisis técnico y el modelo general, sin asociaciones inventadas en los dibujos.
+**Resultado de la corrección de Fase 2:** cuatro CU y cuatro diagramas con nombres implementados. Se representan seis componentes funcionales, tres clases backend y el modelo ProveedorLaboratorio. Los gráficos contienen **6 funciones locales distintas en 9 apariciones**, **15 métodos backend distintos en 19 apariciones** y **20 apariciones de atributos persistentes**, cinco en cada entidad. Las cinco funciones HTTP se documentan en las tablas, sin cajas adicionales ni métodos importados en los Boundary. loadProveedor del efecto de la página de edición se documenta como función adicional del camino preparatorio de CU11, sin otra caja.
 
-Los cuatro diagramas se analizaron y renderizaron con Mermaid 11.12.0; se revisaron sus capturas visualmente. Se comprobó la distribución completa actor → Boundary → Control → Entity de izquierda a derecha, sin cajas solapadas ni errores de renderizado. Se verificaron formato Markdown, enlaces y rutas de correspondencia. Los hashes SHA-256 de los diez diagramas académicos de Fase 1 y de los seis documentos fuente se conservaron; Git identifica únicamente este documento académico nuevo. La comprobación fue documental y visual, sin conexión a MySQL ni pruebas funcionales del backend.
+**Comprobación acotada:** participantes, firmas, estados/props, callbacks y funciones HTTP contrastados con sus archivos fuente; permisos con el catálogo y rutas protegidas; atributos con el modelo y su migración; multiplicidades de contexto con sus asociaciones. **4/4 diagramas de Fase 2 con sintaxis válida en Mermaid 11.12.0**, mediante mermaid.parse. Se comprobó la conservación íntegra de Fase 1 y del bloque desde Fase 3; `git diff --check` aprobado y únicamente cambia este Markdown. Se mantienen los 33 CU y 34 diagramas del documento. La revisión visual exhaustiva se reserva para el cierre integral; no se ejecutaron pruebas funcionales, conexiones a MySQL, suites extensas, hashes del repositorio ni capturas/SVG.
 
-**Avance al cierre de Fase 2:** trece de los 33 CU implementados, con catorce de los 34 diagramas previstos. La Fase 3 se incorpora a continuación por solicitud de continuidad del usuario.
+**Avance de corrección al cierre de Fase 2:** **13/33 CU y 14/34 diagramas corregidos**. Fase 2 queda para revisión del usuario. Las fases 3–6 conservan su versión conceptual anterior y permanecen pendientes de autorización para corregirlas.
 
 ## 5. Fase 3 — Medicamentos, Principios Activos y Composición
 
