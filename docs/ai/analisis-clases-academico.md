@@ -4,36 +4,40 @@ Sistema de Información Web para la Administración de Inventario, Ventas y Cont
 
 **Materia:** Sistemas de Información I. **Enfoque:** Boundary–Control–Entity (BCE).
 
-> **Entrega 6 — Fase 6:** Vencimientos y Retiros, CU33–CU36.
-> **Cobertura acumulada:** los 33 casos de uso implementados y los 34 diagramas previstos; CU08 conserva dos variantes y los CU agrupados distinguen sus caminos dentro del mismo análisis.
-> **Estado:** alcance académico implementado completo. La Fase 6 y el cierre acumulado quedan para revisión.
+> **Corrección según el docente — Fase 1:** CU01–CU09, con nombres y operaciones verificables en el código.
+> **Cobertura documental:** 33 CU implementados y 34 diagramas; CU08 conserva dos variantes.
+> **Avance de la corrección:** nueve CU y diez diagramas corregidos. Las fases 2–6 conservan la versión conceptual anterior y quedan pendientes de esta corrección.
 
 ## 0. Alcance y criterios del análisis académico
 
 Este documento explica cómo colaboran las clases de análisis para cumplir los objetivos del usuario:
 
-**Actor → Vista (Boundary) → Control (Control) → Entidades (Entity).**
+**Actor → Interfaz (Boundary) → Control HTTP / Control de negocio → Entidades (Entity).**
 
 Se mantienen dos niveles documentales independientes:
 
 | Documento | Nivel y finalidad |
 |---|---|
 | [Análisis técnico por caso de uso](analisis-clase.md) | Documenta Controllers, Services, Repositories, Validators, middleware, modelos y métodos reales. Es la fuente principal de este análisis. |
-| Este documento | Representa interfaces y controles conceptuales, entidades reales y sus colaboraciones esenciales para una presentación académica. |
+| Este documento | Conserva BCE y, en las fases corregidas, representa componentes React, clases backend y modelos con nombres verificables en sus archivos fuente. |
 | [Diagrama de clases general](diagrama-clases.md) | Permite comprobar nombres, atributos, tipos y asociaciones del modelo persistente. |
 
-Las clases **Vista...** y **Control...** son abstracciones de análisis. No se afirma que existan literalmente como clases JavaScript: React utiliza componentes funcionales y las responsabilidades de un Control están distribuidas entre varias piezas del backend. Las tablas de correspondencia identifican el comportamiento real que respalda cada operación conceptual.
+**Criterio del docente aplicado a Fase 1:** los componentes funcionales de React se representan como elementos `«boundary»`, sin afirmar que sean clases JavaScript. Sus funciones internas se documentan en las correspondencias, no como métodos de una clase. Los Controllers, Services y Repositories son clases exportadas reales: cada operación dibujada pertenece a la clase indicada. Los modelos conservan sus atributos persistentes completos. Los actores son elementos conceptuales UML, expresamente distintos del modelo Usuario.
+
+**Transición por fases:** los nombres Vista... y Control... de las fases 2–6 son las abstracciones de la versión anterior, todavía pendientes de sustitución; no se consideran nombres implementados. Los cierres históricos posteriores describen aquella entrega, no la verificación de la corrección actual.
 
 ### 0.1. Notación y selección de participantes
 
 - `<<actor>>` representa un rol externo: Administrador, Regente o Vendedor. No hay herencia entre actores ni con Usuario; Administrador no hereda automáticamente permisos del Regente.
-- `<<boundary>>` representa la interacción: campos temporales, información mostrada y acciones existentes. Una vista conceptual puede corresponder a una página, formulario, diálogo o acción del layout.
-- `<<control>>` reúne la coordinación del CU. Solo aparecen operaciones necesarias para ese objetivo, con nombres conceptuales y sin firmas técnicas de Express, Sequelize o Axios.
-- `<<entity>>` identifica un modelo real. Se muestran únicamente atributos relevantes; no se agregan métodos de negocio a los modelos. Las funciones de asociación inicial y los métodos heredados de Sequelize quedan fuera del dibujo.
+- `<<boundary>>` identifica un componente funcional real en Fase 1. Sus compartimentos muestran únicamente estado o props reales relevantes; no declaran métodos ficticios. `form.campo` identifica un dato anidado del estado, no una propiedad de clase.
+- `<<control>>` identifica las clases reales Controller y Service en Fase 1; el sufijo de su nombre distingue ambas capas. Se muestran solo operaciones ejecutadas en el CU y caminos condicionales válidos, con `$` para indicar métodos estáticos.
+- `<<repository>>` hace explícita la intermediación real entre Service y modelos. Se omiten Validators, utilidades y errores del gráfico principal por legibilidad; sus participaciones verificadas se explican en el texto y las tablas.
+- `<<entity>>` identifica un modelo real. En Fase 1 se muestran todos sus atributos persistentes, sin métodos de negocio inventados. `associate(models)` y los métodos heredados de Sequelize quedan fuera del dibujo.
 - Los atributos de las entidades conservan los nombres persistentes `snake_case`. Los campos de las vistas usan nombres de interfaz `camelCase`; una contraseña introducida en una vista es temporal y nunca una columna de Usuario.
-- Los tipos `VARCHAR_60`, `CHAR_64`, `INT_UNSIGNED`, `TINYINT_UNSIGNED` y `DATETIME_3` abrevian `VARCHAR(60)`, `CHAR(64)`, `INT UNSIGNED`, `TINYINT UNSIGNED` y `DATETIME(3)`. Las vistas usan tipos conceptuales como String, Integer, Boolean y Lista.
+- Los tipos `VARCHAR_60`, `CHAR_64`, `INT_UNSIGNED`, `TINYINT_UNSIGNED` y `DATETIME_3` abrevian los tipos SQL indicados en el diagrama general. En Boundary, String, Boolean, Object, Array y Function describen los datos JavaScript verificados; no son declaraciones TypeScript del proyecto.
+- `metodo(...)` abrevia exclusivamente los parámetros por legibilidad, nunca el nombre del método. Su **firma exacta**, incluidos objetos desestructurados y valores predeterminados, aparece en la tabla inmediatamente posterior al diagrama. Todos los métodos de Control/Repository de Fase 1 son `static async`.
 - `+` indica una operación disponible y `-`, información interna del participante. Esta notación no afirma que los campos Sequelize sean privados en JavaScript ni que los atributos de entidad se publiquen en una respuesta.
-- `-->` une actor e interfaz; `..>` expresa solicitud o utilización entre Vista, Control y Entidades. No representa acceso directo de React a MySQL ni sustituye las capas reales del backend.
+- `-->` une actor e interfaz. `..>` entre Boundary y Controller es una colaboración HTTP resumida: las funciones frontend y Axios intermediarios se identifican por CU. Entre clases backend expresa una dependencia real; únicamente los Repositories se conectan con los modelos para acceder a sus datos.
 - `--` entre entidades representa una asociación del dominio con multiplicidades estructurales. Se conservan `1` y `0..*` donde corresponde; una FK no implica composición UML. No se dibujan rombos ni herencias inexistentes.
 - Cada diagrama utiliza `direction LR` para favorecer la lectura de izquierda a derecha. Mermaid determina la posición exacta de las ramas de entidades.
 - Un método o entidad condicional se incluye cuando participa en un camino real del CU. Las etiquetas y explicaciones indican su condición; no todos los caminos ejecutan todas las operaciones.
@@ -42,12 +46,12 @@ Las clases **Vista...** y **Control...** son abstracciones de análisis. No se a
 
 | Fase | Agrupación funcional | Casos | Estado académico |
 |---|---|---|---|
-| 1 | Autenticación, Usuarios y Recuperación | CU01–CU09 | Entregada; nueve CU y diez diagramas |
-| 2 | Proveedores y Laboratorios | CU10–CU13 | Entregada; cuatro CU y cuatro diagramas |
-| 3 | Medicamentos, Principios Activos y Composición | CU14–CU20 | Entregada; siete CU y siete diagramas |
-| 4 | Compras | CU25–CU27 | Entregada; tres CU y tres diagramas |
-| 5 | Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37 y CU40 | Entregada; seis CU y seis diagramas |
-| 6 | Vencimientos y Retiros | CU33–CU36 | Elaborada; cuatro CU y cuatro diagramas; revisión pendiente |
+| 1 | Autenticación, Usuarios y Recuperación | CU01–CU09 | Corregida contra código; nueve CU y diez diagramas; para revisión |
+| 2 | Proveedores y Laboratorios | CU10–CU13 | Versión anterior; corrección pendiente |
+| 3 | Medicamentos, Principios Activos y Composición | CU14–CU20 | Versión anterior; corrección pendiente |
+| 4 | Compras | CU25–CU27 | Versión anterior; corrección pendiente |
+| 5 | Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37 y CU40 | Versión anterior; corrección pendiente |
+| 6 | Vencimientos y Retiros | CU33–CU36 | Versión anterior; corrección pendiente |
 
 Las seis fases cubren los 33 CU implementados y 34 diagramas, conservando la numeración oficial y el orden por módulo acordado. Los ocho CU funcionalmente pendientes se identifican únicamente en la sección final, sin anticipar sus diagramas.
 
@@ -73,8 +77,10 @@ Las rutas y archivos de las correspondencias se expresan desde la raíz del repo
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaIniciarSesion | Boundary | Recoge las credenciales y solicita el acceso. |
-| ControlIniciarSesion | Control | Valida credenciales, controla fallos/bloqueo y establece la sesión permitida. |
+| LoginForm | Boundary; componente funcional | Recoge las credenciales y solicita el acceso desde LoginPage. |
+| authController | Control HTTP; clase | Valida la entrada, llama al Service y coloca la cookie. |
+| authService | Control de negocio; clase | Verifica cuenta/contraseña y administra contador/bloqueo dentro de login. |
+| usuarioRepository | Repository; clase | Busca la cuenta y actualiza su seguridad cuando corresponde. |
 | Usuario | Entity | Representa la cuenta, sus credenciales protegidas y condiciones de acceso. |
 
 **Diagrama de clases:**
@@ -85,18 +91,25 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaIniciarSesion {
+    class LoginForm {
         <<boundary>>
         -String nombreUsuario
         -String password
-        +enviarCredenciales()
+        -Boolean submitting
+        -String errorMessage
     }
-    class ControlIniciarSesion {
+    class authController {
         <<control>>
-        +iniciarSesion()
-        +validarCredenciales()
-        +controlarIntentosFallidos()
-        +establecerSesion()
+        +login(req, res, next)$
+    }
+    class authService {
+        <<control>>
+        +login(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findByNombreUsuario(...)$
+        +updateLoginSecurity(...)$
     }
     class Usuario {
         <<entity>>
@@ -104,30 +117,37 @@ classDiagram
         -INT id_rol
         -VARCHAR_60 nombre_usuario
         -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
         -BOOLEAN estado
         -INT_UNSIGNED version_credenciales
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
     }
-    Administrador --> VistaIniciarSesion
-    Regente --> VistaIniciarSesion
-    Vendedor --> VistaIniciarSesion
-    VistaIniciarSesion ..> ControlIniciarSesion : solicita
-    ControlIniciarSesion ..> Usuario : autentica
+    Administrador --> LoginForm
+    Regente --> LoginForm
+    Vendedor --> LoginForm
+    LoginForm ..> authController : HTTP via AuthProvider
+    authController ..> authService : login
+    authService ..> usuarioRepository : lectura y escritura condicional
+    usuarioRepository ..> Usuario : acceso Sequelize
 ```
 
-**Descripción de relaciones:** los tres actores utilizan la misma vista. El Control utiliza Usuario para comprobar existencia, actividad, bloqueo y contraseña; el rol se obtiene de la cuenta sin consultar la entidad Rol. No hay una entidad SesionUsuario.
+**Correspondencia verificable y firmas exactas** (los puntos suspensivos del dibujo solo abrevian parámetros):
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU01 | LoginForm | Componente funcional LoginForm | `frontend/src/features/auth/components/LoginForm.jsx` | Función interna `handleSubmit(event)` | No es método de clase; llama a login de useAuth. |
+| CU01 | authController | Clase authController | `backend/src/presentation/controllers/auth.controller.js` | `login(req, res, next)` | Entrada HTTP; coloca cookie. |
+| CU01 | authService | Clase authService | `backend/src/business/services/auth.service.js` | `login({ nombreUsuario, password })` | Cuenta, bcrypt, contador/bloqueo y generación del JWT dentro del método. |
+| CU01 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findByNombreUsuario({ nombreUsuario, transaction = undefined, lock = false })`; `updateLoginSecurity({ idUsuario, intentosFallidosLogin, bloqueadoHasta, transaction })` | La escritura ocurre ante fallo o limpieza necesaria tras éxito. |
+| CU01 | Usuario | Modelo Usuario | `backend/src/data/models/usuario.js` | — | Nueve atributos persistentes; sin operaciones propias de negocio. |
+| CU01 | Puente frontend | Componente AuthProvider y función exportada login | `frontend/src/features/auth/context/AuthContext.jsx`; `frontend/src/features/auth/services/auth.service.js` | Función interna `login(credentials)`; función exportada `login(credentials)` | AuthProvider importa la segunda como loginRequest; no es authService del backend. |
+
+**Descripción de relaciones:** los actores utilizan LoginForm, contenido en LoginPage. La colaboración HTTP atraviesa AuthProvider, la función frontend y Axios. authController llama a authService; este accede a Usuario mediante usuarioRepository. El rol se obtiene de la FK sin consultar Rol. No hay una entidad SesionUsuario ni métodos Usuario.validarCredenciales.
 
 Una contraseña incorrecta incrementa los fallos de una cuenta activa no bloqueada; el tercero bloquea diez minutos. Los intentos durante el bloqueo no lo prolongan. El éxito reinicia el contador cuando corresponde. Solo las credenciales aceptadas permiten establecer sesión; una cuenta inexistente no genera un contador persistido.
 
-**Correspondencia con la implementación:** `frontend/src/features/auth/pages/LoginPage.jsx` y `frontend/src/features/auth/components/LoginForm.jsx` representan la vista. AuthContext coordina la llamada HTTP de login. Las operaciones del Control se respaldan así:
-
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| iniciarSesion | `authController.login` y `authService.login` coordinan `POST /api/auth/login`. |
-| validarCredenciales | `authValidator.validateLogin`, búsqueda por nombre y comprobación de estado/bloqueo y bcrypt dentro del flujo de login. |
-| controlarIntentosFallidos | `authService.login` utiliza `usuarioRepository.updateLoginSecurity` ante fallo o limpieza necesaria. |
-| establecerSesion | Generación del JWT con ID, rol y versión; el Controller coloca la cookie y devuelve usuario público. |
+**Apoyos reales omitidos del dibujo:** `authValidator.validateLogin(data)` en `backend/src/business/validators/auth.validator.js` valida el body. `generarToken({ idUsuario, idRol, versionCredenciales })` en `backend/src/shared/utils/jwt.js` es una función exportada, no un método de authService. bcrypt.compare pertenece a la librería. `POST /api/auth/login` está declarado en `backend/src/presentation/routes/auth.router.js`.
 
 La restauración al recargar mediante `/api/auth/me` es una solicitud de apoyo distinta y no se añade como método de este Control. Referencias: RF01/RF03; RN05/RN07/RN115.
 
@@ -141,8 +161,11 @@ La restauración al recargar mediante `/api/auth/me` es una solicitud de apoyo d
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaCerrarSesion | Boundary | Ofrece la acción de salida desde las opciones de cuenta. |
-| ControlCerrarSesion | Control | Comprueba la sesión actual y coordina su cierre en el navegador. |
+| AppHeader / AppSidebar | Boundary; componentes funcionales | Ofrecen la acción de salida mediante la prop onLogout. |
+| authController | Control HTTP; clase | Elimina la cookie en logout. |
+| authMiddleware | Función de middleware | Comprueba la sesión antes del Controller. |
+| authService | Control de negocio; clase | Comprueba la cuenta activa y su versión en getSessionUsuario. |
+| usuarioRepository | Repository; clase | Lee la cuenta para comprobar la sesión. |
 | Usuario | Entity | Aporta el estado y versión para comprobar la sesión antes de cerrar. |
 
 **Diagrama de clases:**
@@ -153,38 +176,74 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaCerrarSesion {
+    class AppHeader {
         <<boundary>>
-        +solicitarCierre()
+        -Boolean closingSession
+        -Function onLogout
     }
-    class ControlCerrarSesion {
+    class AppSidebar {
+        <<boundary>>
+        -Boolean closingSession
+        -Function onLogout
+    }
+    class authController {
         <<control>>
-        +comprobarSesionActual()
-        +cerrarSesion()
+        +logout(req, res, next)$
+    }
+    class authMiddleware {
+        <<funcion>>
+    }
+    class authService {
+        <<control>>
+        +getSessionUsuario(idUsuario, versionCredenciales)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findByIdForSession(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
+        -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
         -BOOLEAN estado
         -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
-    Administrador --> VistaCerrarSesion
-    Regente --> VistaCerrarSesion
-    Vendedor --> VistaCerrarSesion
-    VistaCerrarSesion ..> ControlCerrarSesion : solicita
-    ControlCerrarSesion ..> Usuario : comprueba sesion
+    Administrador --> AppHeader
+    Regente --> AppHeader
+    Vendedor --> AppHeader
+    Administrador --> AppSidebar
+    Regente --> AppSidebar
+    Vendedor --> AppSidebar
+    AppHeader ..> authController : HTTP via MainLayout y AuthProvider
+    AppSidebar ..> authController : HTTP via MainLayout y AuthProvider
+    authMiddleware ..> authController : next antes de logout
+    authMiddleware ..> authService : getSessionUsuario
+    authService ..> usuarioRepository : findByIdForSession
+    usuarioRepository ..> Usuario : lectura Sequelize
 ```
 
-**Descripción de relaciones:** la vista solicita el cierre al Control. Usuario participa únicamente en la comprobación previa de la sesión; no se modifica ni se crea un registro de salida. Cerrar sesión elimina la cookie actual, sin incrementar la versión de credenciales ni revocar todas las posibles copias del token.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU02 | AppHeader / AppSidebar | Componentes funcionales | `frontend/src/layouts/components/AppHeader.jsx`; `frontend/src/layouts/components/AppSidebar.jsx` | Reciben onLogout | Callback real, sin método propio inventado. |
+| CU02 | authController | Clase authController | `backend/src/presentation/controllers/auth.controller.js` | `logout(req, res, next)` | Elimina cookie; no llama a authService.logout. |
+| CU02 | authMiddleware | Función exportada | `backend/src/presentation/middlewares/auth.middleware.js` | `authMiddleware(req, res, next)` | No es clase; usa getSessionUsuario y llama next. |
+| CU02 | authService | Clase authService | `backend/src/business/services/auth.service.js` | `getSessionUsuario(idUsuario, versionCredenciales)` | Ejecutado por middleware, no por logout. |
+| CU02 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findByIdForSession({ idUsuario })` | Solo lectura de la cuenta. |
+| CU02 | Usuario | Modelo Usuario | `backend/src/data/models/usuario.js` | — | Nueve atributos; no se modifica. |
+| CU02 | Puente frontend | MainLayout, AuthProvider y función logout | `frontend/src/layouts/MainLayout.jsx`; `frontend/src/features/auth/context/AuthContext.jsx`; `frontend/src/features/auth/services/auth.service.js` | Internas `handleLogout()` y `logout()`; exportada `logout()` | MainLayout pasa handleLogout como onLogout; AuthProvider importa logoutRequest. |
+
+**Descripción de relaciones:** las interfaces solicitan `POST /api/auth/logout` por MainLayout, AuthProvider y la función HTTP. authMiddleware comprueba Usuario mediante authService y usuarioRepository antes de autorizar la ejecución de authController.logout. No existe dependencia logout → authService. Cerrar sesión elimina la cookie sin incrementar versión ni revocar todas las posibles copias del token.
 
 **Correspondencia con la implementación:** `frontend/src/layouts/components/AppHeader.jsx`, `AppSidebar.jsx` y `frontend/src/layouts/MainLayout.jsx` representan la acción de interfaz; no existe una página independiente de logout. AuthContext limpia el estado público de autenticación incluso si la solicitud falla.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| comprobarSesionActual | authMiddleware utiliza `authService.getSessionUsuario` y `usuarioRepository.findByIdForSession` antes del Controller. |
-| cerrarSesion | `authController.logout` atiende `POST /api/auth/logout` y elimina la cookie mediante clearCookie. |
-
-ControlCerrarSesion es una abstracción que reúne esas responsabilidades; no implica la existencia de `authService.logout`. Referencias: RF02/RF03 y CU02.
+`res.clearCookie` es una operación de Express, no un método propio del Controller. La ruta está en `backend/src/presentation/routes/auth.router.js`. Referencias: RF02/RF03 y CU02.
 
 ### CU03 — Crear usuario
 
@@ -196,8 +255,10 @@ ControlCerrarSesion es una abstracción que reúne esas responsabilidades; no im
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaCrearUsuario | Boundary | Recoge nombre, rol, contraseña inicial, confirmación local y correo opcional. |
-| ControlCrearUsuario | Control | Valida datos, comprueba unicidad/rol y registra la cuenta con hash. |
+| UsuarioFormPage / UsuarioForm | Boundary; componentes funcionales | Coordinan el alta y sus campos reales, incluida confirmPassword. |
+| usuarioController | Control HTTP; clase | Valida la entrada y atiende createUsuario. |
+| usuarioService | Control de negocio; clase | Comprueba unicidad/rol, genera hash, crea y relee los datos públicos. |
+| usuarioRepository | Repository; clase | Consulta Usuario/Rol, inserta y obtiene la cuenta creada. |
 | Usuario | Entity | Representa la cuenta creada y su identificación. |
 | Rol | Entity | Representa uno de los roles fijos asignables. |
 
@@ -207,57 +268,85 @@ ControlCerrarSesion es una abstracción que reúne esas responsabilidades; no im
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaCrearUsuario {
+    class UsuarioForm {
         <<boundary>>
-        -String nombreUsuario
-        -Integer idRol
-        -String password
-        -String confirmacionPassword
-        -String correo
-        +seleccionarRol()
-        +comprobarConfirmacion()
-        +enviarRegistro()
+        -String form.nombreUsuario
+        -String form.idRol
+        -String form.password
+        -String form.confirmPassword
+        -String form.correo
     }
-    class ControlCrearUsuario {
+    class UsuarioFormPage {
+        <<boundary>>
+        -String mode
+        -Boolean submitting
+        -String errorMessage
+    }
+    class usuarioController {
         <<control>>
-        +validarDatos()
-        +comprobarUnicidad()
-        +verificarRolActivo()
-        +registrarUsuario()
+        +createUsuario(req, res, next)$
+    }
+    class usuarioService {
+        <<control>>
+        +createUsuario(...)$
+        +getUsuarioById(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findByNombreUsuario(...)$
+        +findByCorreo(...)$
+        +findRolById(...)$
+        +createUsuario(...)$
+        +findById(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
         -VARCHAR_255 correo
         -VARCHAR_255 password_hash
         -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class Rol {
         <<entity>>
         -INT id_rol
         -VARCHAR_60 nombre
+        -VARCHAR_255 descripcion
         -BOOLEAN estado
     }
-    Administrador --> VistaCrearUsuario
-    VistaCrearUsuario ..> ControlCrearUsuario : solicita
-    ControlCrearUsuario ..> Usuario : registra
-    ControlCrearUsuario ..> Rol : valida
+    Administrador --> UsuarioForm
+    UsuarioForm ..> UsuarioFormPage : callback onSubmit
+    UsuarioFormPage ..> usuarioController : HTTP createUsuario
+    usuarioController ..> usuarioService : createUsuario
+    usuarioService ..> usuarioRepository
+    usuarioRepository ..> Usuario : consultas e insercion
+    usuarioRepository ..> Rol : valida e incluye
     Rol "1" -- "0..*" Usuario : rol
 ```
 
-**Descripción de relaciones:** el Control utiliza Usuario para verificar el nombre y, si se proporciona, el correo; utiliza Rol para comprobar la asignación permitida. Cada Usuario pertenece a un Rol y un Rol puede estar asociado a cero o más usuarios. Esta asociación no representa herencia de permisos.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU03 | UsuarioForm | Componente funcional | `frontend/src/features/usuarios/components/UsuarioForm.jsx` | Internas `updateField(event)` y `handleSubmit(event)` | form.idRol es cadena; handleSubmit lo convierte a Number. Confirmación local. |
+| CU03 | UsuarioFormPage | Componente funcional | `frontend/src/features/usuarios/pages/UsuarioFormPage.jsx` | Interna `handleSubmit(data)` | mode=create; recibe datos mediante onSubmit. |
+| CU03 | usuarioController | Clase usuarioController | `backend/src/presentation/controllers/usuario.controller.js` | `createUsuario(req, res, next)` | Entrada HTTP. |
+| CU03 | usuarioService | Clase usuarioService | `backend/src/business/services/usuario.service.js` | `createUsuario({ idRol, nombreUsuario, password, correo })`; `getUsuarioById(idUsuario, transaction = undefined)` | El segundo método se llama dentro del alta, no por otra petición. |
+| CU03 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findByNombreUsuario({ nombreUsuario, transaction = undefined, lock = false })`; `findByCorreo({ correo, transaction = undefined })`; `findRolById({ idRol, transaction = undefined })`; `createUsuario({ idRol, nombreUsuario, passwordHash, correo = null })`; `findById({ idUsuario, transaction = undefined })` | Correo se consulta si no es nulo/omitido; findById incluye Rol. |
+| CU03 | Usuario / Rol | Modelos Usuario y Rol | `backend/src/data/models/usuario.js`; `backend/src/data/models/rol.js` | — | Nueve y cuatro atributos completos. |
+| CU03 | Puente HTTP | Función exportada | `frontend/src/features/usuarios/services/usuario.service.js` | `createUsuario(data)` | POST /api/usuarios mediante Axios. |
+
+**Descripción de relaciones:** UsuarioFormPage renderiza UsuarioForm y recibe sus datos por onSubmit. La página solicita el alta por la función HTTP; usuarioController llama a usuarioService, que consulta y escribe mediante usuarioRepository. Cada Usuario pertenece a un Rol; un Rol tiene cero o más usuarios. No hay herencia de permisos.
 
 La contraseña se transforma en hash antes de persistir. Su confirmación se comprueba localmente y no se envía al backend. El ID y el estado inicial proceden del backend; el actor no los introduce. Correo es opcional y único cuando está presente. No se crea una recuperación al registrar la cuenta.
 
 **Correspondencia con la implementación:** `/usuarios/nuevo`, `frontend/src/features/usuarios/pages/UsuarioFormPage.jsx` y `frontend/src/features/usuarios/components/UsuarioForm.jsx` representan la vista; el servicio HTTP invoca `POST /api/usuarios`.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarDatos | `usuarioController.createUsuario`, `usuarioValidator.validateCreateUsuario` y política compartida de contraseña. |
-| comprobarUnicidad | El flujo `usuarioService.createUsuario` busca nombre y correo mediante usuarioRepository; el correo se comprueba solo si no es nulo. |
-| verificarRolActivo | Validación del rol mediante `usuarioRepository.findRolById`. |
-| registrarUsuario | `usuarioService.createUsuario` aplica bcrypt, registra y consulta lo creado mediante `getUsuarioById` para devolver datos públicos. |
+**Funciones externas, no métodos del Service:** `throwIfDuplicateUsuario(nombreUsuario, idUsuario = undefined, transaction = undefined)`, `throwIfDuplicateCorreo(correo, idUsuario = undefined, transaction = undefined)`, `validateRolActivo(idRol, transaction = undefined)`, `handleDuplicateDatabaseError(error)` y `toPublicUsuario(usuario)` están declaradas a nivel de módulo en `backend/src/business/services/usuario.service.js`. El Controller usa `usuarioValidator.validateCreateUsuario(data)` en `backend/src/business/validators/usuario.validator.js`. bcrypt.hash es de librería.
 
 Referencias: RF04/RF05/RF09; RN01–RN07/RN107.
 
@@ -271,8 +360,9 @@ Referencias: RF04/RF05/RF09; RN01–RN07/RN107.
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarUsuarios | Boundary | Muestra el listado y aplica búsqueda y filtro locales. |
-| ControlConsultarUsuarios | Control | Obtiene las cuentas y prepara información pública. |
+| UsuariosPage / UsuarioTable | Boundary; componentes funcionales | Cargan y muestran el listado, con filtros locales reales. |
+| usuarioController / usuarioService | Control; clases | Atienden getUsuarios y preparan datos públicos. |
+| usuarioRepository | Repository; clase | Consulta cuentas con su Rol. |
 | Usuario | Entity | Representa las cuentas activas e inactivas consultadas. |
 | Rol | Entity | Identifica el rol de cada cuenta. |
 
@@ -282,46 +372,74 @@ Referencias: RF04/RF05/RF09; RN01–RN07/RN107.
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaConsultarUsuarios {
+    class UsuariosPage {
         <<boundary>>
-        -String busqueda
-        -String filtroEstado
-        -Lista usuarios
-        +solicitarListado()
-        +aplicarFiltrosLocales()
+        -String search
+        -String statusFilter
+        -Array usuarios
     }
-    class ControlConsultarUsuarios {
+    class UsuarioTable {
+        <<boundary>>
+        -Array usuarios
+    }
+    class usuarioController {
         <<control>>
-        +consultarUsuarios()
-        +prepararDatosPublicos()
+        +getUsuarios(req, res, next)$
+    }
+    class usuarioService {
+        <<control>>
+        +getUsuarios()$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findAllUsuarios()$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
         -VARCHAR_255 correo
         -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class Rol {
         <<entity>>
         -INT id_rol
         -VARCHAR_60 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
-    Administrador --> VistaConsultarUsuarios
-    VistaConsultarUsuarios ..> ControlConsultarUsuarios : solicita
-    ControlConsultarUsuarios ..> Usuario : consulta
-    ControlConsultarUsuarios ..> Rol : incluye
+    Administrador --> UsuariosPage
+    UsuariosPage ..> UsuarioTable : renderiza listado filtrado
+    UsuariosPage ..> usuarioController : HTTP getUsuarios
+    usuarioController ..> usuarioService
+    usuarioService ..> usuarioRepository
+    usuarioRepository ..> Usuario : lectura
+    usuarioRepository ..> Rol : include
     Rol "1" -- "0..*" Usuario : rol
 ```
 
-**Descripción de relaciones:** el Control consulta Usuario con su Rol y entrega el resultado a la vista. El listado conserva cuentas activas e inactivas; vacío es un resultado válido. La búsqueda por nombre/rol y el filtro de estado actúan sobre los datos recibidos en la interfaz, sin crear operaciones adicionales del backend.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU04 | UsuariosPage | Componente funcional | `frontend/src/features/usuarios/pages/UsuariosPage.jsx` | Interna `loadUsuarios()` | search/statusFilter y filteredUsuarios son locales; no métodos backend. |
+| CU04 | UsuarioTable | Componente funcional | `frontend/src/features/usuarios/components/UsuarioTable.jsx` | — | Recibe usuarios; muestra ID, nombre, rol y estado. |
+| CU04 | usuarioController | Clase usuarioController | `backend/src/presentation/controllers/usuario.controller.js` | `getUsuarios(req, res, next)` | GET /api/usuarios. |
+| CU04 | usuarioService | Clase usuarioService | `backend/src/business/services/usuario.service.js` | `getUsuarios()` | Usa toPublicUsuario, función externa del mismo módulo. |
+| CU04 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findAllUsuarios()` | include Rol; sin escritura. |
+| CU04 | Usuario / Rol | Modelos | `backend/src/data/models/usuario.js`; `backend/src/data/models/rol.js` | — | Atributos completos del modelo, no todos se devuelven al cliente. |
+| CU04 | Puente HTTP | Función exportada | `frontend/src/features/usuarios/services/usuario.service.js` | `getUsuarios()` | Usa la instancia api, no una clase frontend. |
+
+**Descripción de relaciones:** usuarioRepository consulta Usuario con include Rol. usuarioService convierte a DTO público y usuarioController responde a UsuariosPage, que renderiza UsuarioTable con filteredUsuarios. El listado conserva activos/inactivos y admite resultado vacío. Los filtros no generan operaciones de backend.
 
 **Correspondencia con la implementación:** `/usuarios`, `frontend/src/features/usuarios/pages/UsuariosPage.jsx` y `frontend/src/features/usuarios/components/UsuarioTable.jsx` representan la vista.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| consultarUsuarios | `usuarioController.getUsuarios`, `usuarioService.getUsuarios` y `usuarioRepository.findAllUsuarios` atienden `GET /api/usuarios`, incluyendo Rol. |
-| prepararDatosPublicos | Selección de datos y conversión pública del Service; no devuelve password_hash ni información privada de seguridad. |
+La conversión usa la función de módulo `toPublicUsuario(usuario)` en `backend/src/business/services/usuario.service.js`; no es un método de usuarioService. No se devuelve password_hash ni información privada de seguridad.
 
 No se atribuye un Validator específico al listado ni una escritura a sus filtros. Referencias: RF04/RF06 y CU04.
 
@@ -335,8 +453,9 @@ No se atribuye un Validator específico al listado ni una escritura a sus filtro
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarUsuario | Boundary | Solicita y muestra la cuenta identificada en la ruta de edición. |
-| ControlConsultarUsuario | Control | Valida el identificador y consulta la cuenta con su rol. |
+| UsuarioFormPage / UsuarioForm | Boundary; componentes funcionales | Cargan la cuenta por ID y presentan initialData en edición. |
+| usuarioController / usuarioService | Control; clases | Validan ID y obtienen datos públicos de la cuenta. |
+| usuarioRepository | Repository; clase | Consulta Usuario con include Rol. |
 | Usuario | Entity | Representa la cuenta consultada. |
 | Rol | Entity | Aporta el rol asociado a la cuenta. |
 
@@ -346,46 +465,75 @@ No se atribuye un Validator específico al listado ni una escritura a sus filtro
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaConsultarUsuario {
+    class UsuarioFormPage {
         <<boundary>>
-        -Integer idUsuario
-        -String nombreUsuario
-        -String correo
-        -Integer idRol
-        +solicitarDatos()
+        -String idUsuario
+        -Object usuario
+        -Boolean loading
     }
-    class ControlConsultarUsuario {
+    class UsuarioForm {
+        <<boundary>>
+        -Object initialData
+        -String form.nombreUsuario
+        -String form.correo
+        -String form.idRol
+    }
+    class usuarioController {
         <<control>>
-        +validarIdentificador()
-        +consultarUsuario()
+        +getUsuarioById(req, res, next)$
+    }
+    class usuarioService {
+        <<control>>
+        +getUsuarioById(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findById(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
         -VARCHAR_255 correo
         -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class Rol {
         <<entity>>
         -INT id_rol
         -VARCHAR_60 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
-    Administrador --> VistaConsultarUsuario
-    VistaConsultarUsuario ..> ControlConsultarUsuario : solicita
-    ControlConsultarUsuario ..> Usuario : consulta
-    ControlConsultarUsuario ..> Rol : incluye
+    Administrador --> UsuarioFormPage
+    UsuarioFormPage ..> UsuarioForm : renderiza con initialData
+    UsuarioFormPage ..> usuarioController : HTTP getUsuario
+    usuarioController ..> usuarioService
+    usuarioService ..> usuarioRepository
+    usuarioRepository ..> Usuario : lectura
+    usuarioRepository ..> Rol : include
     Rol "1" -- "0..*" Usuario : rol
 ```
 
-**Descripción de relaciones:** el identificador permite consultar Usuario y su Rol. Si no existe la cuenta, el Control informa que no fue encontrada. La consulta no modifica datos, estado ni contraseña.
+**Correspondencia verificable y firmas exactas:**
 
-**Correspondencia con la implementación:** VistaConsultarUsuario representa la carga inicial de `frontend/src/features/usuarios/pages/UsuarioFormPage.jsx` en `/usuarios/:idUsuario/editar`; no implica una pantalla independiente de detalle. Los valores mostrados preparan CU06, cuya escritura se analiza por separado.
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU05 | UsuarioFormPage | Componente funcional | `frontend/src/features/usuarios/pages/UsuarioFormPage.jsx` | Interna del efecto `loadUsuario()` | idUsuario viene como cadena de useParams; se convierte a numericId. |
+| CU05 | UsuarioForm | Componente funcional | `frontend/src/features/usuarios/components/UsuarioForm.jsx` | — | El efecto carga form desde initialData; sin método inventado mostrarFormulario. |
+| CU05 | usuarioController | Clase usuarioController | `backend/src/presentation/controllers/usuario.controller.js` | `getUsuarioById(req, res, next)` | Usa la función externa getIdUsuario(params), del mismo archivo. |
+| CU05 | usuarioService | Clase usuarioService | `backend/src/business/services/usuario.service.js` | `getUsuarioById(idUsuario, transaction = undefined)` | Error 404 si no existe. |
+| CU05 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findById({ idUsuario, transaction = undefined })` | Incluye Rol. |
+| CU05 | Usuario / Rol | Modelos | `backend/src/data/models/usuario.js`; `backend/src/data/models/rol.js` | — | Atributos persistentes completos. |
+| CU05 | Puente HTTP | Función exportada | `frontend/src/features/usuarios/services/usuario.service.js` | `getUsuario(idUsuario)` | GET /api/usuarios/:idUsuario. |
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarIdentificador | `usuarioController.getUsuarioById` utiliza el auxiliar de lectura del ID y `usuarioValidator.validateIdUsuario`. |
-| consultarUsuario | `usuarioService.getUsuarioById` y `usuarioRepository.findById` obtienen datos públicos con Rol para `GET /api/usuarios/:idUsuario`. |
+**Descripción de relaciones:** UsuarioFormPage solicita la cuenta por ID a través de la función HTTP. El Controller llama al Service, que lee mediante Repository; initialData alimenta UsuarioForm. La consulta no modifica datos, estado ni contraseña.
+
+**Correspondencia con la implementación:** es la carga inicial en `/usuarios/:idUsuario/editar`, sin pantalla independiente de detalle. Prepara CU06, cuya escritura se analiza por separado. `usuarioValidator.validateIdUsuario(data)` está en `backend/src/business/validators/usuario.validator.js`; `getIdUsuario(params)` y `getValidatedData(result)` son funciones de módulo del Controller, no métodos de su clase.
 
 Referencias: RF04/RF06 y CU05.
 
@@ -399,8 +547,10 @@ Referencias: RF04/RF06 y CU05.
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaModificarUsuario | Boundary | Permite editar los datos autorizados de una cuenta. |
-| ControlModificarUsuario | Control | Valida los cambios y coordina la actualización con sus efectos sobre recuperaciones. |
+| UsuarioFormPage / UsuarioForm | Boundary; componentes funcionales | Coordinan la edición y envío de campos permitidos. |
+| usuarioController / usuarioService | Control; clases | Atienden updateUsuario y su lectura pública interna. |
+| usuarioRepository | Repository; clase | Bloquea, valida datos relacionados, actualiza y relee la cuenta. |
+| recuperacionPasswordRepository | Repository; clase | Invalida pendientes si cambia o se retira el correo. |
 | Usuario | Entity | Representa la cuenta y los datos modificables. |
 | Rol | Entity | Representa la asignación que se valida cuando se proporciona un rol. |
 | RecuperacionPassword | Entity | Representa emisiones pendientes que se invalidan ante cambio efectivo o retirada de correo. |
@@ -411,61 +561,104 @@ Referencias: RF04/RF06 y CU05.
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaModificarUsuario {
+    class UsuarioForm {
         <<boundary>>
-        -Integer idUsuario
-        -String nombreUsuario
-        -Integer idRol
-        -String correo
-        +seleccionarRol()
-        +enviarCambios()
+        -String form.nombreUsuario
+        -String form.idRol
+        -String form.correo
     }
-    class ControlModificarUsuario {
+    class UsuarioFormPage {
+        <<boundary>>
+        -String idUsuario
+        -Boolean submitting
+        -String errorMessage
+    }
+    class usuarioController {
         <<control>>
-        +validarCambios()
-        +comprobarUnicidadYRol()
-        +actualizarUsuario()
-        +invalidarRecuperacionesPorCorreo()
+        +updateUsuario(req, res, next)$
+    }
+    class usuarioService {
+        <<control>>
+        +updateUsuario(...)$
+        +getUsuarioById(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findByIdForUpdate(...)$
+        +findByNombreUsuario(...)$
+        +findByCorreo(...)$
+        +findRolById(...)$
+        +updateUsuario(...)$
+        +findById(...)$
+    }
+    class recuperacionPasswordRepository {
+        <<repository>>
+        +invalidatePendingByUsuario(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
         -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class Rol {
         <<entity>>
         -INT id_rol
         -VARCHAR_60 nombre
+        -VARCHAR_255 descripcion
         -BOOLEAN estado
     }
     class RecuperacionPassword {
         <<entity>>
         -INT id_recuperacion
+        -INT id_usuario
+        -CHAR_64 codigo_hmac
+        -CHAR_36 nonce
+        -DATETIME_3 fecha_solicitud
+        -DATETIME_3 expira_en
+        -TINYINT_UNSIGNED intentos_fallidos
         -DATETIME_3 consumida_en
         -DATETIME_3 invalidada_en
     }
-    Administrador --> VistaModificarUsuario
-    VistaModificarUsuario ..> ControlModificarUsuario : solicita
-    ControlModificarUsuario ..> Usuario : actualiza
-    ControlModificarUsuario ..> Rol : valida rol enviado
-    ControlModificarUsuario ..> RecuperacionPassword : si cambia o retira correo
+    Administrador --> UsuarioForm
+    UsuarioForm ..> UsuarioFormPage : callback onSubmit
+    UsuarioFormPage ..> usuarioController : HTTP updateUsuario
+    usuarioController ..> usuarioService : updateUsuario
+    usuarioService ..> usuarioRepository
+    usuarioService ..> recuperacionPasswordRepository : si cambia o retira correo
+    usuarioRepository ..> Usuario
+    usuarioRepository ..> Rol : valida condicional e incluye
+    recuperacionPasswordRepository ..> RecuperacionPassword : invalidacion condicional
     Rol "1" -- "0..*" Usuario : rol
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
 ```
 
-**Descripción de relaciones:** cada cuenta conserva un rol y puede tener varias recuperaciones históricas. El Control utiliza RecuperacionPassword únicamente si el correo cambia efectivamente o se retira. Correo omitido se conserva; correo nulo se retira; el mismo correo normalizado no invalida emisiones. Actualización e invalidación aplicable se confirman juntas.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU06 | UsuarioForm | Componente funcional | `frontend/src/features/usuarios/components/UsuarioForm.jsx` | Internas `updateField(event)` y `handleSubmit(event)` | mode=edit; envía nombre/rol/correo, sin contraseña. |
+| CU06 | UsuarioFormPage | Componente funcional | `frontend/src/features/usuarios/pages/UsuarioFormPage.jsx` | Interna `handleSubmit(data)` | El ID de ruta es convertido a Number. |
+| CU06 | usuarioController | Clase usuarioController | `backend/src/presentation/controllers/usuario.controller.js` | `updateUsuario(req, res, next)` | PATCH /api/usuarios/:idUsuario. |
+| CU06 | usuarioService | Clase usuarioService | `backend/src/business/services/usuario.service.js` | `updateUsuario(idUsuario, { idRol, nombreUsuario, correo })`; `getUsuarioById(idUsuario, transaction = undefined)` | La lectura pública ocurre dentro de updateUsuario. |
+| CU06 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findByIdForUpdate({ idUsuario, transaction })`; `findByNombreUsuario({ nombreUsuario, transaction = undefined, lock = false })`; `findByCorreo({ correo, transaction = undefined })`; `findRolById({ idRol, transaction = undefined })`; `updateUsuario({ idUsuario, idRol, nombreUsuario, correo, transaction = undefined })`; `findById({ idUsuario, transaction = undefined })` | Unicidad/rol según campos recibidos; findById incluye Rol. |
+| CU06 | recuperacionPasswordRepository | Clase recuperacionPasswordRepository | `backend/src/data/repositories/recuperacion-password.repository.js` | `invalidatePendingByUsuario({ idUsuario, invalidadaEn, transaction })` | Solo ante cambio efectivo o retirada del correo. |
+| CU06 | Usuario / Rol / RecuperacionPassword | Modelos | `backend/src/data/models/usuario.js`; `backend/src/data/models/rol.js`; `backend/src/data/models/recuperacion-password.js` | — | Nueve, cuatro y nueve atributos completos. |
+| CU06 | Puente HTTP | Función exportada | `frontend/src/features/usuarios/services/usuario.service.js` | `updateUsuario(idUsuario, data)` | Función de módulo frontend. |
+
+**Descripción de relaciones:** la página recibe datos del formulario y envía PATCH por la función HTTP. usuarioController llama a usuarioService; este accede por los dos Repositories. Cada cuenta conserva un rol y puede tener varias recuperaciones históricas. RecuperacionPassword se modifica únicamente si el correo cambia efectivamente o se retira: omitido se conserva, nulo se retira y el mismo correo normalizado no invalida. Actualización e invalidación se confirman juntas.
 
 Los chequeos de nombre, correo y rol dependen de los campos proporcionados. El CU no cambia contraseña, estado, versión de credenciales ni cuotas IP. La carga preparatoria corresponde a CU05.
 
 **Correspondencia con la implementación:** `/usuarios/:idUsuario/editar`, `frontend/src/features/usuarios/pages/UsuarioFormPage.jsx` y `frontend/src/features/usuarios/components/UsuarioForm.jsx` representan la vista.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarCambios | `usuarioController.updateUsuario`, `usuarioValidator.validateIdUsuario` y `validateUpdateUsuario` comprueban el PATCH permitido. |
-| comprobarUnicidadYRol | `usuarioService.updateUsuario` y sus auxiliares consultan nombre/correo y rol mediante usuarioRepository según los campos enviados. |
-| actualizarUsuario | El Service obtiene la cuenta, actualiza y utiliza `getUsuarioById` para devolver la cuenta dentro de la misma operación. |
-| invalidarRecuperacionesPorCorreo | `recuperacionPasswordRepository.invalidatePendingByUsuario` se ejecuta si cambia o se retira el correo. |
+**Apoyos externos:** `usuarioValidator.validateIdUsuario(data)` y `validateUpdateUsuario(data)` están en `backend/src/business/validators/usuario.validator.js`. Las funciones de módulo `throwIfDuplicateUsuario`, `throwIfDuplicateCorreo`, `validateRolActivo`, `handleDuplicateDatabaseError` y `toPublicUsuario`, descritas en CU03, no se presentan como métodos de usuarioService. La lectura HTTP preparatoria pertenece a CU05; la lectura interna getUsuarioById sí participa en este PATCH.
 
 Referencias: RF04/RF07, RI15; RN04/RN107.
 
@@ -479,8 +672,9 @@ Referencias: RF04/RF07, RI15; RN04/RN107.
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaCambiarEstadoUsuario | Boundary | Identifica la cuenta y permite confirmar el estado solicitado. |
-| ControlCambiarEstadoUsuario | Control | Valida el cambio, comprueba existencia y actualiza únicamente el estado. |
+| UsuariosPage / UsuarioTable / ConfirmDialog | Boundary; componentes funcionales | Seleccionan cuenta y confirman el cambio de estado. |
+| usuarioController / usuarioService | Control; clases | Atienden updateEstado y las lecturas públicas internas. |
+| usuarioRepository | Repository; clase | Lee con Rol y actualiza únicamente estado. |
 | Usuario | Entity | Representa la cuenta cuyo estado cambia. |
 | Rol | Entity | Aporta el rol en las lecturas públicas de la cuenta antes y después del cambio. |
 
@@ -490,47 +684,87 @@ Referencias: RF04/RF07, RI15; RN04/RN107.
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaCambiarEstadoUsuario {
+    class UsuariosPage {
         <<boundary>>
-        -Integer idUsuario
-        -Boolean estadoSolicitado
-        +confirmarCambioEstado()
+        -Object estadoTarget
+        -Boolean updatingEstado
     }
-    class ControlCambiarEstadoUsuario {
+    class UsuarioTable {
+        <<boundary>>
+        -Array usuarios
+        -Function onToggleEstado
+    }
+    class ConfirmDialog {
+        <<boundary>>
+        -Boolean open
+        -Boolean busy
+        -Function onConfirm
+    }
+    class usuarioController {
         <<control>>
-        +validarCambioEstado()
-        +consultarCuenta()
-        +cambiarEstado()
+        +updateEstado(req, res, next)$
+    }
+    class usuarioService {
+        <<control>>
+        +updateEstado(...)$
+        +getUsuarioById(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findById(...)$
+        +updateEstado(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
         -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class Rol {
         <<entity>>
         -INT id_rol
         -VARCHAR_60 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
-    Administrador --> VistaCambiarEstadoUsuario
-    VistaCambiarEstadoUsuario ..> ControlCambiarEstadoUsuario : solicita
-    ControlCambiarEstadoUsuario ..> Usuario : cambia estado
-    ControlCambiarEstadoUsuario ..> Rol : incluye
+    Administrador --> UsuarioTable
+    Administrador --> ConfirmDialog
+    UsuarioTable ..> UsuariosPage : callback onToggleEstado
+    ConfirmDialog ..> UsuariosPage : callback onConfirm
+    UsuariosPage ..> usuarioController : HTTP updateEstadoUsuario
+    usuarioController ..> usuarioService : updateEstado
+    usuarioService ..> usuarioRepository
+    usuarioRepository ..> Usuario : lectura y cambio de estado
+    usuarioRepository ..> Rol : include de lecturas
     Rol "1" -- "0..*" Usuario : rol
 ```
 
-**Descripción de relaciones:** el Control utiliza Usuario para verificar y cambiar el estado, y Rol para las lecturas públicas. La desactivación conserva la cuenta e impide acceso en comprobaciones posteriores. El bloqueo temporal de login es una condición diferente del estado administrativo.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU07 | UsuariosPage | Componente funcional | `frontend/src/features/usuarios/pages/UsuariosPage.jsx` | Interna `handleUpdateEstado()` | Usa estadoTarget y updatingEstado; sustituye localmente la cuenta devuelta. |
+| CU07 | UsuarioTable | Componente funcional | `frontend/src/features/usuarios/components/UsuarioTable.jsx` | Prop callback onToggleEstado | Selecciona la cuenta; no declara cambiarEstado. |
+| CU07 | ConfirmDialog | Componente funcional | `frontend/src/components/ConfirmDialog.jsx` | Prop callback onConfirm | La página pasa handleUpdateEstado y busy=updatingEstado; sin método propio inventado. |
+| CU07 | usuarioController | Clase usuarioController | `backend/src/presentation/controllers/usuario.controller.js` | `updateEstado(req, res, next)` | PATCH /api/usuarios/:idUsuario/estado. |
+| CU07 | usuarioService | Clase usuarioService | `backend/src/business/services/usuario.service.js` | `updateEstado(idUsuario, { estado })`; `getUsuarioById(idUsuario, transaction = undefined)` | Lee antes y después del cambio. |
+| CU07 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findById({ idUsuario, transaction = undefined })`; `updateEstado({ idUsuario, estado })` | Rol participa por include en findById. |
+| CU07 | Usuario / Rol | Modelos | `backend/src/data/models/usuario.js`; `backend/src/data/models/rol.js` | — | Nueve y cuatro atributos completos. |
+| CU07 | Puente HTTP | Función exportada | `frontend/src/features/usuarios/services/usuario.service.js` | `updateEstadoUsuario(idUsuario, estado)` | No se llama updateEstado en el frontend. |
+
+**Descripción de relaciones:** UsuariosPage coordina selección en UsuarioTable y confirmación en ConfirmDialog. Solicita el PATCH mediante la función HTTP. usuarioService lee y modifica mediante usuarioRepository; Rol participa en las lecturas públicas. Desactivar conserva historial e impide acceso posterior. Bloqueo temporal y estado administrativo son diferentes.
 
 Esta operación no cambia contraseña/versión, no reinicia intentos y no elimina recuperaciones. No se incorpora una regla de protección del último Administrador o de prohibición de cambiar el propio estado, porque no está implementada en este flujo.
 
 **Correspondencia con la implementación:** `frontend/src/features/usuarios/pages/UsuariosPage.jsx`, `frontend/src/features/usuarios/components/UsuarioTable.jsx` y `frontend/src/components/ConfirmDialog.jsx` representan selección y confirmación.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarCambioEstado | `usuarioController.updateEstado`, `usuarioValidator.validateIdUsuario` y `validateUpdateEstado`. |
-| consultarCuenta | `usuarioService.updateEstado` llama a `getUsuarioById` antes y después del cambio, con Rol incluido. |
-| cambiarEstado | `usuarioRepository.updateEstado` actualiza el estado en `PATCH /api/usuarios/:idUsuario/estado`. |
+`usuarioValidator.validateIdUsuario(data)` y `validateUpdateEstado(data)` en `backend/src/business/validators/usuario.validator.js` comprueban ID/body. La lectura inicial del listado corresponde a CU04; getUsuarioById es aquí una llamada interna real, no otro endpoint.
 
 Referencias: RF04/RF08; RN05/RN06.
 
@@ -548,8 +782,9 @@ El CU conserva dos variantes con permisos y resultados diferentes. Se muestran p
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaCambiarContrasenaPropia | Boundary | Recoge contraseña actual, nueva y confirmación local. |
-| ControlCambiarContrasenaPropia | Control | Comprueba credenciales, actualiza contraseña y coordina invalidación y renovación. |
+| ChangeOwnPasswordDialog | Boundary; componente funcional | Recoge los campos reales del estado form. |
+| usuarioController / usuarioService | Control; clases | Ejecutan updateOwnPassword; el Controller renueva cookie. |
+| usuarioRepository / recuperacionPasswordRepository | Repository; clases | Consultan/actualizan la cuenta e invalidan recuperaciones. |
 | Usuario | Entity | Representa la cuenta autenticada y su seguridad de acceso. |
 | RecuperacionPassword | Entity | Representa las recuperaciones pendientes que dejan de ser utilizables. |
 
@@ -561,27 +796,37 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaCambiarContrasenaPropia {
+    class ChangeOwnPasswordDialog {
         <<boundary>>
-        -String passwordActual
-        -String passwordNueva
-        -String confirmacionPassword
-        +comprobarConfirmacion()
-        +enviarCambio()
+        -String form.passwordActual
+        -String form.passwordNueva
+        -String form.confirmPassword
+        -Boolean submitting
     }
-    class ControlCambiarContrasenaPropia {
+    class usuarioController {
         <<control>>
-        +validarNuevaContrasena()
-        +verificarCredencialesActuales()
-        +actualizarCredenciales()
-        +invalidarRecuperaciones()
-        +renovarSesionActual()
+        +updateOwnPassword(req, res, next)$
+    }
+    class usuarioService {
+        <<control>>
+        +updateOwnPassword(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findByIdWithPassword(...)$
+        +updatePassword(...)$
+    }
+    class recuperacionPasswordRepository {
+        <<repository>>
+        +invalidatePendingByUsuario(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
         -INT id_rol
+        -VARCHAR_60 nombre_usuario
         -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
         -BOOLEAN estado
         -INT_UNSIGNED version_credenciales
         -INT_UNSIGNED intentos_fallidos_login
@@ -590,31 +835,46 @@ classDiagram
     class RecuperacionPassword {
         <<entity>>
         -INT id_recuperacion
+        -INT id_usuario
+        -CHAR_64 codigo_hmac
+        -CHAR_36 nonce
+        -DATETIME_3 fecha_solicitud
+        -DATETIME_3 expira_en
+        -TINYINT_UNSIGNED intentos_fallidos
         -DATETIME_3 consumida_en
         -DATETIME_3 invalidada_en
     }
-    Administrador --> VistaCambiarContrasenaPropia
-    Regente --> VistaCambiarContrasenaPropia
-    Vendedor --> VistaCambiarContrasenaPropia
-    VistaCambiarContrasenaPropia ..> ControlCambiarContrasenaPropia : solicita
-    ControlCambiarContrasenaPropia ..> Usuario : cambia credenciales
-    ControlCambiarContrasenaPropia ..> RecuperacionPassword : invalida pendientes
+    Administrador --> ChangeOwnPasswordDialog
+    Regente --> ChangeOwnPasswordDialog
+    Vendedor --> ChangeOwnPasswordDialog
+    ChangeOwnPasswordDialog ..> usuarioController : HTTP updateOwnPassword
+    usuarioController ..> usuarioService : updateOwnPassword
+    usuarioService ..> usuarioRepository
+    usuarioService ..> recuperacionPasswordRepository
+    usuarioRepository ..> Usuario
+    recuperacionPasswordRepository ..> RecuperacionPassword
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
 ```
 
-**Descripción de relaciones:** el Control usa la cuenta autenticada, sin aceptar un usuario objetivo elegido por el cliente. Revalida actividad y credenciales, cambia hash, incrementa versión y limpia contador/bloqueo; invalida las recuperaciones pendientes de esa cuenta. Estas modificaciones se confirman conjuntamente.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU08-A | ChangeOwnPasswordDialog | Componente funcional | `frontend/src/features/usuarios/components/ChangeOwnPasswordDialog.jsx` | Internas `updateField(event)` y `handleSubmit(event)` | Abierto por MainLayout; confirmPassword es local. |
+| CU08-A | usuarioController | Clase usuarioController | `backend/src/presentation/controllers/usuario.controller.js` | `updateOwnPassword(req, res, next)` | ID y versión proceden de req.usuario, no del body. |
+| CU08-A | usuarioService | Clase usuarioService | `backend/src/business/services/usuario.service.js` | `updateOwnPassword(idUsuario, { passwordActual, passwordNueva }, versionCredenciales)` | Firma exacta del método abreviado en el dibujo. |
+| CU08-A | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findByIdWithPassword({ idUsuario, transaction = undefined, lock = false })`; `updatePassword({ idUsuario, passwordHash, versionCredenciales, transaction })` | Primera lectura y revalidación bloqueada; después escritura. |
+| CU08-A | recuperacionPasswordRepository | Clase recuperacionPasswordRepository | `backend/src/data/repositories/recuperacion-password.repository.js` | `invalidatePendingByUsuario({ idUsuario, invalidadaEn, transaction })` | Misma transacción del cambio. |
+| CU08-A | Usuario / RecuperacionPassword | Modelos | `backend/src/data/models/usuario.js`; `backend/src/data/models/recuperacion-password.js` | — | Nueve atributos completos en cada entidad. |
+| CU08-A | Puente HTTP | Función exportada | `frontend/src/features/usuarios/services/usuario.service.js` | `updateOwnPassword(data)` | PATCH /api/usuarios/me/password. |
+
+**Descripción de relaciones:** ChangeOwnPasswordDialog usa la función HTTP; usuarioController llama a usuarioService con ID/versión autenticados. El Service utiliza los dos Repositories, revalida credenciales y actualiza hash/versión, contador/bloqueo y recuperaciones conjuntamente. No acepta usuario objetivo elegido por el cliente.
 
 La cookie renovada mantiene esta sesión; las sesiones con la versión anterior dejan de ser válidas. Se utiliza el ID de rol almacenado en Usuario para renovar las credenciales, sin consultar Rol. No se modifican cuotas IP.
 
 **Correspondencia con la implementación:** `frontend/src/features/usuarios/components/ChangeOwnPasswordDialog.jsx`, abierto desde MainLayout, representa la vista. Su confirmación local no forma parte del body de `PATCH /api/usuarios/me/password`.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarNuevaContrasena | `usuarioValidator.validateUpdateOwnPassword` y política compartida de contraseña. |
-| verificarCredencialesActuales | `usuarioService.updateOwnPassword` comprueba contraseña actual con bcrypt y vuelve a comprobar actividad, hash y versión. |
-| actualizarCredenciales | El Service genera el hash y `usuarioRepository.updatePassword` actualiza contraseña/versión y limpia bloqueo/contador. |
-| invalidarRecuperaciones | `recuperacionPasswordRepository.invalidatePendingByUsuario` en la operación de cambio. |
-| renovarSesionActual | El Service firma el nuevo token y `usuarioController.updateOwnPassword` renueva la cookie tras el cambio válido. |
+**Funciones externas:** `requireCurrentCredentials(usuario, versionCredenciales, passwordHash = undefined)` está a nivel de módulo en `backend/src/business/services/usuario.service.js`, no en la clase. `siguienteVersionCredenciales(usuario)` está en `backend/src/shared/utils/credenciales.js`; `generarToken({ idUsuario, idRol, versionCredenciales })`, en `backend/src/shared/utils/jwt.js`. El Validator ejecuta `validateUpdateOwnPassword(data)` en `backend/src/business/validators/usuario.validator.js`; bcrypt.compare/hash y res.cookie son operaciones de librerías. No se dibuja getUsuarioById porque este camino no lo llama.
 
 Referencias: RF09; RN07/RN115 y CU08.
 
@@ -628,8 +888,9 @@ Referencias: RF09; RN07/RN115 y CU08.
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaRestablecerContrasenaUsuario | Boundary | Identifica la cuenta y recoge la nueva contraseña con confirmación local. |
-| ControlRestablecerContrasenaUsuario | Control | Comprueba existencia, valida contraseña y coordina el restablecimiento. |
+| ResetPasswordDialog | Boundary; componente funcional | Recibe usuario y maneja password y confirmation. |
+| usuarioController / usuarioService | Control; clases | Ejecutan updatePassword y la lectura pública previa. |
+| usuarioRepository / recuperacionPasswordRepository | Repository; clases | Consultan/actualizan cuenta e invalidan recuperaciones. |
 | Usuario | Entity | Representa la cuenta objetivo y sus credenciales. |
 | Rol | Entity | Aporta el rol en la lectura pública previa de la cuenta objetivo. |
 | RecuperacionPassword | Entity | Representa recuperaciones pendientes que se invalidan. |
@@ -640,26 +901,39 @@ Referencias: RF09; RN07/RN115 y CU08.
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaRestablecerContrasenaUsuario {
+    class ResetPasswordDialog {
         <<boundary>>
-        -Integer idUsuario
-        -String passwordNueva
-        -String confirmacionPassword
-        +comprobarConfirmacion()
-        +enviarRestablecimiento()
+        -Object usuario
+        -String password
+        -String confirmation
+        -Boolean submitting
     }
-    class ControlRestablecerContrasenaUsuario {
+    class usuarioController {
         <<control>>
-        +validarSolicitud()
-        +consultarCuentaObjetivo()
-        +restablecerCredenciales()
-        +invalidarRecuperaciones()
+        +updatePassword(req, res, next)$
+    }
+    class usuarioService {
+        <<control>>
+        +updatePassword(...)$
+        +getUsuarioById(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findById(...)$
+        +findByIdForUpdate(...)$
+        +updatePassword(...)$
+    }
+    class recuperacionPasswordRepository {
+        <<repository>>
+        +invalidatePendingByUsuario(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
         -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
         -BOOLEAN estado
         -INT_UNSIGNED version_credenciales
         -INT_UNSIGNED intentos_fallidos_login
@@ -669,34 +943,50 @@ classDiagram
         <<entity>>
         -INT id_rol
         -VARCHAR_60 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
     class RecuperacionPassword {
         <<entity>>
         -INT id_recuperacion
+        -INT id_usuario
+        -CHAR_64 codigo_hmac
+        -CHAR_36 nonce
+        -DATETIME_3 fecha_solicitud
+        -DATETIME_3 expira_en
+        -TINYINT_UNSIGNED intentos_fallidos
         -DATETIME_3 consumida_en
         -DATETIME_3 invalidada_en
     }
-    Administrador --> VistaRestablecerContrasenaUsuario
-    VistaRestablecerContrasenaUsuario ..> ControlRestablecerContrasenaUsuario : solicita
-    ControlRestablecerContrasenaUsuario ..> Usuario : cambia credenciales
-    ControlRestablecerContrasenaUsuario ..> Rol : lectura previa
-    ControlRestablecerContrasenaUsuario ..> RecuperacionPassword : invalida pendientes
+    Administrador --> ResetPasswordDialog
+    ResetPasswordDialog ..> usuarioController : HTTP resetPasswordUsuario
+    usuarioController ..> usuarioService : updatePassword
+    usuarioService ..> usuarioRepository
+    usuarioService ..> recuperacionPasswordRepository
+    usuarioRepository ..> Usuario
+    usuarioRepository ..> Rol : include previo
+    recuperacionPasswordRepository ..> RecuperacionPassword
     Rol "1" -- "0..*" Usuario : rol
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
 ```
 
-**Descripción de relaciones:** el Administrador actúa sobre la cuenta seleccionada; el actor no es una subclase de Usuario. El Control utiliza Usuario y su Rol en la lectura previa, y coordina el cambio de hash/versión, limpieza de bloqueo/contador e invalidación de recuperaciones. Rol y estado administrativo se conservan.
+**Correspondencia verificable y firmas exactas:**
 
-No se exige contraseña anterior ni se emite cookie de renovación para la cuenta objetivo. Sus sesiones anteriores quedan obsoletas, incluso si el Administrador utiliza esta variante sobre su propia cuenta. La selección desde el listado corresponde a CU04; no se incorpora como consulta independiente de este Control.
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU08-B | ResetPasswordDialog | Componente funcional | `frontend/src/features/usuarios/components/ResetPasswordDialog.jsx` | Interna `handleSubmit(event)` | Recibe la cuenta desde UsuariosPage; password/confirmation son estados reales. |
+| CU08-B | usuarioController | Clase usuarioController | `backend/src/presentation/controllers/usuario.controller.js` | `updatePassword(req, res, next)` | PATCH /api/usuarios/:idUsuario/password. |
+| CU08-B | usuarioService | Clase usuarioService | `backend/src/business/services/usuario.service.js` | `updatePassword(idUsuario, { password })`; `getUsuarioById(idUsuario, transaction = undefined)` | getUsuarioById se ejecuta internamente antes del cambio. |
+| CU08-B | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findById({ idUsuario, transaction = undefined })`; `findByIdForUpdate({ idUsuario, transaction })`; `updatePassword({ idUsuario, passwordHash, versionCredenciales, transaction })` | include Rol solo en la lectura pública previa. |
+| CU08-B | recuperacionPasswordRepository | Clase recuperacionPasswordRepository | `backend/src/data/repositories/recuperacion-password.repository.js` | `invalidatePendingByUsuario({ idUsuario, invalidadaEn, transaction })` | En la transacción del cambio. |
+| CU08-B | Usuario / Rol / RecuperacionPassword | Modelos | `backend/src/data/models/usuario.js`; `backend/src/data/models/rol.js`; `backend/src/data/models/recuperacion-password.js` | — | Nueve, cuatro y nueve atributos completos. |
+| CU08-B | Puente HTTP | Función exportada | `frontend/src/features/usuarios/services/usuario.service.js` | `resetPasswordUsuario(idUsuario, password)` | El nombre frontend difiere del método backend updatePassword. |
 
-**Correspondencia con la implementación:** `frontend/src/features/usuarios/components/ResetPasswordDialog.jsx`, abierto desde el listado de usuarios, representa la vista. El servicio HTTP envía la contraseña nueva con la propiedad `password`; `passwordNueva` es aquí el nombre conceptual del campo.
+**Descripción de relaciones:** el Administrador usa ResetPasswordDialog sobre una cuenta recibida del listado. La función HTTP invoca el Controller; el Service lee con Rol y cambia credenciales por los dos Repositories. Se conservan rol/estado y se limpian fallos/bloqueo. Los actores no son subclases de Usuario.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarSolicitud | `usuarioController.updatePassword`, `usuarioValidator.validateIdUsuario` y `validateUpdatePassword`. |
-| consultarCuentaObjetivo | `usuarioService.updatePassword` utiliza `getUsuarioById` antes del cambio, con Rol incluido. |
-| restablecerCredenciales | Bcrypt y `usuarioRepository.updatePassword` actualizan hash/versión y limpian bloqueo/contador en el restablecimiento. |
-| invalidarRecuperaciones | `recuperacionPasswordRepository.invalidatePendingByUsuario` se confirma junto al cambio. |
+No se exige contraseña anterior ni se emite cookie de renovación para la cuenta objetivo. Sus sesiones anteriores quedan obsoletas, incluso si el Administrador utiliza esta variante sobre su propia cuenta. La selección desde el listado corresponde a CU04; no se incorpora su GET como consulta HTTP independiente de este diagrama.
+
+**Apoyos reales:** `usuarioValidator.validateIdUsuario(data)` y `validateUpdatePassword(data)` están en `backend/src/business/validators/usuario.validator.js`; `siguienteVersionCredenciales(usuario)` es función exportada de `backend/src/shared/utils/credenciales.js`. No se consulta la contraseña anterior ni se llama a updateOwnPassword. El campo real y la propiedad enviada son password, no passwordNueva; confirmation es solo local.
 
 La ruta es `PATCH /api/usuarios/:idUsuario/password`. Referencias: RF04/RF09; RN07/RN115 y CU08.
 
@@ -710,8 +1000,11 @@ La ruta es `PATCH /api/usuarios/:idUsuario/password`. Referencias: RF04/RF09; RN
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaRecuperarContrasena | Boundary | Permite solicitar el código y enviarlo con la nueva contraseña. |
-| ControlRecuperarContrasena | Control | Coordina solicitud, cuotas, envío, verificación y consumo con cambio de credenciales. |
+| RecuperacionPasswordPage | Boundary; componente funcional | Maneja correo, step y form; solicita código y restablece. |
+| authController | Control HTTP; clase | Atiende los dos endpoints públicos y pasa la IP del socket. |
+| recuperacionPasswordService | Control de negocio; clase | Coordina emisión/consumo y sus auxiliares reales de cuota, espera y rechazo. |
+| usuarioRepository | Repository; clase | Busca/bloquea la cuenta y actualiza credenciales al consumir. |
+| recuperacionPasswordRepository | Repository; clase | Persiste cuotas IP, emisiones, intentos, consumo e invalidaciones. |
 | Usuario | Entity | Representa la cuenta asociada al correo y sus credenciales. |
 | RecuperacionPassword | Entity | Representa la emisión protegida, su vigencia, fallos y estados de uso. |
 | LimiteRecuperacionIp | Entity | Representa las cuotas persistentes por ámbito/IP protegida; solo participa en este CU de la fase. |
@@ -724,29 +1017,50 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaRecuperarContrasena {
+    class RecuperacionPasswordPage {
         <<boundary>>
         -String correo
-        -String codigo
-        -String passwordNueva
-        -String confirmacionPassword
-        +solicitarCodigo()
-        +comprobarConfirmacion()
-        +enviarRestablecimiento()
+        -String step
+        -String form.codigo
+        -String form.passwordNueva
+        -String form.confirmPassword
+        -Boolean submitting
     }
-    class ControlRecuperarContrasena {
+    class authController {
         <<control>>
-        +validarDatos()
-        +controlarCuotas()
-        +solicitarCodigo()
-        +gestionarEnvioYRespuesta()
-        +verificarCodigo()
-        +restablecerCredenciales()
-        +invalidarRecuperaciones()
+        +solicitarRecuperacion(req, res, next)$
+        +restablecerPassword(req, res, next)$
+    }
+    class recuperacionPasswordService {
+        <<control>>
+        +solicitarRecuperacion(...)$
+        +restablecerPassword(data, ip)$
+        +verificarLimiteIp(ambito, ip)$
+        +esperarRespuesta(inicio)$
+        +invalidarEnvioRechazado(...)$
+    }
+    class usuarioRepository {
+        <<repository>>
+        +findByCorreo(...)$
+        +findByIdForRecovery(...)$
+        +updatePassword(...)$
+    }
+    class recuperacionPasswordRepository {
+        <<repository>>
+        +getCurrentDate(...)$
+        +incrementIpQuota(...)$
+        +findHistoryByUsuario(...)$
+        +invalidatePendingByUsuario(...)$
+        +create(...)$
+        +findByIdForUpdate(...)$
+        +updateById(...)$
+        +findLatestByUsuario(...)$
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
+        -VARCHAR_60 nombre_usuario
         -VARCHAR_255 correo
         -BOOLEAN estado
         -VARCHAR_255 password_hash
@@ -757,6 +1071,7 @@ classDiagram
     class RecuperacionPassword {
         <<entity>>
         -INT id_recuperacion
+        -INT id_usuario
         -CHAR_64 codigo_hmac
         -CHAR_36 nonce
         -DATETIME_3 fecha_solicitud
@@ -772,17 +1087,32 @@ classDiagram
         -DATETIME_3 ventana_hasta
         -INT_UNSIGNED cantidad
     }
-    Administrador --> VistaRecuperarContrasena
-    Regente --> VistaRecuperarContrasena
-    Vendedor --> VistaRecuperarContrasena
-    VistaRecuperarContrasena ..> ControlRecuperarContrasena : solicita
-    ControlRecuperarContrasena ..> Usuario : cambia credenciales
-    ControlRecuperarContrasena ..> RecuperacionPassword : emite o consume
-    ControlRecuperarContrasena ..> LimiteRecuperacionIp : controla cuotas
+    Administrador --> RecuperacionPasswordPage
+    Regente --> RecuperacionPasswordPage
+    Vendedor --> RecuperacionPasswordPage
+    RecuperacionPasswordPage ..> authController : HTTP solicitud o restablecimiento
+    authController ..> recuperacionPasswordService
+    recuperacionPasswordService ..> usuarioRepository
+    recuperacionPasswordService ..> recuperacionPasswordRepository
+    usuarioRepository ..> Usuario
+    recuperacionPasswordRepository ..> RecuperacionPassword
+    recuperacionPasswordRepository ..> LimiteRecuperacionIp : incrementIpQuota
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
 ```
 
-**Descripción de relaciones:** cada recuperación pertenece a exactamente un Usuario; una cuenta puede conservar cero o más emisiones históricas. LimiteRecuperacionIp se utiliza para cuotas independientes por ámbito y no tiene FK ni asociación con Usuario o RecuperacionPassword. Se incluye por ser persistencia real de un control de seguridad relevante, sin crear una entidad adicional de correo o sesión.
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento mostrado | Clase, componente o función real | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|---|
+| CU09 | RecuperacionPasswordPage | Componente funcional | `frontend/src/features/auth/pages/RecuperacionPasswordPage.jsx` | Internas `handleRequest(event)` y `handleReset(event)` | form.confirmPassword solo local; step distingue request/reset/success. |
+| CU09 | authController | Clase authController | `backend/src/presentation/controllers/auth.controller.js` | `solicitarRecuperacion(req, res, next)`; `restablecerPassword(req, res, next)` | Dos entradas HTTP públicas, IP de req.socket.remoteAddress. |
+| CU09 | recuperacionPasswordService | Clase recuperacionPasswordService | `backend/src/business/services/recuperacion-password.service.js` | `solicitarRecuperacion(data, ip, mailOptions = {})`; `restablecerPassword(data, ip)`; `verificarLimiteIp(ambito, ip)`; `esperarRespuesta(inicio)`; `invalidarEnvioRechazado({ idUsuario, idRecuperacion, nonce })` | Solo operaciones realmente declaradas; auxiliares según camino descrito abajo. |
+| CU09 | usuarioRepository | Clase usuarioRepository | `backend/src/data/repositories/usuario.repository.js` | `findByCorreo({ correo, transaction = undefined })`; `findByIdForRecovery({ idUsuario, transaction })`; `updatePassword({ idUsuario, passwordHash, versionCredenciales, transaction })` | updatePassword solo al consumir válidamente; no llama updateLoginSecurity. |
+| CU09 | recuperacionPasswordRepository | Clase recuperacionPasswordRepository | `backend/src/data/repositories/recuperacion-password.repository.js` | `getCurrentDate({ transaction } = {})`; `incrementIpQuota({ ambito, claveIpHmac, ahora, ventanaHasta, transaction })`; `findHistoryByUsuario({ idUsuario, desde, transaction })`; `invalidatePendingByUsuario({ idUsuario, invalidadaEn, transaction })`; `create({ values, transaction })`; `findByIdForUpdate({ idRecuperacion, idUsuario, transaction })`; `updateById({ idRecuperacion, values, transaction })`; `findLatestByUsuario({ idUsuario, transaction })` | Parámetros abreviados únicamente en el gráfico; matriz de caminos a continuación. |
+| CU09 | Usuario / RecuperacionPassword / LimiteRecuperacionIp | Modelos | `backend/src/data/models/usuario.js`; `backend/src/data/models/recuperacion-password.js`; `backend/src/data/models/limite-recuperacion-ip.js` | — | Nueve, nueve y cuatro atributos completos; IP con PK compuesta, sin FK. |
+| CU09 | Puente HTTP | Funciones exportadas | `frontend/src/features/auth/services/auth.service.js` | `solicitarRecuperacion({ correo })`; `restablecerPassword({ correo, codigo, passwordNueva })` | No son métodos de una clase frontend. |
+
+**Descripción de relaciones:** la página usa las funciones HTTP; el Controller llama al Service y este a los Repositories. Cada RecuperacionPassword pertenece a un Usuario; una cuenta tiene cero o más emisiones históricas. LimiteRecuperacionIp se utiliza por ámbito/IP y no tiene FK ni asociación con las otras entidades. No se añade una clase ficticia de correo ni se dibujan consultas directas del Service a los modelos.
 
 El dibujo reúne dos operaciones del mismo CU. La verificación del código se realiza al solicitar el restablecimiento; no existe un tercer endpoint de verificación independiente.
 
@@ -796,15 +1126,22 @@ El código tiene seis dígitos, diez minutos de vigencia y máximo cinco fallos;
 
 **Correspondencia con la implementación:** `/recuperar-contrasena` y `frontend/src/features/auth/pages/RecuperacionPasswordPage.jsx` representan la vista. Sus funciones HTTP están en `frontend/src/features/auth/services/auth.service.js`.
 
-| Operación conceptual | Comportamiento real de respaldo |
+| Camino | Operaciones reales participantes |
 |---|---|
-| validarDatos | `authController.solicitarRecuperacion`/`restablecerPassword` y `recuperacionPasswordValidator.validateSolicitud`/`validateRestablecimiento`; el Service también valida. |
-| controlarCuotas | `recuperacionPasswordService.verificarLimiteIp`, cuota IP persistente y consulta del historial de emisiones para cuota de cuenta. |
-| solicitarCodigo | `recuperacionPasswordService.solicitarRecuperacion` verifica cuenta/correo, genera protección HMAC y registra emisión/vigencia. |
-| gestionarEnvioYRespuesta | Transporte de correo, `invalidarEnvioRechazado` cuando existe rechazo explícito y `esperarRespuesta` en el bloque de solicitud documentado. |
-| verificarCodigo | Comprobaciones de correspondencia, vigencia y estado en `restablecerPassword`, mediante auxiliares de verificación; registro de fallos y revalidación antes del consumo. |
-| restablecerCredenciales | `recuperacionPasswordService.restablecerPassword` aplica bcrypt, actualiza Usuario y consume la emisión conjuntamente. |
-| invalidarRecuperaciones | `invalidatePendingByUsuario` al emitir un nuevo código o tras cambiar válidamente la contraseña; `updateById` invalida una emisión en los caminos de rechazo/fallos aplicables. |
+| Solicitar | authController.solicitarRecuperacion → recuperacionPasswordService.solicitarRecuperacion; verificarLimiteIp usa getCurrentDate/incrementIpQuota. Busca por findByCorreo/findByIdForRecovery; findHistoryByUsuario comprueba cuota/códigos recientes; invalidatePendingByUsuario/create se ejecutan al emitir. esperarRespuesta se llama en finally del bloque de solicitud, después de admitir cuota IP y crear transporte. |
+| Rechazo explícito del correo | invalidarEnvioRechazado utiliza findByIdForRecovery, findByIdForUpdate y, si coincide nonce y sigue pendiente, updateById/getCurrentDate. Resultado incierto no ejecuta esta invalidación. |
+| Restablecer | authController.restablecerPassword → recuperacionPasswordService.restablecerPassword; verificarLimiteIp usa getCurrentDate/incrementIpQuota. Busca por findByCorreo/findByIdForRecovery/findLatestByUsuario; updateById registra invalidez, fallos o consumo según rama. updatePassword e invalidatePendingByUsuario solo después de revalidar el consumo. No llama esperarRespuesta ni invalidarEnvioRechazado. |
+
+**Funciones y objetos externos, expresamente distintos de métodos del Service:**
+
+| CU | Elemento de apoyo | Clase, componente o función real | Archivo fuente | Firma real | Observación UML |
+|---|---|---|---|---|---|
+| CU09 | Comprobación de cuenta/código | Funciones de módulo | `backend/src/business/services/recuperacion-password.service.js` | `findCurrentUsuario(idUsuario, correo, transaction)`; `isUsable(recovery, ahora, transaction)`; `matchesCode(usuario, recovery, codigo)`; `generateNonRepeatedCode(usuario, history, ahora)` | Declaradas fuera de recuperacionPasswordService; no se dibujan como métodos. |
+| CU09 | Protección criptográfica | Funciones exportadas | `backend/src/shared/utils/recuperacion-crypto.js` | `generarCodigoRecuperacion()`; `generarNonceRecuperacion()`; `calcularCodigoHmac({ codigo, ...metadata } = {})`; `verificarCodigoHmac({ codigo, codigoHmac, ...metadata } = {})`; `calcularClaveIpHmac({ ambito, ipNormalizada } = {})`; `normalizarIpRecuperacion(ip)` | No pertenecen a la clase Service. |
+| CU09 | Correo | Función exportada y método de objeto retornado | `backend/src/shared/utils/recuperacion-mail.js` | `crearTransporteRecuperacion({ resolverMock } = {})`; `enviar(payload, { signal } = {})` | enviar está en un objeto Object.freeze, no en una clase de servicio ni modelo. |
+| CU09 | Configuración / versión | Funciones exportadas | `backend/src/shared/utils/recuperacion-config.js`; `backend/src/shared/utils/credenciales.js` | `exigirRecuperacionHabilitada()`; `siguienteVersionCredenciales(usuario)` | No son métodos de recuperacionPasswordService. |
+
+`recuperacionPasswordValidator.validateSolicitud(data)` y `validateRestablecimiento(data)` se declaran en `backend/src/business/validators/recuperacion-password.validator.js` y se ejecutan tanto en Controller como en Service. Las rutas públicas se comprueban en `backend/src/presentation/routes/auth.router.js`. No hay login automático, consulta a Rol ni método verificarCodigo de esta clase.
 
 La solicitud usa `POST /api/auth/recuperacion/solicitar`; el consumo, `POST /api/auth/recuperacion/restablecer`. La confirmación local no se envía. La activación/configuración y validación del envío a un buzón real siguen siendo pendientes operativos documentados, aunque el CU esté implementado. Referencias: RF40–RF42, RI15; RN107–RN115.
 
@@ -823,13 +1160,17 @@ La solicitud usa `POST /api/auth/recuperacion/solicitar`; el consumo, `POST /api
 | CU09 — Recuperación por correo | 1 | Emisión/consumo, cuotas persistentes y respuesta pública genérica. |
 | **Total de Fase 1** | **10** | **Nueve CU, numeración única CU01–CU09.** |
 
-**Criterio de comprobación:** contrastar participantes y permisos con el análisis técnico; cada operación conceptual tiene respaldo explícito en su tabla de correspondencia. Los atributos de entidad son subconjuntos del modelo general y las únicas asociaciones persistentes de esta fase son Rol–Usuario y Usuario–RecuperacionPassword, ambas con `1`–`0..*`. LimiteRecuperacionIp permanece sin asociaciones inventadas. No se añaden métodos a las entidades ni clases técnicas a los diagramas BCE.
+**Criterio de comprobación de la corrección:** cada nombre implementado del dibujo debe encontrarse en su fuente, y cada método debe estar declarado en la clase indicada y ejecutarse en el CU o una rama válida. Las tablas inmediatamente posteriores a los gráficos documentan firmas exactas, funciones externas e intermediación HTTP. Los Boundary no muestran operaciones propias de clase.
 
-**Validación de esta entrega:** se comprobaron los nueve nombres/números contra el catálogo, sin duplicados ni ausencias de CU01–CU09, y las dos variantes de CU08. Los diez diagramas contienen diez Boundary y diez Control, con 37 operaciones conceptuales respaldadas por sus correspondencias. Se contrastaron las cuatro entidades participantes —Usuario, Rol, RecuperacionPassword y LimiteRecuperacionIp— con las de cada CU técnico; los 86 atributos contados en sus apariciones son selecciones del modelo general, con nombres/tipos existentes. Se comprobaron permisos, asociaciones y cardinalidades; las entidades no declaran métodos inventados y los diagramas no contienen clases de infraestructura.
+**Entidades completas:** Usuario tiene nueve atributos, Rol cuatro, RecuperacionPassword nueve y LimiteRecuperacionIp cuatro: **26 atributos persistentes distintos**. Se conservan todos en cada aparición. Usuario.correo y bloqueado_hasta, Rol.descripcion y RecuperacionPassword.consumida_en/invalidada_en admiten NULL. Los ID numéricos son PK autoincrementales, salvo FK; LimiteRecuperacionIp tiene PK compuesta ambito/clave_ip_hmac y carece de id técnico adicional. Todos estos modelos usan timestamps:false; no hay createdAt/updatedAt implícitos. Las asociaciones pertinentes son Rol `1`–`0..*` Usuario y Usuario `1`–`0..*` RecuperacionPassword, sin composición ni herencia. Las demás asociaciones de Usuario pertenecen a otros CU y no se cargan en esta fase.
 
-Los diez dibujos se analizaron y renderizaron con Mermaid 11.12.0 y se revisaron visualmente sus capturas. Se comprobó la disposición actor → Boundary → Control de izquierda a derecha y ausencia de solapamiento entre cajas. Las entidades asociadas se distribuyen en ramas según el trazado de Mermaid; los SVG permiten ampliar los dibujos de mayor anchura. Se revisaron formato Markdown, enlaces y rutas de correspondencia. Los hashes SHA-256 de los seis documentos fuente se conservaron y Git identifica únicamente este archivo nuevo. La comprobación fue documental y visual, sin conexión a MySQL ni pruebas funcionales del backend.
+**Acceso verificado:** `backend/src/presentation/routes/auth.router.js` mantiene login/recuperación públicos y logout protegido por authMiddleware. `backend/src/presentation/routes/usuario.router.js` declara el cambio propio antes del requireRole de Administrador; las demás operaciones de usuarios requieren ese rol. `frontend/src/app/router.jsx` protege las rutas de usuarios con RoleRoute; MainLayout abre el cambio propio para los tres roles. `requireRole(...rolesPermitidos)` en `backend/src/presentation/middlewares/role.middleware.js` es una función factory, no una clase. Para evitar duplicación, la comprobación transversal de sesión se describe en 0.3; en CU02 se dibuja porque es su única lectura de entidad y se distingue de logout.
 
-**Avance al cierre de Fase 1:** nueve de los 33 CU implementados, con diez de los 34 diagramas previstos. La Fase 2 se incorpora a continuación por solicitud de continuidad del usuario.
+**Resultado de la revisión de Fase 1:** nueve CU y diez diagramas corregidos, sin Vista.../Control... ficticios ni operaciones conceptuales presentadas como implementadas. Se comprobaron siete clases backend y once componentes funcionales reales (17 apariciones Boundary), junto con authMiddleware identificado como función. Los gráficos contienen **47 métodos propios distintos**, en **66 apariciones**, y **154 apariciones de atributos persistentes**, todas completas para su modelo. Cada método dibujado fue contrastado con su declaración y firma exacta en la tabla del CU. También se comprobaron campos de interfaz, asociaciones, permisos y caminos condicionales. Los Validators, AppError, bcrypt, Express y utilidades quedan fuera del gráfico principal; esto no les atribuye sus operaciones al Controller o Service.
+
+**Renderizado y preservación:** **10/10 diagramas aprobados con Mermaid 11.12.0**, con SVG y capturas revisadas visualmente. Se comprobó lectura LR de las dependencias y ausencia de solapamiento entre cajas; los gráficos de edición/recuperación requieren ampliar por sus atributos completos y ramas. `git diff --check` aprobado. Los **298 archivos versionados ajenos al documento**, incluidos los seis documentos fuente, conservaron SHA-256. El bloque desde Fase 2 se conserva íntegro respecto de la versión previa. La comprobación fue documental y de renderizado, con artefactos fuera del repositorio, sin conexión a MySQL ni pruebas funcionales del software.
+
+**Avance de corrección:** Fase 1 queda para revisión del usuario: **9/33 CU y 10/34 diagramas corregidos**. El documento conserva la cobertura total de 33 CU/34 diagramas. Las cinco fases siguientes mantienen sus entregas anteriores hasta que se autorice corregirlas.
 
 ## 3. Fase 2 — Proveedores y Laboratorios
 
