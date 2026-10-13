@@ -4,13 +4,13 @@
 >
 > **Contenido:** Fases 1–6 — Autenticación, Usuarios, Recuperación, Proveedores/Laboratorios, Catálogo de Medicamentos, Compras, Inventario, Vencimientos y Retiros. Los 33 CU implementados están analizados: CU01–CU27, CU33–CU37 y CU40.
 >
-> **Entrega actual:** Fase 6 — Vencimientos y Retiros, CU33–CU36, pendiente de revisión. Continuidad solicitada por el usuario. Cobertura integral en la sección 13.
+> **Entrega actual:** Corrección de Fase 6 — Vencimientos y Retiros, CU33–CU36: métodos específicos por CU, pendiente de revisión. Las seis fases aplican este criterio: 34 de 34 diagramas corregidos, correspondientes a los 33 CU implementados. Verificación por bloques en 0.5; cobertura funcional integral en la sección 13.
 >
 > **Referencia estructural:** [Diagrama de clases actualizado](diagrama-clases.md). Objetivos y actores: [Casos de uso](casos-uso.md). Condiciones: [Reglas de negocio](reglas-negocio.md) y [Requerimientos](requerimientos.md).
 
 ## 0. Criterios del análisis
 
-Cada CU identifica actor, clases participantes, responsabilidad, métodos ejecutados y relaciones. Su diagrama muestra **todos los atributos y métodos propios de cada clase incluida**, aunque durante esa operación se ejecute únicamente una parte de sus métodos.
+Cada CU identifica actor, clases participantes, responsabilidad, métodos ejecutados y relaciones. Por solicitud del usuario, los diagramas se ajustaron por módulos para mostrar **únicamente los métodos propios utilizados en ese CU**, incluidas llamadas internas y caminos condicionales, manteniendo los atributos completos de las clases participantes. **Los 34 diagramas de CU01–CU27, CU33–CU37 y CU40, incluidas ambas variantes de CU08, aplican este criterio**, según la verificación por bloques de 0.5.
 
 ### 0.1. Convenciones
 
@@ -20,26 +20,26 @@ Cada CU identifica actor, clases participantes, responsabilidad, métodos ejecut
 - `<<funcion>>` representa una función de middleware como punto de conexión, **no una clase existente**; estas cajas no tienen compartimentos de atributos o métodos inventados.
 - La flecha del actor representa la solicitud desde la interfaz indicada en cada CU. Los enlaces entre middleware y Controller representan el encadenamiento de la ruta Express; no significan que el middleware invoque directamente el método del Controller.
 - `..>` representa dependencia; `--` asociación persistente. Las etiquetas señalan la participación en el CU, no todo el conjunto de imports de un archivo.
-- Los compartimentos se repiten completos para que cada diagrama pueda consultarse por separado. Una operación listada no implica que se ejecute en ese CU: las tablas de participación precisan los métodos utilizados.
+- El compartimento de operaciones contiene solo los métodos utilizados en ese CU. Las tablas y etiquetas precisan las condiciones de ejecución; incluir un método condicional no significa que se ejecute en todas las solicitudes.
 - `+` identifica operaciones públicas y `$`, estáticas. Los métodos async continúan siendo async en el código; se omite esa palabra en el dibujo. Los servicios, Controllers, Repositories y Validators de las fases documentadas no declaran atributos propios de clase.
 - Se muestran exclusivamente métodos definidos **dentro de la clase**, incluidos los auxiliares que sí están declarados allí. Funciones externas, constantes importadas y esquemas Zod definidos fuera no se incorporan como miembros.
-- Los modelos muestran atributos completos y `associate(models)`, cuando lo declaran. Sus métodos heredados de Sequelize (`findOne`, `update`, etc.) se identifican en las explicaciones de acceso a datos; no se atribuyen como métodos propios del modelo.
+- Los modelos mantienen sus atributos completos como referencia estructural, aunque una consulta o DTO seleccione solo algunos. Se omite `associate(models)` de los diagramas por CU: configura relaciones al iniciar el sistema y no se ejecuta durante el CU. Sus métodos heredados de Sequelize (`findOne`, `update`, etc.) se identifican en las explicaciones de acceso a datos; no se atribuyen como métodos propios del modelo.
 - `-` marca datos internos de persistencia en UML; no afirma privacidad de campos JavaScript. Los tipos `VARCHAR_60`, `CHAR_64`, `DATETIME_3`, `INT_UNSIGNED` y `TINYINT_UNSIGNED` abrevian `VARCHAR(60)`, `CHAR(64)`, `DATETIME(3)`, `INT UNSIGNED` y `TINYINT UNSIGNED`. Tipos, claves, nulos y valores predeterminados completos están en `diagrama-clases.md`.
 - Las firmas gráficas usan nombres para objetos (`data`, `options`, `datosUsuario`); sus firmas reales y valores predeterminados están en 0.3, 3.1, 5.1, 7.1 y 9.1. No se inventan tipos de retorno para las clases JavaScript.
 - React utiliza componentes funcionales y servicios HTTP como funciones. Se documentan sus archivos y conexiones en las tablas de interfaz; no se convierten en clases con métodos ficticios.
 - AppError declara `statusCode`, `details` y su constructor. `message`, `name` y `stack` pertenecen a Error; su herencia se explica aquí sin duplicarlos como atributos propios.
-- Las asociaciones mostradas son las relevantes para ese CU. Mostrar `associate(models)` completo como operación no obliga a agregar al dibujo todos los modelos de otros módulos que esa configuración relaciona.
+- Las asociaciones mostradas son las relevantes para ese CU; permanecen representadas aunque se omita `associate(models)` del compartimento de operaciones. Las clases y sus miembros completos se consultan en `diagrama-clases.md` y en los inventarios de firmas de este documento.
 
 ### 0.2. Fases y cobertura
 
 | Fase | Módulo | Casos | Estado del análisis |
 |---|---|---|---|
-| 1 | Autenticación, Usuarios y Recuperación | CU01–CU09 | Elaborados; continuidad solicitada |
-| 2 | Proveedores / Laboratorios | CU10–CU13 | Elaborados; continuidad solicitada |
-| 3 | Medicamentos, Principios Activos y Composición | CU14–CU20 | Elaborados; continuidad solicitada |
-| 4 | Compras | CU25–CU27 | Elaborados; continuidad solicitada |
-| 5 | Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37, CU40 | Elaborados; continuidad solicitada |
-| 6 | Vencimientos y Retiros | CU33–CU36 | Elaborados en esta entrega; revisión pendiente |
+| 1 | Autenticación, Usuarios y Recuperación | CU01–CU09 | Elaborados; diagramas corregidos; revisión de CU09 pendiente |
+| 2 | Proveedores / Laboratorios | CU10–CU13 | Elaborados; diagramas corregidos; continuidad solicitada |
+| 3 | Medicamentos, Principios Activos y Composición | CU14–CU20 | Elaborados; diagramas corregidos; continuidad solicitada |
+| 4 | Compras | CU25–CU27 | Elaborados; diagramas corregidos; continuidad solicitada |
+| 5 | Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37, CU40 | Elaborados; diagramas corregidos; continuidad solicitada |
+| 6 | Vencimientos y Retiros | CU33–CU36 | Elaborados; diagramas corregidos; revisión pendiente |
 | Futuro | Ventas, Recetas y Reportes | CU28–CU32, CU38, CU39, CU41 | Operaciones funcionales pendientes; análisis posterior |
 
 La Fase 1 cubre **9 CU y 10 diagramas**: CU08 se divide en cambio propio y restablecimiento administrativo. CU09 integra solicitud y consumo del código en su diagrama, manteniendo sus dos endpoints.
@@ -85,7 +85,7 @@ Todas las rutas siguientes se expresan desde la raíz del repositorio.
 
 **Modelos:** Usuario tiene 9 atributos, Rol 4, RecuperacionPassword 9 y LimiteRecuperacionIp 4. Los tres primeros declaran `static associate(models)`; LimiteRecuperacionIp no declara métodos. Son **26 atributos persistentes**; no se incorporan password en claro, JWT, estados React o resultados calculados.
 
-**Controllers:** los cinco métodos de authController y siete de usuarioController reciben `(req, res, next)`. Son públicos, estáticos y async; sus nombres completos están en cada diagrama.
+**Controllers:** los cinco métodos de authController y siete de usuarioController reciben `(req, res, next)`. Son públicos, estáticos y async. Este inventario describe las clases completas; los diagramas corregidos seleccionan únicamente los métodos ejecutados en su CU.
 
 **Services — firmas exactas:**
 
@@ -128,6 +128,97 @@ Los diagramas protegidos incluyen authService, usuarioRepository, Usuario y AppE
 
 `errorHandler(error, req, res, next)`, de `backend/src/presentation/middlewares/error.middleware.js`, recibe los errores mediante `next(error)` y publica el contrato HTTP. AppError expresa errores conocidos; los inesperados producen un 500 genérico. Los errores del parser 400/413 se gestionan antes del Controller. Esa infraestructura compartida no se repite como clase ficticia.
 
+### 0.5. Corrección por módulos — métodos específicos de cada CU
+
+La corrección se entrega para revisión por bloques, empezando por Autenticación dentro de Fase 1. Se conservan los 33 CU analizados y sus 34 diagramas; cambia la selección de operaciones de cada dibujo, no el alcance funcional.
+
+| Fase / bloque | Casos | Estado de la corrección |
+|---|---|---|
+| Fase 1 — Autenticación | CU01–CU02 | Corregidos; continuidad solicitada |
+| Fase 1 — Usuarios | CU03–CU08, incluidas ambas variantes de CU08 | Corregidos; continuidad solicitada |
+| Fase 1 — Recuperación | CU09 | Corregido; continuidad solicitada |
+| Fase 2 — Proveedores/Laboratorios | CU10–CU13 | Corregidos; continuidad solicitada |
+| Fase 3 — Catálogo de Medicamentos | CU14–CU20 | Corregidos; continuidad solicitada |
+| Fase 4 — Compras | CU25–CU27 | Corregidos; continuidad solicitada |
+| Fase 5 — Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37, CU40 | Corregidos; continuidad solicitada |
+| Fase 6 — Vencimientos y Retiros | CU33–CU36 | Corregidos; revisión pendiente |
+
+**Criterio de revisión:** cada método mostrado debe corresponder a una llamada real del CU, sea directa, interna, por auxiliar externo o condicional. Una importación, una operación de otro endpoint o la configuración inicial de asociaciones no basta para incluirlo. Los auxiliares externos siguen explicados como funciones, sin convertirse en miembros de una clase. Los atributos completos describen estructura, no datos enviados al cliente.
+
+**Autenticación — comprobación del ajuste:** CU01 muestra seis operaciones propias: login de Controller/Service, validateLogin, findByNombreUsuario, updateLoginSecurity y constructor de AppError. CU02 muestra cuatro: logout, getSessionUsuario, findByIdForSession y constructor de AppError. Ambos conservan los nueve atributos de Usuario y los dos atributos propios de AppError. updateLoginSecurity es condicional; la autenticación de CU02 pertenece al middleware, no al cuerpo de logout. Se verifican métodos, firmas, participantes y dependencias contra el código y el renderizado de ambos diagramas.
+
+**Usuarios — selección de operaciones:** se incluyen la autenticación previa, las llamadas internas del Service, la validación de parámetros mediante auxiliares externos y los caminos condicionales de correo/nombre/rol. CU04 no ejecuta Validator; CU06 invalida recuperaciones solo ante cambio efectivo o retirada de correo; CU08 propio no consulta Rol ni ejecuta getUsuarioById; CU08 administrativo sí ejecuta esa lectura pública previa. Los siete dibujos conservan atributos y asociaciones, omitiendo associate(models) y métodos ajenos al CU.
+
+| CU / variante | Operaciones propias seleccionadas, incluidas autenticación y ramas de error |
+|---|---|
+| CU03 — Crear usuario | 12 |
+| CU04 — Consultar usuarios | 6 |
+| CU05 — Consultar usuario por ID | 7 |
+| CU06 — Modificar usuario | 15 |
+| CU07 — Activar o desactivar usuario | 10 |
+| CU08 — A. Cambio propio | 9 |
+| CU08 — B. Restablecimiento administrativo | 12 |
+
+**Verificación del bloque Usuarios:** los siete diagramas corregidos se contrastaron con el código: 71 apariciones de operaciones propias seleccionadas, incluidas autenticación previa, llamadas internas y condiciones. Se comprobaron selección exacta por CU, firmas gráficas conservadas, atributos completos, actores, dependencias y cardinalidades contra código y metadatos Sequelize. La verificación acumulada aprobó los nueve diagramas ajustados y la cobertura de los 41 CU; los 34 diagramas del documento se analizaron y renderizaron a SVG con Mermaid 11.12.0 sin errores. Se revisó el formato del Markdown. Las comprobaciones no abrieron conexiones MySQL.
+
+**Recuperación — selección de operaciones:** CU09 integra sus dos endpoints en un diagrama con 21 operaciones propias utilizadas en el CU y 22 atributos persistentes, además de los dos atributos de AppError. La tabla por endpoint distingue solicitud, consumo y rechazo explícito del envío. Los cinco métodos de recuperacionPasswordService y los ocho de recuperacionPasswordRepository permanecen porque todos se ejecutan en alguno de esos caminos; authController y usuarioRepository muestran solo los métodos de recuperación. Se omite associate(models); las asociaciones persisten en el dibujo.
+
+**Verificación del bloque Recuperación:** se comprobaron las 21 operaciones propias seleccionadas, sus firmas gráficas, los 22 atributos persistentes y los dos atributos de AppError. Se contrastaron actores, dependencias, cardinalidades y condiciones de solicitud/consumo/rechazo contra el código y metadatos Sequelize. La verificación acumulada aprobó los 10 diagramas corregidos de Fase 1, con 57 operaciones propias distintas en 102 apariciones, y la cobertura de los 41 CU. Los 34 diagramas del documento se analizaron y renderizaron a SVG con Mermaid 11.12.0 sin errores. Se revisó el formato del Markdown; las comprobaciones no abrieron conexiones MySQL ni enviaron correos.
+
+**Proveedores/Laboratorios — selección de operaciones:** CU10 muestra siete operaciones propias; CU11 integra listado y detalle con diez; CU12 y CU13 muestran diez cada uno. El alta convierte la instancia creada a DTO sin llamar a getProveedorLaboratorioById. En modificación y cambio de estado ese método sí se ejecuta internamente antes y después de escribir. En CU11 validateId participa solo en detalle. Cada dibujo incluye getSessionUsuario y findByIdForSession para autenticar, además del constructor de AppError en las ramas de error.
+
+**Verificación de Fase 2:** se contrastaron los cuatro diagramas modificados contra el código y metadatos Sequelize: nueve clases participantes, 14 atributos persistentes, dos atributos de AppError y 22 operaciones propias distintas en 37 apariciones. Se comprobaron selección exacta de métodos, firmas gráficas, actores, autenticación previa, llamadas internas de lectura y validación condicional de CU11. Los cuatro dibujos se analizaron y renderizaron a SVG con Mermaid 11.12.0 sin errores; se revisó el formato con git diff --check. No se ejecutaron pruebas funcionales de la aplicación ni se abrieron conexiones MySQL.
+
+**Catálogo — selección de operaciones:** CU14 incluye la lectura final getMedicamentoById, las operaciones de generación de código y la creación integral de composición. CU15 reúne solo listado y detalle; CU20 selecciona exclusivamente el camino de filtro mediante getMedicamentos/findAll. CU16 conserva validateSinHistorial/hasMovimientos solo ante cambio efectivo de identidad protegida, y findAllForMedicamento/findDuplicadosIdentidad ante cambio efectivo de nombre o identidad protegida. CU17 incluye updateEstado → update del Repository. CU18 y CU19 mantienen todas las operaciones propias de sus clases principales porque agrupan varios endpoints; las tablas y notas distinguen los métodos por variante. CU19 solo consulta medicamentoService en GET; las escrituras comprueban historial e identidad y utilizan el Repository de Composición.
+
+| CU | Operaciones propias seleccionadas, incluidas autenticación y ramas de error |
+|---|---|
+| CU14 — Registrar medicamento | 15 |
+| CU15 — Consultar o buscar medicamento | 11 |
+| CU16 — Modificar medicamento | 16 |
+| CU17 — Activar o desactivar medicamento | 12 |
+| CU18 — Gestionar principios activos | 23 |
+| CU19 — Gestionar composición | 29 |
+| CU20 — Consultar medicamentos por composición | 7 |
+
+**Verificación de Fase 3:** se contrastaron los siete diagramas modificados contra código y metadatos Sequelize: 22 clases participantes, 56 atributos persistentes, dos atributos de AppError y 69 operaciones propias distintas en 113 apariciones. Se comprobaron selección exacta de métodos por CU, firmas gráficas, actores, autenticación previa, lecturas internas, updateEstado → update, llamadas por auxiliares externos y condiciones de identidad/historial. Las asociaciones originales se conservaron y sus cardinalidades se verificaron contra los modelos. Los siete dibujos se analizaron y renderizaron a SVG con Mermaid 11.12.0 sin errores; se revisó el formato con git diff --check. La comprobación fue documental, sin pruebas funcionales de la aplicación ni conexiones MySQL.
+
+**Compras — selección de operaciones:** CU25 incluye createCompra/getCompraById y las operaciones de clave, cabecera, detalles, recepción y entradas. Por grupo, existenciaMedicamentoRepository ejecuta create si es nuevo o updateSaldoYCosto si ya existe; ambas ramas pueden participar en una compra. CU26 reúne únicamente listado y detalle: buscar por clave sigue utilizando findAll, con responsable añadido por el Service, no findByClave. CU27 incluye anularCompra/getCompraById, bloqueos, lecturas de integridad, actualización de saldo/promedio, reversiones y cambio de estado. findReferenciasParaAnular se invoca en ese flujo aunque no haya compensaciones, pero sus consultas a detalles/cabeceras de compra o venta dependen de listas de IDs no vacías. Los cálculos B1/A siguen como funciones externas, sin convertirse en métodos del Service.
+
+| CU | Operaciones propias seleccionadas, incluidas autenticación y ramas de error |
+|---|---|
+| CU25 — Registrar compra | 18 |
+| CU26 — Consultar compras | 12 |
+| CU27 — Anular compra | 19 |
+
+**Verificación de Fase 4:** se contrastaron los tres diagramas modificados contra código y metadatos Sequelize: 19 clases participantes, 81 atributos persistentes, dos atributos de AppError y 34 operaciones propias distintas en 49 apariciones. Se comprobaron selección exacta de métodos, firmas gráficas, actores, autenticación previa y llamadas reales de Controller/Service a Validators/Repositories. Se verificaron las lecturas finales internas, las ramas de recepción, el filtro personal por clave y las consultas condicionales de referencias históricas. Las asociaciones originales se conservaron y sus cardinalidades se comprobaron contra los modelos. Los tres dibujos se analizaron y renderizaron a SVG con Mermaid 11.12.0 sin errores; se revisó el formato con git diff --check. La comprobación fue documental, sin pruebas funcionales de la aplicación ni conexiones MySQL.
+
+**Inventario — selección de operaciones:** CU21 utiliza getInventario y findInventario mediante consultarDisponibilidad externo, con existencias obligatorias; CU37 utiliza getStockBajo y el mismo Repository mediante el auxiliar, con consulta amplia, sin llamar a getInventario. CU22 selecciona getExistencias/findMedicamentoConExistencias; MovimientoInventario participa por el MAX SQL correlacionado, sin métodos propios ni Repository de movimientos. CU23 muestra registrarAjuste, la lectura bloqueante de existencia y marcador y, solo si la diferencia es distinta de cero, updateSaldoYCosto/create. CU24 y CU40 mantienen dibujos separados con la misma selección: getMovimientos y findAll, incluidos los detalles opcionales y la reversión por include, sin ejecutar findReferenciasParaAnular/findReversiones.
+
+| CU | Operaciones propias seleccionadas, incluidas autenticación y ramas de error |
+|---|---|
+| CU21 — Consultar inventario | 7 |
+| CU22 — Consultar existencias | 8 |
+| CU23 — Registrar ajuste | 11 |
+| CU24 — Consultar movimientos | 7 |
+| CU37 — Consultar stock bajo | 7 |
+| CU40 — Consultar historial | 7 |
+
+**Verificación de Fase 5:** se contrastaron los seis diagramas modificados contra código y metadatos Sequelize: 14 clases participantes, 55 atributos persistentes, dos atributos de AppError y 25 operaciones propias distintas en 47 apariciones. Se comprobaron selección exacta de métodos, firmas gráficas, actores, autenticación previa y llamadas reales de Controller/Service a Validators/Repositories, incluidas las de consultarDisponibilidad externo. Se verificaron el MAX SQL de CU22 sin Repository de movimientos, el retorno sin diferencia anterior a las escrituras de CU23, las opciones de disponibilidad de CU21/CU37 y la misma selección de miembros en CU24/CU40. Las asociaciones originales se conservaron y sus cardinalidades se comprobaron contra los modelos. Los seis dibujos se analizaron y renderizaron a SVG con Mermaid 11.12.0 sin errores; se revisó el formato con git diff --check. La comprobación fue documental, sin pruebas funcionales de la aplicación ni conexiones MySQL.
+
+**Vencimientos y Retiros — selección de operaciones:** CU33/CU34 muestran exclusivamente getProximosAVencer/getVencidos, respectivamente, y findInventario mediante consultarDisponibilidad externo. No llaman a getInventario, getExistencias ni a métodos de retiro. CU35/CU36 seleccionan registrarRetiroVencimiento/registrarRetiroDano y los cuatro métodos de Repository llamados por registrarRetiro externo: findByIdParaMovimiento, findUltimoIdParaExistencia, updateSaldoYCosto y create de movimientos. Ambos verifican precondiciones y stock/costo antes de efectos; solo CU35 ejecuta la comprobación de vencimiento. La cantidad positiva excluye una conciliación sin diferencia como la de CU23. Los dos POST construyen su respuesta con el resultado del auxiliar, sin ejecutar una consulta final de disponibilidad o historial.
+
+| CU | Operaciones propias seleccionadas, incluidas autenticación y ramas de error |
+|---|---|
+| CU33 — Consultar próximos a vencer | 7 |
+| CU34 — Consultar vencidos | 7 |
+| CU35 — Registrar retiro por vencimiento | 11 |
+| CU36 — Registrar retiro por daño | 11 |
+
+**Verificación de Fase 6:** se contrastaron los cuatro diagramas modificados contra código y metadatos Sequelize: 12 clases participantes, 40 atributos persistentes, dos atributos de AppError y 20 operaciones propias distintas en 36 apariciones. Se comprobaron selección exacta de métodos, firmas gráficas, actores, autenticación previa y llamadas reales de Controller a Validators/Service y de consultarDisponibilidad/registrarRetiro externos a Repositories. Se verificaron consulta amplia, filtros temporales, motivos fijados por cada método de retiro, observación opcional/obligatoria y orden de precondiciones/validaciones anterior a las escrituras; calcularVencimiento está exclusivamente en la rama VENCIMIENTO y create sigue a la actualización de exactamente una existencia. Las asociaciones originales se conservaron y sus cardinalidades se comprobaron contra los modelos. Los cuatro dibujos se analizaron y renderizaron a SVG con Mermaid 11.12.0 sin errores; se revisó el formato con git diff --check. La cobertura integral conserva los 41 CU, 33 implementados/analizados y ocho pendientes. La comprobación fue documental, sin pruebas funcionales de la aplicación ni conexiones MySQL.
+
+Los cierres de las seis fases distinguen la **verificación de la entrega inicial con clases completas** de la **corrección de métodos específicos por CU**. Las cifras iniciales de operaciones describen el inventario estructural, no la selección de métodos de los dibujos actuales. La corrección está completa: **34 de 34 diagramas ajustados**, correspondientes a los 33 CU implementados, con **384 apariciones de operaciones propias seleccionadas**; un mismo método puede repetirse en varios diagramas. La Fase 6 queda pendiente de revisión del usuario.
+
 ## 1. Fase 1 — Autenticación, Usuarios y Recuperación
 
 ### CU01. Iniciar sesión
@@ -141,13 +232,15 @@ Los diagramas protegidos incluyen authService, usuarioRepository, Usuario y AppE
 | `authController` | `login(req,res,next)` valida, llama al Service, coloca cookie HttpOnly y devuelve usuario público. |
 | `authValidator` | `validateLogin(data)` comprueba el body estricto y longitudes compatibles con contraseñas históricas. |
 | `authService` | `login(datos)` consulta/bloquea Usuario, verifica contraseña, contador/bloqueo, confirma el resultado y firma JWT. |
-| `usuarioRepository` | `findByNombreUsuario(options)`; `updateLoginSecurity(options)` cuando corresponde. |
+| `usuarioRepository` | `findByNombreUsuario(options)`; `updateLoginSecurity(options)` si falla la contraseña o si un éxito requiere limpiar contador/bloqueo previo. No escribe si la cuenta no existe, está inactiva o sigue bloqueada. |
 | `Usuario` | Nombre, hash, estado, rol por FK, contador, bloqueo y versión de credenciales. `findOne`/`update` son heredados de Sequelize. |
 | `AppError` | Constructor para validación y credenciales/estado/bloqueo rechazados. |
 
 **Relaciones y resultado:** Controller → Validator/Service; Service → Repository; Repository → Usuario. No se consulta el modelo Rol en este flujo: `id_rol` se toma de Usuario. Bcrypt y `generarToken` son apoyos externos. No existe `iniciarSesion()` como método de usuarioService.
 
-El login usa transacción para contador/bloqueo. Un fallo de contraseña se confirma antes de producir el error HTTP; al tercero bloquea diez minutos. Respuestas principales: 200, 400, 401, 403 y 423. El éxito devuelve usuario público y cookie; React mantiene únicamente la información pública. La restauración posterior por `GET /api/auth/me` es apoyo de sesión y no otro CU: ejecuta `authController.me()` y `authService.getSessionUsuario()`.
+El login usa transacción para contador/bloqueo. Un fallo de contraseña se confirma antes de producir el error HTTP; al tercero bloquea diez minutos. Respuestas principales: 200, 400, 401, 403 y 423. El éxito devuelve usuario público y cookie; React mantiene únicamente la información pública. La restauración posterior por `GET /api/auth/me` es apoyo de sesión y no otro CU: ejecuta `authController.me()` y `authService.getSessionUsuario()`. Esas operaciones pertenecen a otra solicitud y no se incluyen en el diagrama del POST de CU01.
+
+**Selección de métodos corregida:** únicamente los ejecutados durante el inicio de sesión y sus alternativas. Usuario conserva los atributos, sin `associate(models)` ni operaciones heredadas en su compartimento. El constructor de AppError participa en las ramas de error.
 
 ```mermaid
 classDiagram
@@ -156,11 +249,7 @@ classDiagram
     class Vendedor { <<actor>> }
     class authController {
         <<controller>>
-        +solicitarRecuperacion(req, res, next)$
-        +restablecerPassword(req, res, next)$
         +login(req, res, next)$
-        +logout(req, res, next)$
-        +me(req, res, next)$
     }
     class authValidator {
         <<validator>>
@@ -169,23 +258,10 @@ classDiagram
     class authService {
         <<servicio>>
         +login(credentials)$
-        +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
         +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
-        +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
         +updateLoginSecurity(options)$
     }
     class Usuario {
@@ -199,7 +275,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -213,9 +288,10 @@ classDiagram
     authController ..> authValidator : validateLogin
     authController ..> authService : login
     authController ..> AppError : validacion
-    authService ..> usuarioRepository : buscar y actualizar seguridad
+    authService ..> usuarioRepository : findByNombreUsuario y updateLoginSecurity condicional
     authService ..> AppError : credenciales o bloqueo
     usuarioRepository ..> Usuario : findOne y update
+    note for usuarioRepository "updateLoginSecurity solo ante password incorrecta o limpieza de contador o bloqueo previo al exito"
 ```
 
 ### CU02. Cerrar sesión
@@ -235,6 +311,8 @@ classDiagram
 
 **Relaciones y resultado:** Actor → middleware → Controller en la ruta; middleware → authService → usuarioRepository → Usuario para autenticar. El cuerpo de `authController.logout()` no llama a un Service de logout. Devuelve 200; ausencia/sesión inválida produce 401. AuthProvider limpia su estado local incluso si la solicitud falla. No se crea historial de logout ni se modifica `version_credenciales`; una copia externa del JWT puede seguir vigente mientras su cuenta/versión sean válidas y no haya expirado.
 
+**Selección de métodos corregida:** logout en Controller; getSessionUsuario y findByIdForSession en la autenticación previa; constructor de AppError en las ramas de error. No se ejecutan login, me, validadores de body ni métodos de modificación de Usuario. `res.clearCookie` pertenece a la respuesta Express, no es un método propio del Controller o del Service.
+
 ```mermaid
 classDiagram
     class Administrador { <<actor>> }
@@ -243,33 +321,15 @@ classDiagram
     class authMiddleware { <<funcion>> }
     class authController {
         <<controller>>
-        +solicitarRecuperacion(req, res, next)$
-        +restablecerPassword(req, res, next)$
-        +login(req, res, next)$
         +logout(req, res, next)$
-        +me(req, res, next)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -282,7 +342,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -314,7 +373,7 @@ classDiagram
 | `usuarioController` | `createUsuario(req,res,next)` publica 201 con datos permitidos. |
 | `usuarioValidator` | `validateCreateUsuario(data)`; el esquema externo newPasswordSchema aplica complejidad y 72 bytes. |
 | `usuarioService` | `createUsuario(datosUsuario)` y `getUsuarioById(idUsuario)` para devolver lo creado. |
-| `usuarioRepository` | `findByNombreUsuario`, `findByCorreo` si hay correo, `findRolById`, `createUsuario`, `findById`; consulta Usuario y Rol. |
+| `usuarioRepository` | `findByIdForSession` para autenticar; `findByNombreUsuario`, `findByCorreo` si hay correo no nulo, `findRolById`, `createUsuario`, `findById` para el alta y respuesta; consulta Usuario y Rol. |
 | `Usuario`, `Rol` | Nueva cuenta con rol existente/activo, nombre/correo únicos y password_hash. |
 | `AppError` | Validación, referencias y conflictos. |
 
@@ -328,53 +387,28 @@ classDiagram
     class usuarioController {
         <<controller>>
         +createUsuario(req, res, next)$
-        +getUsuarios(req, res, next)$
-        +getUsuarioById(req, res, next)$
-        +updateUsuario(req, res, next)$
-        +updateEstado(req, res, next)$
-        +updatePassword(req, res, next)$
-        +updateOwnPassword(req, res, next)$
     }
     class usuarioValidator {
         <<validator>>
-        +validateIdUsuario(data)$
         +validateCreateUsuario(data)$
-        +validateUpdateUsuario(data)$
-        +validateUpdateEstado(data)$
-        +validateUpdatePassword(data)$
-        +validateUpdateOwnPassword(data)$
     }
     class usuarioService {
         <<servicio>>
         +createUsuario(datosUsuario)$
-        +getUsuarios()$
         +getUsuarioById(idUsuario, transaction)$
-        +updateUsuario(idUsuario, datosUsuario)$
-        +updateEstado(idUsuario, datosEstado)$
-        +updatePassword(idUsuario, datosPassword)$
-        +updateOwnPassword(idUsuario, datosPassword, versionCredenciales)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
         +findByNombreUsuario(options)$
-        +findAllUsuarios()$
         +findById(options)$
-        +findByIdForUpdate(options)$
         +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
         +findRolById(options)$
         +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -387,7 +421,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class Rol {
         <<modelo>>
@@ -395,7 +428,6 @@ classDiagram
         -VARCHAR_60 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -419,6 +451,8 @@ classDiagram
     usuarioRepository ..> Usuario : findOne create findByPk
     usuarioRepository ..> Rol : findRolById e include
     Rol "1" -- "0..*" Usuario : rol
+    note for usuarioService "createUsuario llama a getUsuarioById para devolver la cuenta creada"
+    note for usuarioRepository "findByCorreo solo si se proporciona correo no nulo"
 ```
 
 ### CU04. Consultar usuarios
@@ -432,7 +466,7 @@ classDiagram
 | Autenticación y autorización | Cadena de 0.4; solo Administrador. |
 | `usuarioController` | `getUsuarios(req,res,next)` devuelve `{ data }`. |
 | `usuarioService` | `getUsuarios()` convierte a DTO público. |
-| `usuarioRepository` | `findAllUsuarios()` con atributos públicos e include de Rol. |
+| `usuarioRepository` | `findByIdForSession` para autenticar; `findAllUsuarios()` con atributos públicos e include de Rol para el listado. |
 | `Usuario`, `Rol` | Cuentas, correo, estado y datos del rol; conserva activos/inactivos. |
 | `AppError` | Sesión/permisos previos; fallos inesperados llegan al errorHandler. |
 
@@ -445,45 +479,20 @@ classDiagram
     class requireRole { <<funcion>> }
     class usuarioController {
         <<controller>>
-        +createUsuario(req, res, next)$
         +getUsuarios(req, res, next)$
-        +getUsuarioById(req, res, next)$
-        +updateUsuario(req, res, next)$
-        +updateEstado(req, res, next)$
-        +updatePassword(req, res, next)$
-        +updateOwnPassword(req, res, next)$
     }
     class usuarioService {
         <<servicio>>
-        +createUsuario(datosUsuario)$
         +getUsuarios()$
-        +getUsuarioById(idUsuario, transaction)$
-        +updateUsuario(idUsuario, datosUsuario)$
-        +updateEstado(idUsuario, datosEstado)$
-        +updatePassword(idUsuario, datosPassword)$
-        +updateOwnPassword(idUsuario, datosPassword, versionCredenciales)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
         +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -496,7 +505,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class Rol {
         <<modelo>>
@@ -504,7 +512,6 @@ classDiagram
         -VARCHAR_60 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -539,7 +546,7 @@ classDiagram
 | `usuarioController` | `getUsuarioById(req,res,next)`; la función externa getIdUsuario valida params. |
 | `usuarioValidator` | `validateIdUsuario(data)` para el ID de ruta. |
 | `usuarioService` | `getUsuarioById(idUsuario,transaction)` consulta y construye DTO público. |
-| `usuarioRepository` | `findById(options)` incluye Rol y atributos públicos de Usuario. |
+| `usuarioRepository` | `findByIdForSession` para autenticar; `findById(options)` incluye Rol y atributos públicos de la cuenta consultada. |
 | `Usuario`, `Rol` | Cuenta consultada y su rol. |
 | `AppError` | ID inválido, cuenta inexistente o acceso rechazado. |
 
@@ -552,54 +559,24 @@ classDiagram
     class requireRole { <<funcion>> }
     class usuarioController {
         <<controller>>
-        +createUsuario(req, res, next)$
-        +getUsuarios(req, res, next)$
         +getUsuarioById(req, res, next)$
-        +updateUsuario(req, res, next)$
-        +updateEstado(req, res, next)$
-        +updatePassword(req, res, next)$
-        +updateOwnPassword(req, res, next)$
     }
     class usuarioValidator {
         <<validator>>
         +validateIdUsuario(data)$
-        +validateCreateUsuario(data)$
-        +validateUpdateUsuario(data)$
-        +validateUpdateEstado(data)$
-        +validateUpdatePassword(data)$
-        +validateUpdateOwnPassword(data)$
     }
     class usuarioService {
         <<servicio>>
-        +createUsuario(datosUsuario)$
-        +getUsuarios()$
         +getUsuarioById(idUsuario, transaction)$
-        +updateUsuario(idUsuario, datosUsuario)$
-        +updateEstado(idUsuario, datosEstado)$
-        +updatePassword(idUsuario, datosPassword)$
-        +updateOwnPassword(idUsuario, datosPassword, versionCredenciales)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
         +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -612,7 +589,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class Rol {
         <<modelo>>
@@ -620,7 +596,6 @@ classDiagram
         -VARCHAR_60 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -658,7 +633,7 @@ classDiagram
 | `usuarioController` | `updateUsuario(req,res,next)` valida ID/body y responde con cuenta actualizada. |
 | `usuarioValidator` | `validateIdUsuario`, `validateUpdateUsuario`; PATCH estricto no vacío, con nombre, rol y/o correo. |
 | `usuarioService` | `updateUsuario(idUsuario,datosUsuario)` y `getUsuarioById` para la respuesta dentro de la transacción. |
-| `usuarioRepository` | `findByIdForUpdate`, `updateUsuario`, `findById`; según campos, `findByNombreUsuario`, `findRolById`, `findByCorreo`. |
+| `usuarioRepository` | `findByIdForSession` para autenticar; `findByIdForUpdate`, `updateUsuario`, `findById` para modificar y responder; `findByNombreUsuario` si se envía nombre, `findRolById` si se envía rol, `findByCorreo` si se envía correo no nulo. |
 | `Usuario`, `Rol` | Cuenta bloqueada y datos públicos con rol; valida rol activo si se envía. |
 | `recuperacionPasswordRepository`, `RecuperacionPassword` | `invalidatePendingByUsuario` si el correo se cambia efectivamente o se retira. |
 | `AppError` | Validación, duplicados, rol/usuario inexistente, rol inactivo y acceso. |
@@ -674,64 +649,34 @@ classDiagram
     class requireRole { <<funcion>> }
     class usuarioController {
         <<controller>>
-        +createUsuario(req, res, next)$
-        +getUsuarios(req, res, next)$
-        +getUsuarioById(req, res, next)$
         +updateUsuario(req, res, next)$
-        +updateEstado(req, res, next)$
-        +updatePassword(req, res, next)$
-        +updateOwnPassword(req, res, next)$
     }
     class usuarioValidator {
         <<validator>>
         +validateIdUsuario(data)$
-        +validateCreateUsuario(data)$
         +validateUpdateUsuario(data)$
-        +validateUpdateEstado(data)$
-        +validateUpdatePassword(data)$
-        +validateUpdateOwnPassword(data)$
     }
     class usuarioService {
         <<servicio>>
-        +createUsuario(datosUsuario)$
-        +getUsuarios()$
         +getUsuarioById(idUsuario, transaction)$
         +updateUsuario(idUsuario, datosUsuario)$
-        +updateEstado(idUsuario, datosEstado)$
-        +updatePassword(idUsuario, datosPassword)$
-        +updateOwnPassword(idUsuario, datosPassword, versionCredenciales)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
         +findByNombreUsuario(options)$
-        +findAllUsuarios()$
         +findById(options)$
         +findByIdForUpdate(options)$
         +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
         +findRolById(options)$
-        +createUsuario(options)$
         +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class recuperacionPasswordRepository {
         <<repository>>
-        +findByIdForUpdate(options)$
-        +getCurrentDate(options)$
-        +incrementIpQuota(options)$
-        +findHistoryByUsuario(options)$
-        +findLatestByUsuario(options)$
-        +create(options)$
-        +updateById(options)$
         +invalidatePendingByUsuario(options)$
     }
     class Usuario {
@@ -745,7 +690,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class Rol {
         <<modelo>>
@@ -753,7 +697,6 @@ classDiagram
         -VARCHAR_60 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class RecuperacionPassword {
         <<modelo>>
@@ -766,7 +709,6 @@ classDiagram
         -TINYINT_UNSIGNED intentos_fallidos
         -DATETIME_3 consumida_en
         -DATETIME_3 invalidada_en
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -782,17 +724,19 @@ classDiagram
     requireRole ..> AppError
     authService ..> usuarioRepository : findByIdForSession
     authService ..> AppError
-    usuarioController ..> usuarioValidator : validar ID y PATCH
+    usuarioController ..> usuarioValidator : validateIdUsuario y validateUpdateUsuario
     usuarioController ..> usuarioService : updateUsuario
     usuarioController ..> AppError
     usuarioService ..> usuarioRepository : bloquear validar actualizar consultar
-    usuarioService ..> recuperacionPasswordRepository : si cambia correo
+    usuarioService ..> recuperacionPasswordRepository : invalidatePendingByUsuario si cambia o retira correo
     usuarioService ..> AppError
     usuarioRepository ..> Usuario
     usuarioRepository ..> Rol : validar rol e include
     recuperacionPasswordRepository ..> RecuperacionPassword : invalidatePendingByUsuario
     Rol "1" -- "0..*" Usuario : rol
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
+    note for usuarioService "updateUsuario llama a getUsuarioById dentro de la transaccion para la respuesta"
+    note for usuarioRepository "findByNombreUsuario si se envia nombre; findRolById si se envia rol; findByCorreo si correo no nulo"
 ```
 
 ### CU07. Activar o desactivar usuario
@@ -807,7 +751,7 @@ classDiagram
 | `usuarioController` | `updateEstado(req,res,next)` recibe exclusivamente `{ estado }` en el body. |
 | `usuarioValidator` | `validateIdUsuario` y `validateUpdateEstado`. |
 | `usuarioService` | `updateEstado(idUsuario,datosEstado)` y `getUsuarioById` antes/después. |
-| `usuarioRepository` | `findById`, `updateEstado`; además la comprobación de sesión común. |
+| `usuarioRepository` | `findByIdForSession` para autenticar; `findById`, `updateEstado` para comprobar existencia, cambiar estado y leer la respuesta. |
 | `Usuario`, `Rol` | Cambia solo estado de Usuario; las lecturas públicas incluyen Rol. |
 | `AppError` | ID/body inválido, cuenta inexistente, sesión/permisos. |
 
@@ -822,54 +766,27 @@ classDiagram
     class requireRole { <<funcion>> }
     class usuarioController {
         <<controller>>
-        +createUsuario(req, res, next)$
-        +getUsuarios(req, res, next)$
-        +getUsuarioById(req, res, next)$
-        +updateUsuario(req, res, next)$
         +updateEstado(req, res, next)$
-        +updatePassword(req, res, next)$
-        +updateOwnPassword(req, res, next)$
     }
     class usuarioValidator {
         <<validator>>
         +validateIdUsuario(data)$
-        +validateCreateUsuario(data)$
-        +validateUpdateUsuario(data)$
         +validateUpdateEstado(data)$
-        +validateUpdatePassword(data)$
-        +validateUpdateOwnPassword(data)$
     }
     class usuarioService {
         <<servicio>>
-        +createUsuario(datosUsuario)$
-        +getUsuarios()$
         +getUsuarioById(idUsuario, transaction)$
-        +updateUsuario(idUsuario, datosUsuario)$
         +updateEstado(idUsuario, datosEstado)$
-        +updatePassword(idUsuario, datosPassword)$
-        +updateOwnPassword(idUsuario, datosPassword, versionCredenciales)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
         +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
         +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -882,7 +799,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class Rol {
         <<modelo>>
@@ -890,7 +806,6 @@ classDiagram
         -VARCHAR_60 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -906,7 +821,7 @@ classDiagram
     requireRole ..> AppError
     authService ..> usuarioRepository : findByIdForSession
     authService ..> AppError
-    usuarioController ..> usuarioValidator : validar ID y estado
+    usuarioController ..> usuarioValidator : validateIdUsuario y validateUpdateEstado
     usuarioController ..> usuarioService : updateEstado
     usuarioController ..> AppError
     usuarioService ..> usuarioRepository : findById y updateEstado
@@ -914,6 +829,7 @@ classDiagram
     usuarioRepository ..> Usuario : findByPk y update
     usuarioRepository ..> Rol : include rol
     Rol "1" -- "0..*" Usuario : rol
+    note for usuarioService "updateEstado llama a getUsuarioById antes y despues de actualizar"
 ```
 
 ### CU08. Cambiar contraseña
@@ -932,7 +848,7 @@ classDiagram
 | `usuarioController` | `updateOwnPassword(req,res,next)` valida body, pasa versión autenticada y renueva cookie tras éxito. |
 | `usuarioValidator` | `validateUpdateOwnPassword(data)`; conserva compatibilidad de contraseña actual y exige política nueva. |
 | `usuarioService` | `updateOwnPassword(idUsuario,datosPassword,versionCredenciales)` verifica actual y revalida credenciales bajo bloqueo. |
-| `usuarioRepository` | `findByIdWithPassword` antes y dentro de transacción con lock; `updatePassword`. |
+| `usuarioRepository` | `findByIdForSession` para autenticar; `findByIdWithPassword` antes y dentro de transacción con lock; `updatePassword` para las credenciales. |
 | `recuperacionPasswordRepository` | `invalidatePendingByUsuario` en la misma transacción. |
 | `Usuario`, `RecuperacionPassword` | Cambia hash/versión, reinicia intentos/bloqueo e invalida emisiones pendientes. |
 | `AppError` | Sesión o contraseña actual inválida, datos incorrectos, cuenta inexistente y errores. |
@@ -949,64 +865,28 @@ classDiagram
     class authMiddleware { <<funcion>> }
     class usuarioController {
         <<controller>>
-        +createUsuario(req, res, next)$
-        +getUsuarios(req, res, next)$
-        +getUsuarioById(req, res, next)$
-        +updateUsuario(req, res, next)$
-        +updateEstado(req, res, next)$
-        +updatePassword(req, res, next)$
         +updateOwnPassword(req, res, next)$
     }
     class usuarioValidator {
         <<validator>>
-        +validateIdUsuario(data)$
-        +validateCreateUsuario(data)$
-        +validateUpdateUsuario(data)$
-        +validateUpdateEstado(data)$
-        +validateUpdatePassword(data)$
         +validateUpdateOwnPassword(data)$
     }
     class usuarioService {
         <<servicio>>
-        +createUsuario(datosUsuario)$
-        +getUsuarios()$
-        +getUsuarioById(idUsuario, transaction)$
-        +updateUsuario(idUsuario, datosUsuario)$
-        +updateEstado(idUsuario, datosEstado)$
-        +updatePassword(idUsuario, datosPassword)$
         +updateOwnPassword(idUsuario, datosPassword, versionCredenciales)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
         +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
         +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class recuperacionPasswordRepository {
         <<repository>>
-        +findByIdForUpdate(options)$
-        +getCurrentDate(options)$
-        +incrementIpQuota(options)$
-        +findHistoryByUsuario(options)$
-        +findLatestByUsuario(options)$
-        +create(options)$
-        +updateById(options)$
         +invalidatePendingByUsuario(options)$
     }
     class Usuario {
@@ -1020,7 +900,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class RecuperacionPassword {
         <<modelo>>
@@ -1033,7 +912,6 @@ classDiagram
         -TINYINT_UNSIGNED intentos_fallidos
         -DATETIME_3 consumida_en
         -DATETIME_3 invalidada_en
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -1058,6 +936,7 @@ classDiagram
     usuarioRepository ..> Usuario : findByPk y update
     recuperacionPasswordRepository ..> RecuperacionPassword : update
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
+    note for usuarioRepository "findByIdWithPassword se repite bajo bloqueo; updatePassword reinicia contador y bloqueo sin llamar a updateLoginSecurity"
 ```
 
 #### CU08 — B. Restablecimiento administrativo
@@ -1070,14 +949,14 @@ classDiagram
 | `usuarioController` | `updatePassword(req,res,next)` valida ID/body y devuelve mensaje de éxito. |
 | `usuarioValidator` | `validateIdUsuario`, `validateUpdatePassword`. |
 | `usuarioService` | `updatePassword(idUsuario,datosPassword)`; `getUsuarioById` para comprobar existencia. |
-| `usuarioRepository` | `findById` con Rol; `findByIdForUpdate`, `updatePassword` para la cuenta objetivo. |
+| `usuarioRepository` | `findByIdForSession` para autenticar; `findById` con Rol en la comprobación previa; `findByIdForUpdate`, `updatePassword` para la cuenta objetivo. |
 | `recuperacionPasswordRepository`, `RecuperacionPassword` | `invalidatePendingByUsuario` en la transacción del cambio. |
 | `Usuario`, `Rol` | Usuario objetivo; Rol se incluye en su consulta pública previa, no se modifica. |
 | `AppError` | Datos inválidos, cuenta inexistente y acceso rechazado. |
 
 **Relaciones y resultado:** verifica existencia, calcula bcrypt y bloquea la cuenta dentro de la transacción para actualizar hash/versión, limpiar bloqueo e invalidar recuperaciones. No exige ni muestra contraseña anterior; no cambia rol ni estado administrativo. Devuelve 200 sin emitir cookie de renovación para el usuario objetivo. Los JWT anteriores de esa cuenta quedan obsoletos, incluso si un Administrador restablece la suya por esta variante. Las cuotas permanecen intactas.
 
-Errores principales: 400, 401/403, 404 y 500. La búsqueda/listado para elegir la cuenta usa CU04; este dibujo se centra en el restablecimiento y las clases que ejecuta. LimiteRecuperacionIp no participa solo porque el Repository de recuperación tenga un método de cuota entre sus métodos completos.
+Errores principales: 400, 401/403, 404 y 500. La búsqueda/listado para elegir la cuenta usa CU04; este dibujo se centra en el restablecimiento y las clases que ejecuta. LimiteRecuperacionIp no participa: el único método ejecutado de recuperacionPasswordRepository es invalidatePendingByUsuario.
 
 ```mermaid
 classDiagram
@@ -1086,64 +965,31 @@ classDiagram
     class requireRole { <<funcion>> }
     class usuarioController {
         <<controller>>
-        +createUsuario(req, res, next)$
-        +getUsuarios(req, res, next)$
-        +getUsuarioById(req, res, next)$
-        +updateUsuario(req, res, next)$
-        +updateEstado(req, res, next)$
         +updatePassword(req, res, next)$
-        +updateOwnPassword(req, res, next)$
     }
     class usuarioValidator {
         <<validator>>
         +validateIdUsuario(data)$
-        +validateCreateUsuario(data)$
-        +validateUpdateUsuario(data)$
-        +validateUpdateEstado(data)$
         +validateUpdatePassword(data)$
-        +validateUpdateOwnPassword(data)$
     }
     class usuarioService {
         <<servicio>>
-        +createUsuario(datosUsuario)$
-        +getUsuarios()$
         +getUsuarioById(idUsuario, transaction)$
-        +updateUsuario(idUsuario, datosUsuario)$
-        +updateEstado(idUsuario, datosEstado)$
         +updatePassword(idUsuario, datosPassword)$
-        +updateOwnPassword(idUsuario, datosPassword, versionCredenciales)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
         +findById(options)$
         +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
         +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class recuperacionPasswordRepository {
         <<repository>>
-        +findByIdForUpdate(options)$
-        +getCurrentDate(options)$
-        +incrementIpQuota(options)$
-        +findHistoryByUsuario(options)$
-        +findLatestByUsuario(options)$
-        +create(options)$
-        +updateById(options)$
         +invalidatePendingByUsuario(options)$
     }
     class Usuario {
@@ -1157,7 +1003,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class Rol {
         <<modelo>>
@@ -1165,7 +1010,6 @@ classDiagram
         -VARCHAR_60 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class RecuperacionPassword {
         <<modelo>>
@@ -1178,7 +1022,6 @@ classDiagram
         -TINYINT_UNSIGNED intentos_fallidos
         -DATETIME_3 consumida_en
         -DATETIME_3 invalidada_en
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -1194,7 +1037,7 @@ classDiagram
     requireRole ..> AppError
     authService ..> usuarioRepository : findByIdForSession
     authService ..> AppError
-    usuarioController ..> usuarioValidator : validar ID y password
+    usuarioController ..> usuarioValidator : validateIdUsuario y validateUpdatePassword
     usuarioController ..> usuarioService : updatePassword
     usuarioController ..> AppError
     usuarioService ..> usuarioRepository : consultar bloquear y updatePassword
@@ -1205,6 +1048,7 @@ classDiagram
     recuperacionPasswordRepository ..> RecuperacionPassword : update
     Rol "1" -- "0..*" Usuario : rol
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
+    note for usuarioService "updatePassword llama a getUsuarioById antes de cambiar credenciales; no llama a updateOwnPassword"
 ```
 
 ### CU09. Restablecer contraseña mediante correo electrónico
@@ -1217,13 +1061,26 @@ classDiagram
 |---|---|
 | `authController` | `solicitarRecuperacion` y `restablecerPassword`; valida, comprueba configuración y pasa IP del socket al Service. |
 | `recuperacionPasswordValidator` | `validateSolicitud` y `validateRestablecimiento`; también invocados dentro del Service. |
-| `recuperacionPasswordService` | Los cinco métodos de la clase participan: solicitud, restablecimiento, cuota IP, espera pública e invalidación condicional por rechazo de correo. |
+| `recuperacionPasswordService` | `solicitarRecuperacion`, `restablecerPassword`, `verificarLimiteIp`, `esperarRespuesta` e `invalidarEnvioRechazado`; su participación por endpoint y condición se precisa en la matriz siguiente. |
 | `usuarioRepository` | `findByCorreo`, `findByIdForRecovery` y `updatePassword`. |
-| `recuperacionPasswordRepository` | Los ocho métodos participan entre cuota, emisión, rechazo explícito, verificación y consumo. |
+| `recuperacionPasswordRepository` | `getCurrentDate`, `incrementIpQuota`, `findHistoryByUsuario`, `invalidatePendingByUsuario`, `create`, `findByIdForUpdate`, `updateById` y `findLatestByUsuario`; los ocho participan entre cuota, emisión, rechazo explícito, verificación y consumo. |
 | `Usuario` | Correo, estado, hash y versión; cuenta bloqueada antes de emisiones/consumos definitivos. |
 | `RecuperacionPassword` | Historial de emisión, HMAC, nonce, vigencia, fallos, consumo e invalidación. |
 | `LimiteRecuperacionIp` | Cuotas persistentes por ámbito/IP protegida; PK compuesta, sin FK a Usuario. |
 | `AppError` | Datos/código inválidos, cuotas, indisponibilidad y errores. |
+
+**Métodos por endpoint:** se muestran los caminos alcanzables, incluidos errores y operaciones condicionales; no se afirma que todas estas llamadas se ejecuten en cada petición.
+
+| Clase | Solicitar código — `/recuperacion/solicitar` | Restablecer contraseña — `/recuperacion/restablecer` |
+|---|---|---|
+| `authController` | `solicitarRecuperacion` | `restablecerPassword` |
+| `recuperacionPasswordValidator` | `validateSolicitud`, en Controller y Service | `validateRestablecimiento`, en Controller y Service |
+| `recuperacionPasswordService` | `solicitarRecuperacion` llama a `verificarLimiteIp`; `esperarRespuesta` en finally del bloque de solicitud; `invalidarEnvioRechazado` solo si el transporte rechaza explícitamente | `restablecerPassword` llama a `verificarLimiteIp`; no ejecuta espera pública ni invalidación por envío |
+| `usuarioRepository` | `findByCorreo`; `findByIdForRecovery` si hay cuenta, mediante findCurrentUsuario externo y también al invalidar un envío rechazado | `findByCorreo`; `findByIdForRecovery` en preverificación y revalidación mediante findCurrentUsuario; `updatePassword` solo al consumir válidamente |
+| `recuperacionPasswordRepository` | `getCurrentDate`, `incrementIpQuota`; `findHistoryByUsuario` para cuota/códigos recientes; `invalidatePendingByUsuario` y `create` al emitir; `findByIdForUpdate` tras rechazo explícito y `updateById` si la emisión sigue pendiente y coincide el nonce | `getCurrentDate`, `incrementIpQuota`; `findLatestByUsuario` en ambas verificaciones; `updateById` para fallos/invalidez/consumo según camino; `invalidatePendingByUsuario` tras cambio válido |
+| `AppError` | Constructor en ramas de entrada, cuotas, configuración o fallo conocido | Constructor en ramas de entrada, cuotas, configuración o código/estado inválido |
+
+**Selección de métodos corregida:** el diagrama reúne la unión de los métodos de ambos endpoints. findByIdForSession, login, logout y me pertenecen a otros flujos; el reinicio de contador/bloqueo ocurre dentro de updatePassword, sin llamar a updateLoginSecurity. Las funciones externas findCurrentUsuario, isUsable, matchesCode y verificationError no se agregan como métodos del Service. esperarRespuesta empieza después de admitir la cuota IP y crear el transporte; no se ejecuta ante rechazo anterior a ese bloque. Los modelos conservan sus atributos completos, pero omiten associate(models), que configura relaciones al iniciar el sistema.
 
 **Relaciones:** Controller → Validator/Service; Service → Validator y ambos Repositories; usuarioRepository → Usuario; recuperacionPasswordRepository → RecuperacionPassword/LimiteRecuperacionIp. Usuario tiene `0..*` recuperaciones y cada recuperación pertenece a un Usuario. No se consulta Rol, no se llama authService y no hay requisito de sesión. El rol del actor identifica quién puede usar el objetivo, no una autorización JWT de la ruta pública.
 
@@ -1242,9 +1099,6 @@ classDiagram
         <<controller>>
         +solicitarRecuperacion(req, res, next)$
         +restablecerPassword(req, res, next)$
-        +login(req, res, next)$
-        +logout(req, res, next)$
-        +me(req, res, next)$
     }
     class recuperacionPasswordValidator {
         <<validator>>
@@ -1261,20 +1115,9 @@ classDiagram
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
         +findByCorreo(options)$
         +findByIdForRecovery(options)$
-        +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
         +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class recuperacionPasswordRepository {
         <<repository>>
@@ -1298,7 +1141,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class RecuperacionPassword {
         <<modelo>>
@@ -1311,7 +1153,6 @@ classDiagram
         -TINYINT_UNSIGNED intentos_fallidos
         -DATETIME_3 consumida_en
         -DATETIME_3 invalidada_en
-        +associate(models)$
     }
     class LimiteRecuperacionIp {
         <<modelo>>
@@ -1329,11 +1170,11 @@ classDiagram
     Administrador --> authController : solicita y restablece desde pagina publica
     Regente --> authController : solicita y restablece desde pagina publica
     Vendedor --> authController : solicita y restablece desde pagina publica
-    authController ..> recuperacionPasswordValidator : validar solicitud y consumo
+    authController ..> recuperacionPasswordValidator : validateSolicitud o validateRestablecimiento
     authController ..> recuperacionPasswordService : solicitarRecuperacion y restablecerPassword
     authController ..> AppError
-    recuperacionPasswordService ..> recuperacionPasswordValidator : revalidar entrada
-    recuperacionPasswordService ..> usuarioRepository : correo bloqueo y updatePassword
+    recuperacionPasswordService ..> recuperacionPasswordValidator : validateSolicitud o validateRestablecimiento
+    recuperacionPasswordService ..> usuarioRepository : findByCorreo findByIdForRecovery y updatePassword al consumir
     recuperacionPasswordService ..> recuperacionPasswordRepository : cuota emision verificacion consumo
     recuperacionPasswordService ..> AppError
     usuarioRepository ..> Usuario : findOne findByPk update
@@ -1341,25 +1182,29 @@ classDiagram
     recuperacionPasswordRepository ..> LimiteRecuperacionIp : incrementIpQuota
     Usuario "1" -- "0..*" RecuperacionPassword : recuperacionesPassword
     note for LimiteRecuperacionIp "PK ambito y clave_ip_hmac; sin FK a Usuario"
+    note for recuperacionPasswordService "verificarLimiteIp en ambos endpoints; esperarRespuesta solo en solicitud; invalidarEnvioRechazado solo tras rechazo explicito"
+    note for recuperacionPasswordRepository "findHistoryByUsuario en solicitud; findLatestByUsuario en consumo; findByIdForUpdate solo tras rechazo de envio"
 ```
 
 ## 2. Cierre y revisión de Fase 1
 
 | Caso | Diagramas | Estado |
 |---|---|---|
-| CU01 — Iniciar sesión | 1 | Elaborado |
-| CU02 — Cerrar sesión | 1 | Elaborado |
-| CU03 — Crear usuario | 1 | Elaborado |
-| CU04 — Consultar usuarios | 1 | Elaborado |
-| CU05 — Consultar usuario por ID | 1 | Elaborado |
-| CU06 — Modificar usuario | 1 | Elaborado |
-| CU07 — Activar/desactivar usuario | 1 | Elaborado |
-| CU08 — Cambiar contraseña | 2, variantes propia/administrativa | Elaborado |
-| CU09 — Recuperación por correo | 1, integra solicitud y restablecimiento | Elaborado |
+| CU01 — Iniciar sesión | 1 | Elaborado; métodos por CU corregidos |
+| CU02 — Cerrar sesión | 1 | Elaborado; métodos por CU corregidos |
+| CU03 — Crear usuario | 1 | Elaborado; métodos por CU corregidos |
+| CU04 — Consultar usuarios | 1 | Elaborado; métodos por CU corregidos |
+| CU05 — Consultar usuario por ID | 1 | Elaborado; métodos por CU corregidos |
+| CU06 — Modificar usuario | 1 | Elaborado; métodos por CU corregidos |
+| CU07 — Activar/desactivar usuario | 1 | Elaborado; métodos por CU corregidos |
+| CU08 — Cambiar contraseña | 2, variantes propia/administrativa | Elaborado; métodos por variante corregidos |
+| CU09 — Recuperación por correo | 1, integra solicitud y restablecimiento | Elaborado; métodos por CU corregidos; revisión pendiente |
 
-**Verificación de esta entrega:** se contrastaron 15 clases reales, 26 atributos persistentes y 61 operaciones propias, comprobando cada aparición completa de clase en los diagramas. Las firmas de Services/Repositories, los archivos referidos, los tipos y las cardinalidades se comprobaron contra el código y los metadatos de Sequelize. Los 10 diagramas se analizaron y renderizaron localmente a SVG con Mermaid 11.12.0, sin errores. Se revisó el formato del Markdown. Estas comprobaciones no abrieron conexiones MySQL.
+**Verificación de la entrega inicial:** se contrastaron 15 clases reales, 26 atributos persistentes y 61 operaciones propias de las clases completas, con firmas, archivos, tipos y cardinalidades comprobados contra código y metadatos Sequelize. Sus 10 diagramas se analizaron y renderizaron localmente a SVG con Mermaid 11.12.0, sin errores ni conexiones MySQL.
 
-**Puntos de revisión:** actores y variantes; presencia de autenticación previa en rutas protegidas; clase completa frente a métodos ejecutados; relaciones Usuario/Rol y Usuario/RecuperacionPassword; cuota IP solo en CU09; auxiliares externos separados de miembros; datos persistidos frente a DTO/estado local; transacciones según código real.
+**Corrección de Fase 1:** sus 10 diagramas ahora seleccionan únicamente los métodos utilizados por CU01–CU09. Se conservan las 15 clases participantes y los 26 atributos persistentes; se seleccionan 57 operaciones propias distintas, contadas por clase/método, en 102 apariciones de operaciones entre los dibujos. associate(models) y authController.me no se seleccionan, porque pertenecen a configuración inicial y apoyo de sesión de otra solicitud. La verificación final del bloque Recuperación se registra en 0.5.
+
+**Puntos de revisión:** actores y variantes; presencia de autenticación previa en rutas protegidas; métodos específicos por CU, incluidas llamadas internas y condicionales; relaciones Usuario/Rol y Usuario/RecuperacionPassword; cuota IP solo en CU09; auxiliares externos separados de miembros; datos persistidos frente a DTO/estado local; transacciones según código real; solicitud/consumo/rechazo de envío diferenciados en CU09.
 
 Este análisis documenta la implementación encontrada, con sus dependencias y límites. La validación del envío real de correo y la configuración de CU09 siguen siendo aspectos operativos independientes. La Fase 2 se incorpora a continuación por solicitud de continuidad del usuario.
 
@@ -1398,7 +1243,7 @@ El modelo declara `static associate(models)` y utiliza `timestamps: false`. Son 
 | `proveedorLaboratorioRepository` | `findAll()`; `findById({ idProveedorLaboratorio })`; `create({ nombre, telefono, direccion, estado })`; `update({ idProveedorLaboratorio, data })`; `updateEstado({ idProveedorLaboratorio, estado })` |
 | `proveedorLaboratorioValidator` | `validateId(data)`; `validateCreate(data)`; `validateUpdate(data)`; `validateUpdateEstado(data)` |
 
-Todos son públicos y estáticos; Controller, Service y Repository usan métodos async, Validator usa métodos síncronos. Estas cuatro clases no declaran atributos propios. Las cinco clases nuevas aportan **20 operaciones propias**, contando `associate(models)`.
+Todos son públicos y estáticos; Controller, Service y Repository usan métodos async, Validator usa métodos síncronos. Estas cuatro clases no declaran atributos propios. Este inventario de clases completas aporta **20 operaciones propias**, contando `associate(models)`; los diagramas por CU seleccionan solo las ejecutadas y omiten esa operación de configuración inicial.
 
 **Funciones y objetos externos relevantes:**
 
@@ -1454,33 +1299,18 @@ classDiagram
     class proveedorLaboratorioController {
         <<controller>>
         +createProveedorLaboratorio(req, res, next)$
-        +getProveedoresLaboratorios(req, res, next)$
-        +getProveedorLaboratorioById(req, res, next)$
-        +updateProveedorLaboratorio(req, res, next)$
-        +updateEstado(req, res, next)$
     }
     class proveedorLaboratorioValidator {
         <<validator>>
-        +validateId(data)$
         +validateCreate(data)$
-        +validateUpdate(data)$
-        +validateUpdateEstado(data)$
     }
     class proveedorLaboratorioService {
         <<servicio>>
         +createProveedorLaboratorio(data)$
-        +getProveedoresLaboratorios()$
-        +getProveedorLaboratorioById(idProveedorLaboratorio)$
-        +updateProveedorLaboratorio(idProveedorLaboratorio, data)$
-        +updateEstado(idProveedorLaboratorio, datosEstado)$
     }
     class proveedorLaboratorioRepository {
         <<repository>>
-        +findAll()$
-        +findById(options)$
         +create(datos)$
-        +update(options)$
-        +updateEstado(options)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -1489,29 +1319,14 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -1524,7 +1339,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -1546,6 +1360,7 @@ classDiagram
     proveedorLaboratorioController ..> AppError : datos invalidos
     proveedorLaboratorioService ..> proveedorLaboratorioRepository : create
     proveedorLaboratorioRepository ..> ProveedorLaboratorio : create heredado de Sequelize
+    note for proveedorLaboratorioService "createProveedorLaboratorio devuelve el DTO de la instancia creada sin otra consulta por ID"
 ```
 
 ### CU11. Consultar proveedores o laboratorios
@@ -1578,34 +1393,22 @@ classDiagram
     class requireRole { <<funcion>> }
     class proveedorLaboratorioController {
         <<controller>>
-        +createProveedorLaboratorio(req, res, next)$
         +getProveedoresLaboratorios(req, res, next)$
         +getProveedorLaboratorioById(req, res, next)$
-        +updateProveedorLaboratorio(req, res, next)$
-        +updateEstado(req, res, next)$
     }
     class proveedorLaboratorioValidator {
         <<validator>>
         +validateId(data)$
-        +validateCreate(data)$
-        +validateUpdate(data)$
-        +validateUpdateEstado(data)$
     }
     class proveedorLaboratorioService {
         <<servicio>>
-        +createProveedorLaboratorio(data)$
         +getProveedoresLaboratorios()$
         +getProveedorLaboratorioById(idProveedorLaboratorio)$
-        +updateProveedorLaboratorio(idProveedorLaboratorio, data)$
-        +updateEstado(idProveedorLaboratorio, datosEstado)$
     }
     class proveedorLaboratorioRepository {
         <<repository>>
         +findAll()$
         +findById(options)$
-        +create(datos)$
-        +update(options)$
-        +updateEstado(options)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -1614,29 +1417,14 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -1649,7 +1437,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -1673,6 +1460,7 @@ classDiagram
     proveedorLaboratorioService ..> proveedorLaboratorioRepository : findAll o findById
     proveedorLaboratorioService ..> AppError : registro no encontrado
     proveedorLaboratorioRepository ..> ProveedorLaboratorio : findAll o findByPk
+    note for proveedorLaboratorioValidator "validateId solo en detalle; el listado no ejecuta Validator"
 ```
 
 ### CU12. Modificar proveedor o laboratorio
@@ -1704,34 +1492,22 @@ classDiagram
     class requireRole { <<funcion>> }
     class proveedorLaboratorioController {
         <<controller>>
-        +createProveedorLaboratorio(req, res, next)$
-        +getProveedoresLaboratorios(req, res, next)$
-        +getProveedorLaboratorioById(req, res, next)$
         +updateProveedorLaboratorio(req, res, next)$
-        +updateEstado(req, res, next)$
     }
     class proveedorLaboratorioValidator {
         <<validator>>
         +validateId(data)$
-        +validateCreate(data)$
         +validateUpdate(data)$
-        +validateUpdateEstado(data)$
     }
     class proveedorLaboratorioService {
         <<servicio>>
-        +createProveedorLaboratorio(data)$
-        +getProveedoresLaboratorios()$
         +getProveedorLaboratorioById(idProveedorLaboratorio)$
         +updateProveedorLaboratorio(idProveedorLaboratorio, data)$
-        +updateEstado(idProveedorLaboratorio, datosEstado)$
     }
     class proveedorLaboratorioRepository {
         <<repository>>
-        +findAll()$
         +findById(options)$
-        +create(datos)$
         +update(options)$
-        +updateEstado(options)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -1740,29 +1516,14 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -1775,7 +1536,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -1798,6 +1558,7 @@ classDiagram
     proveedorLaboratorioService ..> proveedorLaboratorioRepository : findById update findById
     proveedorLaboratorioService ..> AppError : registro no encontrado
     proveedorLaboratorioRepository ..> ProveedorLaboratorio : findByPk y update
+    note for proveedorLaboratorioService "updateProveedorLaboratorio llama a getProveedorLaboratorioById antes y despues de escribir"
 ```
 
 ### CU13. Activar o desactivar proveedor o laboratorio
@@ -1829,33 +1590,21 @@ classDiagram
     class requireRole { <<funcion>> }
     class proveedorLaboratorioController {
         <<controller>>
-        +createProveedorLaboratorio(req, res, next)$
-        +getProveedoresLaboratorios(req, res, next)$
-        +getProveedorLaboratorioById(req, res, next)$
-        +updateProveedorLaboratorio(req, res, next)$
         +updateEstado(req, res, next)$
     }
     class proveedorLaboratorioValidator {
         <<validator>>
         +validateId(data)$
-        +validateCreate(data)$
-        +validateUpdate(data)$
         +validateUpdateEstado(data)$
     }
     class proveedorLaboratorioService {
         <<servicio>>
-        +createProveedorLaboratorio(data)$
-        +getProveedoresLaboratorios()$
         +getProveedorLaboratorioById(idProveedorLaboratorio)$
-        +updateProveedorLaboratorio(idProveedorLaboratorio, data)$
         +updateEstado(idProveedorLaboratorio, datosEstado)$
     }
     class proveedorLaboratorioRepository {
         <<repository>>
-        +findAll()$
         +findById(options)$
-        +create(datos)$
-        +update(options)$
         +updateEstado(options)$
     }
     class ProveedorLaboratorio {
@@ -1865,29 +1614,14 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -1900,7 +1634,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -1923,20 +1656,23 @@ classDiagram
     proveedorLaboratorioService ..> proveedorLaboratorioRepository : findById updateEstado findById
     proveedorLaboratorioService ..> AppError : registro no encontrado
     proveedorLaboratorioRepository ..> ProveedorLaboratorio : findByPk y update de estado
+    note for proveedorLaboratorioService "updateEstado llama a getProveedorLaboratorioById antes y despues de escribir"
 ```
 
 ## 4. Cierre y revisión de Fase 2
 
 | Caso | Diagramas | Estado |
 |---|---|---|
-| CU10 — Registrar proveedor o laboratorio | 1 | Elaborado |
-| CU11 — Consultar proveedores o laboratorios | 1, integra listado y detalle | Elaborado |
-| CU12 — Modificar proveedor o laboratorio | 1 | Elaborado |
-| CU13 — Activar/desactivar proveedor o laboratorio | 1 | Elaborado |
+| CU10 — Registrar proveedor o laboratorio | 1 | Elaborado; métodos por CU corregidos |
+| CU11 — Consultar proveedores o laboratorios | 1, integra listado y detalle | Elaborado; métodos por camino corregidos |
+| CU12 — Modificar proveedor o laboratorio | 1 | Elaborado; métodos por CU corregidos |
+| CU13 — Activar/desactivar proveedor o laboratorio | 1 | Elaborado; métodos por CU corregidos |
 
-**Verificación de esta entrega:** se contrastaron los cuatro diagramas nuevos contra nueve clases participantes: cinco del módulo y cuatro de autenticación/errores. Contienen 14 atributos persistentes y 38 operaciones propias, contando los miembros completos de las clases compartidas; el módulo aporta cinco atributos y 20 operaciones nuevas. Se comprobaron firmas, archivos, tipos, actores, dependencias de sesión y las dos asociaciones de contexto mediante código y metadatos de Sequelize. Se verificó también el documento acumulado: 20 clases reales, 31 atributos persistentes y 81 operaciones propias. Los 14 diagramas de ambas fases se analizaron y renderizaron localmente a SVG con Mermaid 11.12.0, sin errores ni conexiones MySQL. Se revisó el formato del Markdown.
+**Verificación de la entrega inicial:** se contrastaron los cuatro diagramas contra nueve clases participantes, 14 atributos persistentes y 38 operaciones propias de las clases completas. El inventario del módulo aportó cinco atributos y 20 operaciones, incluido associate(models). Se comprobaron firmas, archivos, tipos, actores, dependencias de sesión y las dos asociaciones de contexto mediante código y metadatos Sequelize. El inventario acumulado de Fases 1 y 2 comprendió 20 clases reales, 31 atributos persistentes y 81 operaciones propias. Los 14 diagramas iniciales se renderizaron con Mermaid 11.12.0 sin errores ni conexiones MySQL.
 
-**Puntos de revisión:** actores de consulta frente a administración; miembros propios completos y métodos utilizados; DTO/atributos persistentes; estado opcional al crear y separado en edición; listado/detalle activos e inactivos; relaciones de contexto y ausencia de cascadas; RN11 como verificación humana; secuencias de lectura/escritura según el código real.
+**Corrección de Fase 2:** los cuatro dibujos seleccionan 22 operaciones propias distintas, contadas por clase/método, en 37 apariciones; incluyen llamadas internas, validación condicional en CU11, autenticación previa y constructor de AppError. Se conservan las nueve clases participantes, sus 14 atributos persistentes y los dos atributos de AppError. associate(models) se omite de los modelos por CU. La verificación de esta corrección se registra en 0.5.
+
+**Puntos de revisión:** actores de consulta frente a administración; métodos específicos por CU y llamadas internas de lectura antes/después; Validator solo en detalle de CU11; DTO/atributos persistentes; estado opcional al crear y separado en edición; listado/detalle activos e inactivos; relaciones de contexto y ausencia de cascadas; RN11 como verificación humana; secuencias de lectura/escritura según el código real.
 
 **Avance al cierre de Fase 2:** 13 de los 33 CU implementados analizados, con 14 diagramas. La Fase 3 se incorpora a continuación por solicitud de continuidad del usuario.
 
@@ -1964,7 +1700,7 @@ classDiagram
 | `principioActivoValidator` | `backend/src/business/validators/principio-activo.validator.js` |
 | `composicionMedicamentoValidator` | `backend/src/business/validators/composicion-medicamento.validator.js` |
 
-Se reutilizan ProveedorLaboratorio y las cuatro clases de autenticación/errores de las fases anteriores. Cada diagrama incluye sus miembros completos cuando participan. Las nuevas clases Controller/Service/Repository/Validator no declaran atributos propios. Todos sus métodos son públicos y estáticos; salvo Validators, son async.
+Se reutilizan ProveedorLaboratorio y las cuatro clases de autenticación/errores de las fases anteriores. Este inventario describe las clases completas; cada diagrama selecciona únicamente sus métodos propios utilizados en el CU y mantiene los atributos completos. Las nuevas clases Controller/Service/Repository/Validator no declaran atributos propios. Todos sus métodos son públicos y estáticos; salvo Validators, son async.
 
 **Controllers:** medicamentoController declara cinco métodos: `getMedicamentos`, `getMedicamentoById`, `createMedicamento`, `updateMedicamento`, `updateEstado`. principioActivoController declara cinco: `getPrincipiosActivos`, `getPrincipioActivoById`, `createPrincipioActivo`, `updatePrincipioActivo`, `updateEstado`. composicionMedicamentoController declara cuatro: `getComposicionMedicamento`, `createComposicion`, `updateComposicion`, `removeComposicion`. Todos reciben `(req, res, next)`.
 
@@ -1986,7 +1722,7 @@ Se reutilizan ProveedorLaboratorio y las cuatro clases de autenticación/errores
 
 **Validators:** todos reciben `(data)`. medicamentoValidator declara `validateId`, `validateCreate`, `validateUpdate`, `validateUpdateEstado`, `validateFiltros`; principioActivoValidator declara `validateId`, `validateCreate`, `validateUpdate`, `validateUpdateEstado`; composicionMedicamentoValidator declara `validateMedicamentoId`, `validateId`, `validateCreate`, `validateUpdate`.
 
-**Modelos:** Medicamento tiene 12 atributos, PrincipioActivo 4, ComposicionMedicamento 7, ExistenciaMedicamento 7 y MovimientoInventario 12. Son 42 atributos persistentes nuevos en el análisis; todos esos modelos declaran únicamente `associate(models)` como método propio. Los tipos `DECIMAL_12_4`, `DECIMAL_14_6`, `DATE` y `ENUM_DIA_MES`/`ENUM_ENTRADA_SALIDA` representan DECIMAL(12,4), DECIMAL(14,6), DATEONLY SQL DATE y los ENUM reales. Restricciones y nulabilidad completas: `diagrama-clases.md`.
+**Modelos:** Medicamento tiene 12 atributos, PrincipioActivo 4, ComposicionMedicamento 7, ExistenciaMedicamento 7 y MovimientoInventario 12. Son 42 atributos persistentes nuevos en el análisis; todos esos modelos declaran únicamente `associate(models)` como método propio, omitido de los dibujos por CU porque configura asociaciones al iniciar el sistema. Los tipos `DECIMAL_12_4`, `DECIMAL_14_6`, `DATE` y `ENUM_DIA_MES`/`ENUM_ENTRADA_SALIDA` representan DECIMAL(12,4), DECIMAL(14,6), DATEONLY SQL DATE y los ENUM reales. Restricciones y nulabilidad completas: `diagrama-clases.md`.
 
 **Funciones externas:** `generarCodigo`, `obtenerPrefijoMedicamento`, `toModelData`, `toPublicMedicamento`, `toPublicComposicion`, `validateCodigoNoEnviado` y `esColisionCodigo` apoyan Medicamento. `prepararModificacion`, `validarResultado` y `getComposicion` apoyan Composición. `validateNombreDisponible`, `handleDuplicateDatabaseError` y `toPublicPrincipioActivo` apoyan Principios. Los Controllers tienen getValidatedData y funciones para obtener IDs fuera de sus clases; los esquemas Zod y helpers de texto/cantidad también son externos. No se incorporan como métodos de las clases.
 
@@ -2050,52 +1786,30 @@ classDiagram
     class requireRole { <<funcion>> }
     class medicamentoController {
         <<controller>>
-        +getMedicamentos(req, res, next)$
-        +getMedicamentoById(req, res, next)$
         +createMedicamento(req, res, next)$
-        +updateMedicamento(req, res, next)$
-        +updateEstado(req, res, next)$
     }
     class medicamentoValidator {
         <<validator>>
-        +validateId(data)$
         +validateCreate(data)$
-        +validateUpdate(data)$
-        +validateUpdateEstado(data)$
-        +validateFiltros(data)$
     }
     class medicamentoService {
         <<servicio>>
-        +getMedicamentos(filtros)$
         +getMedicamentoById(idMedicamento, transaction)$
-        +getMedicamentoForUpdate(idMedicamento, transaction)$
-        +validateSinHistorial(idMedicamento, transaction)$
         +createMedicamento(data)$
-        +updateMedicamento(idMedicamento, data)$
-        +updateEstado(idMedicamento, datosEstado)$
     }
     class medicamentoRepository {
         <<repository>>
-        +findAll(filtros)$
         +findById(options)$
         +findByCodigo(options)$
         +findMayorCorrelativo(options)$
         +findProveedorById(options)$
         +findDuplicadosIdentidad(options)$
-        +hasMovimientos(options)$
         +create(options)$
-        +update(options)$
-        +updateEstado(options)$
     }
     class composicionMedicamentoRepository {
         <<repository>>
-        +findAllForMedicamento(options)$
-        +findById(options)$
-        +findByPrincipio(options)$
         +findPrincipioById(options)$
         +create(options)$
-        +update(options)$
-        +remove(options)$
     }
     class Medicamento {
         <<modelo>>
@@ -2111,7 +1825,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -2120,7 +1833,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class PrincipioActivo {
         <<modelo>>
@@ -2128,7 +1840,6 @@ classDiagram
         -VARCHAR_150 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ComposicionMedicamento {
         <<modelo>>
@@ -2139,29 +1850,14 @@ classDiagram
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
         -VARCHAR_30 unidad_referencia
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -2174,7 +1870,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -2207,6 +1902,8 @@ classDiagram
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
     note for Medicamento "CU14 exige al menos un componente; generarCodigo es funcion externa"
+    note for medicamentoService "createMedicamento llama a getMedicamentoById para lectura final dentro de la transaccion"
+    note for medicamentoRepository "findProveedorById y findDuplicadosIdentidad via funciones externas; generacion de codigo puede repetirse por colision"
 ```
 
 ### CU15. Consultar o buscar medicamento
@@ -2225,6 +1922,13 @@ classDiagram
 | `Medicamento`, `ProveedorLaboratorio`, `ComposicionMedicamento`, `PrincipioActivo` | Lectura del producto y sus asociaciones completas para el DTO. |
 | `AppError` | Query/ID inválidos, producto inexistente y acceso rechazado. |
 
+| Camino de CU15 | Controller | Validator | Service | Repository |
+|---|---|---|---|---|
+| Listado/búsqueda | `getMedicamentos` | `validateFiltros` | `getMedicamentos` | `findAll` |
+| Detalle por ID | `getMedicamentoById` | `validateId` | `getMedicamentoById` | `findById` |
+
+El diagrama reúne ambos caminos; una solicitud ejecuta únicamente la fila correspondiente. Las consultas opcionales del filtro por principios permanecen dentro de findAll y se detallan en CU20.
+
 **Ejecución y resultado:** código/nombre utilizan LIKE de contiene con escape de `%`, `_` y barra para tratarlos como texto; filtros combinados se aplican juntos. No hay filtro de estado/paginación en este contrato: conserva activos e inactivos, incluidos históricos sin composición. Orden por ID de medicamento y componente. La composición recibida siempre incluye todos los componentes; decimales como cadenas. La ficha no calcula stock ni historial; sus enlaces invocan las consultas correspondientes.
 
 La búsqueda textual automática actual espera **350 ms**, conserva filtros en URL mediante replace e invalida respuestas anteriores al cambiar el borrador. No se atribuye al módulo el debounce de otros listados. Respuesta 200 con lista (posiblemente vacía) o DTO por ID; 400, 401/403, 404 por ID inexistente o 500. Son consultas sin escrituras ni transacción de negocio explícita. Las cardinalidades aparecen en el diagrama; asociar el proveedor en lectura no ejecuta proveedorLaboratorioService.
@@ -2240,40 +1944,21 @@ classDiagram
         <<controller>>
         +getMedicamentos(req, res, next)$
         +getMedicamentoById(req, res, next)$
-        +createMedicamento(req, res, next)$
-        +updateMedicamento(req, res, next)$
-        +updateEstado(req, res, next)$
     }
     class medicamentoValidator {
         <<validator>>
         +validateId(data)$
-        +validateCreate(data)$
-        +validateUpdate(data)$
-        +validateUpdateEstado(data)$
         +validateFiltros(data)$
     }
     class medicamentoService {
         <<servicio>>
         +getMedicamentos(filtros)$
         +getMedicamentoById(idMedicamento, transaction)$
-        +getMedicamentoForUpdate(idMedicamento, transaction)$
-        +validateSinHistorial(idMedicamento, transaction)$
-        +createMedicamento(data)$
-        +updateMedicamento(idMedicamento, data)$
-        +updateEstado(idMedicamento, datosEstado)$
     }
     class medicamentoRepository {
         <<repository>>
         +findAll(filtros)$
         +findById(options)$
-        +findByCodigo(options)$
-        +findMayorCorrelativo(options)$
-        +findProveedorById(options)$
-        +findDuplicadosIdentidad(options)$
-        +hasMovimientos(options)$
-        +create(options)$
-        +update(options)$
-        +updateEstado(options)$
     }
     class Medicamento {
         <<modelo>>
@@ -2289,7 +1974,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -2298,7 +1982,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class PrincipioActivo {
         <<modelo>>
@@ -2306,7 +1989,6 @@ classDiagram
         -VARCHAR_150 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ComposicionMedicamento {
         <<modelo>>
@@ -2317,29 +1999,14 @@ classDiagram
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
         -VARCHAR_30 unidad_referencia
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -2352,7 +2019,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -2383,6 +2049,8 @@ classDiagram
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
+    note for medicamentoValidator "Listado: validateFiltros; detalle: validateId"
+    note for medicamentoRepository "Listado: findAll; detalle: findById; no se ejecutan ambos por solicitud"
 ```
 
 ### CU16. Modificar medicamento
@@ -2397,7 +2065,7 @@ classDiagram
 | `medicamentoController`, `medicamentoValidator` | `updateMedicamento`; `validateId`, `validateUpdate` para PATCH estricto/no vacío. |
 | `medicamentoService` | `updateMedicamento`, `getMedicamentoForUpdate`, `getMedicamentoById`; `validateSinHistorial` si cambian campos protegidos. |
 | `medicamentoRepository` | `findById`, `findProveedorById`, `update`; condicionalmente `hasMovimientos` y `findDuplicadosIdentidad`. |
-| `composicionMedicamentoRepository` | `findAllForMedicamento` si cambian atributos de identidad, para comparar composición actual completa. |
+| `composicionMedicamentoRepository` | `findAllForMedicamento` si cambia efectivamente nombre comercial o algún campo de identidad protegida, para comparar composición actual completa. |
 | `Medicamento`, `ProveedorLaboratorio` | Producto propio bloqueado; proveedores origen/destino bloqueados; actualización y lectura final. |
 | `ComposicionMedicamento`, `PrincipioActivo` | Composición para unicidad y asociaciones de lectura final. |
 | `ExistenciaMedicamento`, `MovimientoInventario` | Comprobación condicional de historial: bloquear existencias y buscar un movimiento asociado. |
@@ -2416,52 +2084,31 @@ classDiagram
     class requireRole { <<funcion>> }
     class medicamentoController {
         <<controller>>
-        +getMedicamentos(req, res, next)$
-        +getMedicamentoById(req, res, next)$
-        +createMedicamento(req, res, next)$
         +updateMedicamento(req, res, next)$
-        +updateEstado(req, res, next)$
     }
     class medicamentoValidator {
         <<validator>>
         +validateId(data)$
-        +validateCreate(data)$
         +validateUpdate(data)$
-        +validateUpdateEstado(data)$
-        +validateFiltros(data)$
     }
     class medicamentoService {
         <<servicio>>
-        +getMedicamentos(filtros)$
         +getMedicamentoById(idMedicamento, transaction)$
         +getMedicamentoForUpdate(idMedicamento, transaction)$
         +validateSinHistorial(idMedicamento, transaction)$
-        +createMedicamento(data)$
         +updateMedicamento(idMedicamento, data)$
-        +updateEstado(idMedicamento, datosEstado)$
     }
     class medicamentoRepository {
         <<repository>>
-        +findAll(filtros)$
         +findById(options)$
-        +findByCodigo(options)$
-        +findMayorCorrelativo(options)$
         +findProveedorById(options)$
         +findDuplicadosIdentidad(options)$
         +hasMovimientos(options)$
-        +create(options)$
         +update(options)$
-        +updateEstado(options)$
     }
     class composicionMedicamentoRepository {
         <<repository>>
         +findAllForMedicamento(options)$
-        +findById(options)$
-        +findByPrincipio(options)$
-        +findPrincipioById(options)$
-        +create(options)$
-        +update(options)$
-        +remove(options)$
     }
     class Medicamento {
         <<modelo>>
@@ -2477,7 +2124,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -2486,7 +2132,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class PrincipioActivo {
         <<modelo>>
@@ -2494,7 +2139,6 @@ classDiagram
         -VARCHAR_150 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ComposicionMedicamento {
         <<modelo>>
@@ -2505,7 +2149,6 @@ classDiagram
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
         -VARCHAR_30 unidad_referencia
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -2516,7 +2159,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -2532,29 +2174,14 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -2567,7 +2194,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -2588,7 +2214,7 @@ classDiagram
     medicamentoController ..> medicamentoService : updateMedicamento
     medicamentoController ..> AppError
     medicamentoService ..> medicamentoRepository : bloquear comprobar actualizar leer
-    medicamentoService ..> composicionMedicamentoRepository : composicion actual si cambia identidad
+    medicamentoService ..> composicionMedicamentoRepository : findAllForMedicamento si cambia nombre o identidad protegida
     medicamentoService ..> AppError
     medicamentoRepository ..> Medicamento : findById update e identidad SQL
     medicamentoRepository ..> ProveedorLaboratorio : bloqueo e include
@@ -2603,6 +2229,8 @@ classDiagram
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
+    note for medicamentoService "updateMedicamento llama a getMedicamentoForUpdate y getMedicamentoById; validateSinHistorial solo si cambia identidad protegida"
+    note for medicamentoRepository "hasMovimientos solo si cambia identidad protegida; findDuplicadosIdentidad si cambia nombre o identidad protegida"
 ```
 
 ### CU17. Activar o desactivar medicamento
@@ -2632,40 +2260,22 @@ classDiagram
     class requireRole { <<funcion>> }
     class medicamentoController {
         <<controller>>
-        +getMedicamentos(req, res, next)$
-        +getMedicamentoById(req, res, next)$
-        +createMedicamento(req, res, next)$
-        +updateMedicamento(req, res, next)$
         +updateEstado(req, res, next)$
     }
     class medicamentoValidator {
         <<validator>>
         +validateId(data)$
-        +validateCreate(data)$
-        +validateUpdate(data)$
         +validateUpdateEstado(data)$
-        +validateFiltros(data)$
     }
     class medicamentoService {
         <<servicio>>
-        +getMedicamentos(filtros)$
         +getMedicamentoById(idMedicamento, transaction)$
         +getMedicamentoForUpdate(idMedicamento, transaction)$
-        +validateSinHistorial(idMedicamento, transaction)$
-        +createMedicamento(data)$
-        +updateMedicamento(idMedicamento, data)$
         +updateEstado(idMedicamento, datosEstado)$
     }
     class medicamentoRepository {
         <<repository>>
-        +findAll(filtros)$
         +findById(options)$
-        +findByCodigo(options)$
-        +findMayorCorrelativo(options)$
-        +findProveedorById(options)$
-        +findDuplicadosIdentidad(options)$
-        +hasMovimientos(options)$
-        +create(options)$
         +update(options)$
         +updateEstado(options)$
     }
@@ -2683,7 +2293,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -2692,7 +2301,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class PrincipioActivo {
         <<modelo>>
@@ -2700,7 +2308,6 @@ classDiagram
         -VARCHAR_150 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ComposicionMedicamento {
         <<modelo>>
@@ -2711,29 +2318,14 @@ classDiagram
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
         -VARCHAR_30 unidad_referencia
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -2746,7 +2338,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -2775,6 +2366,8 @@ classDiagram
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
+    note for medicamentoService "updateEstado llama a getMedicamentoForUpdate y getMedicamentoById dentro de la transaccion"
+    note for medicamentoRepository "updateEstado llama internamente a update; ambos son metodos propios ejecutados"
 ```
 
 ### CU18. Gestionar principios activos
@@ -2843,29 +2436,14 @@ classDiagram
         -VARCHAR_150 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -2878,7 +2456,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -2902,6 +2479,8 @@ classDiagram
     principioActivoService ..> principioActivoRepository : buscar validar persistir
     principioActivoService ..> AppError
     principioActivoRepository ..> PrincipioActivo : consultas create update heredados
+    note for principioActivoService "Metodos segun operacion; edicion y estado llaman a getPrincipioActivoById para lectura final; alta devuelve la instancia creada"
+    note for principioActivoRepository "findByNombre en alta y en edicion si se envia nombre; updateEstado llama a update"
 ```
 
 ### CU19. Gestionar composición de medicamento
@@ -2914,6 +2493,17 @@ classDiagram
 | Agregar componente | POST `/` | `createComposicion` | `validateMedicamentoId`, `validateCreate` |
 | Editar cantidades/unidades | PATCH `/:idComposicion` | `updateComposicion` | `validateId`, `validateUpdate` |
 | Retirar relación | DELETE `/:idComposicion` | `removeComposicion` | `validateId` |
+
+**Métodos de apoyo por variante:** los métodos de Controller/Validator y de composicionMedicamentoService corresponden a la matriz anterior. Las llamadas internas y por auxiliares externos se distribuyen así:
+
+| Variante de CU19 | medicamentoService | medicamentoRepository | composicionMedicamentoRepository |
+|---|---|---|---|
+| GET | `getMedicamentoById` | `findById` con asociaciones | No se ejecuta |
+| POST | `getMedicamentoForUpdate`, `validateSinHistorial` | `findById`, `findProveedorById`, `hasMovimientos`, `findDuplicadosIdentidad` | `findPrincipioById`, `findByPrincipio`, `create`, `findAllForMedicamento`, `findById` final |
+| PATCH | `getMedicamentoForUpdate`, `validateSinHistorial` | `findById`, `findProveedorById`, `hasMovimientos`, `findDuplicadosIdentidad` | `findById` antes/después, `update`, `findAllForMedicamento` |
+| DELETE | `getMedicamentoForUpdate`, `validateSinHistorial` | `findById`, `findProveedorById`, `hasMovimientos`, `findDuplicadosIdentidad` | `findById` previo, `remove`, `findAllForMedicamento` |
+
+La autenticación previa y AppError en ramas de error son comunes. Las escrituras consultan la composición resultante y comparan identidad si alcanzan ese paso; un rechazo anterior interrumpe el camino. hasMovimientos consulta MovimientoInventario solo si encontró existencias del medicamento. Los cuatro métodos principales permanecen en el dibujo porque cada uno participa en alguna variante real del CU, no porque se ejecuten juntos.
 
 **Interfaz:** `/medicamentos/:idMedicamento/composicion` → `frontend/src/features/medicamentos/pages/MedicamentoComposicionPage.jsx`, `ComposicionTable.jsx`, `ComposicionForm.jsx`, Modal y ConfirmDialog. Funciones HTTP `getComposicionMedicamento`, `createComposicion`, `updateComposicion`, `deleteComposicion`. Carga la ficha mediante CU15 y, solo para Regente, opciones mediante CU18. La lectura GET de composición se incluye aquí como apoyo de la pantalla, no como nuevo CU.
 
@@ -2968,26 +2558,16 @@ classDiagram
     }
     class medicamentoService {
         <<servicio>>
-        +getMedicamentos(filtros)$
         +getMedicamentoById(idMedicamento, transaction)$
         +getMedicamentoForUpdate(idMedicamento, transaction)$
         +validateSinHistorial(idMedicamento, transaction)$
-        +createMedicamento(data)$
-        +updateMedicamento(idMedicamento, data)$
-        +updateEstado(idMedicamento, datosEstado)$
     }
     class medicamentoRepository {
         <<repository>>
-        +findAll(filtros)$
         +findById(options)$
-        +findByCodigo(options)$
-        +findMayorCorrelativo(options)$
         +findProveedorById(options)$
         +findDuplicadosIdentidad(options)$
         +hasMovimientos(options)$
-        +create(options)$
-        +update(options)$
-        +updateEstado(options)$
     }
     class composicionMedicamentoRepository {
         <<repository>>
@@ -3013,7 +2593,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -3022,7 +2601,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class PrincipioActivo {
         <<modelo>>
@@ -3030,7 +2608,6 @@ classDiagram
         -VARCHAR_150 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ComposicionMedicamento {
         <<modelo>>
@@ -3041,7 +2618,6 @@ classDiagram
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
         -VARCHAR_30 unidad_referencia
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -3052,7 +2628,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -3068,29 +2643,14 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -3103,7 +2663,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -3135,8 +2694,8 @@ classDiagram
     medicamentoRepository ..> ProveedorLaboratorio : bloqueo e include
     medicamentoRepository ..> ComposicionMedicamento : identidad SQL e include
     medicamentoRepository ..> PrincipioActivo : include
-    medicamentoRepository ..> ExistenciaMedicamento : hasMovimientos
-    medicamentoRepository ..> MovimientoInventario : hasMovimientos
+    medicamentoRepository ..> ExistenciaMedicamento : hasMovimientos solo en escrituras
+    medicamentoRepository ..> MovimientoInventario : hasMovimientos solo en escrituras
     composicionMedicamentoRepository ..> ComposicionMedicamento : buscar crear update destroy
     composicionMedicamentoRepository ..> PrincipioActivo : validar alta e include
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
@@ -3145,6 +2704,8 @@ classDiagram
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
+    note for medicamentoService "GET: getMedicamentoById; escrituras: getMedicamentoForUpdate y validateSinHistorial via prepararModificacion externo"
+    note for composicionMedicamentoRepository "No se ejecuta en GET; findAllForMedicamento y findById en escrituras; findPrincipioById y findByPrincipio solo en alta"
 ```
 
 ### CU20. Consultar medicamentos por composición
@@ -3169,7 +2730,7 @@ No compara cantidades/unidades para este filtro ni concluye sustitución terapé
 
 **Carga de opciones por rol:** Administrador/Regente consultan principios mediante CU18. Vendedor no llama a `/api/principios-activos`: una carga independiente de `getMedicamentos()` extrae/deduplica los principios ya expuestos por el catálogo autorizado. Las opciones no se reducen a los resultados filtrados. Este apoyo reutiliza los flujos CU18/CU15 sin añadir métodos al Service; Vendedor conserva autorización de búsqueda por IDs en el endpoint de Medicamentos.
 
-**Resultado:** 200 con listado y composición completa; 400, 401/403 o 500 ante fallos. Mantiene activos/inactivos; no escribe entidades ni almacena criterios/alertas como fuente persistente. El diagrama repite las clases completas del endpoint común, con dependencias específicas del camino por principios.
+**Resultado:** 200 con listado y composición completa; 400, 401/403 o 500 ante fallos. Mantiene activos/inactivos; no escribe entidades ni almacena criterios/alertas como fuente persistente. El diagrama conserva las clases participantes y sus atributos completos, seleccionando solo los métodos del camino de listado filtrado por principios.
 
 ```mermaid
 classDiagram
@@ -3181,41 +2742,18 @@ classDiagram
     class medicamentoController {
         <<controller>>
         +getMedicamentos(req, res, next)$
-        +getMedicamentoById(req, res, next)$
-        +createMedicamento(req, res, next)$
-        +updateMedicamento(req, res, next)$
-        +updateEstado(req, res, next)$
     }
     class medicamentoValidator {
         <<validator>>
-        +validateId(data)$
-        +validateCreate(data)$
-        +validateUpdate(data)$
-        +validateUpdateEstado(data)$
         +validateFiltros(data)$
     }
     class medicamentoService {
         <<servicio>>
         +getMedicamentos(filtros)$
-        +getMedicamentoById(idMedicamento, transaction)$
-        +getMedicamentoForUpdate(idMedicamento, transaction)$
-        +validateSinHistorial(idMedicamento, transaction)$
-        +createMedicamento(data)$
-        +updateMedicamento(idMedicamento, data)$
-        +updateEstado(idMedicamento, datosEstado)$
     }
     class medicamentoRepository {
         <<repository>>
         +findAll(filtros)$
-        +findById(options)$
-        +findByCodigo(options)$
-        +findMayorCorrelativo(options)$
-        +findProveedorById(options)$
-        +findDuplicadosIdentidad(options)$
-        +hasMovimientos(options)$
-        +create(options)$
-        +update(options)$
-        +updateEstado(options)$
     }
     class Medicamento {
         <<modelo>>
@@ -3231,7 +2769,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -3240,7 +2777,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class PrincipioActivo {
         <<modelo>>
@@ -3248,7 +2784,6 @@ classDiagram
         -VARCHAR_150 nombre
         -VARCHAR_255 descripcion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ComposicionMedicamento {
         <<modelo>>
@@ -3259,29 +2794,14 @@ classDiagram
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
         -VARCHAR_30 unidad_referencia
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -3294,7 +2814,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -3324,23 +2843,26 @@ classDiagram
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
+    note for medicamentoRepository "findAll ejecuta primero la seleccion AND; sin coincidencias devuelve lista vacia sin consultar Medicamento"
 ```
 
 ## 6. Cierre y revisión de Fase 3
 
 | Caso | Diagramas | Estado |
 |---|---|---|
-| CU14 — Registrar medicamento | 1, alta integral | Elaborado |
-| CU15 — Consultar o buscar medicamento | 1, listado y ficha | Elaborado |
-| CU16 — Modificar medicamento | 1, incluye caminos condicionales de identidad/historial | Elaborado |
-| CU17 — Activar/desactivar medicamento | 1 | Elaborado |
-| CU18 — Gestionar principios activos | 1, consulta y mantenimiento por rol | Elaborado |
-| CU19 — Gestionar composición | 1, lectura de apoyo y escrituras independientes | Elaborado |
-| CU20 — Consultar medicamentos por composición | 1, filtro AND | Elaborado |
+| CU14 — Registrar medicamento | 1, alta integral | Elaborado; métodos por CU corregidos |
+| CU15 — Consultar o buscar medicamento | 1, listado y ficha | Elaborado; métodos por camino corregidos |
+| CU16 — Modificar medicamento | 1, incluye caminos condicionales de identidad/historial | Elaborado; métodos por CU corregidos |
+| CU17 — Activar/desactivar medicamento | 1 | Elaborado; llamadas internas corregidas |
+| CU18 — Gestionar principios activos | 1, consulta y mantenimiento por rol | Elaborado; métodos por variante corregidos |
+| CU19 — Gestionar composición | 1, lectura de apoyo y escrituras independientes | Elaborado; métodos por variante corregidos |
+| CU20 — Consultar medicamentos por composición | 1, filtro AND | Elaborado; métodos por CU corregidos |
 
-**Verificación de esta entrega:** se contrastaron siete diagramas nuevos contra 22 clases participantes, con 56 atributos persistentes y 90 operaciones propias al incluir clases compartidas. Esta fase incorpora 17 clases nuevas al análisis, con 42 atributos y 71 operaciones propias. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias entre Services/Repositories y cardinalidades contra código y metadatos Sequelize. La comprobación acumulada cubre 37 clases reales, 73 atributos persistentes y 152 operaciones propias, en 205 apariciones completas de clases. Los 21 diagramas de las tres fases se analizaron y renderizaron localmente a SVG con Mermaid 11.12.0, sin errores ni conexiones MySQL. Se revisó el formato del Markdown.
+**Verificación de la entrega inicial:** se contrastaron siete diagramas contra 22 clases participantes, con 56 atributos persistentes y 90 operaciones propias de las clases completas, incluidas las compartidas. Esta fase incorporó 17 clases nuevas al análisis, con 42 atributos y 71 operaciones propias. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias entre Services/Repositories y cardinalidades contra código y metadatos Sequelize. El inventario acumulado de Fases 1–3 comprendió 37 clases reales, 73 atributos persistentes y 152 operaciones propias, en 205 apariciones de clases. Los 21 diagramas iniciales se renderizaron con Mermaid 11.12.0 sin errores ni conexiones MySQL.
 
-**Puntos de revisión:** clases completas frente a métodos ejecutados; generarCodigo/identidad como funciones externas; alta integral por Repository de Composición frente a CU19 con llamadas entre Services; cardinalidad estructural frente al mínimo del alta; modelos reales que comprueban historial; permisos por operación y opciones del Vendedor; composición completa en filtro AND; distinción entre datos persistentes, DTO y borrador local.
+**Corrección de Fase 3:** los siete dibujos seleccionan 69 operaciones propias distintas, contadas por clase/método, en 113 apariciones. Conservan las 22 clases participantes, sus 56 atributos persistentes y los dos atributos de AppError. Se incluyen lecturas internas, updateEstado → update del Repository, llamadas mediante auxiliares externos y métodos condicionales de identidad/historial. CU18/CU19 conservan todas las operaciones principales necesarias para sus variantes; CU20 solo muestra el listado filtrado. Se omite associate(models) de los modelos por CU y se mantienen asociaciones/cardinalidades. La verificación de esta corrección se registra en 0.5.
+
+**Puntos de revisión:** selección por CU y por variante de CU18/CU19; condiciones distintas de historial e identidad en CU16; update interno en CU17; generarCodigo/identidad como funciones externas; alta integral por Repository de Composición frente a CU19 con llamadas entre Services; cardinalidad estructural frente al mínimo del alta; modelos reales que comprueban historial; permisos por operación y opciones del Vendedor; composición completa en filtro AND; distinción entre datos persistentes, DTO y borrador local.
 
 **Avance al cierre de Fase 3:** 20 de los 33 CU implementados analizados, con 21 diagramas. La Fase 4 se incorpora a continuación por solicitud de continuidad del usuario.
 
@@ -3374,9 +2896,9 @@ Se reutilizan authService, usuarioRepository, Usuario, AppError, medicamentoRepo
 | `existenciaMedicamentoRepository` | `findByIdParaMovimiento({ idExistencia, transaction })`; `findByIdParaAnular({ idExistencia, transaction })`; `findParaCompra({ idMedicamento, transaction })`; `create({ data, transaction })`; `updateSaldoYCosto({ idExistencia, cantidadFisica, costoUnitarioPromedio, transaction })`; `findInventario({ idMedicamento, codigoMedicamento, nombreComercial } = {}, { soloConExistencias = false } = {})`; `findMedicamentoConExistencias(idMedicamento)` |
 | `movimientoInventarioRepository` | `findUltimoIdParaExistencia({ idExistencia, transaction })`; `findParaAnular({ idsExistencias, idsDetalles, transaction })`; `findReversiones({ idsOriginales, transaction })`; `findReferenciasParaAnular({ idsDetallesCompra, idsDetallesVenta, transaction })`; `create({ data, transaction })`; `findAll({ idMedicamento, idExistencia, desde, hasta, direccion, motivo } = {})` |
 
-Los métodos de otros CU de los Repositories se repiten completos en los diagramas, pero las tablas de participación precisan cuáles se ejecutan en Compras. compraService no llama a inventarioService ni a medicamentoService; coordina Repositories directamente. No existe una clase DetalleCompraService/Repository en este flujo: compraRepository crea/consulta sus detalles.
+Este inventario describe las clases completas; los diagramas seleccionan únicamente los métodos utilizados en cada CU, incluidas llamadas internas y caminos condicionales. compraService no llama a inventarioService ni a medicamentoService; coordina Repositories directamente. No existe una clase DetalleCompraService/Repository en este flujo: compraRepository crea/consulta sus detalles.
 
-**Modelos:** Compra tiene 11 atributos, DetalleCompra 8, Venta 10 y DetalleVenta 7: 36 atributos persistentes nuevos en el análisis. Cada uno declara únicamente `associate(models)` como método propio. `DECIMAL_14_2` representa DECIMAL(14,2); `ENUM_CONFIRMADA_ANULADA` y `ENUM_CONFIRMADA_ANULADA_PENDIENTE` representan los estados reales de Compra y Venta. Tipos, defaults, claves y nulabilidad completos: `diagrama-clases.md`. No se agregan totales calculados al modelo fuera de sus campos reales.
+**Modelos:** Compra tiene 11 atributos, DetalleCompra 8, Venta 10 y DetalleVenta 7: 36 atributos persistentes nuevos en el análisis. Cada uno declara únicamente `associate(models)` como método propio, omitido de los diagramas por CU porque configura asociaciones al iniciar el sistema. `DECIMAL_14_2` representa DECIMAL(14,2); `ENUM_CONFIRMADA_ANULADA` y `ENUM_CONFIRMADA_ANULADA_PENDIENTE` representan los estados reales de Compra y Venta. Tipos, defaults, claves y nulabilidad completos: `diagrama-clases.md`. No se agregan totales calculados al modelo fuera de sus campos reales.
 
 Los snapshots `DetalleCompra.saldo_anterior` y `costo_promedio_anterior` son nullable para conservar históricos; las nuevas compras proporcionan ambos, iguales para todos los detalles de una existencia. La migración B1 existente comprueba par completo no negativo o ambos NULL; el DTO público de consulta **no expone** ese par. Los diagramas sí lo muestran porque pertenece al modelo.
 
@@ -3428,6 +2950,8 @@ La fecha de adquisición es DATE, separada de la fecha/hora de registro y de mov
 | `ExistenciaMedicamento`, `MovimientoInventario`, `Usuario` | Stock/promedio y trazabilidad de entradas con responsable autenticado. |
 | `AppError` | Entrada, referencias, clave, estados, vencimientos, límites y contención. |
 
+**Selección de caminos de recepción:** findParaCompra se ejecuta por medicamento para leer/bloquear sus existencias. Después, cada grupo ejecuta create cuando no hay existencia para la combinación medicamento–fecha–precisión, o updateSaldoYCosto cuando ya existe. Una compra con varios grupos puede ejecutar ambas operaciones, pero no ambas para el mismo grupo. La generación del código permanece en el cuerpo de createCompra, no como método propio de un Repository. getCompraById es una llamada interna del Service; el Controller de consulta por ID no participa en este POST.
+
 **Contrato:** solo claveOperacion (1–64 ASCII alfanuméricos/guion/guion bajo, minúsculas), fechaCompra y al menos un detalle. Cada línea recibe idMedicamento, cantidad positiva INT, costoUnitario como cadena decimal positiva hasta 99999999.999999, precisionVencimiento y fechaVencimiento. DIA recibe YYYY-MM-DD; MES YYYY-MM y se normaliza al último día. Query vacío; no se envían proveedor, usuario, existencia, código, total, subtotal, snapshots, estado o fechas del movimiento.
 
 **Ejecución:** calcula subtotales individuales a dos decimales y total como su suma; agrupa cantidades/valor por medicamento–fecha almacenada–precisión, conservando líneas repetidas. Hace una comprobación auxiliar de clave antes de transacción; UNIQUE es la barrera final global, también para claves de compras anuladas. Bloquea medicamentos por ID ascendente, exige activos y proveedor único/activo bajo bloqueo compartido y bloquea todas sus existencias, incluidas agotadas. No llama a medicamentoService ni inventarioService.
@@ -3443,68 +2967,39 @@ classDiagram
     class requireRole { <<funcion>> }
     class compraController {
         <<controller>>
-        +anularCompra(req, res, next)$
         +createCompra(req, res, next)$
-        +getCompras(req, res, next)$
-        +getCompraById(req, res, next)$
     }
     class compraValidator {
         <<validator>>
         +validateCreate(data)$
-        +validateAnular(data)$
-        +validateId(data)$
-        +validateFiltros(data)$
         +validateSinFiltros(data)$
     }
     class compraService {
         <<servicio>>
-        +anularCompra(idCompra, motivo, idUsuarioAutenticado)$
         +createCompra(data, idUsuarioAutenticado)$
-        +getCompras(filtros, idUsuarioAutenticado)$
         +getCompraById(idCompra, transaction)$
     }
     class compraRepository {
         <<repository>>
-        +findParaAnular(options)$
-        +findDetallesParaAnular(options)$
-        +anular(options)$
         +findByClave(options)$
         +create(options)$
         +createDetalle(options)$
-        +findAll(filtros)$
         +findById(idCompra, options)$
     }
     class medicamentoRepository {
         <<repository>>
-        +findAll(filtros)$
         +findById(options)$
-        +findByCodigo(options)$
-        +findMayorCorrelativo(options)$
         +findProveedorById(options)$
-        +findDuplicadosIdentidad(options)$
-        +hasMovimientos(options)$
-        +create(options)$
-        +update(options)$
-        +updateEstado(options)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
-        +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
         +findParaCompra(options)$
         +create(options)$
         +updateSaldoYCosto(options)$
-        +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class movimientoInventarioRepository {
         <<repository>>
-        +findUltimoIdParaExistencia(options)$
-        +findParaAnular(options)$
-        +findReversiones(options)$
-        +findReferenciasParaAnular(options)$
         +create(options)$
-        +findAll(filtros)$
     }
     class Compra {
         <<modelo>>
@@ -3519,7 +3014,6 @@ classDiagram
         -DATETIME fecha_anulacion
         -VARCHAR_255 motivo_anulacion
         -INT id_usuario_anulador
-        +associate(models)$
     }
     class DetalleCompra {
         <<modelo>>
@@ -3531,7 +3025,6 @@ classDiagram
         -DECIMAL_14_2 subtotal
         -INT saldo_anterior
         -DECIMAL_14_6 costo_promedio_anterior
-        +associate(models)$
     }
     class Medicamento {
         <<modelo>>
@@ -3547,7 +3040,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -3556,7 +3048,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -3567,7 +3058,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -3583,29 +3073,14 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -3618,7 +3093,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -3664,6 +3138,9 @@ classDiagram
     Usuario "1" -- "0..*" MovimientoInventario : usuario
     DetalleCompra "0..1" -- "0..*" MovimientoInventario : detalleCompra
     note for Compra "CU25 exige detalles; un original por linea y snapshot comun por existencia"
+    note for compraService "createCompra llama a getCompraById para lectura final dentro de la transaccion"
+    note for compraRepository "findByClave antes de abrir la transaccion; findById por lectura final del Service"
+    note for existenciaMedicamentoRepository "Por grupo: create si es nueva; updateSaldoYCosto si existe; una compra puede contener ambos caminos"
 ```
 
 ### CU26. Consultar compras
@@ -3683,6 +3160,13 @@ classDiagram
 | `DetalleCompra`, `ExistenciaMedicamento`, `Medicamento` | Participan en detalle, no en listado: líneas originales con identificación de existencia/producto. |
 | `AppError` | Validación, sesión, permisos o ID inexistente. |
 
+| Camino de CU26 | Controller | Validator | Service | Repository |
+|---|---|---|---|---|
+| Listado, incluida búsqueda por clave | `getCompras` | `validateFiltros` | `getCompras` | `findAll` |
+| Ficha por ID | `getCompraById` | `validateId`, `validateSinFiltros` | `getCompraById` | `findById` |
+
+El dibujo reúne ambos caminos; cada solicitud ejecuta únicamente su fila. findByClave pertenece a la comprobación previa del registro de CU25 y no a la consulta por clave de CU26. El filtro personal por clave modifica los parámetros de findAll, sin introducir otro método del Repository.
+
 **Ejecución:** listado acepta únicamente desde/hasta como fechas civiles, idProveedorLaboratorio positivo dentro de INT, estadoOperacion CONFIRMADA/ANULADA y claveOperacion normalizada como CU25. Rango inclusivo sobre fecha_compra: mismo extremo consulta un día; no filtra por hora de registro. Si hay clave agrega idUsuario desde sesión aun combinando filtros; no acepta un ID de usuario del cliente. Sin clave, Administrador/Regente pueden consultar compras de otros registradores. Ordena por fecha de adquisición descendente y después ID descendente. No filtra por actividad actual de proveedor/medicamento.
 
 El detalle valida ID y query vacío, carga proveedor desde cabecera y todos los detalles por ID ascendente, sin agrupar líneas repetidas. Los importes originales no se recalculan; costos/moneda son cadenas de seis/dos decimales. Los nombres, presentación y estados del catálogo son los actuales, no snapshots de esos textos. No devuelve stock actual, promedio ni snapshots B1 del detalle; esos campos del modelo figuran completos en el dibujo, pero no son campos de este DTO. Las fechas se devuelven sin reinterpretación de históricos. La compra anulada conserva líneas, importes, clave, motivo, fecha y anulador.
@@ -3697,34 +3181,22 @@ classDiagram
     class requireRole { <<funcion>> }
     class compraController {
         <<controller>>
-        +anularCompra(req, res, next)$
-        +createCompra(req, res, next)$
         +getCompras(req, res, next)$
         +getCompraById(req, res, next)$
     }
     class compraValidator {
         <<validator>>
-        +validateCreate(data)$
-        +validateAnular(data)$
         +validateId(data)$
         +validateFiltros(data)$
         +validateSinFiltros(data)$
     }
     class compraService {
         <<servicio>>
-        +anularCompra(idCompra, motivo, idUsuarioAutenticado)$
-        +createCompra(data, idUsuarioAutenticado)$
         +getCompras(filtros, idUsuarioAutenticado)$
         +getCompraById(idCompra, transaction)$
     }
     class compraRepository {
         <<repository>>
-        +findParaAnular(options)$
-        +findDetallesParaAnular(options)$
-        +anular(options)$
-        +findByClave(options)$
-        +create(options)$
-        +createDetalle(options)$
         +findAll(filtros)$
         +findById(idCompra, options)$
     }
@@ -3741,7 +3213,6 @@ classDiagram
         -DATETIME fecha_anulacion
         -VARCHAR_255 motivo_anulacion
         -INT id_usuario_anulador
-        +associate(models)$
     }
     class DetalleCompra {
         <<modelo>>
@@ -3753,7 +3224,6 @@ classDiagram
         -DECIMAL_14_2 subtotal
         -INT saldo_anterior
         -DECIMAL_14_6 costo_promedio_anterior
-        +associate(models)$
     }
     class Medicamento {
         <<modelo>>
@@ -3769,7 +3239,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -3778,7 +3247,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -3789,29 +3257,14 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -3824,7 +3277,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -3860,6 +3312,8 @@ classDiagram
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" DetalleCompra : existencia
     note for Compra "La clave agrega responsable de sesion; listado general y ficha conservan permisos de consulta"
+    note for compraValidator "Listado: validateFiltros; detalle: validateId y validateSinFiltros"
+    note for compraRepository "Listado: findAll incluso al buscar por clave; detalle: findById; no se ejecuta findByClave"
 ```
 
 ### CU27. Anular compra
@@ -3875,12 +3329,14 @@ classDiagram
 | `compraService` | `anularCompra(idCompra,motivo,idUsuarioAutenticado)` coordina transacción y auxiliares de integridad/compensación; `getCompraById(id,transaction)` obtiene respuesta final. |
 | `compraRepository` | `findParaAnular`, `findDetallesParaAnular`, `anular`, `findById`. |
 | `existenciaMedicamentoRepository` | `findByIdParaAnular`, `updateSaldoYCosto` una vez por existencia. |
-| `movimientoInventarioRepository` | `findParaAnular`, `findReferenciasParaAnular`, `findReversiones`, `create` individual por original. |
+| `movimientoInventarioRepository` | `findParaAnular`, `findReferenciasParaAnular`, `findReversiones`, `create` individual por original. findReferenciasParaAnular se invoca aunque las listas de IDs estén vacías; las consultas de referencias dentro del método son condicionales. |
 | `Compra`, `DetalleCompra` | Cabecera/estado, líneas originales y snapshot común; se conserva información de adquisición. También se leen referencias a otras compras anuladas si el historial contiene compensaciones. |
 | `ExistenciaMedicamento`, `MovimientoInventario` | Saldo/promedio actual, historial conciliado, originales y reversiones; escrituras compensatorias. |
 | `Venta`, `DetalleVenta` | Lectura condicional por movimientoInventarioRepository para comprobar referencias de reversiones de venta ya presentes en el historial; no se escriben ni se ejecuta CU30. |
 | `Medicamento`, `ProveedorLaboratorio`, `Usuario` | Producto/proveedor y registrador/anulador en DTO final por compraRepository; Usuario también participa en sesión y responsabilidad de reversiones. |
 | `AppError` | Estructura/permiso, compra ausente, doble anulación, integridad, stock, valoración y contención. |
+
+**Condiciones de métodos y consultas:** findReferenciasParaAnular recibe IDs derivados únicamente de movimientos con id_movimiento_original no nulo. Consulta DetalleCompra con su Compra solo si hay IDs de detalle de compra, y DetalleVenta con su Venta solo si hay IDs de detalle de venta; para una lista vacía devuelve un arreglo vacío sin consultar ese modelo. findReversiones se ejecuta después de validar todos los grupos y antes de escribir. getCompraById es la lectura final interna de anularCompra, dentro de la transacción; no ejecuta el Controller de consulta. Los métodos posteriores a un rechazo previo no se alcanzan, y los dos caminos de valoración B1/A utilizan el mismo conjunto de métodos propios seleccionados, apoyados por calcularCompensacion externo.
 
 **Contrato:** ID positivo dentro de INT, query vacío y body estricto con motivo obligatorio de 1–255 caracteres después de trim. No recibe usuario, fecha, estado, líneas seleccionadas, modalidad o precondiciones de Ajustes/Retiros. La actividad actual del catálogo/proveedor y el vencimiento no impiden compensar una compra histórica.
 
@@ -3905,23 +3361,16 @@ classDiagram
     class compraController {
         <<controller>>
         +anularCompra(req, res, next)$
-        +createCompra(req, res, next)$
-        +getCompras(req, res, next)$
-        +getCompraById(req, res, next)$
     }
     class compraValidator {
         <<validator>>
-        +validateCreate(data)$
         +validateAnular(data)$
         +validateId(data)$
-        +validateFiltros(data)$
         +validateSinFiltros(data)$
     }
     class compraService {
         <<servicio>>
         +anularCompra(idCompra, motivo, idUsuarioAutenticado)$
-        +createCompra(data, idUsuarioAutenticado)$
-        +getCompras(filtros, idUsuarioAutenticado)$
         +getCompraById(idCompra, transaction)$
     }
     class compraRepository {
@@ -3929,30 +3378,19 @@ classDiagram
         +findParaAnular(options)$
         +findDetallesParaAnular(options)$
         +anular(options)$
-        +findByClave(options)$
-        +create(options)$
-        +createDetalle(options)$
-        +findAll(filtros)$
         +findById(idCompra, options)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
-        +findByIdParaMovimiento(options)$
         +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
         +updateSaldoYCosto(options)$
-        +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class movimientoInventarioRepository {
         <<repository>>
-        +findUltimoIdParaExistencia(options)$
         +findParaAnular(options)$
         +findReversiones(options)$
         +findReferenciasParaAnular(options)$
         +create(options)$
-        +findAll(filtros)$
     }
     class Compra {
         <<modelo>>
@@ -3967,7 +3405,6 @@ classDiagram
         -DATETIME fecha_anulacion
         -VARCHAR_255 motivo_anulacion
         -INT id_usuario_anulador
-        +associate(models)$
     }
     class DetalleCompra {
         <<modelo>>
@@ -3979,7 +3416,6 @@ classDiagram
         -DECIMAL_14_2 subtotal
         -INT saldo_anterior
         -DECIMAL_14_6 costo_promedio_anterior
-        +associate(models)$
     }
     class Medicamento {
         <<modelo>>
@@ -3995,7 +3431,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ProveedorLaboratorio {
         <<modelo>>
@@ -4004,7 +3439,6 @@ classDiagram
         -VARCHAR_30 telefono
         -VARCHAR_255 direccion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -4015,7 +3449,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -4031,7 +3464,6 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class Venta {
         <<modelo>>
@@ -4045,7 +3477,6 @@ classDiagram
         -DATETIME fecha_anulacion
         -VARCHAR_255 motivo_anulacion
         -INT id_usuario_anulador
-        +associate(models)$
     }
     class DetalleVenta {
         <<modelo>>
@@ -4056,29 +3487,14 @@ classDiagram
         -INT cantidad
         -DECIMAL_14_2 precio_unitario
         -DECIMAL_14_2 subtotal
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -4091,7 +3507,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -4141,6 +3556,8 @@ classDiagram
     ExistenciaMedicamento "1" -- "0..*" DetalleVenta : existencia
     DetalleVenta "0..1" -- "0..*" MovimientoInventario : detalleVenta
     note for compraService "B1 y A se calculan por auxiliares externos; una transaccion conserva originales y agrega reversiones"
+    note for compraService "anularCompra llama a getCompraById para lectura final dentro de la transaccion"
+    note for movimientoInventarioRepository "findReferenciasParaAnular se llama aunque no haya compensaciones; consulta compras o ventas solo si sus listas de IDs no estan vacias"
     note for Venta "Lectura condicional de integridad; Ventas y Recetas permanecen pendientes"
 ```
 
@@ -4148,13 +3565,15 @@ classDiagram
 
 | Caso | Diagramas | Estado |
 |---|---|---|
-| CU25 — Registrar compra | 1, recepción integral y lectura final | Elaborado |
-| CU26 — Consultar compras | 1, listado y ficha por ID | Elaborado |
-| CU27 — Anular compra | 1, integridad histórica y compensación B1/A | Elaborado |
+| CU25 — Registrar compra | 1, recepción integral y lectura final | Elaborado; métodos y ramas por CU corregidos |
+| CU26 — Consultar compras | 1, listado y ficha por ID | Elaborado; métodos por camino corregidos |
+| CU27 — Anular compra | 1, integridad histórica y compensación B1/A | Elaborado; métodos y consultas condicionales corregidos |
 
-**Verificación de esta entrega:** se contrastaron los tres diagramas nuevos contra 19 clases participantes, con 81 atributos persistentes y 70 operaciones propias al incluir clases compartidas. Esta fase incorpora 10 clases nuevas, con 36 atributos persistentes y 38 operaciones propias. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias y cardinalidades contra código y metadatos Sequelize, incluida nulabilidad de anulador/detalles y unicidad de reversión. La comprobación acumulada cubre 47 clases reales, 109 atributos persistentes y 190 operaciones propias, en 253 apariciones completas de clases. Los 24 diagramas de las cuatro fases se analizaron y renderizaron localmente a SVG con Mermaid 11.12.0 sin errores. La verificación utilizó únicamente código y metadatos, sin conexiones MySQL. Se revisó el formato del Markdown.
+**Verificación de la entrega inicial:** se contrastaron los tres diagramas contra 19 clases participantes, con 81 atributos persistentes y 70 operaciones propias de las clases completas, incluidas las compartidas. Esta fase incorporó 10 clases nuevas, con 36 atributos persistentes y 38 operaciones propias. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias y cardinalidades contra código y metadatos Sequelize, incluida nulabilidad de anulador/detalles y unicidad de reversión. El inventario acumulado de Fases 1–4 comprendió 47 clases reales, 109 atributos persistentes y 190 operaciones propias, en 253 apariciones de clases. Los 24 diagramas iniciales se renderizaron con Mermaid 11.12.0 sin errores ni conexiones MySQL.
 
-**Puntos de revisión:** proveedor derivado frente a proveedor histórico de cabecera; clave global UNIQUE frente a búsqueda personal; modelos completos frente a campos del DTO; cálculo agrupado y snapshots comunes; B1/A como auxiliares externos; Venta/DetalleVenta como lectura condicional de integridad sin completar CU30; FK opcionales y reversión única; rollback de operación completa y conservación de originales.
+**Corrección de Fase 4:** los tres dibujos seleccionan 34 operaciones propias distintas, contadas por clase/método, en 49 apariciones. Conservan las 19 clases participantes, sus 81 atributos persistentes y los dos atributos de AppError. Se incluyen autenticación previa, lecturas finales internas de registro/anulación, caminos de existencia nueva o existente, listado/detalle de consulta y referencias condicionales de integridad. Se omite associate(models) de los modelos por CU y se mantienen asociaciones/cardinalidades. La verificación de esta corrección se registra en 0.5.
+
+**Puntos de revisión:** selección de métodos por CU y por camino de CU26; create/updateSaldoYCosto condicionales por grupo de recepción; getCompraById como lectura interna de registro/anulación; findReferenciasParaAnular frente a sus consultas condicionales; proveedor derivado frente a proveedor histórico de cabecera; clave global UNIQUE frente a búsqueda personal por findAll; atributos completos frente a campos del DTO; cálculo agrupado y snapshots comunes; B1/A como auxiliares externos; Venta/DetalleVenta como lectura condicional de integridad sin completar CU30; FK opcionales y reversión única; rollback de operación completa y conservación de originales.
 
 **Avance al cierre de Fase 4:** 23 de los 33 CU implementados analizados, con 24 diagramas. La Fase 5 se incorpora a continuación por solicitud de continuidad del usuario.
 
@@ -4168,7 +3587,7 @@ classDiagram
 | `inventarioValidator` | `backend/src/business/validators/inventario.validator.js` |
 | `inventarioService` | `backend/src/business/services/inventario.service.js` |
 
-Se reutilizan existenciaMedicamentoRepository y movimientoInventarioRepository, con firmas completas en 7.1; authService, usuarioRepository y AppError, en 0.3; y los modelos Usuario, Medicamento, ExistenciaMedicamento, MovimientoInventario, DetalleCompra y DetalleVenta. Los diagramas repiten todos sus miembros propios. No existe un modelo Inventario, Alerta, Reporte o Ajuste.
+Se reutilizan existenciaMedicamentoRepository y movimientoInventarioRepository, con firmas completas en 7.1; authService, usuarioRepository y AppError, en 0.3; y los modelos Usuario, Medicamento, ExistenciaMedicamento, MovimientoInventario, DetalleCompra y DetalleVenta. El inventario de firmas describe las clases completas; los diagramas seleccionan únicamente los métodos propios utilizados en cada CU y conservan los atributos completos. Se omite associate(models) porque configura relaciones al iniciar el sistema, manteniendo las asociaciones en los dibujos. No existe un modelo Inventario, Alerta, Reporte o Ajuste.
 
 | Clase | Métodos propios y firmas exactas |
 |---|---|
@@ -4176,7 +3595,7 @@ Se reutilizan existenciaMedicamentoRepository y movimientoInventarioRepository, 
 | `inventarioValidator` | `validateId(data)`; `validateSinFiltros(data)`; `validateFiltrosInventario(data)`; `validateFiltrosMovimientos(data)`; `validateAjuste(data)`; `validateRetiroVencimiento(data)`; `validateRetiroDano(data)` |
 | `inventarioService` | `registrarRetiroVencimiento(data, idUsuarioAutenticado)`; `registrarRetiroDano(data, idUsuarioAutenticado)`; `registrarAjuste(data, idUsuarioAutenticado)`; `getInventario(filtros, fechaComercial = obtenerFechaComercial())`; `getExistencias(idMedicamento, fechaComercial = obtenerFechaComercial())`; `getProximosAVencer(filtros, fechaComercial = obtenerFechaComercial())`; `getVencidos(filtros, fechaComercial = obtenerFechaComercial())`; `getStockBajo(filtros, fechaComercial = obtenerFechaComercial())`; `getMovimientos(filtros)` |
 
-Estas clases no declaran atributos propios; todos sus métodos son públicos y estáticos, Controller/Service async y Validator síncrono. El argumento fechaComercial permite comprobar disponibilidad con una fecha determinada en código; el cliente HTTP no puede enviarlo ni elegir zona horaria. Los métodos de vencimientos/retiros se muestran por completitud de clase; su ejecución se analiza en Fase 6.
+Estas clases no declaran atributos propios; todos sus métodos son públicos y estáticos, Controller/Service async y Validator síncrono. El argumento fechaComercial permite comprobar disponibilidad con una fecha determinada en código; el cliente HTTP no puede enviarlo ni elegir zona horaria. Los métodos de vencimientos/retiros se incluyen en este inventario por completitud de clase, pero no en los diagramas de Fase 5; su ejecución se analiza en Fase 6.
 
 **Auxiliares externos, excluidos de miembros de clase:**
 
@@ -4227,47 +3646,19 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
         +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
-        +validateSinFiltros(data)$
         +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
         +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
-        +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
-        +updateSaldoYCosto(options)$
         +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class Medicamento {
         <<modelo>>
@@ -4283,7 +3674,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -4294,29 +3684,14 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -4329,7 +3704,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -4356,6 +3730,7 @@ classDiagram
     existenciaMedicamentoRepository ..> ExistenciaMedicamento : include obligatorio
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     note for Medicamento "CU21 requiere al menos una existencia registrada; conserva agotados vencidos e inactivos"
+    note for inventarioService "getInventario usa consultarDisponibilidad externo; no llama a getExistencias ni getMovimientos"
 ```
 
 ### CU22. Consultar existencias de un medicamento
@@ -4387,46 +3762,19 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
         +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
         +validateId(data)$
         +validateSinFiltros(data)$
-        +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
         +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
-        +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
-        +updateSaldoYCosto(options)$
-        +findInventario(filtros, options)$
         +findMedicamentoConExistencias(idMedicamento)$
     }
     class Medicamento {
@@ -4443,7 +3791,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -4454,7 +3801,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -4470,29 +3816,14 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -4505,7 +3836,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -4535,6 +3865,7 @@ classDiagram
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     note for ExistenciaMedicamento "Saldo y ultimoMovimiento en una sentencia; el marcador no es columna ni bloqueo de escritura"
+    note for MovimientoInventario "Solo lectura MAX en SQL; no se ejecuta movimientoInventarioRepository ni se carga historial completo"
 ```
 
 ### CU23. Registrar ajuste de inventario
@@ -4552,6 +3883,14 @@ classDiagram
 | `movimientoInventarioRepository` | `findUltimoIdParaExistencia` lectura actual bloqueante; `create` únicamente si hay diferencia. |
 | `ExistenciaMedicamento`, `MovimientoInventario` | Saldo/costo actual y marcador; escritura de ajuste independiente con cantidad positiva y motivo AJUSTE. |
 | `Usuario`, `AppError` | Sesión/responsable y errores de contrato, precondiciones, integridad o contención. |
+
+| Camino de CU23 | Métodos propios del acceso a datos | Condición y resultado |
+|---|---|---|
+| Comprobación previa | `findByIdParaMovimiento`, `findUltimoIdParaExistencia` | Bloquea existencia y consulta marcador antes de calcular diferencia; también se ejecuta en conciliación sin efectos. Si la existencia no existe, rechaza antes de consultar marcador. |
+| Sin diferencia | Ninguna escritura | Tras validar precondiciones e integridad, registrarAjuste devuelve la respuesta sin updateSaldoYCosto ni create. |
+| Entrada o salida | `updateSaldoYCosto`, `movimientoInventarioRepository.create` | Solo si diferencia distinta de cero y validaciones aprobadas; confirma saldo/promedio y movimiento conjuntamente. |
+
+Las ramas de entrada y salida comparten los mismos métodos propios; difieren en dirección y cálculo de valoración dentro del Service. registrarAjuste no llama a getExistencias, getInventario, getMovimientos ni al auxiliar registrarRetiro. El Controller forma la respuesta directamente con el resultado del POST; las consultas de preparación y actualización de pantalla pertenecen a sus CU independientes.
 
 **Contrato:** idExistencia positivo, saldoContado y stockObservado enteros entre 0 y 2147483647, ultimoMovimientoObservado positivo dentro de INT o null, observacion obligatoria de 1–500 caracteres después de trim. costoUnitario es cadena positiva hasta 99999999.999999, máximo seis decimales, obligatoria solo si saldoContado > stockObservado y prohibida en salida/sin diferencia. No admite dirección, cantidad de movimiento, diferencia, promedio, motivo, usuario, fecha ni query. El Validator comprueba coherencia de la entrada; el Service no reclasifica una solicitud desactualizada.
 
@@ -4572,56 +3911,26 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
         +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
         +validateSinFiltros(data)$
-        +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
         +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
         +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
         +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
         +updateSaldoYCosto(options)$
-        +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class movimientoInventarioRepository {
         <<repository>>
         +findUltimoIdParaExistencia(options)$
-        +findParaAnular(options)$
-        +findReversiones(options)$
-        +findReferenciasParaAnular(options)$
         +create(options)$
-        +findAll(filtros)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -4632,7 +3941,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -4648,29 +3956,14 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -4683,7 +3976,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -4711,6 +4003,8 @@ classDiagram
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
     note for inventarioService "Sin diferencia verifica precondiciones pero no escribe; con diferencia confirma saldo y movimiento juntos"
+    note for existenciaMedicamentoRepository "findByIdParaMovimiento antes de comprobar precondiciones; updateSaldoYCosto solo si diferencia distinta de cero"
+    note for movimientoInventarioRepository "findUltimoIdParaExistencia comprueba marcador incluso sin diferencia; create solo si diferencia distinta de cero"
 ```
 
 ### CU24. Consultar movimientos de inventario
@@ -4743,45 +4037,18 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
         +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
-        +validateSinFiltros(data)$
-        +validateFiltrosInventario(data)$
         +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
         +getMovimientos(filtros)$
     }
     class movimientoInventarioRepository {
         <<repository>>
-        +findUltimoIdParaExistencia(options)$
-        +findParaAnular(options)$
-        +findReversiones(options)$
-        +findReferenciasParaAnular(options)$
-        +create(options)$
         +findAll(filtros)$
     }
     class MovimientoInventario {
@@ -4798,7 +4065,6 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -4809,7 +4075,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class Medicamento {
         <<modelo>>
@@ -4825,7 +4090,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class DetalleCompra {
         <<modelo>>
@@ -4837,7 +4101,6 @@ classDiagram
         -DECIMAL_14_2 subtotal
         -INT saldo_anterior
         -DECIMAL_14_6 costo_promedio_anterior
-        +associate(models)$
     }
     class DetalleVenta {
         <<modelo>>
@@ -4848,29 +4111,14 @@ classDiagram
         -INT cantidad
         -DECIMAL_14_2 precio_unitario
         -DECIMAL_14_2 subtotal
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -4883,7 +4131,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -4918,6 +4165,7 @@ classDiagram
     DetalleVenta "0..1" -- "0..*" MovimientoInventario : detalleVenta
     MovimientoInventario "0..1" -- "0..1" MovimientoInventario : movimientoReversion
     note for MovimientoInventario "Originales y compensaciones se conservan; referencias a detalles son opcionales"
+    note for movimientoInventarioRepository "Solo findAll; incluye movimientoReversion y detalles opcionales sin ejecutar findReversiones ni findReferenciasParaAnular"
 ```
 
 ### CU37. Consultar medicamentos con stock bajo
@@ -4948,47 +4196,19 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
         +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
-        +validateSinFiltros(data)$
         +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
         +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
-        +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
-        +updateSaldoYCosto(options)$
         +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class Medicamento {
         <<modelo>>
@@ -5004,7 +4224,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -5015,29 +4234,14 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -5050,7 +4254,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -5077,6 +4280,7 @@ classDiagram
     existenciaMedicamentoRepository ..> ExistenciaMedicamento : include opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     note for Medicamento "Activo y stockVendible menor o igual al minimo; incluye productos sin existencias"
+    note for inventarioService "getStockBajo usa consultarDisponibilidad externo con consulta amplia; no llama a getInventario"
 ```
 
 ### CU40. Consultar historial de inventario
@@ -5099,7 +4303,7 @@ classDiagram
 
 La respuesta es una **consulta de hechos históricos**, no un saldo acumulado reconstruido ni un cálculo de pérdidas/reportes de venta. No agrega columnas/entidades Reporte o Inventario, no deduce valoración histórica desde el promedio actual y no afirma que un filtro parcial represente todo el historial. Las FK hacia Compra/Venta en los detalles no implican consultas a sus cabeceras en este flujo. Ventas/Recetas y reportes CU38/CU39/CU41 siguen pendientes.
 
-**Resultado:** 200 `{ data }`, vacío válido; 400/401/403/500 conforme a CU24, sin escrituras. El diagrama se repite completo para lectura independiente; no representa una segunda ejecución de la misma consulta ni una implementación distinta de historial.
+**Resultado:** 200 `{ data }`, vacío válido; 400/401/403/500 conforme a CU24, sin escrituras. Se conserva un diagrama separado para lectura independiente, con los mismos atributos y métodos específicos que CU24; no representa una segunda ejecución de la misma consulta ni una implementación distinta de historial.
 
 ```mermaid
 classDiagram
@@ -5109,45 +4313,18 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
         +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
-        +validateSinFiltros(data)$
-        +validateFiltrosInventario(data)$
         +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
         +getMovimientos(filtros)$
     }
     class movimientoInventarioRepository {
         <<repository>>
-        +findUltimoIdParaExistencia(options)$
-        +findParaAnular(options)$
-        +findReversiones(options)$
-        +findReferenciasParaAnular(options)$
-        +create(options)$
         +findAll(filtros)$
     }
     class MovimientoInventario {
@@ -5164,7 +4341,6 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -5175,7 +4351,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class Medicamento {
         <<modelo>>
@@ -5191,7 +4366,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class DetalleCompra {
         <<modelo>>
@@ -5203,7 +4377,6 @@ classDiagram
         -DECIMAL_14_2 subtotal
         -INT saldo_anterior
         -DECIMAL_14_6 costo_promedio_anterior
-        +associate(models)$
     }
     class DetalleVenta {
         <<modelo>>
@@ -5214,29 +4387,14 @@ classDiagram
         -INT cantidad
         -DECIMAL_14_2 precio_unitario
         -DECIMAL_14_2 subtotal
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -5249,7 +4407,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -5284,22 +4441,25 @@ classDiagram
     DetalleVenta "0..1" -- "0..*" MovimientoInventario : detalleVenta
     MovimientoInventario "0..1" -- "0..1" MovimientoInventario : movimientoReversion
     note for MovimientoInventario "CU40 comparte CU24; conserva hechos originales y referencias sin crear entidad Reporte"
+    note for movimientoInventarioRepository "Solo findAll; incluye movimientoReversion y detalles opcionales sin ejecutar findReversiones ni findReferenciasParaAnular"
 ```
 
 ## 10. Cierre y revisión de Fase 5
 
 | Caso | Diagramas | Estado |
 |---|---|---|
-| CU21 — Consultar inventario | 1, productos con existencias registradas | Elaborado |
-| CU22 — Consultar existencias | 1, saldo y marcador en consulta coherente | Elaborado |
-| CU23 — Registrar ajuste | 1, entrada/salida y conciliación sin diferencia | Elaborado |
-| CU24 — Consultar movimientos | 1, filtros y referencias de operación | Elaborado |
-| CU37 — Consultar stock bajo | 1, disponibilidad amplia y umbral inclusivo | Elaborado |
-| CU40 — Consultar historial | 1, flujo compartido con CU24 | Elaborado |
+| CU21 — Consultar inventario | 1, productos con existencias registradas | Elaborado; métodos por CU corregidos |
+| CU22 — Consultar existencias | 1, saldo y marcador en consulta coherente | Elaborado; métodos y dependencia SQL corregidos |
+| CU23 — Registrar ajuste | 1, entrada/salida y conciliación sin diferencia | Elaborado; métodos y escrituras condicionales corregidos |
+| CU24 — Consultar movimientos | 1, filtros y referencias de operación | Elaborado; métodos por CU corregidos |
+| CU37 — Consultar stock bajo | 1, disponibilidad amplia y umbral inclusivo | Elaborado; métodos por CU corregidos |
+| CU40 — Consultar historial | 1, flujo compartido con CU24 | Elaborado; métodos por CU corregidos |
 
-**Verificación de esta entrega:** se contrastaron los seis diagramas nuevos contra 14 clases participantes, con 55 atributos persistentes y 61 operaciones propias al incluir clases compartidas. Esta fase incorpora tres clases nuevas, sin atributos propios y con 25 operaciones. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias y cardinalidades contra código y metadatos Sequelize, incluida la lectura SQL correlacionada de CU22, la ausencia de lectura de Medicamento en el POST de CU23 y las referencias opcionales/hasOne de CU24/CU40. La comprobación acumulada cubre 50 clases reales, 109 atributos persistentes y 215 operaciones propias, en 321 apariciones completas de clases. Los 30 diagramas de las cinco fases se analizaron y renderizaron localmente a SVG con Mermaid 11.12.0 sin errores. La verificación utilizó código y metadatos, sin conexiones MySQL. Se revisó el formato del Markdown.
+**Verificación de la entrega inicial:** se contrastaron los seis diagramas contra 14 clases participantes, con 55 atributos persistentes y 61 operaciones propias de las clases completas, incluidas las compartidas. Esta fase incorporó tres clases nuevas, sin atributos propios y con 25 operaciones. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias y cardinalidades contra código y metadatos Sequelize, incluida la lectura SQL correlacionada de CU22, la ausencia de lectura de Medicamento en el POST de CU23 y las referencias opcionales/hasOne de CU24/CU40. El inventario acumulado de Fases 1–5 comprendió 50 clases reales, 109 atributos persistentes y 215 operaciones propias, en 321 apariciones de clases. Los 30 diagramas iniciales se renderizaron con Mermaid 11.12.0 sin errores ni conexiones MySQL.
 
-**Puntos de revisión:** stock físico frente a vendible; CU21 con existencias obligatorias frente a stock bajo con productos sin existencias; CU22 con MAX correlacionado frente a marcador bloqueante de CU23; catálogo como carga independiente de identidad; Administrador sin permiso de ajuste; conteo sin diferencia sin auditoría persistida; originales y reversiones conservados; detalles de venta sin cabeceras ni implementación de Ventas; CU24/CU40 como misma consulta.
+**Corrección de Fase 5:** los seis dibujos seleccionan 25 operaciones propias distintas, contadas por clase/método, en 47 apariciones. Conservan las 14 clases participantes, sus 55 atributos persistentes y los dos atributos de AppError. Se incluyen autenticación previa, llamadas por consultarDisponibilidad externo, lectura SQL correlacionada de CU22 y escrituras condicionales de CU23. CU24/CU40 mantienen exactamente los mismos miembros y atributos de clases en dibujos separados. Se omite associate(models) de los modelos por CU y se mantienen asociaciones/cardinalidades. La verificación de esta corrección se registra en 0.5.
+
+**Puntos de revisión:** selección exacta de métodos; consultarDisponibilidad como función externa; updateSaldoYCosto/create solo con diferencia; stock físico frente a vendible; CU21 con existencias obligatorias frente a stock bajo con productos sin existencias; CU22 con MAX correlacionado frente a marcador bloqueante de CU23; catálogo como carga independiente de identidad; Administrador sin permiso de ajuste; conteo sin diferencia sin auditoría persistida; originales y reversiones conservados por include sin findReversiones; detalles de venta sin cabeceras ni implementación de Ventas; CU24/CU40 como misma consulta.
 
 **Avance al cierre de Fase 5:** 29 de los 33 CU implementados analizados, con 30 diagramas. La Fase 6 se incorpora a continuación por solicitud de continuidad del usuario.
 
@@ -5309,7 +4469,7 @@ classDiagram
 
 Esta fase reutiliza las clases y firmas de 9.1 y los Repositories de 7.1, sin incorporar clases nuevas. Las fuentes principales son `backend/src/business/services/inventario.service.js`, `backend/src/presentation/controllers/inventario.controller.js`, `backend/src/business/validators/inventario.validator.js`, `backend/src/data/repositories/existencia-medicamento.repository.js` y `backend/src/data/repositories/movimiento-inventario.repository.js`. Las rutas están en `backend/src/presentation/routes/inventario.router.js` y `frontend/src/app/router.jsx`.
 
-Los diagramas muestran completos inventarioController, inventarioValidator, inventarioService, Repositories participantes, authService, usuarioRepository, Usuario y AppError. Las consultas agregan Medicamento/ExistenciaMedicamento; los POST de retiro agregan ExistenciaMedicamento/MovimientoInventario, sin leer Medicamento. Todos sus atributos y operaciones propios se repiten aunque solo se ejecute una parte.
+Los inventarios de firmas describen las clases completas; los diagramas muestran únicamente los métodos propios utilizados en cada CU de inventarioController, inventarioValidator, inventarioService, Repositories participantes, authService, usuarioRepository y AppError. Se conservan los atributos completos de los modelos y los dos de AppError. Las consultas agregan Medicamento/ExistenciaMedicamento; los POST de retiro agregan ExistenciaMedicamento/MovimientoInventario, sin leer Medicamento. Se omite associate(models) porque configura las relaciones al iniciar el sistema, manteniendo las asociaciones y cardinalidades dibujadas.
 
 **Auxiliares externos:** consultarDisponibilidad, toPublicInventario, toPublicExistencias, existenciasDeInventario y compararVencimientos construyen las consultas; registrarRetiro comparte la transacción de CU35/CU36, con costoPromedioExistencia/toPlain y utilidades monetarias/temporales. Son funciones fuera de inventarioService. Los esquemas retiroVencimientoSchema/retiroDanoSchema y getValidatedData tampoco son miembros de Validator/Controller. No existe clase Vencimiento, Retiro, BajaInventario o Perdida en estos flujos.
 
@@ -5323,6 +4483,16 @@ Los diagramas muestran completos inventarioController, inventarioValidator, inve
 - **Valoración:** ambos retiros aplican costo promedio vigente, permitido cero, y lo conservan incluso al agotar la existencia. La pérdida se deriva de cantidad × costo aplicado a seis decimales, se redondea a dos con BigInt y empate hacia arriba, y se devuelve como cadena. No es columna ni entidad; puede superar el límite DECIMAL(14,2), que no se persiste para este resultado. El movimiento guarda el costo aplicado de seis decimales.
 
 Las asociaciones de existencia–movimiento y usuario–movimiento conservan padre obligatorio y `0..*` hijos. Un retiro independiente deja id_detalle_compra, id_detalle_venta e id_movimiento_original en NULL; no es reversión de un original. Las clases completas conservan esos campos porque forman parte del modelo, sin crear dependencias de escritura a Compra/Venta/Receta.
+
+| Camino de CU35/CU36 | Métodos propios o auxiliares externos ejecutados | Condición y resultado |
+|---|---|---|
+| Entrada HTTP | `validateSinFiltros` y `validateRetiroVencimiento` o `validateRetiroDano` | Validación por etapas; query inválido impide validar body y llamar al Service. Observación opcional en CU35 y obligatoria en CU36. |
+| Lectura bloqueante | `findByIdParaMovimiento` y `findUltimoIdParaExistencia` | Tras validar el responsable, registrarRetiro externo bloquea existencia; si no existe, rechaza antes de consultar marcador. Compara saldo y último movimiento antes de efectos. |
+| Condición temporal de CU35 | `calcularVencimiento`, función externa | Se ejecuta solo cuando motivo es VENCIMIENTO, después de precondiciones y validación de saldo; exige vencida. CU36 fija DANO y no ejecuta esta rama. |
+| Retiro válido | `updateSaldoYCosto` y `movimientoInventarioRepository.create` | Solo tras aprobar precondiciones, condición temporal aplicable, cantidad y costo. create se ejecuta después de actualizar exactamente una existencia; transacción conserva atomicidad. |
+| Rechazo o fallo | `AppError.constructor` en ramas conocidas | Si falla un paso, se interrumpe el flujo; un error posterior a la actualización revierte la transacción. No existe un retiro válido sin efectos por cantidad cero. |
+
+registrarRetiro es externo y no aparece como miembro de inventarioService. Los métodos propios seleccionados representan los caminos reales, sin afirmar que todos se ejecuten en solicitudes rechazadas. La preparación CU22/CU15 y las consultas posteriores de disponibilidad/historial conservan sus CU independientes.
 
 ### CU33. Consultar productos próximos a vencer
 
@@ -5353,47 +4523,19 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
         +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
-        +validateSinFiltros(data)$
         +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
         +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
-        +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
-        +updateSaldoYCosto(options)$
         +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class Medicamento {
         <<modelo>>
@@ -5409,7 +4551,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -5420,29 +4561,14 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -5455,7 +4581,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -5481,6 +4606,7 @@ classDiagram
     existenciaMedicamentoRepository ..> ExistenciaMedicamento : include opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     note for ExistenciaMedicamento "Fisico positivo y no vencida; etiqueta normalizada dentro de tres meses calendario"
+    note for inventarioService "consultarDisponibilidad y existenciasDeInventario son externos; no llama a getInventario getExistencias ni metodos de retiro"
 ```
 
 ### CU34. Consultar productos vencidos
@@ -5510,47 +4636,19 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
         +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
-        +validateSinFiltros(data)$
         +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
         +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
-        +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
-        +updateSaldoYCosto(options)$
         +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class Medicamento {
         <<modelo>>
@@ -5566,7 +4664,6 @@ classDiagram
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
-        +associate(models)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -5577,29 +4674,14 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -5612,7 +4694,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -5638,6 +4719,7 @@ classDiagram
     existenciaMedicamentoRepository ..> ExistenciaMedicamento : include opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     note for ExistenciaMedicamento "Vencida y fisico positivo; vencimiento no pone saldo en cero ni registra retiro"
+    note for inventarioService "consultarDisponibilidad y existenciasDeInventario son externos; no llama a getInventario getExistencias ni registrarRetiroVencimiento"
 ```
 
 ### CU35. Registrar retiro por vencimiento
@@ -5674,55 +4756,25 @@ classDiagram
     class inventarioController {
         <<controller>>
         +registrarRetiroVencimiento(req, res, next)$
-        +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
         +validateSinFiltros(data)$
-        +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
         +validateRetiroVencimiento(data)$
-        +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
         +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
-        +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
         +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
         +updateSaldoYCosto(options)$
-        +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class movimientoInventarioRepository {
         <<repository>>
         +findUltimoIdParaExistencia(options)$
-        +findParaAnular(options)$
-        +findReversiones(options)$
-        +findReferenciasParaAnular(options)$
         +create(options)$
-        +findAll(filtros)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -5733,7 +4785,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -5749,29 +4800,14 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -5784,7 +4820,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -5812,6 +4847,8 @@ classDiagram
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
     note for inventarioService "Fija VENCIMIENTO; auxiliar externo comprueba corte DIA MES despues de bloqueos y deriva perdida"
+    note for existenciaMedicamentoRepository "findByIdParaMovimiento precede al marcador; updateSaldoYCosto solo tras validar precondiciones vencimiento stock y costo"
+    note for movimientoInventarioRepository "findUltimoIdParaExistencia si la existencia fue encontrada; create tras actualizar exactamente una existencia"
 ```
 
 ### CU36. Registrar retiro por daño
@@ -5847,56 +4884,26 @@ classDiagram
     class requireRole { <<funcion>> }
     class inventarioController {
         <<controller>>
-        +registrarRetiroVencimiento(req, res, next)$
         +registrarRetiroDano(req, res, next)$
-        +registrarAjuste(req, res, next)$
-        +getInventario(req, res, next)$
-        +getExistencias(req, res, next)$
-        +getMovimientos(req, res, next)$
-        +getProximosAVencer(req, res, next)$
-        +getVencidos(req, res, next)$
-        +getStockBajo(req, res, next)$
     }
     class inventarioValidator {
         <<validator>>
-        +validateId(data)$
         +validateSinFiltros(data)$
-        +validateFiltrosInventario(data)$
-        +validateFiltrosMovimientos(data)$
-        +validateAjuste(data)$
-        +validateRetiroVencimiento(data)$
         +validateRetiroDano(data)$
     }
     class inventarioService {
         <<servicio>>
-        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
         +registrarRetiroDano(data, idUsuarioAutenticado)$
-        +registrarAjuste(data, idUsuarioAutenticado)$
-        +getInventario(filtros, fechaComercial)$
-        +getExistencias(idMedicamento, fechaComercial)$
-        +getProximosAVencer(filtros, fechaComercial)$
-        +getVencidos(filtros, fechaComercial)$
-        +getStockBajo(filtros, fechaComercial)$
-        +getMovimientos(filtros)$
     }
     class existenciaMedicamentoRepository {
         <<repository>>
         +findByIdParaMovimiento(options)$
-        +findByIdParaAnular(options)$
-        +findParaCompra(options)$
-        +create(options)$
         +updateSaldoYCosto(options)$
-        +findInventario(filtros, options)$
-        +findMedicamentoConExistencias(idMedicamento)$
     }
     class movimientoInventarioRepository {
         <<repository>>
         +findUltimoIdParaExistencia(options)$
-        +findParaAnular(options)$
-        +findReversiones(options)$
-        +findReferenciasParaAnular(options)$
         +create(options)$
-        +findAll(filtros)$
     }
     class ExistenciaMedicamento {
         <<modelo>>
@@ -5907,7 +4914,6 @@ classDiagram
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
-        +associate(models)$
     }
     class MovimientoInventario {
         <<modelo>>
@@ -5923,29 +4929,14 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
-        +associate(models)$
     }
     class authService {
         <<servicio>>
-        +login(credentials)$
         +getSessionUsuario(idUsuario, versionCredenciales)$
     }
     class usuarioRepository {
         <<repository>>
-        +findByNombreUsuario(options)$
-        +findAllUsuarios()$
-        +findById(options)$
-        +findByIdForUpdate(options)$
-        +findByCorreo(options)$
-        +findByIdForRecovery(options)$
         +findByIdForSession(options)$
-        +findByIdWithPassword(options)$
-        +findRolById(options)$
-        +createUsuario(options)$
-        +updateUsuario(options)$
-        +updateEstado(options)$
-        +updatePassword(options)$
-        +updateLoginSecurity(options)$
     }
     class Usuario {
         <<modelo>>
@@ -5958,7 +4949,6 @@ classDiagram
         -BOOLEAN estado
         -INT_UNSIGNED intentos_fallidos_login
         -DATETIME bloqueado_hasta
-        +associate(models)$
     }
     class AppError {
         <<error>>
@@ -5986,22 +4976,26 @@ classDiagram
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
     note for inventarioService "Fija DAÑO; auxiliar externo exige observacion validada y saldo suficiente sin comprobar vencimiento"
+    note for existenciaMedicamentoRepository "findByIdParaMovimiento precede al marcador; updateSaldoYCosto solo tras validar precondiciones stock y costo"
+    note for movimientoInventarioRepository "findUltimoIdParaExistencia si la existencia fue encontrada; create tras actualizar exactamente una existencia"
 ```
 
 ## 12. Cierre y revisión de Fase 6
 
 | Caso | Diagramas | Estado |
 |---|---|---|
-| CU33 — Consultar próximos a vencer | 1, etiqueta normalizada y tres meses calendario | Elaborado |
-| CU34 — Consultar vencidos | 1, vencimiento efectivo y físico pendiente | Elaborado |
-| CU35 — Retiro por vencimiento | 1, precondiciones y corte temporal bajo bloqueo | Elaborado |
-| CU36 — Retiro por daño | 1, observación obligatoria y sin condición de vencimiento | Elaborado |
+| CU33 — Consultar próximos a vencer | 1, etiqueta normalizada y tres meses calendario | Elaborado; métodos por CU corregidos |
+| CU34 — Consultar vencidos | 1, vencimiento efectivo y físico pendiente | Elaborado; métodos por CU corregidos |
+| CU35 — Retiro por vencimiento | 1, precondiciones y corte temporal bajo bloqueo | Elaborado; métodos por auxiliar y condiciones corregidos |
+| CU36 — Retiro por daño | 1, observación obligatoria y sin condición de vencimiento | Elaborado; métodos por auxiliar y condiciones corregidos |
 
-**Verificación de esta entrega:** se contrastaron los cuatro diagramas nuevos contra 12 clases participantes, con 40 atributos persistentes y 59 operaciones propias al incluir clases compartidas. No se incorporan clases ni atributos nuevos. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias y cardinalidades contra código y metadatos Sequelize, distinguiendo consultas amplias de disponibilidad y POST con lectura bloqueante por auxiliares externos. La comprobación acumulada cubre 50 clases reales, 109 atributos persistentes y 215 operaciones propias, en 363 apariciones completas de clases. Los 34 diagramas de las seis fases se analizaron y renderizaron localmente a SVG con Mermaid 11.12.0 sin errores. La tabla integral se contrastó con los nombres y números de los 41 CU del catálogo: 33 implementados/analizados y ocho pendientes. La verificación utilizó código y metadatos, sin conexiones MySQL. Se revisó el formato del Markdown.
+**Verificación de la entrega inicial:** se contrastaron los cuatro diagramas contra 12 clases participantes, con 40 atributos persistentes y 59 operaciones propias de las clases completas, incluidas las compartidas. No se incorporaron clases ni atributos nuevos. Se comprobaron miembros completos, firmas, tipos, fuentes, actores, dependencias y cardinalidades contra código y metadatos Sequelize, distinguiendo consultas amplias de disponibilidad y POST con lectura bloqueante por auxiliares externos. El inventario acumulado comprendió 50 clases reales, 109 atributos persistentes y 215 operaciones propias, en 363 apariciones de clases. Los 34 diagramas iniciales se renderizaron con Mermaid 11.12.0 sin errores ni conexiones MySQL. La cobertura se contrastó con los 41 CU del catálogo: 33 implementados/analizados y ocho pendientes.
 
-**Puntos de revisión:** etiqueta normalizada frente a fecha efectiva de no venta; MES histórico conservado; tres meses calendario; inactivos presentes en control físico; consulta de alerta frente a nueva preparación CU22; Regente como único actor de escritura; registrarRetiro externo; pérdida derivada y promedio conservado; observación opcional/obligatoria; control de concurrencia sin idempotencia completa; reportes funcionalmente pendientes.
+**Corrección de Fase 6:** los cuatro dibujos seleccionan 20 operaciones propias distintas, contadas por clase/método, en 36 apariciones. Conservan las 12 clases participantes, sus 40 atributos persistentes y los dos atributos de AppError. Se incluyen autenticación previa y llamadas por consultarDisponibilidad/registrarRetiro externos, sin convertir auxiliares en métodos de clase. Las tablas y notas distinguen consultas, comprobación temporal exclusiva de CU35 y escrituras de retiros solo tras validación; create sigue a la actualización de exactamente una existencia. Se omite associate(models) en los modelos por CU y se mantienen asociaciones/cardinalidades. La verificación de esta corrección se registra en 0.5.
 
-**Avance acumulado:** los 33 CU implementados están analizados, con 34 diagramas en seis fases. CU08 tiene dos diagramas; CU24/CU40 comparten implementación con diagramas separados. Los ocho CU pendientes de implementación se mantienen identificados en la cobertura integral siguiente. La Fase 6 queda pendiente de revisión del usuario.
+**Puntos de revisión:** selección exacta de métodos por CU; etiqueta normalizada frente a fecha efectiva de no venta; MES histórico conservado; tres meses calendario; inactivos presentes en control físico; consulta de alerta frente a nueva preparación CU22; Regente como único actor de escritura; registrarRetiro externo y sus llamadas reales; condición de vencimiento solo en CU35; pérdida derivada y promedio conservado; observación opcional/obligatoria; control de concurrencia sin idempotencia completa; reportes funcionalmente pendientes.
+
+**Avance acumulado:** los 33 CU implementados están analizados, con 34 diagramas en seis fases, todos corregidos con métodos específicos por CU. CU08 tiene dos diagramas; CU24/CU40 comparten implementación con diagramas separados. Los ocho CU pendientes de implementación se mantienen identificados en la cobertura integral siguiente. La corrección de Fase 6 queda pendiente de revisión del usuario.
 
 ## 13. Cobertura integral y cierre del alcance implementado
 
@@ -6051,4 +5045,4 @@ Nombres contrastados con el catálogo `docs/ai/casos-uso.md`. «Elaborado» sign
 | CU40 | Consultar historial de inventario | Implementado | Elaborado — Fase 5 |
 | CU41 | Consultar pérdidas | Pendiente | Posterior a implementación |
 
-**Cierre del alcance:** 33 CU implementados y analizados, ocho CU funcionalmente pendientes y 34 diagramas de clases completos. El diagrama estructural `diagrama-clases.md` sigue siendo referencia de los 15 modelos; Receta no participa en los CU ejecutados documentados aquí, y Venta/DetalleVenta aparecen únicamente cuando las consultas implementadas necesitan sus referencias. La existencia de esos modelos no completa sus operaciones. CU26 no completa CU39 y el resultado de retiro no completa CU41. La activación/validación de envío de CU09 a un buzón real conserva el pendiente operativo ya documentado.
+**Cierre del alcance:** 33 CU implementados y analizados, ocho CU funcionalmente pendientes y 34 diagramas de clases corregidos con métodos específicos por CU y atributos completos. El diagrama estructural `diagrama-clases.md` sigue siendo referencia de los 15 modelos; Receta no participa en los CU ejecutados documentados aquí, y Venta/DetalleVenta aparecen únicamente cuando las consultas implementadas necesitan sus referencias. La existencia de esos modelos no completa sus operaciones. CU26 no completa CU39 y el resultado de retiro no completa CU41. La activación/validación de envío de CU09 a un buzón real conserva el pendiente operativo ya documentado.
