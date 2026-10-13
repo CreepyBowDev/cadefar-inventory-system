@@ -4,9 +4,9 @@ Sistema de Información Web para la Administración de Inventario, Ventas y Cont
 
 **Materia:** Sistemas de Información I. **Enfoque:** Boundary–Control–Entity (BCE).
 
-> **Corrección según el docente — Fases 1 y 2:** CU01–CU13, con funciones locales reales de React, colaboración HTTP resumida y operaciones backend verificables.
+> **Corrección según el docente — Fases 1–6:** CU01–CU27, CU33–CU37 y CU40, con funciones locales reales de React, colaboración HTTP resumida y operaciones backend verificables.
 > **Cobertura documental:** 33 CU implementados y 34 diagramas; CU08 conserva dos variantes.
-> **Avance de la corrección:** trece CU y catorce diagramas corregidos. Las fases 3–6 conservan la versión conceptual anterior y quedan pendientes de esta corrección.
+> **Avance de la corrección:** los 33 CU y 34 diagramas están corregidos contra fuentes; Fase 6 y cierre acumulado quedan para revisión del usuario.
 
 ## 0. Alcance y criterios del análisis académico
 
@@ -26,7 +26,7 @@ Se mantienen dos niveles documentales independientes:
 
 **Criterio del docente aplicado a las fases corregidas:** los componentes funcionales de React se representan como elementos `«boundary»`. Su compartimento de operaciones muestra las **funciones locales reales** que participan en el CU, con una nota que las distingue de métodos de clases JavaScript. Los callbacks recibidos se representan como props de tipo Function; los eventos inline se identifican en las correspondencias. Las funciones exportadas de servicios HTTP del frontend se documentan como intermediarias en las tablas, sin cajas independientes ni atribución de sus operaciones al componente. Las dependencias Boundary–Controller etiquetadas con verbo/endpoint son **colaboraciones HTTP resumidas**, no llamadas directas entre esos elementos. Los Controllers, Services y Repositories son clases exportadas reales: cada método dibujado pertenece a su clase. Los modelos conservan sus atributos persistentes completos. Los actores son elementos conceptuales UML, expresamente distintos del modelo Usuario.
 
-**Transición por fases:** los nombres Vista... y Control... de las fases 3–6 son las abstracciones de la versión anterior, todavía pendientes de sustitución; no se consideran nombres implementados. Los cierres históricos de esas fases describen aquella entrega, no la verificación de la corrección actual.
+**Corrección por fases completada:** las seis fases representan nombres implementados, funciones locales React y métodos backend verificables. Los cierres anteriores conservan el avance y estado de revisión correspondientes a cada entrega; el cierre acumulado de la sección 13 refleja la cobertura corregida actual.
 
 ### 0.1. Notación y selección de participantes
 
@@ -52,10 +52,10 @@ Se mantienen dos niveles documentales independientes:
 |---|---|---|---|
 | 1 | Autenticación, Usuarios y Recuperación | CU01–CU09 | Corregida contra código; nueve CU y diez diagramas; para revisión |
 | 2 | Proveedores y Laboratorios | CU10–CU13 | Corregida contra código; cuatro CU y cuatro diagramas; para revisión |
-| 3 | Medicamentos, Principios Activos y Composición | CU14–CU20 | Versión anterior; corrección pendiente |
-| 4 | Compras | CU25–CU27 | Versión anterior; corrección pendiente |
-| 5 | Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37 y CU40 | Versión anterior; corrección pendiente |
-| 6 | Vencimientos y Retiros | CU33–CU36 | Versión anterior; corrección pendiente |
+| 3 | Medicamentos, Principios Activos y Composición | CU14–CU20 | Corregida contra código; siete CU y siete diagramas; para revisión |
+| 4 | Compras | CU25–CU27 | Corregida contra código; tres CU y tres diagramas; para revisión |
+| 5 | Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37 y CU40 | Corregida contra código; seis CU y seis diagramas; para revisión |
+| 6 | Vencimientos y Retiros | CU33–CU36 | Corregida contra código; cuatro CU y cuatro diagramas; para revisión |
 
 Las seis fases cubren los 33 CU implementados y 34 diagramas, conservando la numeración oficial y el orden por módulo acordado. Los ocho CU funcionalmente pendientes se identifican únicamente en la sección final, sin anticipar sus diagramas.
 
@@ -1722,7 +1722,7 @@ La función HTTP `updateEstadoProveedorLaboratorio` invoca `PATCH /api/proveedor
 
 ### 5.1. Condiciones compartidas, permisos y asociaciones
 
-Se mantiene un Control conceptual principal por CU. Sus operaciones reúnen la coordinación real de Controllers, Validators, Services, Repositories y auxiliares, sin representar esas piezas como clases académicas adicionales ni trasladar sus métodos a las entidades.
+Se aplica la estructura corregida de Fases 1–2: componentes funcionales React con funciones locales, Controllers y Services reales como Control, Repositories como intermediarios de persistencia y modelos como Entity. Las dependencias HTTP son resúmenes con verbo/endpoint; las tablas identifican funciones exportadas, firmas y archivos sin cajas de módulos HTTP. Los auxiliares de módulo y Validators se documentan sin atribuirlos a otra clase.
 
 | Caso o camino | Actores autorizados |
 |---|---|
@@ -1735,7 +1735,9 @@ Se mantiene un Control conceptual principal por CU. Sus operaciones reúnen la c
 
 Todas las solicitudes requieren sesión válida y cuenta activa, con versión de credenciales vigente. La autenticación transversal conserva el flujo documentado de authMiddleware/authService/usuarioRepository; requireRole autoriza cada operación. Usuario no se repite como entidad del objetivo ni se confunde con los actores.
 
-**Atributos y tipos:** los dibujos seleccionan campos persistentes relevantes. `VARCHAR_20`, `VARCHAR_40`, `VARCHAR_50` y `VARCHAR_80` abrevian las longitudes SQL; `DECIMAL_12_4` representa `DECIMAL(12,4)`. Las cantidades de composición son positivas, con hasta cuatro decimales y unidades de hasta 30 caracteres; la API recibe números JSON y devuelve cadenas decimales. Los campos de las vistas son temporales; Lista representa arreglos del formulario o de resultados.
+**Atributos y tipos:** cada modelo dibujado muestra todos sus atributos persistentes, incluidas sus FK. `VARCHAR_n` abrevia VARCHAR(n), `DECIMAL_12_4` representa DECIMAL(12,4) y `DECIMAL_14_6`, DECIMAL(14,6). DATEONLY representa una fecha sin hora y DATE, fecha/hora; los ENUM conservan sus valores en los modelos fuente. Las cantidades de composición son positivas, con hasta cuatro decimales y unidades de hasta 30 caracteres; la API recibe números JSON y devuelve cadenas decimales. Los datos Boundary son estado/props/hooks, no atributos de clases JavaScript; Array representa arreglos. Los seis modelos utilizan timestamps:false.
+
+**Detalles de tipos y presentación:** precision_vencimiento utiliza ENUM('DIA', 'MES') y direccion de MovimientoInventario utiliza ENUM('ENTRADA', 'SALIDA'). Las PK técnicas son INT autoincrementales. `form` de MedicamentoForm mantiene cadenas de sus campos comerciales antes de convertir proveedor/stock; `form` de ComposicionForm mantiene cantidades/unidades antes de construir el payload numérico. `decimal(value)` de ComposicionTable es una función externa al componente para presentación, no una operación local de la tabla ni un cálculo persistente.
 
 | Asociación persistente utilizada | Multiplicidades | Interpretación |
 |---|---|---|
@@ -1755,18 +1757,23 @@ CU14/CU16/CU19 coordinan transacción de catálogo, bloqueos y comprobación de 
 
 Las correspondencias remiten a `medicamentoService`, `principioActivoService` y `composicionMedicamentoService` y a sus Controllers/Validators/Repositories documentados en el análisis técnico. `backend/src/business/services/identidad-medicamento.js` exporta auxiliares compartidos, no otra entidad ni otro Service. Referencias comunes: RF03/RF04, RF11–RF14; RN10/RN13–RN17.
 
+**Fuentes compartidas:** `frontend/src/features/medicamentos/services/medicamento.service.js` y `frontend/src/features/principios-activos/services/principio-activo.service.js` utilizan api de `frontend/src/api/api.js`, con cookies y URL base compartidas. Los routers `backend/src/presentation/routes/medicamento.router.js` y `principio-activo.router.js` se montan en `/api/medicamentos` y `/api/principios-activos` desde `backend/src/app.js`; `composicion-medicamento.router.js`, con mergeParams:true, se monta bajo `/:idMedicamento/composicion`. authMiddleware precede a requireRole; useAuth solo aporta información pública para restricciones visuales.
+
+**Auxiliares, sin operaciones de clase inventadas:** en `backend/src/business/services/medicamento.service.js`, `toModelData(data)`, `toPublicMedicamento(medicamento)`, `toPublicComposicion(composicion)`, `validateCodigoNoEnviado(data)`, `esColisionCodigo(error)` y `generarCodigo(prefijo, transaction)` son funciones de módulo. `obtenerPrefijoMedicamento(nombreComercial)` pertenece a `backend/src/shared/utils/codigo-medicamento.js`. En `identidad-medicamento.js`, `composicionCanonica(componentes)`, `transaccionCatalogo(callback)`, `bloquearProveedoresIdentidad(ids, transaction)`, `validarIdentidadDisponible(medicamento, composicion, transaction, idMedicamento)` y `convertirErrorContencionCatalogo(error)` son exportaciones independientes: las llamadas al Repository realizadas por ellas se resumen como dependencias del flujo del Service. En `composicion-medicamento.service.js`, `prepararModificacion(idMedicamento, transaction)`, `validarResultado(actual, idMedicamento, transaction)` y `getComposicion(idMedicamento, idComposicion, transaction)` también son externas a la clase. En `principio-activo.service.js`, lo son `toPublicPrincipioActivo(principio)`, `validateNombreDisponible(nombre, transaction, idPrincipioActivo)` y `handleDuplicateDatabaseError(error)`. Los tres archivos de Controller tienen su propio getValidatedData(result); getIdMedicamento(params) y getIdPrincipioActivo(params) son auxiliares de sus módulos respectivos.
+
 ### CU14 — Registrar medicamento
 
 **Actor o actores:** Regente autenticado.
 
 **Objetivo:** registrar un medicamento y su composición inicial no vacía mediante una única operación atómica.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaRegistrarMedicamento | Boundary | Recoge datos comerciales y prepara componentes en un borrador local. |
-| ControlRegistrarMedicamento | Control | Valida alta, referencias e identidad, genera código y coordina registro integral y resultado. |
+| MedicamentoFormPage / MedicamentoForm / ComposicionForm / ComposicionTable | Boundary; componentes funcionales | Coordinan alta y borrador local mediante props/callbacks. |
+| medicamentoController / medicamentoService | Control; clases | Validan y coordinan el POST integral y su lectura final. |
+| medicamentoRepository / composicionMedicamentoRepository | Repository; clases | Consultan referencias/identidad/código e insertan producto y componentes. |
 | Medicamento | Entity | Representa el producto nuevo del catálogo. |
 | ProveedorLaboratorio | Entity | Representa el proveedor existente y activo asignado. |
 | PrincipioActivo | Entity | Identifica cada ingrediente existente. |
@@ -1778,35 +1785,68 @@ Las correspondencias remiten a `medicamentoService`, `principioActivoService` y 
 classDiagram
     direction LR
     class Regente { <<actor>> }
-    class VistaRegistrarMedicamento {
+    class MedicamentoForm {
         <<boundary>>
-        -String nombreComercial
-        -Integer idProveedorLaboratorio
-        -String formaFarmaceutica
-        -String presentacion
-        -String unidadInventario
-        -Integer stockMinimo
-        -String condicionVenta
-        -String viaAdministracion
-        -String tipoLiberacion
-        -Lista composicion
-        +agregarComponenteBorrador()
-        +editarComponenteBorrador()
-        +retirarComponenteBorrador()
-        +enviarRegistroIntegral()
+        -Object form
+        -Array composicion
+        -Object editor
+        -Number nextId
+        -Function onSubmit
+        -Function onCancel
+        +guardarComponente(data)
+        +update(event)
+        +submit(event)
     }
-    class ControlRegistrarMedicamento {
+    class MedicamentoFormPage {
+        <<boundary>>
+        -String mode
+        -Array proveedores
+        -Array principios
+        -Array duplicados
+        -Boolean submitting
+        +submit(data)
+    }
+    class ComposicionForm {
+        <<boundary>>
+        -Object form
+        -Function onSubmit
+        -Function onCancel
+        +update(event)
+        +submit(event)
+    }
+    class ComposicionTable {
+        <<boundary>>
+        -Array composicion
+        -Function onEdit
+        -Function onRemove
+    }
+    class medicamentoController {
         <<control>>
-        +validarAlta()
-        +validarReferencias()
-        +comprobarIdentidad()
-        +generarCodigo()
-        +registrarMedicamentoConComposicion()
-        +consultarResultado()
+        +createMedicamento(req, res, next)$
+    }
+    class medicamentoService {
+        <<control>>
+        +createMedicamento(data)$
+        +getMedicamentoById(...)$
+    }
+    class medicamentoRepository {
+        <<repository>>
+        +findProveedorById(...)$
+        +findDuplicadosIdentidad(...)$
+        +findMayorCorrelativo(...)$
+        +findByCodigo(...)$
+        +create(...)$
+        +findById(...)$
+    }
+    class composicionMedicamentoRepository {
+        <<repository>>
+        +findPrincipioById(...)$
+        +create(...)$
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
+        -INT id_proveedor_laboratorio
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
         -VARCHAR_80 forma_farmaceutica
@@ -1822,48 +1862,71 @@ classDiagram
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
         -BOOLEAN estado
     }
     class PrincipioActivo {
         <<entity>>
         -INT id_principio_activo
         -VARCHAR_150 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
     class ComposicionMedicamento {
         <<entity>>
         -INT id_composicion
+        -INT id_medicamento
+        -INT id_principio_activo
         -DECIMAL_12_4 cantidad_principio_activo
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
         -VARCHAR_30 unidad_referencia
     }
-    Regente --> VistaRegistrarMedicamento
-    VistaRegistrarMedicamento ..> ControlRegistrarMedicamento : solicita
-    ControlRegistrarMedicamento ..> Medicamento : registra
-    ControlRegistrarMedicamento ..> ProveedorLaboratorio : valida
-    ControlRegistrarMedicamento ..> PrincipioActivo : verifica existencia
-    ControlRegistrarMedicamento ..> ComposicionMedicamento : registra componentes
+    Regente --> MedicamentoForm
+    MedicamentoForm ..> MedicamentoFormPage : callback onSubmit
+    ComposicionForm ..> MedicamentoForm : callback onSubmit a guardarComponente
+    ComposicionTable ..> MedicamentoForm : callbacks onEdit y onRemove
+    MedicamentoFormPage ..> medicamentoController : POST /api/medicamentos (resumen)
+    medicamentoController ..> medicamentoService : createMedicamento
+    medicamentoService ..> medicamentoRepository : alta y auxiliares de identidad y codigo
+    medicamentoService ..> composicionMedicamentoRepository : referencia y alta de componentes
+    medicamentoRepository ..> Medicamento : consultas e insercion
+    medicamentoRepository ..> ProveedorLaboratorio : referencia y lectura final
+    medicamentoRepository ..> ComposicionMedicamento : identidad y lectura final
+    medicamentoRepository ..> PrincipioActivo : include final
+    composicionMedicamentoRepository ..> PrincipioActivo : verifica existencia
+    composicionMedicamentoRepository ..> ComposicionMedicamento : inserta
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
+    note for MedicamentoForm "Operaciones = funciones locales React; no metodos de clase.\nBorrador sin peticiones de componentes."
+    note for MedicamentoFormPage "submit(data) es local React;\ncarga preparatoria por efecto anonimo, segun tabla."
+    note for ComposicionForm "update y submit son locales React;\nonSubmit y onCancel son props."
+    note for ComposicionTable "Sin handlers locales; onEdit y onRemove son props."
 ```
 
-**Descripción de relaciones:** el Regente prepara el medicamento y uno o más componentes; agregar, corregir o retirar del borrador no escribe entidades. El Control comprueba proveedor activo, principios existentes y ausencia de ingredientes repetidos, compara la identidad completa y registra Medicamento y ComposicionMedicamento juntos. Las asociaciones expresan a qué producto e ingrediente pertenece cada componente; las FK pueden omitirse como atributos cuando ya están representadas por la asociación.
+**Descripción de relaciones:** el Regente prepara el medicamento y uno o más componentes. ComposicionForm llama a guardarComponente mediante onSubmit; la tabla devuelve edición/retiro mediante props. MedicamentoForm envía el borrador a submit(data) de la página, que llama a la función HTTP importada; la dependencia hacia medicamentoController resume ese POST. El Controller valida y el Service comprueba referencias/identidad y registra producto/componentes por los Repositories. Agregar, corregir o retirar del borrador no escribe entidades. Las asociaciones y las FK completas identifican producto e ingrediente de cada relación.
 
 El código se genera con tres letras válidas normalizadas del nombre y el mayor correlativo conservado del prefijo más uno, sin reutilizar huecos. La comparación de identidad incluye inactivos. El estado inicial de medicamento es activo por defecto; el formulario no envía estado ni código/IDs técnicos. Stock mínimo utiliza cero por defecto. El mínimo de un componente pertenece a la precondición del alta, no a un cambio de la multiplicidad persistente.
 
 Una colisión específica de código puede repetir la transacción hasta cinco intentos; agotamiento, referencia inválida o duplicado rechazan el alta. Cualquier fallo revierte todas las inserciones. No se crean existencias ni movimientos y no se incorpora stock físico al dar de alta el catálogo.
 
-**Correspondencia con la implementación:** `/medicamentos/nuevo`, `frontend/src/features/medicamentos/pages/MedicamentoFormPage.jsx`, `frontend/src/features/medicamentos/components/MedicamentoForm.jsx`, `ComposicionForm.jsx` y `ComposicionTable.jsx` representan la vista y su borrador. El servicio HTTP de Medicamentos usa `POST /api/medicamentos`.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarAlta | `medicamentoController.createMedicamento` y `medicamentoValidator.validateCreate` validan body estricto y composición no vacía/sin principios repetidos; usan el esquema compartido de componentes. |
-| validarReferencias | `medicamentoService.createMedicamento`, `medicamentoRepository.findProveedorById` y `composicionMedicamentoRepository.findPrincipioById` verifican las referencias dentro de la transacción. |
-| comprobarIdentidad | Auxiliares de `identidad-medicamento.js` y `medicamentoRepository.findDuplicadosIdentidad` comparan atributos y composición completa. |
-| generarCodigo | Función externa `generarCodigo`, con `findMayorCorrelativo`/`findByCodigo`; no es un método del modelo ni de medicamentoService. |
-| registrarMedicamentoConComposicion | `medicamentoService.createMedicamento` coordina `medicamentoRepository.create` y `composicionMedicamentoRepository.create` para todos los componentes. |
-| consultarResultado | `medicamentoService.getMedicamentoById` obtiene el DTO con proveedor y composición antes de confirmar la transacción. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU14 | MedicamentoForm | `frontend/src/features/medicamentos/components/MedicamentoForm.jsx` | Locales `guardarComponente(data)`; `update(event)`; `submit(event)` | getValues(data) es externo. onEdit recibe setEditor; onRemove es inline. nextId es ID local, excluido del payload junto a principioActivo. editor puede ser null, 'nuevo' u objeto. |
+| CU14 | ComposicionForm / ComposicionTable | `frontend/src/features/medicamentos/components/ComposicionForm.jsx`; `frontend/src/features/medicamentos/components/ComposicionTable.jsx` | Locales del formulario `update(event)`; `submit(event)` | onSubmit=guardarComponente; la tabla no declara handlers propios. Un único modal fuera del formulario principal evita formularios anidados. |
+| CU14 | MedicamentoFormPage | `frontend/src/features/medicamentos/pages/MedicamentoFormPage.jsx` | Local `submit(data)` | onSubmit de MedicamentoForm; onCancel y reintento son inline. Efecto anónimo carga opciones, sin loadMedicamento inventado. |
+| CU14 | medicamentoController | `backend/src/presentation/controllers/medicamento.controller.js` | `createMedicamento(req, res, next)` | medicamentoValidator.validateCreate(data), en `backend/src/business/validators/medicamento.validator.js`, valida body estricto y composición. |
+| CU14 | medicamentoService | `backend/src/business/services/medicamento.service.js` | `createMedicamento(data)`; `getMedicamentoById(idMedicamento, transaction = undefined)` | Transacción READ COMMITTED, referencias/identidad/código/inserción y lectura final; generarCodigo no es método de clase. |
+| CU14 | medicamentoRepository | `backend/src/data/repositories/medicamento.repository.js` | `findProveedorById({ idProveedorLaboratorio, transaction, exclusivo = false })`; `findDuplicadosIdentidad({ medicamento, composicion, transaction, idMedicamento })`; `findMayorCorrelativo({ prefijo, transaction })`; `findByCodigo({ codigoMedicamento, transaction })`; `create({ data, transaction })`; `findById({ idMedicamento, transaction, lock = false })` | Los auxiliares compartidos llaman a referencia/identidad; generarCodigo a los métodos de correlativo/código. findById final incluye relaciones. |
+| CU14 | composicionMedicamentoRepository | `backend/src/data/repositories/composicion-medicamento.repository.js` | `findPrincipioById({ idPrincipioActivo, transaction })`; `create({ data, transaction })` | Verifica existencia y crea cada componente en la misma transacción. |
+| CU14 | Medicamento / ProveedorLaboratorio / PrincipioActivo / ComposicionMedicamento | `backend/src/data/models/medicamento.js`; `proveedor-laboratorio.js`; `principio-activo.js`; `composicion-medicamento.js` (mismo directorio) | — | Atributos persistentes completos; sin métodos de negocio ni métodos heredados dibujados. |
+| CU14 | Función HTTP intermediaria | `frontend/src/features/medicamentos/services/medicamento.service.js` | `createMedicamento(data)` | api.post; importada por la página, no función local. |
+| CU14 | API, relación HTTP resumida | `backend/src/presentation/routes/medicamento.router.js`; `backend/src/app.js` | `POST /api/medicamentos` | createMedicamento del Controller; solo Regente. |
+| CU14 | Consultas preparatorias CU11/CU18 | `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js`; `frontend/src/features/principios-activos/services/principio-activo.service.js` | `getProveedoresLaboratorios()`; `getPrincipiosActivos()` | GET /api/proveedores-laboratorios y GET /api/principios-activos, dentro de Promise.all del efecto. Reutilizan sus flujos verificados, documentados sin repetir cajas de apoyo. |
 
 Resultado 201 después del commit; la interfaz abre la ficha con el código confirmado. Ante rechazo conserva el borrador y, si recibe referencias de duplicados, permite consultarlas. Referencias: RF11/RF13; RN10/RN13/RN15/RN16 y CU14.
 
@@ -1873,12 +1936,13 @@ Resultado 201 después del commit; la interfaz abre la ficha con el código conf
 
 **Objetivo:** consultar el catálogo por nombre/código y obtener la ficha de un medicamento seleccionado.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarMedicamentos | Boundary | Recoge filtros textuales y presenta listado o ficha. |
-| ControlConsultarMedicamentos | Control | Valida la consulta y obtiene datos públicos con asociaciones. |
+| MedicamentosPage / MedicamentoFilters / MedicamentoTable / MedicamentoDetailPage | Boundary; componentes funcionales | Coordinan filtros, listado y navegación a ficha. |
+| medicamentoController / medicamentoService | Control; clases | Validan y coordinan listado/ficha. |
+| medicamentoRepository | Repository; clase | Lee productos y sus asociaciones completas. |
 | Medicamento | Entity | Representa los productos activos e inactivos consultados. |
 | ProveedorLaboratorio | Entity | Identifica al proveedor incluido en la respuesta. |
 | ComposicionMedicamento | Entity | Aporta la composición completa de cada producto. |
@@ -1892,136 +1956,50 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaConsultarMedicamentos {
+    class MedicamentosPage {
         <<boundary>>
-        -String codigoMedicamento
-        -String nombreComercial
-        -Integer idMedicamento
-        -Lista medicamentos
-        +solicitarListado()
-        +aplicarBusqueda()
-        +solicitarFicha()
+        -Object filters
+        -Array medicamentos
+        +search(nextFilters)
+        +changeFilters(nextFilters, immediate = false)
+        +isCurrent()
     }
-    class ControlConsultarMedicamentos {
+    class MedicamentoFilters {
+        <<boundary>>
+        -Object filters
+        -Function onTextChange
+        -Function onClear
+    }
+    class MedicamentoTable {
+        <<boundary>>
+        -Array medicamentos
+        -Boolean canManage
+    }
+    class MedicamentoDetailPage {
+        <<boundary>>
+        -String idMedicamento
+        -Object med
+        -Boolean loading
+    }
+    class medicamentoController {
         <<control>>
-        +validarConsulta()
-        +consultarListado()
-        +consultarDetalle()
-        +prepararDatosPublicos()
+        +getMedicamentos(req, res, next)$
+        +getMedicamentoById(req, res, next)$
+    }
+    class medicamentoService {
+        <<control>>
+        +getMedicamentos(filtros)$
+        +getMedicamentoById(...)$
+    }
+    class medicamentoRepository {
+        <<repository>>
+        +findAll(...)$
+        +findById(...)$
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
-        -VARCHAR_20 codigo_medicamento
-        -VARCHAR_150 nombre_comercial
-        -VARCHAR_80 forma_farmaceutica
-        -VARCHAR_150 presentacion
-        -VARCHAR_50 unidad_inventario
-        -VARCHAR_40 condicion_venta
-        -BOOLEAN estado
-    }
-    class ProveedorLaboratorio {
-        <<entity>>
         -INT id_proveedor_laboratorio
-        -VARCHAR_150 nombre
-    }
-    class ComposicionMedicamento {
-        <<entity>>
-        -INT id_composicion
-        -DECIMAL_12_4 cantidad_principio_activo
-        -VARCHAR_30 unidad_principio_activo
-        -DECIMAL_12_4 cantidad_referencia
-        -VARCHAR_30 unidad_referencia
-    }
-    class PrincipioActivo {
-        <<entity>>
-        -INT id_principio_activo
-        -VARCHAR_150 nombre
-    }
-    Administrador --> VistaConsultarMedicamentos
-    Regente --> VistaConsultarMedicamentos
-    Vendedor --> VistaConsultarMedicamentos
-    VistaConsultarMedicamentos ..> ControlConsultarMedicamentos : solicita
-    ControlConsultarMedicamentos ..> Medicamento : consulta
-    ControlConsultarMedicamentos ..> ProveedorLaboratorio : incluye
-    ControlConsultarMedicamentos ..> ComposicionMedicamento : incluye completa
-    ControlConsultarMedicamentos ..> PrincipioActivo : incluye
-    ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
-    Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
-    PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
-```
-
-**Descripción de relaciones:** los tres actores solicitan listado/búsqueda o detalle al mismo Control conceptual. Las entidades asociadas se leen para la respuesta pública, sin invocar por ello sus Services de mantenimiento. La selección de atributos del dibujo no limita el DTO real, que contiene los datos comerciales y todos los componentes.
-
-| Camino | Responsabilidades y condiciones |
-|---|---|
-| Listado y búsqueda | Valida filtros y ejecuta `consultarListado`; código/nombre se buscan como texto contenido y pueden combinarse. Un listado vacío es válido. |
-| Detalle | Valida ID y ejecuta `consultarDetalle`; un producto inexistente devuelve 404. |
-
-La búsqueda textual espera 350 ms en la interfaz y conserva criterios en URL; se descartan respuestas anteriores al cambiar el borrador. El contrato mantiene activos/inactivos e históricos sin composición, sin filtro de estado ni paginación. La ficha no calcula stock ni historial; sus enlaces reutilizan otros CU. La búsqueda por ingredientes se detalla por separado en CU20.
-
-**Correspondencia con la implementación:** `/medicamentos`, `frontend/src/features/medicamentos/pages/MedicamentosPage.jsx`, `frontend/src/features/medicamentos/components/MedicamentoFilters.jsx` y `MedicamentoTable.jsx` representan el listado; `/medicamentos/:idMedicamento` y `frontend/src/features/medicamentos/pages/MedicamentoDetailPage.jsx`, la ficha.
-
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarConsulta | `medicamentoController` utiliza `medicamentoValidator.validateFiltros` para query o `validateId` para detalle. |
-| consultarListado | `medicamentoController.getMedicamentos` → `medicamentoService.getMedicamentos` → `medicamentoRepository.findAll`, con asociaciones completas. |
-| consultarDetalle | `medicamentoController.getMedicamentoById` → `medicamentoService.getMedicamentoById` → `medicamentoRepository.findById`. |
-| prepararDatosPublicos | Funciones externas `toPublicMedicamento` y `toPublicComposicion` transforman las instancias y cantidades para el DTO. |
-
-Las consultas usan `GET /api/medicamentos` y `GET /api/medicamentos/:idMedicamento`; devuelven 200 sin escrituras. Referencias: RF11; RN13–RN16 y CU15.
-
-### CU16 — Modificar medicamento
-
-**Actor o actores:** Regente autenticado.
-
-**Objetivo:** actualizar datos comerciales permitidos, conservando código, composición e integridad histórica.
-
-**Clases participantes:**
-
-| Clase | Estereotipo | Responsabilidad |
-|---|---|---|
-| VistaModificarMedicamento | Boundary | Permite editar datos comerciales y envía únicamente los modificados. |
-| ControlModificarMedicamento | Control | Coordina validación, historial/identidad condicionales, actualización y resultado. |
-| Medicamento | Entity | Representa el producto editado y su identidad comercial. |
-| ProveedorLaboratorio | Entity | Representa referencias bloqueadas y proveedor enviado que debe estar activo. |
-| ComposicionMedicamento | Entity | Aporta composición actual para identidad y lectura final; no se modifica. |
-| PrincipioActivo | Entity | Identifica los ingredientes incluidos en la lectura final. |
-| ExistenciaMedicamento | Entity | Permite localizar y bloquear las existencias al comprobar historial. |
-| MovimientoInventario | Entity | Determina si existe historial que impide cambios protegidos. |
-
-**Diagrama de clases:**
-
-```mermaid
-classDiagram
-    direction LR
-    class Regente { <<actor>> }
-    class VistaModificarMedicamento {
-        <<boundary>>
-        -Integer idMedicamento
-        -String nombreComercial
-        -Integer idProveedorLaboratorio
-        -String formaFarmaceutica
-        -String presentacion
-        -String unidadInventario
-        -Integer stockMinimo
-        -String condicionVenta
-        -String viaAdministracion
-        -String tipoLiberacion
-        +enviarCamposModificados()
-    }
-    class ControlModificarMedicamento {
-        <<control>>
-        +validarCambios()
-        +comprobarHistorial()
-        +verificarProveedor()
-        +comprobarIdentidad()
-        +actualizarMedicamento()
-        +consultarResultado()
-    }
-    class Medicamento {
-        <<entity>>
-        -INT id_medicamento
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
         -VARCHAR_80 forma_farmaceutica
@@ -2037,11 +2015,15 @@ classDiagram
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
         -BOOLEAN estado
     }
     class ComposicionMedicamento {
         <<entity>>
         -INT id_composicion
+        -INT id_medicamento
+        -INT id_principio_activo
         -DECIMAL_12_4 cantidad_principio_activo
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
@@ -2051,33 +2033,214 @@ classDiagram
         <<entity>>
         -INT id_principio_activo
         -VARCHAR_150 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
+    }
+    Administrador --> MedicamentosPage
+    Regente --> MedicamentosPage
+    Vendedor --> MedicamentosPage
+    Administrador --> MedicamentoDetailPage
+    Regente --> MedicamentoDetailPage
+    Vendedor --> MedicamentoDetailPage
+    MedicamentoFilters ..> MedicamentosPage : callbacks de filtros
+    MedicamentosPage ..> MedicamentoTable : renderiza resultados
+    MedicamentoTable ..> MedicamentoDetailPage : enlace via React Router
+    MedicamentosPage ..> medicamentoController : GET /api/medicamentos (resumen)
+    MedicamentoDetailPage ..> medicamentoController : GET /api/medicamentos/#58;idMedicamento (resumen)
+    medicamentoController ..> medicamentoService : listado o ficha
+    medicamentoService ..> medicamentoRepository : findAll o findById
+    medicamentoRepository ..> Medicamento : consulta
+    medicamentoRepository ..> ProveedorLaboratorio : include
+    medicamentoRepository ..> ComposicionMedicamento : include completo
+    medicamentoRepository ..> PrincipioActivo : include
+    ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
+    Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
+    PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
+    note for MedicamentosPage "Operaciones = funciones locales React; no metodos de clase.\nisCurrent es local al efecto de resultados."
+    note for MedicamentoFilters "Callbacks recibidos; eventos inline, sin handlers propios."
+    note for MedicamentoTable "Enlaces de ficha; sin handler local de consulta."
+    note for MedicamentoDetailPage "Consulta por efecto anonimo; no existe loadMedicamento."
+```
+
+**Descripción de relaciones:** los tres actores acceden al listado/ficha. Los callbacks de MedicamentoFilters conducen a changeFilters/search; un efecto anónimo solicita el GET. La tabla navega a la ficha mediante Link, no invoca al componente de detalle. Este consulta desde su propio efecto anónimo. Las dependencias al Controller resumen llamadas a funciones HTTP importadas; Controller → Service → Repository obtiene entidades asociadas sin invocar por ello sus Services de mantenimiento. Los atributos completos de modelos no implican que cada include devuelva todos los campos de las entidades de apoyo: proveedor/principio se proyectan a ID/nombre.
+
+| Camino | Responsabilidades y condiciones |
+|---|---|
+| Listado y búsqueda | validateFiltros → getMedicamentos → findAll; código/nombre como texto contenido combinable. Un listado vacío es válido. |
+| Detalle | validateId → getMedicamentoById → findById; producto inexistente devuelve 404. |
+
+La búsqueda textual espera 350 ms en la interfaz y conserva criterios en URL; se descartan respuestas anteriores al cambiar el borrador. El contrato mantiene activos/inactivos e históricos sin composición, sin filtro de estado ni paginación. La ficha no calcula stock ni historial; sus enlaces reutilizan otros CU. La búsqueda por ingredientes se detalla por separado en CU20.
+
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU15 | MedicamentosPage | `frontend/src/features/medicamentos/pages/MedicamentosPage.jsx` | Locales `search(nextFilters)`; `changeFilters(nextFilters, immediate = false)`; local al efecto `isCurrent()` | search escribe URL; changeFilters aplica debounce e invalida respuestas. readFilters(query) es externo al componente. isCurrent protege resultados/errores, no llama a API. |
+| CU15 | MedicamentoFilters / MedicamentoTable | `frontend/src/features/medicamentos/components/MedicamentoFilters.jsx`; `frontend/src/features/medicamentos/components/MedicamentoTable.jsx` | Props onTextChange/onClear y enlaces Link | onTextChange/onClear son implementados inline por la página; sin handlers locales propios. togglePrincipio y la carga de opciones load pertenecen a CU20. |
+| CU15 | MedicamentoDetailPage / preparación de edición | `frontend/src/features/medicamentos/pages/MedicamentoDetailPage.jsx`; `frontend/src/features/medicamentos/pages/MedicamentoFormPage.jsx` | Efectos anónimos | Ambos llaman getMedicamento(id), sin loadMedicamento. Edición solo Regente; opciones de proveedores reutilizan CU11. |
+| CU15 | medicamentoController | `backend/src/presentation/controllers/medicamento.controller.js` | `getMedicamentos(req, res, next)`; `getMedicamentoById(req, res, next)` | medicamentoValidator.validateFiltros(data)/validateId(data), en `backend/src/business/validators/medicamento.validator.js`. |
+| CU15 | medicamentoService | `backend/src/business/services/medicamento.service.js` | `getMedicamentos(filtros)`; `getMedicamentoById(idMedicamento, transaction = undefined)` | DTO por auxiliares externos toPublicMedicamento/toPublicComposicion. |
+| CU15 | medicamentoRepository | `backend/src/data/repositories/medicamento.repository.js` | `findAll({ codigoMedicamento, nombreComercial, idPrincipioActivo } = {})`; `findById({ idMedicamento, transaction, lock = false })` | incluye proveedor y composición/principios; no modifica datos. contiene(texto) es auxiliar externo para LIKE literal. |
+| CU15 | Medicamento / ProveedorLaboratorio / ComposicionMedicamento / PrincipioActivo | `backend/src/data/models/medicamento.js`; `proveedor-laboratorio.js`; `composicion-medicamento.js`; `principio-activo.js` (mismo directorio) | — | Modelos completos; DTO y proyecciones no añaden atributos persistentes. |
+| CU15 | Funciones HTTP intermediarias | `frontend/src/features/medicamentos/services/medicamento.service.js` | `getMedicamentos({ codigoMedicamento, nombreComercial, idPrincipioActivo = [] } = {})`; `getMedicamento(idMedicamento)` | api.get; nombres y defaults distintos de las firmas backend. |
+| CU15 | API, listado y ficha resumidos | `backend/src/presentation/routes/medicamento.router.js`; `backend/src/app.js` | `GET /api/medicamentos`; `GET /api/medicamentos/:idMedicamento` | Los tres roles; no llamadas directas React–Controller. |
+
+Las consultas usan `GET /api/medicamentos` y `GET /api/medicamentos/:idMedicamento`; devuelven 200 sin escrituras. Referencias: RF11; RN13–RN16 y CU15.
+
+### CU16 — Modificar medicamento
+
+**Actor o actores:** Regente autenticado.
+
+**Objetivo:** actualizar datos comerciales permitidos, conservando código, composición e integridad histórica.
+
+**Elementos participantes:**
+
+| Elemento | Estereotipo / tipo | Responsabilidad |
+|---|---|---|
+| MedicamentoForm / MedicamentoFormPage | Boundary; componentes funcionales | Editan datos comerciales y envían campos modificados. |
+| medicamentoController / medicamentoService | Control; clases | Coordinan validación, historial/identidad condicionales, actualización y resultado. |
+| medicamentoRepository / composicionMedicamentoRepository | Repository; clases | Consultan/bloquean referencias e historial y escriben producto; composición solo lectura. |
+| Medicamento | Entity | Representa el producto editado y su identidad comercial. |
+| ProveedorLaboratorio | Entity | Representa referencias bloqueadas y proveedor enviado que debe estar activo. |
+| ComposicionMedicamento | Entity | Aporta composición actual para identidad y lectura final; no se modifica. |
+| PrincipioActivo | Entity | Identifica los ingredientes incluidos en la lectura final. |
+| ExistenciaMedicamento | Entity | Permite localizar y bloquear las existencias al comprobar historial. |
+| MovimientoInventario | Entity | Determina si existe historial que impide cambios protegidos. |
+
+**Diagrama de clases:**
+
+```mermaid
+classDiagram
+    direction LR
+    class Regente { <<actor>> }
+    class MedicamentoForm {
+        <<boundary>>
+        -Object form
+        -Object initialData
+        -Function onSubmit
+        -Function onCancel
+        +update(event)
+        +submit(event)
+    }
+    class MedicamentoFormPage {
+        <<boundary>>
+        -String idMedicamento
+        -Object medicamento
+        -Boolean submitting
+        -Array duplicados
+        +submit(data)
+    }
+    class medicamentoController {
+        <<control>>
+        +updateMedicamento(req, res, next)$
+    }
+    class medicamentoService {
+        <<control>>
+        +updateMedicamento(idMedicamento, data)$
+        +getMedicamentoForUpdate(idMedicamento, transaction)$
+        +validateSinHistorial(idMedicamento, transaction)$
+        +getMedicamentoById(...)$
+    }
+    class medicamentoRepository {
+        <<repository>>
+        +findById(...)$
+        +findProveedorById(...)$
+        +hasMovimientos(...)$
+        +findDuplicadosIdentidad(...)$
+        +update(...)$
+    }
+    class composicionMedicamentoRepository {
+        <<repository>>
+        +findAllForMedicamento(...)$
+    }
+    class Medicamento {
+        <<entity>>
+        -INT id_medicamento
+        -INT id_proveedor_laboratorio
+        -VARCHAR_20 codigo_medicamento
+        -VARCHAR_150 nombre_comercial
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
+        -BOOLEAN estado
+    }
+    class ProveedorLaboratorio {
+        <<entity>>
+        -INT id_proveedor_laboratorio
+        -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
+        -BOOLEAN estado
+    }
+    class ComposicionMedicamento {
+        <<entity>>
+        -INT id_composicion
+        -INT id_medicamento
+        -INT id_principio_activo
+        -DECIMAL_12_4 cantidad_principio_activo
+        -VARCHAR_30 unidad_principio_activo
+        -DECIMAL_12_4 cantidad_referencia
+        -VARCHAR_30 unidad_referencia
+    }
+    class PrincipioActivo {
+        <<entity>>
+        -INT id_principio_activo
+        -VARCHAR_150 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
         -INT id_medicamento
+        -VARCHAR_30 codigo_existencia
+        -DATEONLY fecha_vencimiento
+        -ENUM precision_vencimiento
+        -INT cantidad_fisica
+        -DECIMAL_14_6 costo_unitario_promedio
     }
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
         -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
+        -INT id_movimiento_original
+        -ENUM direccion
+        -INT cantidad
+        -DATE fecha_movimiento
+        -VARCHAR_40 motivo
+        -VARCHAR_500 observacion
+        -DECIMAL_14_6 costo_unitario_aplicado
     }
-    Regente --> VistaModificarMedicamento
-    VistaModificarMedicamento ..> ControlModificarMedicamento : solicita
-    ControlModificarMedicamento ..> Medicamento : actualiza
-    ControlModificarMedicamento ..> ProveedorLaboratorio : verifica referencia
-    ControlModificarMedicamento ..> ComposicionMedicamento : identidad y lectura
-    ControlModificarMedicamento ..> PrincipioActivo : lectura final
-    ControlModificarMedicamento ..> ExistenciaMedicamento : historial condicional
-    ControlModificarMedicamento ..> MovimientoInventario : historial condicional
+    Regente --> MedicamentoForm
+    MedicamentoForm ..> MedicamentoFormPage : callback onSubmit
+    MedicamentoFormPage ..> medicamentoController : PATCH /api/medicamentos/#58;idMedicamento (resumen)
+    medicamentoController ..> medicamentoService : updateMedicamento
+    medicamentoService ..> medicamentoRepository : actualizacion y auxiliares de identidad
+    medicamentoService ..> composicionMedicamentoRepository : composicion para identidad condicional
+    medicamentoRepository ..> Medicamento : bloqueo y actualizacion y lectura final
+    medicamentoRepository ..> ProveedorLaboratorio : referencia y lectura final
+    medicamentoRepository ..> ComposicionMedicamento : identidad y lectura final
+    medicamentoRepository ..> PrincipioActivo : lectura final
+    medicamentoRepository ..> ExistenciaMedicamento : historial condicional
+    medicamentoRepository ..> MovimientoInventario : historial condicional
+    composicionMedicamentoRepository ..> ComposicionMedicamento : lectura para identidad
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
+    note for MedicamentoForm "update y submit son locales React; no metodos de clase.\nNo se utiliza el borrador de composicion al editar."
+    note for MedicamentoFormPage "submit(data) es local React;\ncarga por efecto anonimo, reutiliza CU15 y CU11."
 ```
 
-**Descripción de relaciones:** el Control utiliza Medicamento y sus referencias para editar y devolver el resultado. ComposicionMedicamento y PrincipioActivo participan en identidad/lectura, no como relaciones que se escriban aquí. Las dependencias hacia ExistenciaMedicamento y MovimientoInventario son condicionales: solo un cambio efectivo de campos protegidos ejecuta la comprobación de historial.
+**Descripción de relaciones:** submit(event) del formulario llama a la prop onSubmit, implementada como submit(data) en la página; esta llama a updateMedicamento importado. La dependencia HTTP resume el PATCH al Controller. Este llama al Service y este a los Repositories, directamente o mediante auxiliares compartidos. ComposicionMedicamento y PrincipioActivo participan en identidad/lectura, sin escrituras. Solo un cambio efectivo de campos protegidos ejecuta validateSinHistorial → hasMovimientos, con acceso condicional a existencias/movimientos.
 
 | Cambio solicitado | Condición y efecto |
 |---|---|
@@ -2088,16 +2251,18 @@ classDiagram
 
 Si se envía proveedor, debe estar activo incluso si es el mismo ID; la interfaz omite una asignación conservada, permitiendo mantener su proveedor inactivo. Se bloquean producto y proveedores y se comprueba historial/identidad cuando corresponde; se excluye el propio producto de la búsqueda de duplicados. Una existencia sin movimientos no basta para bloquear el cambio. Actualización y lectura final se confirman juntas; un conflicto revierte el PATCH.
 
-**Correspondencia con la implementación:** `/medicamentos/:idMedicamento/editar`, MedicamentoFormPage y MedicamentoForm representan la vista. La preparación reutiliza CU15/CU11. La función HTTP `updateMedicamento` envía `PATCH /api/medicamentos/:idMedicamento` sin código, estado ni composición.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarCambios | `medicamentoController.updateMedicamento`, `medicamentoValidator.validateId` y `validateUpdate` validan el PATCH estricto/no vacío. |
-| comprobarHistorial | `medicamentoService.validateSinHistorial` y `medicamentoRepository.hasMovimientos` bloquean existencias y buscan un movimiento cuando cambian campos protegidos. |
-| verificarProveedor | `medicamentoService.updateMedicamento` y auxiliares compartidos bloquean proveedores; `findProveedorById` comprueba la referencia enviada y su actividad. |
-| comprobarIdentidad | Ante cambios efectivos de nombre/identidad, `composicionMedicamentoRepository.findAllForMedicamento` y auxiliares de identidad/`findDuplicadosIdentidad` comparan el estado completo resultante. |
-| actualizarMedicamento | `medicamentoService.updateMedicamento`, `getMedicamentoForUpdate` y `medicamentoRepository.update` coordinan bloqueo y escritura. |
-| consultarResultado | `medicamentoService.getMedicamentoById` devuelve el DTO con asociaciones dentro de la misma transacción. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU16 | MedicamentoForm / MedicamentoFormPage | `frontend/src/features/medicamentos/components/MedicamentoForm.jsx`; `frontend/src/features/medicamentos/pages/MedicamentoFormPage.jsx` | Formulario: `update(event)`; `submit(event)`; página: `submit(data)` | Todas locales React. onSubmit=submit de la página; onCancel inline. guardarComponente no participa en edición. Se envían solo cambios, sin código/estado/composición. |
+| CU16 | medicamentoController | `backend/src/presentation/controllers/medicamento.controller.js` | `updateMedicamento(req, res, next)` | validateId(data)/validateUpdate(data) de medicamentoValidator en `backend/src/business/validators/medicamento.validator.js`; PATCH estricto/no vacío. |
+| CU16 | medicamentoService | `backend/src/business/services/medicamento.service.js` | `updateMedicamento(idMedicamento, data)`; `getMedicamentoForUpdate(idMedicamento, transaction)`; `validateSinHistorial(idMedicamento, transaction)`; `getMedicamentoById(idMedicamento, transaction = undefined)` | getMedicamentoForUpdate devuelve instancia; getMedicamentoById devuelve DTO. Historial condicional, bloqueo producto/proveedores y lectura final en READ COMMITTED. |
+| CU16 | medicamentoRepository | `backend/src/data/repositories/medicamento.repository.js` | `findById({ idMedicamento, transaction, lock = false })`; `findProveedorById({ idProveedorLaboratorio, transaction, exclusivo = false })`; `hasMovimientos({ idMedicamento, transaction })`; `findDuplicadosIdentidad({ medicamento, composicion, transaction, idMedicamento })`; `update({ idMedicamento, data, transaction })` | findById con lock:true no incluye asociaciones; lectura final sin lock las incluye. hasMovimientos retorna false sin consultar movimientos si no hay existencias. |
+| CU16 | composicionMedicamentoRepository | `backend/src/data/repositories/composicion-medicamento.repository.js` | `findAllForMedicamento({ idMedicamento, transaction })` | Solo ante cambio efectivo de nombre/atributos de identidad; componentes completos para comparar. |
+| CU16 | Seis modelos Entity | `backend/src/data/models/medicamento.js`; `proveedor-laboratorio.js`; `composicion-medicamento.js`; `principio-activo.js`; `existencia-medicamento.js`; `movimiento-inventario.js` (mismo directorio) | — | Todos los atributos; cantidad_fisica/costos no se modifican. Usuario y detalles/reversión no se cargan por incluir sus FK en MovimientoInventario. |
+| CU16 | Función HTTP intermediaria | `frontend/src/features/medicamentos/services/medicamento.service.js` | `updateMedicamento(idMedicamento, data)` | api.patch, importada por la página. |
+| CU16 | API, relación HTTP resumida | `backend/src/presentation/routes/medicamento.router.js`; `backend/src/app.js` | `PATCH /api/medicamentos/:idMedicamento` | Solo Regente; GET preparatorio de CU15 y GET proveedores de CU11 documentados sin duplicar sus cajas. |
 
 Resultado 200; datos inválidos, referencias, historial o duplicado se comunican según el error real. El formulario conserva el borrador ante rechazo y abre la ficha al éxito. No se regeneran códigos ni se escriben movimientos. Referencias: RF11; RN10/RN13 y CU16.
 
@@ -2107,12 +2272,13 @@ Resultado 200; datos inválidos, referencias, historial o duplicado se comunican
 
 **Objetivo:** cambiar el estado del medicamento sin eliminar el registro ni su historial.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaCambiarEstadoMedicamento | Boundary | Identifica el producto y confirma el estado objetivo. |
-| ControlCambiarEstadoMedicamento | Control | Valida el estado y coordina cambio y lectura del resultado. |
+| MedicamentosPage / MedicamentoTable / ConfirmDialog | Boundary; componentes funcionales | Seleccionan producto y confirman el estado objetivo. |
+| medicamentoController / medicamentoService | Control; clases | Validan y coordinan cambio y lectura final. |
+| medicamentoRepository | Repository; clase | Bloquea, actualiza estado y consulta resultado. |
 | Medicamento | Entity | Representa el producto cuyo estado cambia. |
 | ProveedorLaboratorio | Entity | Aporta datos asociados del resultado, sin cambio ni validación de actividad. |
 | ComposicionMedicamento | Entity | Aporta composición de la lectura final, sin modificación. |
@@ -2124,33 +2290,66 @@ Resultado 200; datos inválidos, referencias, historial o duplicado se comunican
 classDiagram
     direction LR
     class Regente { <<actor>> }
-    class VistaCambiarEstadoMedicamento {
+    class MedicamentosPage {
         <<boundary>>
-        -Integer idMedicamento
-        -Boolean estadoSolicitado
-        +confirmarCambioEstado()
+        -Object target
+        -Boolean busy
+        +toggleEstado()
     }
-    class ControlCambiarEstadoMedicamento {
+    class MedicamentoTable {
+        <<boundary>>
+        -Boolean canManage
+        -Function onToggleEstado
+    }
+    class ConfirmDialog {
+        <<boundary>>
+        -Boolean busy
+        -Function onConfirm
+    }
+    class medicamentoController {
         <<control>>
-        +validarEstado()
-        +cambiarEstado()
-        +consultarResultado()
+        +updateEstado(req, res, next)$
+    }
+    class medicamentoService {
+        <<control>>
+        +updateEstado(...)$
+        +getMedicamentoForUpdate(idMedicamento, transaction)$
+        +getMedicamentoById(...)$
+    }
+    class medicamentoRepository {
+        <<repository>>
+        +findById(...)$
+        +updateEstado(...)$
+        +update(...)$
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
+        -INT id_proveedor_laboratorio
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
     }
     class ProveedorLaboratorio {
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
+        -BOOLEAN estado
     }
     class ComposicionMedicamento {
         <<entity>>
         -INT id_composicion
+        -INT id_medicamento
+        -INT id_principio_activo
         -DECIMAL_12_4 cantidad_principio_activo
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
@@ -2160,29 +2359,44 @@ classDiagram
         <<entity>>
         -INT id_principio_activo
         -VARCHAR_150 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
-    Regente --> VistaCambiarEstadoMedicamento
-    VistaCambiarEstadoMedicamento ..> ControlCambiarEstadoMedicamento : solicita
-    ControlCambiarEstadoMedicamento ..> Medicamento : cambia estado
-    ControlCambiarEstadoMedicamento ..> ProveedorLaboratorio : lectura final
-    ControlCambiarEstadoMedicamento ..> ComposicionMedicamento : lectura final
-    ControlCambiarEstadoMedicamento ..> PrincipioActivo : lectura final
+    Regente --> MedicamentoTable
+    Regente --> ConfirmDialog
+    MedicamentoTable ..> MedicamentosPage : callback onToggleEstado
+    ConfirmDialog ..> MedicamentosPage : callback onConfirm
+    MedicamentosPage ..> medicamentoController : PATCH /api/medicamentos/#58;idMedicamento/estado (resumen)
+    medicamentoController ..> medicamentoService : updateEstado
+    medicamentoService ..> medicamentoRepository : findById y updateEstado
+    medicamentoRepository ..> Medicamento : bloqueo y actualizacion y lectura
+    medicamentoRepository ..> ProveedorLaboratorio : lectura final
+    medicamentoRepository ..> ComposicionMedicamento : lectura final
+    medicamentoRepository ..> PrincipioActivo : lectura final
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
+    note for MedicamentosPage "toggleEstado es funcion local React; no metodo de clase."
+    note for MedicamentoTable "onToggleEstado es prop; click inline a setTarget del padre."
+    note for ConfirmDialog "onConfirm es prop; no handler local de confirmacion."
 ```
 
-**Descripción de relaciones:** el Control modifica únicamente estado en Medicamento; proveedor, composición y principios participan en el DTO final. El flujo no comprueba historial, actividad del proveedor ni duplicados comerciales. No se crea ni modifica una existencia o movimiento; por ello no se agregan como entidades del dibujo.
+**Descripción de relaciones:** la tabla invoca onToggleEstado, setter setTarget de MedicamentosPage. ConfirmDialog invoca onConfirm=toggleEstado; esta función local llama a updateEstadoMedicamento importado. El PATCH resumido conduce al Controller y luego al Service/Repository. Solo se modifica estado; proveedor/composición/principios participan en el DTO final. El flujo no comprueba historial, actividad del proveedor ni duplicados comerciales. Existencias/movimientos no participan en esta operación.
 
 La API recibe estado booleano objetivo, aunque la interfaz proponga el inverso. Se acepta el estado ya existente. Inactivar conserva código e información, no pone saldo físico a cero; los consumidores de stock aplican las condiciones de disponibilidad vendible en sus CU. El cambio y resultado se confirman en una transacción con bloqueo del producto.
 
-**Correspondencia con la implementación:** MedicamentosPage, MedicamentoTable y `frontend/src/components/ConfirmDialog.jsx` representan selección y confirmación en `/medicamentos`.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarEstado | `medicamentoController.updateEstado`, `medicamentoValidator.validateId` y `validateUpdateEstado`. |
-| cambiarEstado | `medicamentoService.updateEstado` utiliza `getMedicamentoForUpdate` y `medicamentoRepository.updateEstado`, que delega en su propio `update`. |
-| consultarResultado | `medicamentoService.getMedicamentoById` consulta las asociaciones para la respuesta dentro de la transacción. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU17 | MedicamentosPage | `frontend/src/features/medicamentos/pages/MedicamentosPage.jsx` | Local `toggleEstado()` | onConfirm; llama HTTP con target.idMedicamento y !target.estado; actualiza fila local. |
+| CU17 | MedicamentoTable / ConfirmDialog | `frontend/src/features/medicamentos/components/MedicamentoTable.jsx`; `frontend/src/components/ConfirmDialog.jsx` | Props onToggleEstado/onConfirm | La tabla recibe setTarget; dialog recibe toggleEstado. Cierre inline; sin handleConfirm/handleClose inventados. |
+| CU17 | medicamentoController | `backend/src/presentation/controllers/medicamento.controller.js` | `updateEstado(req, res, next)` | medicamentoValidator.validateId(data)/validateUpdateEstado(data), en `backend/src/business/validators/medicamento.validator.js`. |
+| CU17 | medicamentoService | `backend/src/business/services/medicamento.service.js` | `updateEstado(idMedicamento, { estado })`; `getMedicamentoForUpdate(idMedicamento, transaction)`; `getMedicamentoById(idMedicamento, transaction = undefined)` | Transacción Sequelize con bloqueo y lectura final; no usa transaccionCatalogo ni READ COMMITTED explícito. |
+| CU17 | medicamentoRepository | `backend/src/data/repositories/medicamento.repository.js` | `findById({ idMedicamento, transaction, lock = false })`; `updateEstado({ idMedicamento, estado, transaction })`; `update({ idMedicamento, data, transaction })` | updateEstado delega en this.update; findById con/sin bloqueo corresponde a preparación/resultado, sin otro GET. |
+| CU17 | Cuatro modelos Entity | `backend/src/data/models/medicamento.js`; `proveedor-laboratorio.js`; `composicion-medicamento.js`; `principio-activo.js` (mismo directorio) | — | Todos los atributos; entidades asociadas solo lectura. |
+| CU17 | Función HTTP intermediaria | `frontend/src/features/medicamentos/services/medicamento.service.js` | `updateEstadoMedicamento(idMedicamento, estado)` | api.patch con { estado }; distinta de updateEstado del backend. |
+| CU17 | API, relación HTTP resumida | `backend/src/presentation/routes/medicamento.router.js`; `backend/src/app.js` | `PATCH /api/medicamentos/:idMedicamento/estado` | Solo Regente; carga del listado pertenece a CU15. |
 
 La función HTTP `updateEstadoMedicamento` usa `PATCH /api/medicamentos/:idMedicamento/estado`; devuelve 200 con mensaje/DTO. El listado actualiza la fila con la respuesta y cierra la confirmación; un error no se muestra como cambio exitoso. Referencias: RF11; RN13/RN14 y CU17.
 
@@ -2192,12 +2406,13 @@ La función HTTP `updateEstadoMedicamento` usa `PATCH /api/medicamentos/:idMedic
 
 **Objetivo:** mantener el catálogo de principios activos mediante consulta, registro, edición y activación/desactivación.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaGestionarPrincipios | Boundary | Agrupa listado/formulario y confirmación, mostrando acciones según el rol. |
-| ControlGestionarPrincipios | Control | Coordina la operación solicitada, validación y unicidad del nombre cuando corresponde. |
+| PrincipiosActivosPage / PrincipioActivoTable / PrincipioActivoFormPage / PrincipioActivoForm / ConfirmDialog | Boundary; componentes funcionales | Coordinan listado, edición/alta y confirmación según rol. |
+| principioActivoController / principioActivoService | Control; clases | Validan y coordinan operación/unicidad según camino. |
+| principioActivoRepository | Repository; clase | Lee, bloquea y escribe principios según operación. |
 | PrincipioActivo | Entity | Representa el ingrediente de referencia con nombre único, descripción y estado. |
 
 **Diagrama de clases:**
@@ -2207,28 +2422,64 @@ classDiagram
     direction LR
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
-    class VistaGestionarPrincipios {
+    class PrincipiosActivosPage {
         <<boundary>>
-        -Integer idPrincipioActivo
+        -Array principios
+        -String search
+        -Object target
+        -Boolean busy
+        +toggle()
+    }
+    class PrincipioActivoTable {
+        <<boundary>>
+        -Boolean canManage
+        -Function onToggleEstado
+    }
+    class PrincipioActivoForm {
+        <<boundary>>
         -String nombre
         -String descripcion
-        -Boolean estado
-        -String busqueda
-        +solicitarConsulta()
-        +filtrarListadoLocal()
-        +enviarRegistro()
-        +enviarCambios()
-        +confirmarEstado()
+        -Function onSubmit
+        -Function onCancel
+        +submit(event)
     }
-    class ControlGestionarPrincipios {
+    class PrincipioActivoFormPage {
+        <<boundary>>
+        -String mode
+        -String idPrincipioActivo
+        -Object principio
+        -Boolean submitting
+        +submit(data)
+    }
+    class ConfirmDialog {
+        <<boundary>>
+        -Boolean busy
+        -Function onConfirm
+    }
+    class principioActivoController {
         <<control>>
-        +validarSolicitud()
-        +consultarPrincipios()
-        +consultarPrincipio()
-        +comprobarNombreDisponible()
-        +registrarPrincipio()
-        +modificarPrincipio()
-        +cambiarEstado()
+        +getPrincipiosActivos(req, res, next)$
+        +getPrincipioActivoById(req, res, next)$
+        +createPrincipioActivo(req, res, next)$
+        +updatePrincipioActivo(req, res, next)$
+        +updateEstado(req, res, next)$
+    }
+    class principioActivoService {
+        <<control>>
+        +getPrincipiosActivos()$
+        +getPrincipioActivoById(...)$
+        +createPrincipioActivo(data)$
+        +updatePrincipioActivo(idPrincipioActivo, data)$
+        +updateEstado(...)$
+    }
+    class principioActivoRepository {
+        <<repository>>
+        +findAll()$
+        +findById(...)$
+        +findByNombre(...)$
+        +create(...)$
+        +update(...)$
+        +updateEstado(...)$
     }
     class PrincipioActivo {
         <<entity>>
@@ -2237,35 +2488,55 @@ classDiagram
         -VARCHAR_255 descripcion
         -BOOLEAN estado
     }
-    Administrador --> VistaGestionarPrincipios : solo consulta
-    Regente --> VistaGestionarPrincipios : consulta y administra
-    VistaGestionarPrincipios ..> ControlGestionarPrincipios : solicita
-    ControlGestionarPrincipios ..> PrincipioActivo : segun operacion
+    Administrador --> PrincipiosActivosPage : solo consulta
+    Regente --> PrincipiosActivosPage
+    Regente --> PrincipioActivoForm
+    Regente --> ConfirmDialog
+    PrincipiosActivosPage ..> PrincipioActivoTable : renderiza listado
+    PrincipioActivoTable ..> PrincipioActivoFormPage : enlace de edicion via React Router
+    PrincipioActivoTable ..> PrincipiosActivosPage : callback onToggleEstado
+    ConfirmDialog ..> PrincipiosActivosPage : callback onConfirm
+    PrincipioActivoForm ..> PrincipioActivoFormPage : callback onSubmit
+    PrincipiosActivosPage ..> principioActivoController : GET /api/principios-activos (resumen)
+    PrincipiosActivosPage ..> principioActivoController : PATCH /api/principios-activos/#58;idPrincipioActivo/estado (resumen)
+    PrincipioActivoFormPage ..> principioActivoController : GET /api/principios-activos/#58;idPrincipioActivo (resumen)
+    PrincipioActivoFormPage ..> principioActivoController : POST /api/principios-activos (resumen)
+    PrincipioActivoFormPage ..> principioActivoController : PATCH /api/principios-activos/#58;idPrincipioActivo (resumen)
+    principioActivoController ..> principioActivoService : segun operacion
+    principioActivoService ..> principioActivoRepository : consultas y escrituras
+    principioActivoRepository ..> PrincipioActivo : acceso Sequelize
+    note for PrincipiosActivosPage "toggle es funcion local React; no metodo de clase.\nListado por efecto anonimo; filtro por useMemo anonimo."
+    note for PrincipioActivoForm "submit(event) es local React; onChange inline."
+    note for PrincipioActivoFormPage "submit(data) es local React; GET de edicion por efecto anonimo."
+    note for PrincipioActivoTable "Callbacks recibidos y eventos inline; no operaciones propias."
+    note for ConfirmDialog "onConfirm recibe toggle del padre; no handler local."
 ```
 
-**Descripción de relaciones:** la vista conceptual reúne interfaces de mantenimiento, sin afirmar que exista una única página o clase JavaScript. Una solicitud ejecuta el camino elegido, no todas las operaciones del Control. No se carga ComposicionMedicamento al mantener el principio; su asociación `1` — `0..*` es contexto y se representa en los CU donde sí participa.
+**Descripción de relaciones:** el listado renderiza la tabla; esta selecciona estado mediante onToggleEstado=setTarget y navega a la edición con Link. ConfirmDialog invoca toggle del listado. El formulario invoca submit(data) de su página mediante onSubmit. Las dos páginas llaman a exportaciones HTTP importadas, resumidas hacia el Controller; este llama al Service y este al Repository. Una solicitud ejecuta solo su camino. El GET por ID está autorizado para Administrador/Regente en backend, pero la ruta de edición solo permite Regente y no existe una página de detalle independiente. No se carga ComposicionMedicamento; su asociación `1` — `0..*` permanece como contexto.
 
 | Camino | Permiso y responsabilidades |
 |---|---|
-| Listado | Administrador/Regente; `consultarPrincipios`, sin Validator específico. Búsqueda local por nombre/descripción; resultado vacío válido. |
-| Consulta por ID | Administrador/Regente; valida ID y `consultarPrincipio`. La edición reutiliza esta carga. |
+| Listado | Administrador/Regente; getPrincipiosActivos, sin Validator específico. Búsqueda local por nombre/descripción; resultado vacío válido. |
+| Consulta por ID | Administrador/Regente en API; validateId y getPrincipioActivoById. La edición solo Regente reutiliza esta carga. |
 | Registro | Regente; valida datos y nombre único y registra. Estado inicial opcional en API, activo por defecto. |
 | Edición | Regente; valida PATCH/ID, bloquea principio, comprueba nombre si se envía y modifica datos; consulta resultado. |
 | Cambio de estado | Regente; valida ID/booleano, bloquea y cambia estado; consulta resultado. |
 
 Nombre es obligatorio, recortado y hasta 150 caracteres; descripción opcional admite NULL y vacío como retirada. Un duplicado de nombre produce 409. Desactivar conserva principio y relaciones; no elimina ni modifica componentes. La relación de composición exige existencia del principio, no actividad. Cambiar nombre/descripción del catálogo no cambia sus FK, cantidades ni unidades en composición y no ejecuta la comprobación de identidad comercial del medicamento. Vendedor no accede a este catálogo de mantenimiento.
 
-**Correspondencia con la implementación:** `frontend/src/features/principios-activos/pages/PrincipiosActivosPage.jsx`, `frontend/src/features/principios-activos/components/PrincipioActivoTable.jsx`, `frontend/src/features/principios-activos/pages/PrincipioActivoFormPage.jsx` y `frontend/src/features/principios-activos/components/PrincipioActivoForm.jsx`, más ConfirmDialog, representan la vista.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarSolicitud | `principioActivoController` y `principioActivoValidator.validateId`/`validateCreate`/`validateUpdate`/`validateUpdateEstado`, según camino; el listado no ejecuta Validator. |
-| consultarPrincipios | `principioActivoService.getPrincipiosActivos` y `principioActivoRepository.findAll`, ordenados por ID. |
-| consultarPrincipio | `principioActivoService.getPrincipioActivoById` y `principioActivoRepository.findById`; también lectura final de edición/estado. |
-| comprobarNombreDisponible | Auxiliar externo `validateNombreDisponible`, `findByNombre` y UNIQUE; traducción externa del conflicto a 409. |
-| registrarPrincipio | `principioActivoService.createPrincipioActivo` y `principioActivoRepository.create`, en transacción; DTO de la instancia creada. |
-| modificarPrincipio | `principioActivoService.updatePrincipioActivo`, consulta bloqueante, `principioActivoRepository.update` y lectura final dentro de la transacción. |
-| cambiarEstado | `principioActivoService.updateEstado` y `principioActivoRepository.updateEstado` → `update`, con bloqueo/lectura final en transacción. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU18 | PrincipiosActivosPage | `frontend/src/features/principios-activos/pages/PrincipiosActivosPage.jsx` | Local `toggle()` | onConfirm del diálogo; listado en efecto anónimo. visible es valor calculado por useMemo anónimo; onChange de search inline. No existe loadPrincipios como handler. |
+| CU18 | PrincipioActivoFormPage / PrincipioActivoForm | `frontend/src/features/principios-activos/pages/PrincipioActivoFormPage.jsx`; `frontend/src/features/principios-activos/components/PrincipioActivoForm.jsx` | Página: `submit(data)`; formulario: `submit(event)` | Funciones locales conectadas por onSubmit. GET de edición en efecto anónimo; cancelación/reintento/onChange inline. Alta no envía estado; PATCH parcial no vacío. |
+| CU18 | PrincipioActivoTable / ConfirmDialog | `frontend/src/features/principios-activos/components/PrincipioActivoTable.jsx`; `frontend/src/components/ConfirmDialog.jsx` | Props onToggleEstado/onConfirm | Tabla recibe setTarget y dialog recibe toggle; sin funciones locales de la acción. |
+| CU18 | principioActivoController | `backend/src/presentation/controllers/principio-activo.controller.js` | `getPrincipiosActivos(req, res, next)`; `getPrincipioActivoById(req, res, next)`; `createPrincipioActivo(req, res, next)`; `updatePrincipioActivo(req, res, next)`; `updateEstado(req, res, next)` | principioActivoValidator.validateId(data)/validateCreate(data)/validateUpdate(data)/validateUpdateEstado(data), en `backend/src/business/validators/principio-activo.validator.js`; listado sin Validator. |
+| CU18 | principioActivoService | `backend/src/business/services/principio-activo.service.js` | `getPrincipiosActivos()`; `getPrincipioActivoById(idPrincipioActivo, transaction = undefined)`; `createPrincipioActivo(data)`; `updatePrincipioActivo(idPrincipioActivo, data)`; `updateEstado(idPrincipioActivo, { estado })` | Escrituras transaccionales; validateNombreDisponible y traducción de duplicados son auxiliares externos, no métodos. getPrincipioActivoById también participa como lectura final interna. |
+| CU18 | principioActivoRepository | `backend/src/data/repositories/principio-activo.repository.js` | `findAll()`; `findById({ idPrincipioActivo, transaction, lock = false })`; `findByNombre({ nombre, transaction })`; `create({ data, transaction })`; `update({ idPrincipioActivo, data, transaction })`; `updateEstado({ idPrincipioActivo, estado, transaction })` | updateEstado delega en update; findByNombre llamado por auxiliar externo. |
+| CU18 | PrincipioActivo | `backend/src/data/models/principio-activo.js` | — | Cuatro atributos; descripcion nullable, nombre UNIQUE, estado default true. |
+| CU18 | Funciones HTTP intermediarias | `frontend/src/features/principios-activos/services/principio-activo.service.js` | `getPrincipiosActivos()`; `getPrincipioActivo(idPrincipioActivo)`; `createPrincipioActivo(data)`; `updatePrincipioActivo(idPrincipioActivo, data)`; `updateEstadoPrincipioActivo(idPrincipioActivo, estado)` | api.get/post/patch; reciben/retornan datos públicos, sin métodos importados en Boundary. |
+| CU18 | API, cinco relaciones HTTP resumidas | `backend/src/presentation/routes/principio-activo.router.js`; `backend/src/app.js` | `GET /api/principios-activos`; `GET /api/principios-activos/:idPrincipioActivo`; `POST /api/principios-activos`; `PATCH /api/principios-activos/:idPrincipioActivo`; `PATCH /api/principios-activos/:idPrincipioActivo/estado` | GET Administrador/Regente; escrituras Regente. |
 
 El servicio HTTP `frontend/src/features/principios-activos/services/principio-activo.service.js` utiliza `/api/principios-activos`: GET de listado/ID, POST de registro, PATCH de datos y PATCH `/:idPrincipioActivo/estado`. Resultado 201 en alta y 200 en las demás operaciones. El formulario conserva borrador ante error y vuelve al listado al guardar. Referencias: RF12; RN16 y CU18.
 
@@ -2275,12 +2546,14 @@ El servicio HTTP `frontend/src/features/principios-activos/services/principio-ac
 
 **Objetivo:** consultar y administrar componentes de un medicamento existente, respetando historial, pertenencia e identidad comercial completa.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaGestionarComposicion | Boundary | Muestra componentes y permite al Regente agregar, editar o confirmar retiro. |
-| ControlGestionarComposicion | Control | Coordina el camino solicitado, las comprobaciones previas y la identidad resultante. |
+| MedicamentoComposicionPage / ComposicionForm / ComposicionTable / ConfirmDialog | Boundary; componentes funcionales | Coordinan consulta y acciones de composición mediante funciones locales y props. |
+| composicionMedicamentoController / composicionMedicamentoService | Control; clases | Atienden consulta y escrituras de componentes. |
+| medicamentoController / medicamentoService | Control; clases | Atienden ficha preparatoria y colaboran en lectura, bloqueo e historial del producto. |
+| composicionMedicamentoRepository / medicamentoRepository | Repository; clases | Acceden a componentes, referencias, identidad e historial. |
 | Medicamento | Entity | Identifica el producto al que debe pertenecer la composición. |
 | ProveedorLaboratorio | Entity | Participa en sincronización de identidad y lectura, sin exigir actividad aquí. |
 | ComposicionMedicamento | Entity | Representa la relación que se consulta, crea, modifica o retira. |
@@ -2296,51 +2569,104 @@ classDiagram
     class Regente { <<actor>> }
     class Administrador { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaGestionarComposicion {
+    class MedicamentoComposicionPage {
         <<boundary>>
-        -Integer idMedicamento
-        -Integer idComposicion
-        -Integer idPrincipioActivo
-        -Number cantidadPrincipioActivo
-        -String unidadPrincipioActivo
-        -Number cantidadReferencia
-        -String unidadReferencia
-        -Lista composicion
-        +solicitarComposicion()
-        +enviarNuevoComponente()
-        +enviarCantidadesYUnidades()
-        +confirmarRetiroRelacion()
+        -String idMedicamento
+        -Array composicion
+        -Object dialog
+        -Object removeTarget
+        -Boolean busy
+        +openForm(item = null)
+        +save(data)
+        +remove()
     }
-    class ControlGestionarComposicion {
+    class ComposicionForm {
+        <<boundary>>
+        -Object form
+        -Function onSubmit
+        -Function onCancel
+        +update(event)
+        +submit(event)
+    }
+    class ComposicionTable {
+        <<boundary>>
+        -Function onEdit
+        -Function onRemove
+    }
+    class ConfirmDialog {
+        <<boundary>>
+        -Boolean busy
+        -Function onConfirm
+    }
+    class composicionMedicamentoController {
         <<control>>
-        +validarSolicitud()
-        +consultarComposicion()
-        +comprobarAusenciaHistorial()
-        +verificarRelacion()
-        +agregarComponente()
-        +modificarComponente()
-        +retirarRelacion()
-        +comprobarIdentidad()
+        +getComposicionMedicamento(req, res, next)$
+        +createComposicion(req, res, next)$
+        +updateComposicion(req, res, next)$
+        +removeComposicion(req, res, next)$
+    }
+    class medicamentoController {
+        <<control>>
+        +getMedicamentoById(req, res, next)$
+    }
+    class composicionMedicamentoService {
+        <<control>>
+        +getComposicionMedicamento(idMedicamento)$
+        +createComposicion(idMedicamento, data)$
+        +updateComposicion(idMedicamento, idComposicion, data)$
+        +removeComposicion(idMedicamento, idComposicion)$
+    }
+    class medicamentoService {
+        <<control>>
+        +getMedicamentoById(...)$
+        +getMedicamentoForUpdate(idMedicamento, transaction)$
+        +validateSinHistorial(idMedicamento, transaction)$
+    }
+    class composicionMedicamentoRepository {
+        <<repository>>
+        +findAllForMedicamento(...)$
+        +findById(...)$
+        +findByPrincipio(...)$
+        +findPrincipioById(...)$
+        +create(...)$
+        +update(...)$
+        +remove(...)$
+    }
+    class medicamentoRepository {
+        <<repository>>
+        +findById(...)$
+        +hasMovimientos(...)$
+        +findProveedorById(...)$
+        +findDuplicadosIdentidad(...)$
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
+        -INT id_proveedor_laboratorio
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
         -VARCHAR_80 forma_farmaceutica
         -VARCHAR_150 presentacion
         -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
         -VARCHAR_80 via_administracion
         -VARCHAR_80 tipo_liberacion
+        -BOOLEAN estado
     }
     class ProveedorLaboratorio {
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
+        -BOOLEAN estado
     }
     class ComposicionMedicamento {
         <<entity>>
         -INT id_composicion
+        -INT id_medicamento
+        -INT id_principio_activo
         -DECIMAL_12_4 cantidad_principio_activo
         -VARCHAR_30 unidad_principio_activo
         -DECIMAL_12_4 cantidad_referencia
@@ -2350,35 +2676,71 @@ classDiagram
         <<entity>>
         -INT id_principio_activo
         -VARCHAR_150 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
         -INT id_medicamento
+        -VARCHAR_30 codigo_existencia
+        -DATEONLY fecha_vencimiento
+        -ENUM precision_vencimiento
+        -INT cantidad_fisica
+        -DECIMAL_14_6 costo_unitario_promedio
     }
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
         -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
+        -INT id_movimiento_original
+        -ENUM direccion
+        -INT cantidad
+        -DATE fecha_movimiento
+        -VARCHAR_40 motivo
+        -VARCHAR_500 observacion
+        -DECIMAL_14_6 costo_unitario_aplicado
     }
-    Regente --> VistaGestionarComposicion : administra
-    Administrador --> VistaGestionarComposicion : solo lectura
-    Vendedor --> VistaGestionarComposicion : solo lectura
-    VistaGestionarComposicion ..> ControlGestionarComposicion : solicita
-    ControlGestionarComposicion ..> Medicamento : comprueba y consulta
-    ControlGestionarComposicion ..> ProveedorLaboratorio : identidad y lectura
-    ControlGestionarComposicion ..> ComposicionMedicamento : segun operacion
-    ControlGestionarComposicion ..> PrincipioActivo : referencia e include
-    ControlGestionarComposicion ..> ExistenciaMedicamento : solo escrituras
-    ControlGestionarComposicion ..> MovimientoInventario : solo escrituras
+    Regente --> MedicamentoComposicionPage : administra
+    Administrador --> MedicamentoComposicionPage : solo lectura
+    Vendedor --> MedicamentoComposicionPage : solo lectura
+    ComposicionForm ..> MedicamentoComposicionPage : callback onSubmit a save
+    ComposicionTable ..> MedicamentoComposicionPage : callbacks onEdit y onRemove
+    ConfirmDialog ..> MedicamentoComposicionPage : callback onConfirm a remove
+    MedicamentoComposicionPage ..> medicamentoController : GET /api/medicamentos/#58;idMedicamento (resumen)
+    MedicamentoComposicionPage ..> composicionMedicamentoController : GET /api/medicamentos/#58;idMedicamento/composicion (resumen)
+    MedicamentoComposicionPage ..> composicionMedicamentoController : POST /api/medicamentos/#58;idMedicamento/composicion (resumen)
+    MedicamentoComposicionPage ..> composicionMedicamentoController : PATCH /api/medicamentos/#58;idMedicamento/composicion/#58;idComposicion (resumen)
+    MedicamentoComposicionPage ..> composicionMedicamentoController : DELETE /api/medicamentos/#58;idMedicamento/composicion/#58;idComposicion (resumen)
+    medicamentoController ..> medicamentoService : ficha preparatoria
+    composicionMedicamentoController ..> composicionMedicamentoService : segun operacion
+    composicionMedicamentoService ..> medicamentoService : lectura y prepararModificacion externo
+    composicionMedicamentoService ..> composicionMedicamentoRepository : escrituras y auxiliares externos
+    composicionMedicamentoService ..> medicamentoRepository : auxiliares de identidad y bloqueo
+    medicamentoService ..> medicamentoRepository : lectura y historial
+    medicamentoRepository ..> Medicamento : comprueba y consulta
+    medicamentoRepository ..> ProveedorLaboratorio : identidad y lectura
+    medicamentoRepository ..> ComposicionMedicamento : identidad y lectura
+    medicamentoRepository ..> PrincipioActivo : include
+    medicamentoRepository ..> ExistenciaMedicamento : solo escrituras
+    medicamentoRepository ..> MovimientoInventario : solo escrituras
+    composicionMedicamentoRepository ..> ComposicionMedicamento : segun escritura
+    composicionMedicamentoRepository ..> PrincipioActivo : referencia e include
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
+    note for MedicamentoComposicionPage "Operaciones = funciones locales React; no metodos de clase.\nGET iniciales por efecto anonimo; opciones CU18 en tabla."
+    note for ComposicionForm "update y submit son locales React; callbacks recibidos."
+    note for ComposicionTable "Props onEdit y onRemove; eventos inline."
+    note for ConfirmDialog "onConfirm es remove del padre; sin handler local."
 ```
 
-**Descripción de relaciones:** el Control coordina producto y relación asociativa. Consultar composición utiliza la lectura completa del medicamento con proveedor y principios; no ejecuta el Repository de Composición en ese camino. Las escrituras bloquean producto, proveedor y existencias para exigir ausencia de movimientos. MovimientoInventario se busca si se encontraron existencias; no se carga ni se modifica su responsable histórico.
+**Descripción de relaciones:** ComposicionForm invoca save mediante onSubmit; la tabla invoca openForm por onEdit y selecciona retiro mediante onRemove inline. ConfirmDialog invoca remove por onConfirm. La página llama a las funciones HTTP importadas: GET iniciales, POST/PATCH desde save y DELETE desde remove. Sus dependencias hacia Controllers son resumidas. Consultar composición llama desde composicionMedicamentoService a medicamentoService y lee por medicamentoRepository, sin ejecutar composicionMedicamentoRepository en ese camino. Las escrituras utilizan los auxiliares externos para bloquear producto/proveedor/existencias, comprobar historial, pertenencia e identidad y operar por Repositories. MovimientoInventario se busca si hay existencias; su responsable no se carga ni modifica.
 
 | Camino | Condiciones y resultado |
 |---|---|
@@ -2391,18 +2753,22 @@ El PATCH no cambia medicamento/principio por FK. Un ingrediente equivocado se co
 
 El proveedor se bloquea para sincronizar identidad, pero este CU no exige que proveedor o medicamento estén activos. Los principios deben existir, sin exigir estado activo. No se escriben existencias/movimientos. Las altas iniciales pertenecen al registro integral de CU14.
 
-**Correspondencia con la implementación:** `/medicamentos/:idMedicamento/composicion`, `frontend/src/features/medicamentos/pages/MedicamentoComposicionPage.jsx`, `frontend/src/features/medicamentos/components/ComposicionForm.jsx` y `ComposicionTable.jsx`, Modal y ConfirmDialog representan la vista. Ficha y opciones preparatorias reutilizan CU15 y, solo para Regente, CU18.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarSolicitud | `composicionMedicamentoController` y `composicionMedicamentoValidator.validateMedicamentoId`/`validateId`/`validateCreate`/`validateUpdate`, según camino. |
-| consultarComposicion | `composicionMedicamentoService.getComposicionMedicamento` llama a `medicamentoService.getMedicamentoById` y devuelve su composición completa. |
-| comprobarAusenciaHistorial | Auxiliar externo `prepararModificacion`, `medicamentoService.getMedicamentoForUpdate`/`validateSinHistorial` y `medicamentoRepository.hasMovimientos` en toda escritura. |
-| verificarRelacion | En alta, `findPrincipioById`/`findByPrincipio` comprueban referencia y no repetición; en edición/retiro, `findById` comprueba ambos IDs y pertenencia. |
-| agregarComponente | `composicionMedicamentoService.createComposicion` y `composicionMedicamentoRepository.create`, con lectura final de la relación. |
-| modificarComponente | `composicionMedicamentoService.updateComposicion` y `composicionMedicamentoRepository.update`, sin cambiar FK y con lectura final. |
-| retirarRelacion | `composicionMedicamentoService.removeComposicion` y `composicionMedicamentoRepository.remove` utilizan destroy heredado solo para la relación. |
-| comprobarIdentidad | Auxiliar externo `validarResultado`, `findAllForMedicamento` y auxiliares compartidos/`findDuplicadosIdentidad` comprueban composición completa resultante antes del commit. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU19 | MedicamentoComposicionPage | `frontend/src/features/medicamentos/pages/MedicamentoComposicionPage.jsx` | Locales `openForm(item = null)`; `save(data)`; `remove()` | openForm abre modal; save agrega/edita, remove retira. GET iniciales por Promise.all en efecto anónimo, sin loadComposicion inventado. |
+| CU19 | ComposicionForm | `frontend/src/features/medicamentos/components/ComposicionForm.jsx` | Locales `update(event)`; `submit(event)` | onSubmit=save; onCancel inline. Nuevo componente incluye principio; PATCH solo cantidades/unidades cambiadas, sin FK. |
+| CU19 | ComposicionTable / ConfirmDialog | `frontend/src/features/medicamentos/components/ComposicionTable.jsx`; `frontend/src/components/ConfirmDialog.jsx` | Props onEdit/onRemove/onConfirm | onEdit=openForm; onRemove inline selecciona removeTarget; onConfirm=remove. Sin handlers propios. Modal de `frontend/src/components/Modal.jsx` solo contiene formulario y recibe cierre inline, sin operación específica de composición. |
+| CU19 | composicionMedicamentoController | `backend/src/presentation/controllers/composicion-medicamento.controller.js` | `getComposicionMedicamento(req, res, next)`; `createComposicion(req, res, next)`; `updateComposicion(req, res, next)`; `removeComposicion(req, res, next)` | composicionMedicamentoValidator.validateMedicamentoId(data)/validateId(data)/validateCreate(data)/validateUpdate(data), en `backend/src/business/validators/composicion-medicamento.validator.js`, según camino. |
+| CU19 | composicionMedicamentoService | `backend/src/business/services/composicion-medicamento.service.js` | `getComposicionMedicamento(idMedicamento)`; `createComposicion(idMedicamento, data)`; `updateComposicion(idMedicamento, idComposicion, data)`; `removeComposicion(idMedicamento, idComposicion)` | Lectura delegada al Service de Medicamento; escrituras READ COMMITTED con prepararModificacion/validarResultado/getComposicion externos. |
+| CU19 | medicamentoController / medicamentoService | `backend/src/presentation/controllers/medicamento.controller.js`; `backend/src/business/services/medicamento.service.js` | Controller: `getMedicamentoById(req, res, next)`; Service: `getMedicamentoById(idMedicamento, transaction = undefined)`; `getMedicamentoForUpdate(idMedicamento, transaction)`; `validateSinHistorial(idMedicamento, transaction)` | Controller solo por GET de ficha; colaboración entre Services/auxiliares no añade peticiones HTTP internas. |
+| CU19 | composicionMedicamentoRepository | `backend/src/data/repositories/composicion-medicamento.repository.js` | `findAllForMedicamento({ idMedicamento, transaction })`; `findById({ idMedicamento, idComposicion, transaction })`; `findByPrincipio({ idMedicamento, idPrincipioActivo, transaction })`; `findPrincipioById({ idPrincipioActivo, transaction })`; `create({ data, transaction })`; `update({ idMedicamento, idComposicion, data, transaction })`; `remove({ idMedicamento, idComposicion, transaction })` | Solo caminos de escritura; pertenencia por ambos IDs; remove usa destroy heredado para esa relación. |
+| CU19 | medicamentoRepository | `backend/src/data/repositories/medicamento.repository.js` | `findById({ idMedicamento, transaction, lock = false })`; `hasMovimientos({ idMedicamento, transaction })`; `findProveedorById({ idProveedorLaboratorio, transaction, exclusivo = false })`; `findDuplicadosIdentidad({ medicamento, composicion, transaction, idMedicamento })` | Lectura, historial y auxiliares de identidad/bloqueo; no escribe producto ni movimientos en este CU. |
+| CU19 | Seis modelos Entity | `backend/src/data/models/medicamento.js`; `proveedor-laboratorio.js`; `composicion-medicamento.js`; `principio-activo.js`; `existencia-medicamento.js`; `movimiento-inventario.js` (mismo directorio) | — | Atributos completos; condiciones históricas no son columnas. |
+| CU19 | Funciones HTTP intermediarias | `frontend/src/features/medicamentos/services/medicamento.service.js` | `getMedicamento(idMedicamento)`; `getComposicionMedicamento(idMedicamento)`; `createComposicion(idMedicamento, data)`; `updateComposicion(idMedicamento, idComposicion, data)`; `deleteComposicion(idMedicamento, idComposicion)` | api.get/post/patch/delete. deleteComposicion devuelve response.data.message; las demás response.data.data. No existe removeComposicion como función frontend importada. |
+| CU19 | API, relaciones HTTP resumidas | `backend/src/presentation/routes/medicamento.router.js`; `composicion-medicamento.router.js` (mismo directorio); `backend/src/app.js` | `GET /api/medicamentos/:idMedicamento`; `GET /api/medicamentos/:idMedicamento/composicion`; `POST /api/medicamentos/:idMedicamento/composicion`; `PATCH /api/medicamentos/:idMedicamento/composicion/:idComposicion`; `DELETE /api/medicamentos/:idMedicamento/composicion/:idComposicion` | GET tres roles; escrituras Regente; DELETE llama removeComposicion del Controller. |
+| CU19 | Opciones preparatorias CU18 | `frontend/src/features/principios-activos/services/principio-activo.service.js` | `getPrincipiosActivos()` | GET /api/principios-activos, solo cargado por el Regente en esta pantalla. No repite cajas de su flujo verificado. |
 
 Las rutas bajo `/api/medicamentos/:idMedicamento/composicion` utilizan GET/POST y PATCH/DELETE `/:idComposicion`. Resultado 201 al agregar y 200 en las demás operaciones; DELETE devuelve mensaje sin data. Ante fallo se conserva el formulario; tras éxito la interfaz actualiza componentes locales. Referencias: RF13; RN13/RN15/RN16 y CU19.
 
@@ -2412,12 +2778,13 @@ Las rutas bajo `/api/medicamentos/:idMedicamento/composicion` utilizan GET/POST 
 
 **Objetivo:** buscar medicamentos que contengan todos los principios activos seleccionados, admitiendo ingredientes adicionales.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaBuscarPorComposicion | Boundary | Permite selección múltiple de principios y filtros textuales complementarios. |
-| ControlBuscarPorComposicion | Control | Valida filtros, coordina coincidencia AND y consulta datos completos de los resultados. |
+| MedicamentosPage / MedicamentoFilters / MedicamentoTable | Boundary; componentes funcionales | Seleccionan principios, consultan y presentan resultados. |
+| medicamentoController / medicamentoService | Control; clases | Validan filtros y coordinan búsqueda. |
+| medicamentoRepository | Repository; clase | Selecciona coincidencias AND y lee asociaciones completas. |
 | ComposicionMedicamento | Entity | Permite identificar medicamentos que contienen todos los principios solicitados. |
 | Medicamento | Entity | Representa los productos coincidentes y los filtros textuales. |
 | ProveedorLaboratorio | Entity | Identifica el proveedor en la respuesta completa. |
@@ -2431,25 +2798,45 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaBuscarPorComposicion {
+    class MedicamentosPage {
         <<boundary>>
-        -Lista idsPrincipiosActivos
-        -String codigoMedicamento
-        -String nombreComercial
-        -Lista medicamentos
-        +seleccionarPrincipios()
-        +quitarPrincipio()
-        +solicitarBusqueda()
+        -Object filters
+        -Array principios
+        -Array medicamentos
+        +togglePrincipio(id)
+        +changeFilters(nextFilters, immediate = false)
+        +search(nextFilters)
+        +isCurrent()
+        +load()
     }
-    class ControlBuscarPorComposicion {
+    class MedicamentoFilters {
+        <<boundary>>
+        -Array principios
+        -Function onTogglePrincipio
+        -Function onTextChange
+        -Function onClear
+        -Function onRetryOptions
+    }
+    class MedicamentoTable {
+        <<boundary>>
+        -Array medicamentos
+    }
+    class medicamentoController {
         <<control>>
-        +validarFiltros()
-        +seleccionarCoincidencias()
-        +consultarResultados()
+        +getMedicamentos(req, res, next)$
+    }
+    class medicamentoService {
+        <<control>>
+        +getMedicamentos(filtros)$
+    }
+    class medicamentoRepository {
+        <<repository>>
+        +findAll(...)$
     }
     class ComposicionMedicamento {
         <<entity>>
         -INT id_composicion
+        -INT id_medicamento
         -INT id_principio_activo
         -DECIMAL_12_4 cantidad_principio_activo
         -VARCHAR_30 unidad_principio_activo
@@ -2459,50 +2846,75 @@ classDiagram
     class Medicamento {
         <<entity>>
         -INT id_medicamento
+        -INT id_proveedor_laboratorio
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
         -VARCHAR_80 forma_farmaceutica
         -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
     }
     class ProveedorLaboratorio {
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
+        -BOOLEAN estado
     }
     class PrincipioActivo {
         <<entity>>
         -INT id_principio_activo
         -VARCHAR_150 nombre
+        -VARCHAR_255 descripcion
+        -BOOLEAN estado
     }
-    Administrador --> VistaBuscarPorComposicion
-    Regente --> VistaBuscarPorComposicion
-    Vendedor --> VistaBuscarPorComposicion
-    VistaBuscarPorComposicion ..> ControlBuscarPorComposicion : solicita
-    ControlBuscarPorComposicion ..> ComposicionMedicamento : seleccion AND e include
-    ControlBuscarPorComposicion ..> Medicamento : consulta coincidencias
-    ControlBuscarPorComposicion ..> ProveedorLaboratorio : incluye
-    ControlBuscarPorComposicion ..> PrincipioActivo : incluye todos
+    Administrador --> MedicamentosPage
+    Regente --> MedicamentosPage
+    Vendedor --> MedicamentosPage
+    MedicamentoFilters ..> MedicamentosPage : callbacks de criterios
+    MedicamentosPage ..> MedicamentoTable : renderiza resultados
+    MedicamentosPage ..> medicamentoController : GET /api/medicamentos (resumen)
+    medicamentoController ..> medicamentoService : getMedicamentos
+    medicamentoService ..> medicamentoRepository : findAll
+    medicamentoRepository ..> ComposicionMedicamento : seleccion AND e include
+    medicamentoRepository ..> Medicamento : consulta coincidencias
+    medicamentoRepository ..> ProveedorLaboratorio : include
+    medicamentoRepository ..> PrincipioActivo : include completo
     ProveedorLaboratorio "1" -- "0..*" Medicamento : proveedorLaboratorio
     Medicamento "1" -- "0..*" ComposicionMedicamento : composiciones
     PrincipioActivo "1" -- "0..*" ComposicionMedicamento : principioActivo
+    note for MedicamentosPage "Operaciones = funciones locales React; no metodos de clase.\nisCurrent y load son locales a efectos distintos.\nOpciones segun rol documentadas en tabla."
+    note for MedicamentoFilters "onTogglePrincipio recibe togglePrincipio; resto inline.\nSin handlers locales de filtro."
+    note for MedicamentoTable "Presenta los DTO completos; sin funcion local de busqueda."
 ```
 
-**Descripción de relaciones:** la selección utiliza ComposicionMedicamento para localizar IDs de medicamentos con todos los principios pedidos. Si hay coincidencias, consulta Medicamento con proveedor y composición completa, incluidos ingredientes adicionales. Las cantidades/unidades se muestran como información del resultado: no son criterios comparados por este filtro.
+**Descripción de relaciones:** los callbacks de MedicamentoFilters conducen a togglePrincipio/changeFilters/search en MedicamentosPage; un efecto anónimo solicita resultados y isCurrent descarta respuestas obsoletas. La página llama a getMedicamentos del módulo HTTP y la dependencia resume el GET hacia el Controller. Este llama al Service y este a findAll del Repository. La selección usa ComposicionMedicamento para localizar productos con todos los principios; si hay coincidencias, lee Medicamento con proveedor y composición completa, incluidos ingredientes adicionales. Las cantidades/unidades no son criterios de este filtro.
 
 Solicitar A y B exige ambos, pero un producto A+B+C también coincide. Un ID de principio válido sin coincidencias devuelve listado vacío, no 404. El filtro no ejecuta la igualdad comercial de CU14/CU16/CU19 ni indica sustitución terapéutica. Mantiene activos/inactivos y no calcula stock vendible.
 
 Administrador/Regente obtienen opciones mediante CU18. Vendedor obtiene opciones deduplicando principios del catálogo autorizado mediante CU15; no llama al catálogo de principios activos restringido. Las opciones no se limitan a los resultados filtrados. La selección de principios consulta inmediatamente; los filtros textuales conservan 350 ms de espera y los criterios se mantienen en URL.
 
-**Correspondencia con la implementación:** MedicamentosPage y MedicamentoFilters representan la vista en `/medicamentos`. `frontend/src/features/medicamentos/services/medicamento.service.js` utiliza `getMedicamentos(filtros)` con `GET /api/medicamentos?idPrincipioActivo=...`, repitiendo el parámetro para varios IDs.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarFiltros | `medicamentoController.getMedicamentos` y `medicamentoValidator.validateFiltros` validan IDs positivos, eliminan repetidos y admiten código/nombre combinados. |
-| seleccionarCoincidencias | `medicamentoRepository.findAll` consulta ComposicionMedicamento con IN, agrupación por medicamento y COUNT DISTINCT igual al número de principios solicitados. |
-| consultarResultados | El mismo `findAll` consulta Medicamento y todas sus asociaciones si hay IDs coincidentes; `medicamentoService.getMedicamentos` prepara los DTO públicos. Sin coincidencias, retorna [] sin esa segunda consulta. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU20 | MedicamentosPage | `frontend/src/features/medicamentos/pages/MedicamentosPage.jsx` | Locales `togglePrincipio(id)`; `changeFilters(nextFilters, immediate = false)`; `search(nextFilters)`; locales a efectos `isCurrent()`; `load()` | togglePrincipio agrega/quita ID y llama changeFilters con immediate=true. isCurrent es del efecto de resultados; load del efecto independiente de opciones. |
+| CU20 | MedicamentoFilters / MedicamentoTable | `frontend/src/features/medicamentos/components/MedicamentoFilters.jsx`; `frontend/src/features/medicamentos/components/MedicamentoTable.jsx` | Props onTogglePrincipio/onTextChange/onClear/onRetryOptions | onTogglePrincipio=togglePrincipio; demás callbacks inline del padre, no operaciones propias. Tabla renderiza DTO recibidos. |
+| CU20 | medicamentoController | `backend/src/presentation/controllers/medicamento.controller.js` | `getMedicamentos(req, res, next)` | medicamentoValidator.validateFiltros(data), en `backend/src/business/validators/medicamento.validator.js`, valida IDs positivos y deduplica. |
+| CU20 | medicamentoService | `backend/src/business/services/medicamento.service.js` | `getMedicamentos(filtros)` | Convierte resultados con toPublicMedicamento externo; no compara identidad comercial. |
+| CU20 | medicamentoRepository | `backend/src/data/repositories/medicamento.repository.js` | `findAll({ codigoMedicamento, nombreComercial, idPrincipioActivo } = {})` | IN + GROUP BY medicamento + COUNT DISTINCT igual al número de principios. Sin coincidencias retorna [] antes del SELECT de productos; con coincidencias incluye todos los ingredientes. |
+| CU20 | Cuatro modelos Entity | `backend/src/data/models/medicamento.js`; `proveedor-laboratorio.js`; `composicion-medicamento.js`; `principio-activo.js` (mismo directorio) | — | Todos los atributos; no entidad de equivalencia terapéutica. |
+| CU20 | Función HTTP intermediaria | `frontend/src/features/medicamentos/services/medicamento.service.js` | `getMedicamentos({ codigoMedicamento, nombreComercial, idPrincipioActivo = [] } = {})` | api.get; URLSearchParams repite idPrincipioActivo para varios IDs. |
+| CU20 | API, relación HTTP resumida | `backend/src/presentation/routes/medicamento.router.js`; `backend/src/app.js` | `GET /api/medicamentos` | Tres roles; query de ingredientes y filtros textuales combinables. |
+| CU20 | Opciones para Administrador/Regente, CU18 | `frontend/src/features/principios-activos/services/principio-activo.service.js` | `getPrincipiosActivos()` | GET /api/principios-activos desde load; flujo de apoyo documentado sin cajas adicionales. |
+| CU20 | Opciones para Vendedor, CU15 | `frontend/src/features/medicamentos/services/medicamento.service.js` | `getMedicamentos({ codigoMedicamento, nombreComercial, idPrincipioActivo = [] } = {})` | load llama sin argumentos y deduplica principios del catálogo autorizado; mismo GET del dibujo sin filtros, sin acceso al catálogo restringido de principios. |
 
-No existe un método técnico adicional buscarPorComposicion: los nombres del Control son conceptuales. Las dos consultas son lecturas sin transacción conjunta explícita. Resultado 200 con composición completa; se manejan query inválida, sesión/permisos y fallo inesperado. Referencias: RF14; RN16/RN17 y CU20.
+No existe buscarPorComposicion como método adicional: getMedicamentos y findAll atienden este filtro real. Las dos consultas son lecturas sin transacción conjunta explícita. Resultado 200 con composición completa; se manejan query inválida, sesión/permisos y fallo inesperado. Referencias: RF14; RN16/RN17 y CU20.
 
 ## 6. Cierre y revisión de la tercera entrega
 
@@ -2517,23 +2929,23 @@ No existe un método técnico adicional buscarPorComposicion: los nombres del Co
 | CU20 — Consultar medicamentos por composición | 1 | Selección AND, ingredientes adicionales y opciones autorizadas por rol. |
 | **Total de Fase 3** | **7** | **Siete CU, numeración única CU14–CU20.** |
 
-**Criterio de comprobación:** cada dibujo utiliza un Boundary y un Control conceptual, con operaciones respaldadas por sus correspondencias. Se contrastan entidades y atributos relevantes, permisos por camino y multiplicidades persistentes; se distingue el mínimo de alta de la cardinalidad estructural. Existencias/movimientos solo participan como comprobación de historial en CU16/CU19. No se agregan entidades de inventario, herencias, composiciones UML ni métodos de Service a los modelos.
+**Criterio de comprobación:** los Boundary son componentes React reales y solo muestran funciones locales participantes; props, eventos inline y efectos anónimos se distinguen en notas/tablas. Controllers, Services y Repositories conservan sus métodos propios y firmas exactas. Los seis modelos muestran atributos persistentes completos. Las dependencias HTTP conservan verbo/endpoint y la aclaración de resumen; las consultas de apoyo reutilizan CU11/CU15/CU18 con sus fuentes identificadas. Existencias/movimientos participan únicamente en comprobaciones de historial de CU16/CU19; se distingue el mínimo de alta de la cardinalidad estructural.
 
-**Validación de esta entrega:** se comprobaron los nombres/números CU14–CU20 contra el catálogo oficial, sin duplicados ni ausencias, y la estructura completa de cada análisis. Los siete dibujos contienen siete Boundary y siete Control, con 37 operaciones conceptuales respaldadas por sus correspondencias. Se contrastaron seis entidades reales —Medicamento, ProveedorLaboratorio, PrincipioActivo, ComposicionMedicamento, ExistenciaMedicamento y MovimientoInventario— y 117 apariciones de atributos seleccionados con el modelo general. Se verificaron las 22 apariciones de asociaciones del objetivo contra cada CU técnico y sus multiplicidades contra el diagrama general; Usuario y su relación de responsabilidad histórica se explican como contexto.
+**Resultado de la corrección de Fase 3:** siete CU y siete diagramas con nombres implementados. Se representan **14 componentes funcionales**, **9 clases backend** y **6 modelos**. Los gráficos contienen **18 funciones locales distintas en 26 apariciones**, **53 métodos backend distintos en 77 apariciones**, **210 apariciones de atributos persistentes completos** y **16 colaboraciones HTTP resumidas**. Las tablas documentan **15 funciones HTTP exportadas distintas**, incluidas las consultas preparatorias reutilizadas, con sus firmas y archivos. Se conservan las **22 asociaciones persistentes dibujadas**, con idénticos participantes, multiplicidades y alias. Usuario y su relación de responsabilidad histórica permanecen como contexto.
 
-Se revisaron permisos y caminos de CU15/CU18/CU19, historial e identidad condicionales de CU16, composición inicial obligatoria frente a multiplicidad estructural, conservación de stock en CU17 y selección AND de CU20 con opciones según rol. Los siete diagramas se analizaron y renderizaron con Mermaid 11.12.0 y se revisaron visualmente sus capturas: actores, Boundary y Control se disponen de izquierda a derecha, con entidades a la derecha y sin cajas solapadas. CU16/CU19 tienen mayor anchura por sus ramas de historial; sus SVG permiten ampliar la lectura sin perder detalle.
+**Comprobación acotada:** nombres, firmas, propietarios, estados/props y callbacks contrastados con sus fuentes React/backend; funciones HTTP, endpoints y permisos con solicitudes Axios, routers y rutas protegidas; atributos y asociaciones con modelos y análisis técnico. Se revisaron los caminos de CU15/CU18/CU19, historial/identidad condicionales de CU16, borrador frente a persistencia en CU14/CU19 y selección AND con opciones por rol en CU20. **7/7 diagramas con sintaxis válida en Mermaid 11.12.0**, mediante mermaid.parse.
 
-Se verificaron formato Markdown, tablas, enlaces y rutas de correspondencia. Los hashes SHA-256 de los 13 análisis académicos anteriores, sus 14 diagramas y los seis documentos fuente se conservaron; Git identifica únicamente este documento académico nuevo. La comprobación fue documental y visual, sin conexión a MySQL ni pruebas funcionales del backend.
+Las fases 1–2 y el bloque completo desde Fase 4 se conservaron íntegros; permanecen los **33 CU y 34 diagramas**. `git diff --check` aprobado y únicamente cambia este Markdown. La revisión visual exhaustiva se reserva para el cierre integral; no se ejecutaron pruebas funcionales, conexiones a MySQL, suites extensas ni hashes del repositorio, y no se generaron capturas/SVG.
 
-**Avance al cierre de Fase 3:** veinte de los 33 CU implementados, con veintiún diagramas de los 34 previstos. La Fase 4 se incorpora a continuación por solicitud de continuidad del usuario, conservando la numeración oficial y el orden acordado.
+**Avance de corrección al cierre de Fase 3:** **20/33 CU y 21/34 diagramas corregidos**. Fase 3 queda para revisión del usuario. Las fases 4–6 conservan su versión conceptual anterior y permanecen pendientes de autorización para corregirlas.
 
 ## 7. Fase 4 — Compras
 
 ### 7.1. Condiciones compartidas, participantes y asociaciones
 
-Se mantienen las convenciones BCE y un Control conceptual principal por CU. CU25 y CU27 requieren **Administrador**; CU26 permite **Administrador o Regente**. Todos requieren sesión válida y cuenta activa, con versión de credenciales vigente, y autorización del backend por operación.
+Se aplica la estructura corregida de las fases anteriores: componentes funcionales React como Boundary, Controllers y Services reales como Control, Repositories y modelos con nombres verificables. Las funciones HTTP y hooks intermediarios se documentan en notas/tablas; las dependencias al Controller resumen solicitudes con verbo/endpoint. CU25 y CU27 requieren **Administrador**; CU26 permite **Administrador o Regente**. Todos requieren sesión válida y cuenta activa, con versión de credenciales vigente, y autorización del backend por operación.
 
-Usuario se incorpora como entidad del objetivo porque la compra identifica registrador y anulador, y los movimientos identifican responsable. Sus atributos académicos seleccionados son ID y nombre público; el actor Administrador no es una subclase de Usuario. La autenticación transversal conserva la comprobación documentada sin añadir otro Control.
+Usuario participa porque la compra identifica registrador/anulador y los movimientos identifican responsable; el actor Administrador no es una subclase de Usuario. Cada modelo del dibujo muestra todos sus atributos persistentes, incluidas FK, snapshots y campos de Usuario ajenos al DTO de compras. Los includes de responsables solo obtienen ID/nombre: dibujar password_hash no implica leerlo ni devolverlo en estas operaciones. La autenticación transversal conserva la comprobación documentada sin añadir otro Control.
 
 | Asociación persistente | Multiplicidades | Significado |
 |---|---|---|
@@ -2558,7 +2970,15 @@ También se conservan Medicamento–ExistenciaMedicamento, ExistenciaMedicamento
 
 **Claves y respuestas inciertas:** la clave de operación es única globalmente y no se reutiliza tras anular. Un 409 por clave no acredita igualdad de solicitudes ni devuelve automáticamente la compra desde POST. CU26 permite buscar la clave únicamente entre operaciones del usuario autenticado, sin restringir el listado general ni la ficha por ID. La interfaz conserva clave/borrador y no reenvía automáticamente.
 
-Las correspondencias remiten a compraController, compraValidator, compraService, compraRepository y los Repositories de existencias/movimientos del análisis técnico. El Control coordina esas responsabilidades de forma conceptual; no implica clases nuevas ni métodos de negocio en los modelos. El servicio HTTP es `frontend/src/features/compras/services/compra.service.js`. Referencias comunes: RF03/RF04/RF20–RF22; RN33–RN45/RN71–RN76/RN79/RN80.
+Las correspondencias remiten a compraController, compraValidator, compraService, compraRepository y los Repositories de medicamentos/existencias/movimientos del análisis técnico. compraService coordina Repositories directamente; no llama a medicamentoService ni inventarioService. No existe DetalleCompraService ni DetalleCompraRepository en este flujo. Referencias comunes: RF03/RF04/RF20–RF22; RN33–RN45/RN71–RN76/RN79/RN80.
+
+**HTTP y fuentes:** `frontend/src/features/compras/services/compra.service.js` exporta getCompras, getCompra, createCompra y anularCompra; todas devuelven **response.data**, el envoltorio con data/message, a diferencia de funciones de otras features que extraen el DTO. Importan api de `frontend/src/api/api.js`, con URL base/cookies compartidas. `backend/src/presentation/routes/compra.router.js` se monta en `/api/compras` desde `backend/src/app.js`; authMiddleware precede a requireRole. Los parámetros de ruta se escapan como #58; en Mermaid.
+
+**Hooks y componentes reales:** `useConsulta(consultar, clave, filtros, habilitada = true)`, en `frontend/src/hooks/useConsulta.js`, ejecuta la función consultar desde un efecto y descarta respuestas obsoletas con isCurrent(), local a ese efecto. retry/invalidate son callbacks anónimos retornados por el hook, no funciones propias de las páginas. `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`, en `frontend/src/hooks/useConsultaAutomatica.js`, declara aplicar(nextFilters) y cambiar(nextFilters, inmediato), retorna onChange/onClear mediante callbacks anónimos y reutiliza useConsulta. No se convierten en operaciones Boundary ni requieren cajas adicionales. `CompraDetalle` es un componente funcional local, no exportado, en `frontend/src/features/compras/pages/CompraDetailPage.jsx`; CompraDetailPage solo obtiene idCompra y lo renderiza con key=idCompra. Las funciones actualizar/guardar pertenecen a CompraDetalle.
+
+**Auxiliares externos a clases:** en `backend/src/business/services/compra.service.js`, validarImporte(valor, nombre), claveExistencia(data), manejarErrorRegistro(error), toPlain(registro), decimal(valor, escala), inconsistenciaAnulacion(), cantidadHistorica(valor, permiteCero = false), costoHistorico(valor), esMotivoCompra(motivo), esMotivoAnulacionCompra(motivo), validarReferenciaCompensacion(movimiento, original, referencias), calcularCompensacion(existencia, detalles, movimientos, referencias), toPublicUsuario(usuario), toPublicCompra(data) y toPublicDetalle(data) son funciones de módulo. getValidatedData(result) es externo a compraController; relacionesCabecera() y atributosCompra son externos a compraRepository. compraValidator de `backend/src/business/validators/compra.validator.js` declara validateCreate(data), validateAnular(data), validateId(data), validateFiltros(data) y validateSinFiltros(data), apoyados por esquemas Zod externos. Los cálculos exactos de `backend/src/shared/utils/decimal.js`, vencimiento de `vencimiento.js` y hora comercial de `fecha-operacion.js` no son métodos de entidades ni del Service.
+
+**Modelos y tipos completos:** Compra tiene 11 atributos, DetalleCompra 8, Medicamento 12, ProveedorLaboratorio 5, ExistenciaMedicamento 7, MovimientoInventario 12, Usuario 9, Venta 10 y DetalleVenta 7. Todos utilizan timestamps:false y PK INT autoincrementales. DATE representa DATEONLY del modelo y DATETIME, DataTypes.DATE; INT_UNSIGNED corresponde a INTEGER.UNSIGNED. Los nombres persistentes conservan snake_case; los datos de estado/props de React son temporales. Las asociaciones no obligan a consultar todos los campos dibujados ni todas las relaciones de cada modelo.
 
 ### CU25 — Registrar compra
 
@@ -2566,12 +2986,13 @@ Las correspondencias remiten a compraController, compraValidator, compraService,
 
 **Objetivo:** registrar una adquisición con todas sus líneas y efectos de inventario de manera conjunta.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaRegistrarCompra | Boundary | Recoge clave, adquisición y líneas; permite revisar y confirmar la recepción. |
-| ControlRegistrarCompra | Control | Valida la recepción y coordina importes, existencias, cabecera, detalles y entradas. |
+| CompraFormPage / CompraForm / CompraLinea | Boundary; componentes funcionales | Coordinan datos, líneas locales, revisión y confirmación mediante callbacks. |
+| compraController / compraService | Control; clases | Validan y coordinan el registro transaccional y su resultado. |
+| compraRepository / medicamentoRepository / existenciaMedicamentoRepository / movimientoInventarioRepository | Repository; clases | Consultan/bloquean referencias y persisten cabecera, detalles, existencias y entradas. |
 | Compra | Entity | Conserva cabecera, clave, fechas, proveedor, responsable y total. |
 | DetalleCompra | Entity | Conserva cada línea recibida, importes y estado anterior común del grupo. |
 | Medicamento | Entity | Identifica productos existentes y activos de la recepción. |
@@ -2586,43 +3007,83 @@ Las correspondencias remiten a compraController, compraValidator, compraService,
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaRegistrarCompra {
+    class CompraForm {
         <<boundary>>
-        -String claveOperacion
-        -String fechaCompra
-        -Lista detalles
-        -Integer idMedicamento
-        -Integer cantidad
-        -String costoUnitario
-        -String precisionVencimiento
-        -String fechaVencimiento
-        +agregarLinea()
-        +quitarLinea()
-        +revisarRecepcion()
-        +confirmarRegistro()
+        -Object form
+        -Object review
+        -Function onSubmit
+        -Function onCancel
+        -Function onLookup
+        +changeLinea(key, campo, value)
+        +revisar(event)
+        +close()
+        +confirmar()
     }
-    class ControlRegistrarCompra {
+    class CompraFormPage {
+        <<boundary>>
+        -Object opciones
+        -Boolean submitting
+        -Boolean attempted
+        -String error
+        +guardar(data)
+    }
+    class CompraLinea {
+        <<boundary>>
+        -Object linea
+        -Boolean disabled
+        -Function onChange
+        -Function onRemove
+    }
+    class compraController {
         <<control>>
-        +validarRecepcion()
-        +comprobarClave()
-        +validarMedicamentosYProveedor()
-        +calcularImportes()
-        +actualizarExistencias()
-        +registrarCompraYEntradas()
-        +consultarResultado()
+        +createCompra(req, res, next)$
+    }
+    class compraService {
+        <<control>>
+        +createCompra(data, idUsuarioAutenticado)$
+        +getCompraById(idCompra, transaction)$
+    }
+    class compraRepository {
+        <<repository>>
+        +findByClave(...)$
+        +create(...)$
+        +createDetalle(...)$
+        +findById(...)$
+    }
+    class medicamentoRepository {
+        <<repository>>
+        +findById(...)$
+        +findProveedorById(...)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findParaCompra(...)$
+        +create(...)$
+        +updateSaldoYCosto(...)$
+    }
+    class movimientoInventarioRepository {
+        <<repository>>
+        +create(...)$
     }
     class Compra {
         <<entity>>
         -INT id_compra
+        -INT id_usuario
+        -INT id_proveedor_laboratorio
         -VARCHAR_64 clave_operacion
         -DATE fecha_compra
         -DATETIME fecha_registro
         -ENUM_CONFIRMADA_ANULADA estado_operacion
         -DECIMAL_14_2 total
+        -DATETIME fecha_anulacion
+        -VARCHAR_255 motivo_anulacion
+        -INT id_usuario_anulador
     }
     class DetalleCompra {
         <<entity>>
         -INT id_detalle_compra
+        -INT id_compra
+        -INT id_existencia
         -INT cantidad
         -DECIMAL_14_6 costo_unitario
         -DECIMAL_14_2 subtotal
@@ -2632,19 +3093,30 @@ classDiagram
     class Medicamento {
         <<entity>>
         -INT id_medicamento
+        -INT id_proveedor_laboratorio
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
     }
     class ProveedorLaboratorio {
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
         -BOOLEAN estado
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
@@ -2654,26 +3126,49 @@ classDiagram
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
+        -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
+        -INT id_movimiento_original
         -ENUM_ENTRADA_SALIDA direccion
         -INT cantidad
         -DATETIME fecha_movimiento
         -VARCHAR_40 motivo
+        -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
-    Administrador --> VistaRegistrarCompra
-    VistaRegistrarCompra ..> ControlRegistrarCompra : solicita
-    ControlRegistrarCompra ..> Compra : registra
-    ControlRegistrarCompra ..> DetalleCompra : registra lineas
-    ControlRegistrarCompra ..> Medicamento : valida
-    ControlRegistrarCompra ..> ProveedorLaboratorio : deriva y valida
-    ControlRegistrarCompra ..> ExistenciaMedicamento : crea o actualiza
-    ControlRegistrarCompra ..> MovimientoInventario : registra entradas
-    ControlRegistrarCompra ..> Usuario : responsable de sesion
+    Administrador --> CompraForm
+    CompraLinea ..> CompraForm : callbacks onChange y onRemove
+    CompraForm ..> CompraFormPage : callback onSubmit a guardar
+    CompraFormPage ..> compraController : POST /api/compras (resumen)
+    compraController ..> compraService : createCompra
+    compraService ..> compraRepository : clave y cabecera y detalles y resultado
+    compraService ..> medicamentoRepository : bloqueo y referencias activas
+    compraService ..> existenciaMedicamentoRepository : existencia nueva o reutilizada
+    compraService ..> movimientoInventarioRepository : create por detalle
+    compraRepository ..> Compra : clave y registro y lectura final
+    compraRepository ..> DetalleCompra : registro de lineas y lectura final
+    compraRepository ..> ExistenciaMedicamento : include final
+    compraRepository ..> Medicamento : include final
+    compraRepository ..> ProveedorLaboratorio : include final
+    compraRepository ..> Usuario : responsables publicos del resultado
+    medicamentoRepository ..> Medicamento : lectura bajo bloqueo
+    medicamentoRepository ..> ProveedorLaboratorio : referencia bajo bloqueo compartido
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : crea o actualiza
+    movimientoInventarioRepository ..> MovimientoInventario : inserta entradas
     Usuario "1" -- "0..*" Compra : usuarioRegistrador
     Usuario "0..1" -- "0..*" Compra : usuarioAnulador
     ProveedorLaboratorio "1" -- "0..*" Compra : proveedorLaboratorio
@@ -2684,9 +3179,12 @@ classDiagram
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
     DetalleCompra "0..1" -- "0..*" MovimientoInventario : detalleCompra
+    note for CompraForm "Operaciones = funciones locales React; no metodos de clase.\nAgregar/quitar lineas es inline; consulta por clave en CU26."
+    note for CompraFormPage "guardar es local React; opciones mediante useConsulta.\nconsultarOpciones es externo al componente, segun tabla."
+    note for CompraLinea "Callbacks recibidos; onChange inline, sin handlers propios."
 ```
 
-**Descripción de relaciones:** la vista prepara líneas con medicamento, cantidad, costo y vencimiento; esos campos corresponden a una línea temporal de detalles, no a otra entidad. El Control deriva proveedor de los medicamentos y responsable de la sesión, sin aceptarlos como campos libres. Compra conserva cabecera y DetalleCompra cada línea, asociada a una existencia. Cada movimiento original de entrada referencia su detalle, existencia y responsable. El anulador es opcional y permanece ausente al registrar; incluir su asociación no atribuye una anulación a este CU.
+**Descripción de relaciones:** CompraLinea invoca callbacks del formulario; changeLinea modifica el borrador. revisar prepara review y confirmar llama a onSubmit=guardar de CompraFormPage. Esta llama a createCompra exportado por el módulo HTTP; la dependencia al Controller resume el POST, no una llamada directa. El Controller valida y pasa el ID autenticado al Service, que coordina los cuatro Repositories. Proveedor se deriva de medicamentos y responsable de sesión; no son campos libres. Compra conserva cabecera, DetalleCompra cada línea y MovimientoInventario una entrada por detalle/existencia/responsable. Usuario participa por sus FK y datos públicos del include, sin una llamada directa Service–Usuario. El anulador permanece ausente al registrar.
 
 La recepción agrupa cantidades/valor por medicamento–fecha almacenada–precisión para calcular saldo/promedio una vez por existencia, pero conserva cada detalle y movimiento individual, incluidas líneas repetidas. Los subtotales se redondean a dos decimales y el total suma esos subtotales. Los costos y promedio mantienen seis decimales. Todos los detalles del mismo grupo guardan el mismo estado previo a la compra completa; si la existencia es nueva, el par es 0/0.000000.
 
@@ -2699,17 +3197,24 @@ Una compra puede utilizar ambos caminos en distintos grupos. Se comprueban medic
 
 Cabecera, detalles, existencias, snapshots y entradas se confirman en una transacción o se revierten íntegramente. No se reciben total, subtotal, IDs/códigos de existencia, responsable, proveedor o snapshots desde React. Tampoco se crea composición ni se consulta el catálogo de principios.
 
-**Correspondencia con la implementación:** `/compras/nueva`, `frontend/src/features/compras/pages/CompraFormPage.jsx`, `frontend/src/features/compras/components/CompraForm.jsx`, `CompraLinea.jsx` y revisión en Modal representan la vista. Proveedores/medicamentos preparatorios reutilizan CU11/CU15; la recuperación por clave reutiliza CU26.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarRecepcion | `compraController.createCompra`, `compraValidator.validateSinFiltros` y `validateCreate`; el Service comprueba fechas comerciales, vencimientos y límites. |
-| comprobarClave | `compraRepository.findByClave` es comprobación previa auxiliar; el UNIQUE de clave es la barrera final y el conflicto se traduce mediante auxiliares del registro. |
-| validarMedicamentosYProveedor | `compraService.createCompra` utiliza `medicamentoRepository.findById` con bloqueo y `findProveedorById` para productos/proveedor activos y proveedor único. |
-| calcularImportes | Cálculos exactos del flujo `createCompra` y utilidades decimales calculan subtotales, total y promedio agrupado, sin métodos inventados de Compra. |
-| actualizarExistencias | `existenciaMedicamentoRepository.findParaCompra` y, por grupo, `create` o `updateSaldoYCosto`; se conserva el snapshot común. |
-| registrarCompraYEntradas | `compraRepository.create`/`createDetalle` y `movimientoInventarioRepository.create` registran cabecera, líneas y ENTRADA de motivo COMPRA en la misma operación. |
-| consultarResultado | `compraService.getCompraById` y `compraRepository.findById` realizan lectura final dentro de la transacción, con datos públicos de responsables y asociaciones. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU25 | CompraForm | `frontend/src/features/compras/components/CompraForm.jsx` | Locales `changeLinea(key, campo, value)`; `revisar(event)`; `close()`; `confirmar()` | revisar prepara review; confirmar llama onSubmit. Nueva línea/quitar/cabecera son inline; nuevaLinea(key) es externa. close se pasa al Modal y al botón de retorno. |
+| CU25 | CompraFormPage | `frontend/src/features/compras/pages/CompraFormPage.jsx` | Local `guardar(data)` | onSubmit del formulario; inFlight evita envíos dobles, active ignora respuestas tras salir. consultarOpciones() y mensajeError(error) son externos al componente. consultarClave corresponde a CU26. |
+| CU25 | CompraLinea / Modal | `frontend/src/features/compras/components/CompraLinea.jsx`; `frontend/src/components/Modal.jsx` | Props onChange/onRemove/onClose | onChange inline del padre llama changeLinea; onRemove inline filtra detalles. Modal recibe close; no se le atribuyen revisar/confirmar. onCancel del formulario navega inline a /compras. |
+| CU25 | Helpers del borrador | `frontend/src/features/compras/utils/compraForm.js` | Exportadas `generarClaveCompra()`; `prepararCompra(form, medicamentos, proveedores)` | Funciones de módulo; clave no es PK. prepararCompra devuelve solo campos permitidos y costo como cadena; no calcula saldos/importes. fechaValida(value) es auxiliar privado del módulo. |
+| CU25 | compraController | `backend/src/presentation/controllers/compra.controller.js` | `createCompra(req, res, next)` | validateSinFiltros(data)/validateCreate(data) de compraValidator; ID de usuario desde req.usuario. |
+| CU25 | compraService | `backend/src/business/services/compra.service.js` | `createCompra(data, idUsuarioAutenticado)`; `getCompraById(idCompra, transaction)` | Agrupación/importes/generación de código dentro de createCompra; getCompraById es lectura final interna, no otro GET ni Controller. |
+| CU25 | compraRepository | `backend/src/data/repositories/compra.repository.js` | `findByClave({ claveOperacion, transaction })`; `create({ data, transaction })`; `createDetalle({ data, transaction })`; `findById(idCompra, { transaction } = {})` | Clave previa fuera de transacción; inserciones y lectura final dentro. Detalles se persisten por esta clase. |
+| CU25 | medicamentoRepository | `backend/src/data/repositories/medicamento.repository.js` | `findById({ idMedicamento, transaction, lock = false })`; `findProveedorById({ idProveedorLaboratorio, transaction, exclusivo = false })` | lock:true en producto y bloqueo compartido en proveedor; no se ejecutan includes de composición en findById bloqueante. |
+| CU25 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findParaCompra({ idMedicamento, transaction })`; `create({ data, transaction })`; `updateSaldoYCosto({ idExistencia, cantidadFisica, costoUnitarioPromedio, transaction })` | Incluye agotadas; cada grupo crea o actualiza, nunca ambas para el mismo grupo. |
+| CU25 | movimientoInventarioRepository | `backend/src/data/repositories/movimiento-inventario.repository.js` | `create({ data, transaction })` | Una ENTRADA COMPRA por línea; fecha comercial común, STR_TO_DATE al persistir. |
+| CU25 | Siete modelos Entity | `backend/src/data/models/compra.js`; `detalle-compra.js`; `medicamento.js`; `proveedor-laboratorio.js`; `existencia-medicamento.js`; `movimiento-inventario.js`; `usuario.js` (mismo directorio) | — | Atributos completos; snapshots no publicados. Sin métodos heredados ni cálculos atribuidos a entidades. |
+| CU25 | Función HTTP intermediaria | `frontend/src/features/compras/services/compra.service.js` | `createCompra(data)` | api.post('/compras', data); devuelve envoltorio response.data, utilizado como response.data.idCompra por guardar. |
+| CU25 | API, relación HTTP resumida | `backend/src/presentation/routes/compra.router.js`; `backend/src/app.js` | `POST /api/compras` | Solo Administrador; body claveOperacion/fechaCompra/detalles, query vacío. |
+| CU25 | Opciones preparatorias CU15/CU11 | `frontend/src/features/compras/pages/CompraFormPage.jsx`; `frontend/src/features/medicamentos/services/medicamento.service.js`; `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` | Externa `consultarOpciones()`; exportadas `getMedicamentos({ codigoMedicamento, nombreComercial, idPrincipioActivo = [] } = {})`; `getProveedoresLaboratorios()` | useConsulta invoca consultarOpciones, que ejecuta Promise.all con GET /api/medicamentos y GET /api/proveedores-laboratorios. Devuelve { data: { medicamentos, proveedores } }; flujos de apoyo sin repetir cajas. |
 
 `createCompra` del servicio HTTP usa `POST /api/compras`; responde 201 únicamente después del commit. Un error conserva clave/borrador; la interfaz impide duplicados y abre el detalle al éxito. Una clave existente produce 409 sin reproducir el POST; la consulta posterior vacía no prueba que una solicitud pendiente haya terminado. Referencias: RF20; RN10/RN14/RN29/RN33–RN45 y CU25.
 
@@ -2719,12 +3224,15 @@ Cabecera, detalles, existencias, snapshots y entradas se confirman en una transa
 
 **Objetivo:** consultar compras mediante filtros o ficha por ID, conservando los datos originales y la información de anulación.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarCompras | Boundary | Agrupa listado/filtros y ficha con líneas originales y responsables. |
-| ControlConsultarCompras | Control | Valida la consulta y obtiene datos públicos según listado o detalle. |
+| ComprasPage / CompraFilters / CompraTable | Boundary; componentes funcionales | Consultan y presentan listado/filtros con hooks intermediarios. |
+| CompraDetailPage / CompraDetalle / CompraDetallesTable | Boundary; componentes funcionales | Obtienen ID, consultan ficha y presentan líneas originales. |
+| CompraFormPage / CompraForm | Boundary; componentes funcionales | Permiten al Administrador recuperar una operación por clave desde el borrador de CU25. |
+| compraController / compraService | Control; clases | Validan y coordinan listado/ficha con filtro personal condicional. |
+| compraRepository | Repository; clase | Consulta cabeceras o ficha con includes y proyecciones públicas. |
 | Compra | Entity | Aporta cabecera, clave, importes originales y datos de anulación. |
 | ProveedorLaboratorio | Entity | Identifica al proveedor registrado en la cabecera. |
 | Usuario | Entity | Identifica registrador/anulador y determina el filtro personal por clave. |
@@ -2739,29 +3247,71 @@ classDiagram
     direction LR
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
-    class VistaConsultarCompras {
+    class ComprasPage {
         <<boundary>>
-        -String desde
-        -String hasta
-        -Integer idProveedorLaboratorio
-        -String estadoOperacion
-        -String claveOperacion
-        -Integer idCompra
-        -Lista compras
-        +aplicarFiltros()
-        +solicitarListado()
-        +solicitarFicha()
+        -Object filtros
+        -String query
+        -Object consulta
+        -Function onChange
+        -Function onClear
     }
-    class ControlConsultarCompras {
+    class CompraFilters {
+        <<boundary>>
+        -Object filtros
+        -Function onChange
+        -Function onClear
+        +campo(nombre, inmediato = true)
+    }
+    class CompraTable {
+        <<boundary>>
+        -Array compras
+        -String query
+    }
+    class CompraDetailPage {
+        <<boundary>>
+        -String idCompra
+    }
+    class CompraDetalle {
+        <<boundary>>
+        -String idCompra
+        -Object consulta
+        -Object resultado
+        +actualizar()
+    }
+    class CompraDetallesTable {
+        <<boundary>>
+        -Array detalles
+    }
+    class CompraFormPage {
+        <<boundary>>
+        -Object lookup
+        +consultarClave(claveOperacion)
+    }
+    class CompraForm {
+        <<boundary>>
+        -Object form
+        -Function onLookup
+    }
+    class compraController {
         <<control>>
-        +validarConsulta()
-        +consultarListado()
-        +consultarDetalle()
-        +prepararDatosPublicos()
+        +getCompras(req, res, next)$
+        +getCompraById(req, res, next)$
+    }
+    class compraService {
+        <<control>>
+        +getCompras(...)$
+        +getCompraById(idCompra, transaction)$
+    }
+    class compraRepository {
+        <<repository>>
+        +findAll(...)$
+        +findById(...)$
     }
     class Compra {
         <<entity>>
         -INT id_compra
+        -INT id_usuario
+        -INT id_proveedor_laboratorio
         -VARCHAR_64 clave_operacion
         -DATE fecha_compra
         -DATETIME fecha_registro
@@ -2769,57 +3319,101 @@ classDiagram
         -DECIMAL_14_2 total
         -DATETIME fecha_anulacion
         -VARCHAR_255 motivo_anulacion
+        -INT id_usuario_anulador
     }
     class ProveedorLaboratorio {
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
+        -BOOLEAN estado
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class DetalleCompra {
         <<entity>>
         -INT id_detalle_compra
+        -INT id_compra
+        -INT id_existencia
         -INT cantidad
         -DECIMAL_14_6 costo_unitario
         -DECIMAL_14_2 subtotal
+        -INT saldo_anterior
+        -DECIMAL_14_6 costo_promedio_anterior
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
+        -INT cantidad_fisica
+        -DECIMAL_14_6 costo_unitario_promedio
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
+        -INT id_proveedor_laboratorio
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
+        -VARCHAR_80 forma_farmaceutica
         -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
         -BOOLEAN estado
     }
-    Administrador --> VistaConsultarCompras
-    Regente --> VistaConsultarCompras
-    VistaConsultarCompras ..> ControlConsultarCompras : solicita
-    ControlConsultarCompras ..> Compra : consulta
-    ControlConsultarCompras ..> ProveedorLaboratorio : proveedor registrado
-    ControlConsultarCompras ..> Usuario : responsables y clave propia
-    ControlConsultarCompras ..> DetalleCompra : solo ficha
-    ControlConsultarCompras ..> ExistenciaMedicamento : solo ficha
-    ControlConsultarCompras ..> Medicamento : solo ficha
+    Administrador --> ComprasPage
+    Regente --> ComprasPage
+    Administrador --> CompraDetailPage
+    Regente --> CompraDetailPage
+    Administrador --> CompraForm : recuperacion por clave
+    CompraFilters ..> ComprasPage : callbacks del hook de filtros
+    ComprasPage ..> CompraTable : renderiza cabeceras
+    CompraTable ..> CompraDetailPage : enlace via React Router
+    CompraDetailPage ..> CompraDetalle : renderiza con ID y key
+    CompraDetalle ..> CompraDetallesTable : renderiza lineas
+    CompraForm ..> CompraFormPage : callback onLookup a consultarClave
+    ComprasPage ..> compraController : GET /api/compras (resumen)
+    CompraDetalle ..> compraController : GET /api/compras/#58;idCompra (resumen)
+    CompraFormPage ..> compraController : GET /api/compras (resumen)
+    compraController ..> compraService : listado o ficha
+    compraService ..> compraRepository : findAll o findById
+    compraRepository ..> Compra : consulta
+    compraRepository ..> ProveedorLaboratorio : proveedor registrado
+    compraRepository ..> Usuario : responsables publicos
+    compraRepository ..> DetalleCompra : solo ficha
+    compraRepository ..> ExistenciaMedicamento : solo ficha
+    compraRepository ..> Medicamento : solo ficha
     Usuario "1" -- "0..*" Compra : usuarioRegistrador
     Usuario "0..1" -- "0..*" Compra : usuarioAnulador
     ProveedorLaboratorio "1" -- "0..*" Compra : proveedorLaboratorio
     Compra "1" -- "0..*" DetalleCompra : detallesCompra
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" DetalleCompra : existencia
+    note for ComprasPage "Sin funciones locales de consulta; usa useConsultaAutomatica.\nonChange y onClear provienen del hook."
+    note for CompraFilters "campo es funcion local React; no metodo de clase.\nDevuelve props con callback onChange anonimo."
+    note for CompraDetailPage "Solo obtiene idCompra y renderiza CompraDetalle."
+    note for CompraDetalle "actualizar es local React; no metodo de clase.\nComponente local del archivo CompraDetailPage.jsx.\nGET via consultarCompra externo y useConsulta."
+    note for CompraFormPage "consultarClave es local React; no metodo de clase."
+    note for CompraForm "onLookup es prop; click inline a consultarClave del padre."
 ```
 
-**Descripción de relaciones:** la vista conceptual reúne listado y ficha. Compra, proveedor y responsables participan en ambos caminos; detalles, existencias y medicamentos solo en la ficha. La relación de proveedor parte de la cabecera histórica, no se deriva nuevamente del catálogo actual. No se consulta MovimientoInventario ni se calculan saldos en este CU.
+**Descripción de relaciones:** CompraFilters invoca callbacks devueltos por useConsultaAutomatica; ComprasPage utiliza ese hook y renderiza CompraTable. Su Link conserva comprasQuery y navega a CompraDetailPage, que renderiza CompraDetalle con ID/key. Este consulta mediante useConsulta y la función externa consultarCompra; actualizar llama a consulta.retry. CompraDetallesTable presenta líneas y enlaces de inventario. En recuperación desde el borrador, CompraForm llama a onLookup=consultarClave de CompraFormPage, que solicita el mismo listado con clave. Las dependencias HTTP resumen hooks/funciones importadas; Controller → Service → Repository lee cabeceras o ficha. Proveedor proviene de la cabecera histórica; no se consulta MovimientoInventario ni se calculan saldos.
 
 | Camino | Responsabilidades y condiciones |
 |---|---|
@@ -2827,16 +3421,26 @@ classDiagram
 | Listado por clave | Usa el mismo listado filtrado, pero agrega ID de usuario desde sesión; clave ajena o sin coincidencia devuelve []. No recibe un usuario elegido por el cliente. |
 | Ficha por ID | Valida ID y query vacío; obtiene todas las líneas por ID ascendente. No aplica el filtro personal de clave; compra inexistente produce 404. |
 
-Una compra anulada conserva líneas, importes, clave y datos de anulación. Las líneas repetidas no se agrupan y los importes no se recalculan. Nombres/presentación/estados del catálogo son actuales; no hay snapshots de esos textos. El DTO no expone los snapshots B1, stock físico actual ni promedio de la existencia, por lo que no se incorporan como datos mostrados en este dibujo. Consultar por período no implementa el reporte futuro CU39.
+Una compra anulada conserva líneas, importes, clave y datos de anulación. Las líneas repetidas no se agrupan y los importes no se recalculan. Nombres/presentación/estados del catálogo son actuales; no hay snapshots de esos textos. El DTO no expone snapshots B1, stock físico actual ni promedio de la existencia: aparecen en los modelos completos, no como datos de pantalla ni proyecciones de esta consulta. Consultar por período no implementa el reporte futuro CU39.
 
-**Correspondencia con la implementación:** `/compras`, `frontend/src/features/compras/pages/ComprasPage.jsx`, `frontend/src/features/compras/components/CompraFilters.jsx` y `CompraTable.jsx` representan listado/filtros; `/compras/:idCompra`, `frontend/src/features/compras/pages/CompraDetailPage.jsx` y `CompraDetallesTable.jsx`, la ficha. La búsqueda automática utiliza useConsultaAutomatica, con espera de 300 ms para texto y controles de aplicación inmediata; conserva filtros aplicados en URL y al volver del detalle. La carga de proveedores reutiliza CU11, incluidos inactivos.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarConsulta | `compraController` utiliza `compraValidator.validateFiltros` en listado o `validateId`/`validateSinFiltros` en ficha. |
-| consultarListado | `compraService.getCompras` utiliza `compraRepository.findAll`; si hay clave añade el ID autenticado. No ejecuta findByClave. |
-| consultarDetalle | `compraService.getCompraById` y `compraRepository.findById` cargan cabecera y líneas con asociaciones, sin los Repositories de Inventario. |
-| prepararDatosPublicos | Auxiliares externos `toPublicCompra`, `toPublicDetalle` y `toPublicUsuario` conservan importes y presentan fechas civiles y datos públicos. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU26 | ComprasPage | `frontend/src/features/compras/pages/ComprasPage.jsx` | — | Sin función local de carga/filtros; onChange/onClear/consulta son resultados del hook. consultarProveedores() es externo al componente. |
+| CU26 | CompraFilters | `frontend/src/features/compras/components/CompraFilters.jsx` | Local `campo(nombre, inmediato = true)` | Genera value/onChange del campo; callback anónimo invoca prop onChange. Clave usa inmediato=false; fechas/proveedor/estado, true. onClear es prop. |
+| CU26 | CompraTable / CompraDetallesTable | `frontend/src/features/compras/components/CompraTable.jsx`; `frontend/src/features/compras/components/CompraDetallesTable.jsx` | — | Sin funciones locales de consulta; Link a ficha conserva comprasQuery; enlaces de inventario remiten a sus CU. |
+| CU26 | CompraDetailPage / CompraDetalle | `frontend/src/features/compras/pages/CompraDetailPage.jsx` | Local de CompraDetalle `actualizar()` | La página exportada no declara este handler. consultarCompra(id), externa a ambos componentes, valida ID y llama getCompra. CompraDetalle usa useConsulta; guardar pertenece a CU27. |
+| CU26 | Recuperación desde CU25 | `frontend/src/features/compras/pages/CompraFormPage.jsx`; `frontend/src/features/compras/components/CompraForm.jsx` | Local de la página `consultarClave(claveOperacion)` | onLookup recibido por formulario; click inline normaliza clave y llama a prop. GET personal comparte flujo de listado; sin reenviar POST. |
+| CU26 | Hooks intermediarios | `frontend/src/hooks/useConsultaAutomatica.js`; `frontend/src/hooks/useConsulta.js` | `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`; `useConsulta(consultar, clave, filtros, habilitada = true)` | aplicar(nextFilters)/cambiar(nextFilters, inmediato) son locales al primer hook; isCurrent() al efecto del segundo. retry/invalidate/onChange/onClear son callbacks anónimos retornados, sin operaciones propias en las páginas. Debounce de 300 ms y URL. |
+| CU26 | Helpers de filtros | `frontend/src/features/compras/utils/filtrosCompra.js` | `normalizarFiltrosCompra(filtros)`; `validarFiltrosCompra(filtros)` | Exportaciones independientes entregadas al hook; no operaciones de ComprasPage/CompraFilters. |
+| CU26 | compraController | `backend/src/presentation/controllers/compra.controller.js` | `getCompras(req, res, next)`; `getCompraById(req, res, next)` | validateFiltros(data) en listado; validateId(data)/validateSinFiltros(data) en ficha. |
+| CU26 | compraService | `backend/src/business/services/compra.service.js` | `getCompras(filtros = {}, idUsuarioAutenticado)`; `getCompraById(idCompra, transaction)` | Clave añade idUsuario desde sesión; listado general/ficha no se restringen por registrador. DTO por auxiliares externos. |
+| CU26 | compraRepository | `backend/src/data/repositories/compra.repository.js` | `findAll({ desde, hasta, idProveedorLaboratorio, estadoOperacion, claveOperacion, idUsuario } = {})`; `findById(idCompra, { transaction } = {})` | findAll tiene firma multilinea en fuente; no ejecuta findByClave. findById incluye líneas y proyecta campos públicos; sin Repositories de inventario. |
+| CU26 | Seis modelos Entity | `backend/src/data/models/compra.js`; `proveedor-laboratorio.js`; `usuario.js`; `detalle-compra.js`; `existencia-medicamento.js`; `medicamento.js` (mismo directorio) | — | Atributos completos; listado no consulta detalles/existencias/medicamentos. |
+| CU26 | Funciones HTTP intermediarias | `frontend/src/features/compras/services/compra.service.js` | `getCompras(filtros = {})`; `getCompra(idCompra)` | api.get; devuelven envoltorio response.data, compatible con useConsulta y lookup. |
+| CU26 | API, listado/ficha resumidos | `backend/src/presentation/routes/compra.router.js`; `backend/src/app.js` | `GET /api/compras`; `GET /api/compras/:idCompra` | Administrador/Regente; recuperación desde alta solo Administrador por su ruta de origen. |
+| CU26 | Opciones de proveedores CU11 | `frontend/src/features/compras/pages/ComprasPage.jsx`; `frontend/src/features/proveedores/services/proveedor-laboratorio.service.js` | Externa `consultarProveedores()`; exportada `getProveedoresLaboratorios()` | useConsulta invoca auxiliar que devuelve { data: ... }; GET /api/proveedores-laboratorios incluye inactivos. No repite cajas de su flujo verificado. |
 
 Las funciones HTTP `getCompras` y `getCompra` usan `GET /api/compras` y `GET /api/compras/:idCompra`; resultado 200 sin escrituras. Se manejan carga, vacío y errores de filtros, sesión/permisos o inexistencia. Los enlaces de inventario/historial invocan sus CU correspondientes. Referencias: RF21; RN33–RN40/RN75 y CU26.
 
@@ -2846,12 +3450,13 @@ Las funciones HTTP `getCompras` y `getCompra` usan `GET /api/compras` y `GET /ap
 
 **Objetivo:** compensar íntegramente una compra mediante reversión, conservando sus originales e historial.
 
-**Clases participantes:**
+**Elementos participantes:**
 
-| Clase | Estereotipo | Responsabilidad |
+| Elemento | Estereotipo / tipo | Responsabilidad |
 |---|---|---|
-| VistaAnularCompra | Boundary | Recoge motivo obligatorio y permite revisar/confirmar la anulación completa. |
-| ControlAnularCompra | Control | Valida estado/integridad, calcula compensación y coordina actualización, reversiones y anulación. |
+| CompraDetailPage / CompraDetalle / CompraAnularForm | Boundary; componentes funcionales | Coordinan motivo, revisión y confirmación; guardar pertenece al componente local CompraDetalle. |
+| compraController / compraService | Control; clases | Validan y coordinan estado/integridad, compensación, escrituras y resultado. |
+| compraRepository / existenciaMedicamentoRepository / movimientoInventarioRepository | Repository; clases | Bloquean/consultan referencias e historial y persisten compensación/anulación. |
 | Compra | Entity | Conserva operación original y registra estado, fecha, motivo y anulador. |
 | DetalleCompra | Entity | Aporta cantidades/costos originales y snapshots del estado anterior. |
 | ExistenciaMedicamento | Entity | Aporta saldo/promedio actual y recibe el estado compensado. |
@@ -2868,37 +3473,85 @@ Las funciones HTTP `getCompras` y `getCompra` usan `GET /api/compras` y `GET /ap
 classDiagram
     direction LR
     class Administrador { <<actor>> }
-    class VistaAnularCompra {
+    class CompraDetailPage {
         <<boundary>>
-        -Integer idCompra
-        -String motivo
-        +revisarAnulacion()
-        +confirmarAnulacion()
+        -String idCompra
     }
-    class ControlAnularCompra {
+    class CompraDetalle {
+        <<boundary>>
+        -String idCompra
+        -String motivo
+        -Object resultado
+        -Boolean submitting
+        -Boolean requiereConsulta
+        +guardar(data)
+    }
+    class CompraAnularForm {
+        <<boundary>>
+        -String motivo
+        -Object review
+        -Function onChange
+        -Function onSubmit
+        +close()
+        +revisar(event)
+        +confirmar()
+    }
+    class compraController {
         <<control>>
-        +validarAnulacion()
-        +comprobarIntegridad()
-        +calcularCompensacion()
-        +actualizarExistencias()
-        +registrarReversiones()
-        +marcarCompraAnulada()
-        +consultarResultado()
+        +anularCompra(req, res, next)$
+    }
+    class compraService {
+        <<control>>
+        +anularCompra(idCompra, motivo, idUsuarioAutenticado)$
+        +getCompraById(idCompra, transaction)$
+    }
+    class compraRepository {
+        <<repository>>
+        +findParaAnular(...)$
+        +findDetallesParaAnular(...)$
+        +anular(...)$
+        +findById(...)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findByIdParaAnular(...)$
+        +updateSaldoYCosto(...)$
+    }
+    class movimientoInventarioRepository {
+        <<repository>>
+        +findParaAnular(...)$
+        +findReferenciasParaAnular(...)$
+        +findReversiones(...)$
+        +create(...)$
     }
     class Venta {
         <<entity>>
         -INT id_venta
+        -INT id_usuario
+        -DATETIME fecha_venta
+        -DATETIME fecha_registro
         -ENUM_CONFIRMADA_ANULADA_PENDIENTE estado_operacion
+        -VARCHAR_64 clave_operacion
+        -DECIMAL_14_2 total
+        -DATETIME fecha_anulacion
+        -VARCHAR_255 motivo_anulacion
+        -INT id_usuario_anulador
     }
     class DetalleVenta {
         <<entity>>
         -INT id_detalle_venta
         -INT id_venta
+        -INT id_receta
         -INT id_existencia
+        -INT cantidad
+        -DECIMAL_14_2 precio_unitario
+        -DECIMAL_14_2 subtotal
     }
     class Compra {
         <<entity>>
         -INT id_compra
+        -INT id_usuario
+        -INT id_proveedor_laboratorio
         -VARCHAR_64 clave_operacion
         -DATE fecha_compra
         -DATETIME fecha_registro
@@ -2906,10 +3559,13 @@ classDiagram
         -DECIMAL_14_2 total
         -DATETIME fecha_anulacion
         -VARCHAR_255 motivo_anulacion
+        -INT id_usuario_anulador
     }
     class DetalleCompra {
         <<entity>>
         -INT id_detalle_compra
+        -INT id_compra
+        -INT id_existencia
         -INT cantidad
         -DECIMAL_14_6 costo_unitario
         -DECIMAL_14_2 subtotal
@@ -2919,15 +3575,21 @@ classDiagram
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
+        -DATE fecha_vencimiento
+        -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
     }
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
+        -INT id_existencia
         -INT id_movimiento_original
         -INT id_detalle_compra
+        -INT id_detalle_venta
         -ENUM_ENTRADA_SALIDA direccion
         -INT cantidad
         -DECIMAL_14_6 costo_unitario_aplicado
@@ -2938,27 +3600,59 @@ classDiagram
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
+        -INT id_proveedor_laboratorio
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
+        -BOOLEAN estado
     }
     class ProveedorLaboratorio {
         <<entity>>
         -INT id_proveedor_laboratorio
         -VARCHAR_150 nombre
+        -VARCHAR_30 telefono
+        -VARCHAR_255 direccion
+        -BOOLEAN estado
     }
-    Administrador --> VistaAnularCompra
-    VistaAnularCompra ..> ControlAnularCompra : solicita
-    ControlAnularCompra ..> Compra : valida y anula
-    ControlAnularCompra ..> ExistenciaMedicamento : compensa
-    ControlAnularCompra ..> MovimientoInventario : historial y reversiones
-    ControlAnularCompra ..> Usuario : responsables
-    ControlAnularCompra ..> Medicamento : lectura final
-    ControlAnularCompra ..> ProveedorLaboratorio : lectura final
+    Administrador --> CompraDetailPage
+    Administrador --> CompraAnularForm
+    CompraDetailPage ..> CompraDetalle : renderiza con ID y key
+    CompraAnularForm ..> CompraDetalle : callbacks onChange y onSubmit
+    CompraDetalle ..> compraController : POST /api/compras/#58;idCompra/anular (resumen)
+    compraController ..> compraService : anularCompra
+    compraService ..> compraRepository : bloqueo y estado y resultado
+    compraService ..> existenciaMedicamentoRepository : bloqueo y compensacion
+    compraService ..> movimientoInventarioRepository : historial y referencias y reversiones
+    compraRepository ..> Compra : valida y anula y lectura final
+    compraRepository ..> DetalleCompra : lineas bloqueadas y lectura final
+    compraRepository ..> Usuario : responsables publicos del resultado
+    compraRepository ..> Medicamento : include final
+    compraRepository ..> ProveedorLaboratorio : include final
+    compraRepository ..> ExistenciaMedicamento : include final
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : compensa
+    movimientoInventarioRepository ..> MovimientoInventario : historial y reversiones
+    movimientoInventarioRepository ..> DetalleCompra : referencias condicionales
+    movimientoInventarioRepository ..> Compra : referencias condicionales
+    movimientoInventarioRepository ..> DetalleVenta : referencias condicionales
+    movimientoInventarioRepository ..> Venta : referencias condicionales
     Usuario "1" -- "0..*" Compra : usuarioRegistrador
     Usuario "0..1" -- "0..*" Compra : usuarioAnulador
     ProveedorLaboratorio "1" -- "0..*" Compra : proveedorLaboratorio
@@ -2972,9 +3666,12 @@ classDiagram
     DetalleVenta "0..*" -- "1" Venta : venta
     ExistenciaMedicamento "1" -- "0..*" DetalleVenta : existencia
     DetalleVenta "0..1" -- "0..*" MovimientoInventario : detalleVenta
+    note for CompraDetailPage "No declara guardar; renderiza el componente local CompraDetalle."
+    note for CompraDetalle "guardar es funcion local React; no metodo de clase.\nactualizar y GET preparatorio pertenecen a CU26."
+    note for CompraAnularForm "close, revisar y confirmar son locales React.\nonChange y onSubmit son props; Modal recibe close."
 ```
 
-**Descripción de relaciones:** el Control usa Compra y sus líneas para validar y compensar la operación completa, no una selección de detalles. ExistenciaMedicamento aporta el estado actual y MovimientoInventario el historial, originales y reversiones; la asociación reflexiva conserva el vínculo y la reversión única. Usuario representa responsabilidades distintas: el anulador puede no ser el registrador. Medicamento/proveedor participan en la respuesta final, sin validación de actividad ni cambios de catálogo. Para facilitar la lectura, DetalleCompra, DetalleVenta y Venta se vinculan por sus asociaciones de dominio sin repetir todas las dependencias del Control; sus responsabilidades se conservan en las tablas. Las asociaciones no representan un orden de ejecución.
+**Descripción de relaciones:** CompraDetailPage renderiza CompraDetalle. Este pasa setMotivo como onChange y guardar como onSubmit al formulario; revisar prepara { motivo }, confirmar invoca esa prop y close atiende el Modal. guardar llama a anularCompra importado; la dependencia hacia compraController resume el POST. Controller → Service coordina Repositories para validar/compensar toda la compra. Existencia aporta estado actual y MovimientoInventario, historial/originales/reversiones; la asociación reflexiva conserva vínculo y reversión única. Usuario distingue registrador/anulador y solo aporta datos públicos en la lectura final. Medicamento/proveedor se leen mediante compraRepository, sin llamar a medicamentoRepository ni validar actividad. Las dependencias de referencias hacia Compra/DetalleCompra/Venta/DetalleVenta son condicionales y no representan secuencia ni escrituras sobre Ventas.
 
 Venta y DetalleVenta se leen únicamente si el historial contiene referencias de compensaciones de venta que requieren comprobar existencia, pertenencia y estado. El método de lectura de referencias se invoca aunque no haya IDs, pero consulta esos modelos solo con listas no vacías. No se escribe una venta ni se implementa CU30; Receta no participa.
 
@@ -2991,17 +3688,21 @@ Se actualiza una vez el saldo/promedio de cada existencia y se crea una SALIDA A
 
 La transacción conserva detalles, snapshots, originales, total, adquisición, clave y códigos. Un fallo revierte toda la operación; bloqueo de cabecera y UNIQUE del original impiden dos anulaciones efectivas. Actividad actual o vencimiento no impiden compensar una compra histórica; saldo suficiente por sí solo no garantiza valoración válida.
 
-**Correspondencia con la implementación:** `/compras/:idCompra`, CompraDetailPage, `frontend/src/features/compras/components/CompraAnularForm.jsx` y revisión en Modal representan la vista. CU26 carga/reconsulta la ficha; solo Administrador ve el formulario para una compra confirmada. El body contiene exclusivamente motivo obligatorio de 1–255 caracteres tras trim; no recibe modalidad, fecha, usuario, líneas ni precondiciones de ajustes/retiros.
+**Correspondencia verificable y firmas exactas:**
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarAnulacion | `compraController.anularCompra`, `compraValidator.validateId`/`validateSinFiltros`/`validateAnular`, responsable de sesión y `compraRepository.findParaAnular`/`findDetallesParaAnular` comprueban solicitud y estado bajo bloqueo. |
-| comprobarIntegridad | `existenciaMedicamentoRepository.findByIdParaAnular` y `movimientoInventarioRepository.findParaAnular`/`findReferenciasParaAnular`/`findReversiones`, con auxiliares de integridad del flujo. |
-| calcularCompensacion | Función externa `calcularCompensacion` en compra.service.js determina B1/A y valores exactos por grupo; no es un método técnico de compraService ni de una entidad. |
-| actualizarExistencias | `existenciaMedicamentoRepository.updateSaldoYCosto` escribe el par compensado una vez por existencia dentro de la transacción. |
-| registrarReversiones | `movimientoInventarioRepository.create` inserta una reversión por original con motivo ANULACION_COMPRA, dirección SALIDA y responsable autenticado. |
-| marcarCompraAnulada | `compraRepository.anular` registra estado, instante, motivo y anulador sin eliminar la compra. |
-| consultarResultado | `compraService.getCompraById` y `compraRepository.findById` obtienen el DTO dentro de la misma transacción; no invocan el Controller de consulta. |
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU27 | CompraDetailPage / CompraDetalle | `frontend/src/features/compras/pages/CompraDetailPage.jsx` | Local de CompraDetalle `guardar(data)` | Página exportada solo renderiza CompraDetalle con ID/key. guardar usa inFlight/active; setMotivo es setter, no handler propio. Éxito fija resultado=response.data sin GET inmediato; actualizar pertenece a CU26. |
+| CU27 | CompraAnularForm | `frontend/src/features/compras/components/CompraAnularForm.jsx` | Locales `close()`; `revisar(event)`; `confirmar()` | revisar valida motivo y prepara review; confirmar llama onSubmit=guardar. onChange recibe setMotivo; textarea ejecuta callback inline. confirming es ref para evitar duplicados. |
+| CU27 | Modal, apoyo de revisión | `frontend/src/components/Modal.jsx` | Prop onClose | Recibe close del formulario; no declara revisar/confirmar ni calcula B1/A. CU26 carga la ficha; formulario solo Administrador y compra CONFIRMADA. |
+| CU27 | compraController | `backend/src/presentation/controllers/compra.controller.js` | `anularCompra(req, res, next)` | validateId(data)/validateSinFiltros(data)/validateAnular(data) de compraValidator; ID autenticado desde req.usuario. |
+| CU27 | compraService | `backend/src/business/services/compra.service.js` | `anularCompra(idCompra, motivo, idUsuarioAutenticado)`; `getCompraById(idCompra, transaction)` | Coordina transacción y lectura final interna. calcularCompensacion(existencia, detalles, movimientos, referencias) es función externa al Service, responsable de B1/A e integridad por grupo. |
+| CU27 | compraRepository | `backend/src/data/repositories/compra.repository.js` | `findParaAnular({ idCompra, transaction })`; `findDetallesParaAnular({ idCompra, transaction })`; `anular({ idCompra, motivo, idUsuario, fechaHora, transaction })`; `findById(idCompra, { transaction } = {})` | Bloquea cabecera/detalles; anular actualiza estado/fecha/motivo/anulador; findById carga DTO final con includes. |
+| CU27 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findByIdParaAnular({ idExistencia, transaction })`; `updateSaldoYCosto({ idExistencia, cantidadFisica, costoUnitarioPromedio, transaction })` | Bloqueo por ID ascendente y actualización una vez por existencia. |
+| CU27 | movimientoInventarioRepository | `backend/src/data/repositories/movimiento-inventario.repository.js` | `findParaAnular({ idsExistencias, idsDetalles, transaction })`; `findReferenciasParaAnular({ idsDetallesCompra, idsDetallesVenta, transaction })`; `findReversiones({ idsOriginales, transaction })`; `create({ data, transaction })` | Consulta referencias solo para listas no vacías; comprueba reversiones antes de escribir; crea SALIDA ANULACION_COMPRA por original. |
+| CU27 | Nueve modelos Entity | `backend/src/data/models/compra.js`; `detalle-compra.js`; `existencia-medicamento.js`; `movimiento-inventario.js`; `usuario.js`; `medicamento.js`; `proveedor-laboratorio.js`; `venta.js`; `detalle-venta.js` (mismo directorio) | — | Todos los atributos; Venta/DetalleVenta solo referencia condicional. id_receta en DetalleVenta no implica cargar Receta ni completar CU de Ventas. |
+| CU27 | Función HTTP intermediaria | `frontend/src/features/compras/services/compra.service.js` | `anularCompra(idCompra, data)` | api.post con { motivo }; devuelve envoltorio response.data. No recibe modalidad ni calcula compensación. |
+| CU27 | API, relación HTTP resumida | `backend/src/presentation/routes/compra.router.js`; `backend/src/app.js` | `POST /api/compras/:idCompra/anular` | Solo Administrador; puede anular compra ajena. Body exclusivo motivo, query vacío; GET de actualización separado en CU26. |
 
 El servicio HTTP `anularCompra` usa `POST /api/compras/:idCompra/anular`; resultado 200 después del commit. Entrada inválida produce 400, inexistencia 404 y estado/integridad/stock/valoración/contención 409, además de sesión/permisos y fallos inesperados. El éxito reemplaza la ficha y retira el formulario sin GET inmediato. Ante 400 conserva motivo; 404/409/red/500 exigen actualizar antes de otro envío, y 401/403 bloquean escritura. La respuesta perdida se recupera mediante CU26; no se reintenta automáticamente y repetir una anulación confirmada devuelve 409. Referencias: RF22; RN30/RN71–RN76/RN79/RN80 y CU27.
 
@@ -3014,21 +3715,21 @@ El servicio HTTP `anularCompra` usa `POST /api/compras/:idCompra/anular`; result
 | CU27 — Anular compra | 1 | Integridad, B1/A por existencia, reversión única y conservación histórica. |
 | **Total de Fase 4** | **3** | **Tres CU, numeración única CU25–CU27.** |
 
-**Criterio de comprobación:** cada dibujo utiliza un Boundary y un Control conceptual, con responsabilidades respaldadas por la implementación documentada. Se verifican atributos relevantes, referencias y multiplicidades persistentes, diferenciando mínimos exigidos por el flujo. Usuario participa por responsabilidad de dominio; Venta/DetalleVenta solo como lectura condicional de integridad. Las entidades no declaran métodos de Service ni se agregan clases de inventario, anulación o reversión persistente separadas.
+**Criterio de comprobación:** las funciones Boundary pertenecen a los componentes donde están declaradas; CompraDetalle se distingue de la página exportada CompraDetailPage. Se identifican callbacks recibidos/inline, funciones de módulo y hooks intermediarios sin atribuirlos a las páginas. Los métodos de Controller, Service y Repository son propios de sus clases y conservan firmas exactas. Todos los atributos persistentes de los nueve modelos se muestran, aunque las proyecciones públicas consulten solo una parte. Usuario participa por responsabilidad de dominio y Venta/DetalleVenta únicamente en lectura condicional de integridad.
 
-**Validación de esta entrega:** se comprobaron nombres/números CU25–CU27 contra el catálogo oficial y la estructura completa de los tres análisis. Los dibujos contienen tres Boundary y tres Control, con 18 operaciones conceptuales respaldadas. Se contrastaron nueve entidades reales —Compra, DetalleCompra, Medicamento, ProveedorLaboratorio, ExistenciaMedicamento, MovimientoInventario, Usuario, Venta y DetalleVenta— y 97 apariciones de atributos seleccionados con sus tipos del modelo general. Las 29 apariciones de asociaciones conservan extremos, multiplicidades y significado del CU técnico, incluidas FK opcionales y relación reflexiva de reversión. La asociación DetalleVenta–Venta se presenta con extremos invertidos para favorecer el trazado, sin cambiar su multiplicidad.
+**Resultado de la corrección de Fase 4:** tres CU y tres diagramas con nombres implementados. Se representan **10 componentes funcionales**, **6 clases backend** y **9 modelos**. Los gráficos contienen **12 funciones locales distintas en 12 apariciones**, **26 métodos backend distintos en 32 apariciones**, **197 apariciones de atributos persistentes completos** y **5 colaboraciones HTTP resumidas**. Las cuatro exportaciones HTTP de Compras y las consultas preparatorias de Medicamentos/Proveedores están documentadas con sus firmas y archivos. Se conservan las **29 asociaciones persistentes dibujadas**, con idénticos extremos, multiplicidades y alias, incluidas la relación reflexiva y la asociación DetalleVenta–Venta con extremos invertidos.
 
-Se revisaron permisos, caminos de existencia nueva/reutilizada, listado/ficha y clave propia, snapshots y valoración B1/A, conservación histórica y referencias de venta condicionales. Ante la diferencia de literal entre una descripción histórica del contexto y el análisis técnico vigente, se comprobó en compra.service.js que las nuevas reversiones usan ANULACION_COMPRA; Reversión es reconocido como literal histórico. No se modificó ninguna fuente.
+**Comprobación acotada:** nombres, firmas, propietarios y estados/props contrastados con React/backend; hooks/callbacks y respuestas HTTP con sus módulos; endpoints/permisos con routers, rutas protegidas y catálogo oficial; atributos/asociaciones con modelos y análisis técnico. Se revisaron existencia nueva/reutilizada, listado/ficha/clave propia, snapshots, B1/A y referencias de venta condicionales. Se confirmó en compra.service.js que las nuevas reversiones usan ANULACION_COMPRA y que Reversión se reconoce como literal histórico.
 
-Los tres diagramas se analizaron y renderizaron con Mermaid 11.12.0 y se revisaron sus capturas visualmente. Se comprobó disposición actor → Boundary → Control de izquierda a derecha y entidades a la derecha, sin cajas solapadas. Los dibujos de registro/anulación son más anchos por las asociaciones de trazabilidad y sus SVG permiten ampliar atributos y multiplicidades; el trazado de las relaciones no expresa secuencia temporal. Se verificaron formato Markdown, tablas, enlaces y rutas de correspondencia. Los hashes SHA-256 de los 20 análisis académicos anteriores, sus 21 diagramas y los seis documentos fuente se conservaron; Git identifica únicamente este documento académico nuevo. La comprobación fue documental y visual, sin conexión a MySQL ni pruebas funcionales del backend.
+**3/3 diagramas con sintaxis válida en Mermaid 11.12.0**, mediante mermaid.parse. Se conservaron íntegros los bloques de fases 1–3, incluidos los cambios previos sin commit, y el bloque desde Fase 5. Permanecen los **33 CU y 34 diagramas**. `git diff --check` aprobado y únicamente cambia este Markdown. La revisión visual exhaustiva se reserva para el cierre integral; no se ejecutaron pruebas funcionales, conexiones a MySQL, suites extensas ni hashes del repositorio, y no se generaron capturas/SVG.
 
-**Avance al cierre de Fase 4:** veintitrés de los 33 CU implementados, con veinticuatro diagramas de los 34 previstos. La Fase 5 se incorpora a continuación por solicitud de continuidad del usuario, conservando la numeración oficial y el orden acordado.
+**Avance de corrección al cierre de Fase 4:** **23/33 CU y 24/34 diagramas corregidos**. Fase 4 queda para revisión del usuario. Las fases 5–6 conservan su versión conceptual anterior y permanecen pendientes de autorización para corregirlas.
 
 ## 9. Fase 5 — Inventario, Ajustes, Movimientos y Stock bajo
 
 ### 9.1. Condiciones compartidas, estado y asociaciones
 
-Cada CU mantiene una Vista y un Control conceptuales. CU21, CU22 y CU37 permiten **Administrador, Regente o Vendedor**; CU24 y CU40, **Administrador o Regente**; CU23, únicamente **Regente**. No existe herencia de permisos del Regente hacia Administrador. Todos requieren sesión válida, cuenta activa y versión de credenciales vigente, con autorización definitiva del backend. Usuario aparece en CU23 por responsabilidad del ajuste y en CU24/CU40 por identificación del responsable; en las demás consultas su uso es transversal y no se repite en el dibujo.
+Se conserva Actor → Boundary → Control → Entity mediante componentes funcionales React, Controllers/Services reales, Repositories y modelos verificables. Las operaciones Boundary son funciones locales de análisis, no métodos de clases JavaScript. CU21, CU22 y CU37 permiten **Administrador, Regente o Vendedor**; CU24 y CU40, **Administrador o Regente**; CU23, únicamente **Regente**. No existe herencia de permisos del Regente hacia Administrador. Todos requieren sesión válida, cuenta activa y versión de credenciales vigente, con autorización definitiva del backend. Usuario aparece en CU23 por responsabilidad del ajuste y en CU24/CU40 por identificación del responsable; en las demás consultas su uso es transversal y no se repite en el dibujo.
 
 **Fuentes:** Fase 5 del análisis técnico y sección 5 del diagrama general, contrastadas con CU21–CU24/CU37/CU40, RF15/RF17–RF19/RF29/RF34/RF37/RF39 y RN18/RN24/RN26–RN32/RN64–RN74/RN81–RN84/RN93/RN96/RN100/RN102–RN104. Las correspondencias de inventarioController, inventarioValidator e inventarioService remiten a `backend/src/presentation/controllers/`, `backend/src/business/validators/` y `backend/src/business/services/`; los Repositories, a `backend/src/data/repositories/`.
 
@@ -3041,7 +3742,7 @@ Cada CU mantiene una Vista y un Control conceptuales. CU21, CU22 y CU37 permiten
 | DetalleVenta — MovimientoInventario | `0..1` — `0..*` | Identificación opcional de origen por detalle en CU24/CU40, sin completar Ventas. |
 | MovimientoInventario — MovimientoInventario | `0..1` — `0..1` | Original y reversión única consultados en CU24/CU40. |
 
-Se muestran las asociaciones seleccionadas en cada CU técnico. Medicamento–Existencia permanece como contexto del dominio en CU23: el POST no consulta Medicamento y la preparación reutiliza CU22/CU15. Usuario–Movimiento en CU22 es contexto histórico, sin consulta al responsable. Las cabeceras Compra/Venta y Receta no se cargan en CU24/CU40; sus FK en los detalles no justifican agregarlas al dibujo. No se infiere composición UML ni se crea entidad Inventario, Ajuste, Conteo, Alerta o Reporte.
+Se muestran las asociaciones seleccionadas en cada CU técnico. Medicamento–Existencia pertenece a la preparación CU22/CU15 y no se repite en el dibujo del POST CU23, que no consulta Medicamento. Usuario–Movimiento es responsabilidad persistente en CU23; en CU22 no se consulta al responsable ni se agrega Usuario al gráfico. Las cabeceras Compra/Venta y Receta no se cargan en CU24/CU40; sus FK en los detalles no justifican agregarlas al dibujo. No se infiere composición UML ni se crea entidad Inventario, Ajuste, Conteo, Alerta o Reporte.
 
 | Información | Naturaleza y uso |
 |---|---|
@@ -3056,7 +3757,15 @@ Se muestran las asociaciones seleccionadas en cada CU técnico. Medicamento–Ex
 
 `ENUM_DIA_MES` y `ENUM_ENTRADA_SALIDA` conservan valores reales de precisión y dirección; `DECIMAL_14_6` conserva DECIMAL(14,6). Los costos se reciben/presentan como cadenas de seis decimales. DIA deja de ser vendible al inicio de su fecha comercial; MES, desde el primer día del mes siguiente. Se utiliza una fecha comercial común America/La_Paz por consulta, sin cambiar fechas históricas ni convertir DATETIME históricos a UTC. React muestra los valores calculados por API, no decide vendibilidad ni valoración.
 
-**Interfaz común:** las funciones HTTP están en `frontend/src/features/inventario/services/inventario.service.js` y usan la configuración Axios con cookies. Las consultas reutilizan useConsultaAutomatica/useConsulta, filtros en URL y estados de carga/vacío/error; las búsquedas textuales esperan 300 ms y los controles inmediatos siguen su configuración. Las respuestas tardías se descartan y los resultados anteriores no se presentan como actuales durante carga. El Control académico reúne coordinación, validación y acceso a datos sin representar una clase JavaScript adicional.
+**Interfaz y HTTP:** `frontend/src/features/inventario/services/inventario.service.js` exporta las funciones HTTP de esta fase y usa api de `frontend/src/api/api.js`, con URL base y cookies. El auxiliar privado consultar(path, filtros, campos) prepara GET usando los arrays filtrosStock/filtrosHistorial y devuelve response.data; registrarAjuste también conserva el envoltorio. getExistenciasMedicamento combina CU22/CU15 y devuelve { data: { medicamento, existencias }, meta }. Los dibujos resumen HTTP con verbo/endpoint; no representan llamadas directas de React al Controller. `backend/src/presentation/routes/inventario.router.js`, montado en `/api/inventario` desde `backend/src/app.js`, aplica authMiddleware antes de requireRole.
+
+**Hooks intermediarios:** `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)` en `frontend/src/hooks/useConsultaAutomatica.js` declara aplicar(nextFilters) y cambiar(nextFilters, inmediato), y retorna onChange/onClear mediante callbacks anónimos. Reutiliza `useConsulta(consultar, clave, filtros, habilitada = true)` de `frontend/src/hooks/useConsulta.js`: isCurrent() es local a su efecto y retry/invalidate son callbacks anónimos retornados. No son operaciones propias de InventarioPage, ExistenciasPage ni MovimientosPage. Las búsquedas textuales/IDs esperan 300 ms; fechas/dirección y Limpiar aplican inmediatamente. Conserva filtros en URL, descarta respuestas tardías y retira resultados previos durante carga. `validarFiltrosInventario(filtros)`, exportada por `frontend/src/features/inventario/utils/filtrosInventario.js`, valida IDs/rango para el hook; no es una función local de las páginas.
+
+**Propietarios React:** InventarioFilters declara campo(nombre, inmediato = false), que devuelve props de campo con callback anónimo a onChange; onClear es prop. InventarioPage selecciona config del objeto externo vistas según vista; no declara handlers de consulta. ExistenciasPage utiliza consultarExistencias(id), auxiliar externo en su archivo. AjusteFormPage renderiza con IDs/key al componente local no exportado AjusteConteo del mismo archivo; actualizar()/guardar(data) pertenecen a este último. AjusteForm recibe onChange=setForm y onSubmit=guardar; setForm no es handler propio del formulario. Eventos inline, setters y efectos anónimos se explican sin inventar nombres de operaciones.
+
+**Auxiliares backend, sin cajas adicionales:** en `backend/src/business/services/inventario.service.js`, toPlain(registro), decimal6(valor), disponibilidadMeta(fechaComercial), costoPromedioExistencia(existencia), compararVencimientos(a, b), toPublicExistencias(medicamento, fechaComercial, incluirUltimoMovimiento = false), toPublicInventario(registro, fechaComercial), consultarDisponibilidad(filtros, fechaComercial, opciones), existenciasDeInventario(medicamentos), toPublicMovimiento(registro) y registrarRetiro(data, idUsuarioAutenticado, motivo) son funciones de módulo. consultarDisponibilidad coordina findInventario; registrarRetiro/existenciasDeInventario pertenecen a Fase 6 y no se ejecutan en CU23. getValidatedData(result) es externo a inventarioController. inventarioValidator, en `backend/src/business/validators/inventario.validator.js`, aporta validateId(data), validateSinFiltros(data), validateFiltrosInventario(data), validateFiltrosMovimientos(data) y validateAjuste(data) a estos CU; texto(maximo), esquemas y precondiciones son externos a esa clase. Los helpers/arrays de Repositories y utilidades decimales/de vencimiento/fecha comercial tampoco son métodos de modelos.
+
+**Entidades completas:** Medicamento muestra sus 12 atributos persistentes; ExistenciaMedicamento, 7; MovimientoInventario, 12; Usuario, 9; DetalleCompra, 8; DetalleVenta, 7, incluidas todas las FK. Sus modelos están en `backend/src/data/models/medicamento.js`, `existencia-medicamento.js`, `movimiento-inventario.js`, `usuario.js`, `detalle-compra.js` y `detalle-venta.js`. DATE corresponde a DATEONLY, DATETIME a DataTypes.DATE e INT_UNSIGNED a INTEGER.UNSIGNED; timestamps:false no genera columnas adicionales. No se dibujan métodos heredados de Sequelize ni associate(models). Mostrar atributos completos no significa proyectarlos todos: CU24/CU40 solo incluyen ID/nombre de Usuario; password_hash no se obtiene ni publica. CU23 devuelve idUsuario del movimiento, sin consultar un nombre público.
 
 ### CU21 — Consultar inventario
 
@@ -3068,8 +3777,9 @@ Se muestran las asociaciones seleccionadas en cada CU técnico. Medicamento–Ex
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarInventario | Boundary | Recoge filtros y muestra productos, existencias y cantidades diferenciadas. |
-| ControlConsultarInventario | Control | Valida filtros, consulta productos con existencias y prepara disponibilidad. |
+| InventarioPage / InventarioFilters / InventarioTable | Boundary; componentes funcionales | Seleccionan consulta, reciben filtros/callbacks del hook y presentan cantidades del backend. |
+| inventarioController / inventarioService | Control; clases | Validan filtros y coordinan disponibilidad por auxiliares externos. |
+| existenciaMedicamentoRepository | Repository; clase | Consulta productos con include obligatorio de existencias. |
 | Medicamento | Entity | Aporta identidad, unidad, actividad y mínimo del producto. |
 | ExistenciaMedicamento | Entity | Aporta vencimiento, precisión, saldo físico y promedio por existencia. |
 
@@ -3081,20 +3791,37 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaConsultarInventario {
+    class InventarioPage {
         <<boundary>>
-        -Integer idMedicamento
-        -String codigoMedicamento
-        -String nombreComercial
-        -Lista medicamentos
-        +aplicarFiltros()
-        +actualizarConsulta()
+        -String vista
+        -Object filtros
+        -Object consulta
+        -Function onChange
+        -Function onClear
     }
-    class ControlConsultarInventario {
+    class InventarioFilters {
+        <<boundary>>
+        -Object filtros
+        -Function onChange
+        -Function onClear
+        +campo(nombre, inmediato = false)
+    }
+    class InventarioTable {
+        <<boundary>>
+        -Array medicamentos
+        -Boolean stockBajo
+    }
+    class inventarioController {
         <<control>>
-        +validarFiltros()
-        +consultarProductosConExistencias()
-        +prepararDisponibilidad()
+        +getInventario(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +getInventario(...)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findInventario(...)$
     }
     class Medicamento {
         <<entity>>
@@ -3104,36 +3831,58 @@ classDiagram
         -VARCHAR_50 unidad_inventario
         -INT stock_minimo
         -BOOLEAN estado
+        -INT id_proveedor_laboratorio
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
     }
-    Administrador --> VistaConsultarInventario
-    Regente --> VistaConsultarInventario
-    Vendedor --> VistaConsultarInventario
-    VistaConsultarInventario ..> ControlConsultarInventario : solicita
-    ControlConsultarInventario ..> Medicamento : consulta identidad y estado
-    ControlConsultarInventario ..> ExistenciaMedicamento : calcula disponibilidad
+    Administrador --> InventarioPage
+    Regente --> InventarioPage
+    Vendedor --> InventarioPage
+    InventarioFilters ..> InventarioPage : callbacks del hook
+    InventarioPage ..> InventarioTable : renderiza resultados
+    InventarioPage ..> inventarioController : GET /api/inventario (resumen)
+    inventarioController ..> inventarioService : getInventario
+    inventarioService ..> existenciaMedicamentoRepository : findInventario via consultarDisponibilidad externo
+    existenciaMedicamentoRepository ..> Medicamento : consulta identidad y estado
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : include obligatorio
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
+    note for InventarioPage "Sin handlers locales; vista inventario selecciona getInventario.\nHTTP via useConsultaAutomatica y modulo HTTP; no llamada directa."
+    note for InventarioFilters "campo es funcion local React; no metodo de clase.\nonChange y onClear son props del hook."
 ```
 
-**Descripción de relaciones:** el Control consulta Medicamento con sus existencias obligatorias en este resultado; la multiplicidad global sigue siendo cero o muchas. Una existencia agotada, vencida o de producto inactivo basta para incluir el producto. No exige compras ni movimientos, por lo que también admite existencias iniciales/históricas sin esas referencias. Crear solo un producto de catálogo no lo incorpora a Inventario.
+**Descripción de relaciones:** InventarioFilters llama a callbacks del hook recibidos por InventarioPage; la página selecciona getInventario desde vistas y renderiza InventarioTable. La dependencia HTTP resume useConsultaAutomatica/useConsulta, la exportación HTTP y Axios. Controller → Service → Repository consulta Medicamento con sus existencias obligatorias en este resultado; la multiplicidad global sigue siendo cero o muchas. Una existencia agotada, vencida o de producto inactivo basta para incluir el producto. No exige compras ni movimientos, por lo que también admite existencias iniciales/históricas sin esas referencias. Crear solo un producto de catálogo no lo incorpora a Inventario.
 
 La cantidad física se conserva aunque esté vencida; la vendible es cero si producto inactivo o existencia vencida. Se suman ambas por producto sin mezclar sus significados. Cada existencia conserva código, fecha, precisión y promedio; la fecha efectiva y condición de vencida se calculan. Se ordenan productos por ID y existencias por vencimiento efectivo/ID. No se consulta MovimientoInventario ni se aporta ultimoMovimiento: preparar un ajuste exige CU22.
 
 **Correspondencia con la implementación:** `/inventario`, `frontend/src/features/inventario/pages/InventarioPage.jsx` en vista inventario, `frontend/src/features/inventario/components/InventarioFilters.jsx` e `InventarioTable.jsx` representan la vista. ConsultaMeta/ConsultaResultado presentan disponibilidad y estados de consulta; enlaces de producto conducen a CU22.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarFiltros | `inventarioController.getInventario` y `inventarioValidator.validateFiltrosInventario` validan query estricto: ID entero positivo, código de 1–20 y nombre de 1–150 tras trim, todos opcionales/combinables. |
-| consultarProductosConExistencias | `inventarioService.getInventario` usa el auxiliar externo `consultarDisponibilidad`; `existenciaMedicamentoRepository.findInventario` recibe `{ soloConExistencias: true }` y aplica include obligatorio. |
-| prepararDisponibilidad | Auxiliares externos de disponibilidad y utilidades de vencimiento preparan DTO físico/vendible, existencias, sumas y metadatos comunes, sin método agregado a Medicamento. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU21 | InventarioPage | `frontend/src/features/inventario/pages/InventarioPage.jsx` | — | vista='inventario' por defecto; config.consultar=getInventario en objeto externo vistas. Actualizar usa consulta.retry del hook, sin handler propio. |
+| CU21 | InventarioFilters | `frontend/src/features/inventario/components/InventarioFilters.jsx` | Local `campo(nombre, inmediato = false)` | Genera props value/onChange; ID/código/nombre usan espera de 300 ms. onClear es prop del hook; submit preventDefault es inline. |
+| CU21 | InventarioTable | `frontend/src/features/inventario/components/InventarioTable.jsx` | — | Props medicamentos/stockBajo; sin consulta local. Link a CU22 y cantidades recibidas, no filtro de inclusión React. |
+| CU21 | Hooks y validación UI | `frontend/src/hooks/useConsultaAutomatica.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/utils/filtrosInventario.js` | `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `validarFiltrosInventario(filtros)` | Intermediarios externos a Boundary, según 9.1; mantienen URL y descarte de respuestas. |
+| CU21 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `getInventario(req, res, next)` | validateFiltrosInventario(data) del Validator; no calcula disponibilidad. |
+| CU21 | inventarioService | `backend/src/business/services/inventario.service.js` | `getInventario(filtros, fechaComercial = obtenerFechaComercial())` | consultarDisponibilidad externo recibe soloConExistencias:true; DTO/sumas/vencimiento por auxiliares externos. Fecha comercial no es entrada HTTP. |
+| CU21 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findInventario({ idMedicamento, codigoMedicamento, nombreComercial } = {}, { soloConExistencias = false } = {})` | Firma multilinea en fuente; CU21 pasa true para required del include. |
+| CU21 | Dos modelos Entity | `backend/src/data/models/medicamento.js`; `backend/src/data/models/existencia-medicamento.js` | — | 12 y 7 atributos completos; los includes proyectan solo los necesarios. |
+| CU21 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `getInventario(filtros = {})` | Llama consultar('', filtros, filtrosStock), auxiliar del módulo; devuelve envoltorio { data, meta }. |
+| CU21 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `GET /api/inventario` | Tres roles; no llamada directa React–Controller. |
 
 `getInventario` HTTP usa `GET /api/inventario` y devuelve 200 `{ data, meta }`. Código/nombre son coincidencias parciales LIKE con metacaracteres escapados; ID es exacto. Filtro sin resultados, ID inexistente o producto sin existencias devuelve lista vacía, no 404. Query inválido produce 400; sesión/permisos, 401/403; fallo inesperado, 500. No modifica saldos ni ejecuta getExistencias/getMovimientos. Referencias: RF15/RF17/RF18; RN18/RN24/RN27–RN29 y CU21.
 
@@ -3147,8 +3896,9 @@ La cantidad física se conserva aunque esté vencida; la vendible es cero si pro
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarExistencias | Boundary | Muestra identidad del producto y existencias, también cuando la lista está vacía. |
-| ControlConsultarExistencias | Control | Valida producto, obtiene sus existencias/marcador y prepara disponibilidad. |
+| ExistenciasPage / ExistenciasTable | Boundary; componentes funcionales | Consultan mediante hook/auxiliar externo y presentan identidad, existencias y enlaces. |
+| inventarioController / inventarioService | Control; clases | Validan ID/query y coordinan disponibilidad y marcador. |
+| existenciaMedicamentoRepository | Repository; clase | Obtiene producto, existencias y MAX correlacionado en una sentencia. |
 | Medicamento | Entity | Identifica el producto y su actividad; existe aun sin existencias. |
 | ExistenciaMedicamento | Entity | Aporta saldo, promedio, código y vencimiento de cada agrupación. |
 | MovimientoInventario | Entity | Aporta exclusivamente el máximo ID por existencia mediante consulta SQL. |
@@ -3161,19 +3911,30 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaConsultarExistencias {
+    class ExistenciasPage {
         <<boundary>>
-        -Integer idMedicamento
-        -Lista existencias
-        +solicitarExistencias()
-        +actualizarConsulta()
+        -String idMedicamento
+        -Object consulta
+        -Boolean canSeeMovimientos
     }
-    class ControlConsultarExistencias {
+    class ExistenciasTable {
+        <<boundary>>
+        -Array existencias
+        -Boolean canSeeMovimientos
+        -Boolean canAdjust
+        -Boolean canRetire
+    }
+    class inventarioController {
         <<control>>
-        +validarConsulta()
-        +consultarProductoYExistencias()
-        +obtenerMarcadorConSaldo()
-        +prepararDisponibilidad()
+        +getExistencias(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +getExistencias(...)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findMedicamentoConExistencias(idMedicamento)$
     }
     class Medicamento {
         <<entity>>
@@ -3182,10 +3943,18 @@ classDiagram
         -VARCHAR_150 nombre_comercial
         -VARCHAR_50 unidad_inventario
         -BOOLEAN estado
+        -INT id_proveedor_laboratorio
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
@@ -3195,30 +3964,54 @@ classDiagram
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
+        -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
+        -INT id_movimiento_original
+        -ENUM_ENTRADA_SALIDA direccion
+        -INT cantidad
+        -DATETIME fecha_movimiento
+        -VARCHAR_40 motivo
+        -VARCHAR_500 observacion
+        -DECIMAL_14_6 costo_unitario_aplicado
     }
-    Administrador --> VistaConsultarExistencias
-    Regente --> VistaConsultarExistencias
-    Vendedor --> VistaConsultarExistencias
-    VistaConsultarExistencias ..> ControlConsultarExistencias : solicita
-    ControlConsultarExistencias ..> Medicamento : comprueba producto
-    ControlConsultarExistencias ..> ExistenciaMedicamento : consulta saldos y vencimientos
-    ControlConsultarExistencias ..> MovimientoInventario : solo MAX por existencia
+    Administrador --> ExistenciasPage
+    Regente --> ExistenciasPage
+    Vendedor --> ExistenciasPage
+    ExistenciasPage ..> ExistenciasTable : renderiza y pasa permisos visuales
+    ExistenciasPage ..> inventarioController : GET /api/inventario/medicamentos/#58;idMedicamento/existencias (resumen)
+    inventarioController ..> inventarioService : getExistencias
+    inventarioService ..> existenciaMedicamentoRepository : findMedicamentoConExistencias
+    existenciaMedicamentoRepository ..> Medicamento : comprueba producto
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : include opcional
+    existenciaMedicamentoRepository ..> MovimientoInventario : solo MAX correlacionado en SQL
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
+    note for ExistenciasPage "Sin handlers locales; consultarExistencias es externo.\nHTTP via useConsulta y getExistenciasMedicamento, segun tabla.\nCatalogo CU15 en paralelo; no llamada directa al Controller."
+    note for MovimientoInventario "Modelo completo; esta lectura solo usa MAX de id_movimiento.\nNo ejecuta movimientoInventarioRepository."
 ```
 
-**Descripción de relaciones:** el producto puede tener cero o varias existencias y cada una, cero o varios movimientos. El máximo ID se obtiene en SQL junto con el saldo, no mediante una segunda consulta HTTP o carga completa del historial. Sin movimientos el marcador es null, nunca cero; ultimoMovimiento es una proyección calculada, no atributo persistente de existencia ni garantía de idempotencia.
+**Descripción de relaciones:** ExistenciasPage utiliza useConsulta con consultarExistencias externo; getExistenciasMedicamento solicita CU22 y la ficha CU15 en paralelo, según tabla. ExistenciasTable recibe datos y permisos visuales por props. La dependencia HTTP resume únicamente CU22, sin llamada directa al Controller ni atribución del GET de catálogo a inventarioService. Controller → Service → Repository obtiene producto, existencias y máximo ID en la misma sentencia SQL que el saldo, no por otra consulta HTTP ni carga completa del historial. El producto puede tener cero o varias existencias y cada una, cero o varios movimientos. Sin movimientos el marcador es null, nunca cero; ultimoMovimiento es una proyección calculada, no atributo persistente ni garantía de idempotencia.
 
 No se exige saldo positivo, actividad, compra o movimiento para incluir una existencia. Se prepara físico/vendible, fecha almacenada, precisión, vencida, fecha efectiva y promedio, ordenados por vencimiento efectivo/ID, con meta comercial común. Un producto existente sin existencias mantiene identidad y enlaces; producto inexistente produce 404.
 
 **Correspondencia con la implementación:** `/inventario/medicamentos/:idMedicamento/existencias`, `frontend/src/features/inventario/pages/ExistenciasPage.jsx` y `frontend/src/features/inventario/components/ExistenciasTable.jsx` representan la vista. `getExistenciasMedicamento` HTTP consulta en paralelo este endpoint y la ficha CU15 del catálogo. CU15 aporta identidad visible, incluso ante lista vacía; no se atribuye esa llamada de apoyo a inventarioService. Historial se enlaza solo para Administrador/Regente; ajuste/retiro, solo para Regente.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarConsulta | `inventarioController.getExistencias` utiliza `inventarioValidator.validateId` y `validateSinFiltros`: ID positivo dentro de INT y query vacío. |
-| consultarProductoYExistencias | `inventarioService.getExistencias` y `existenciaMedicamentoRepository.findMedicamentoConExistencias` realizan findByPk del producto con include opcional de existencias. |
-| obtenerMarcadorConSaldo | La misma sentencia de `findMedicamentoConExistencias` contiene MAX correlacionado de id_movimiento por existencia; no llama a movimientoInventarioRepository. |
-| prepararDisponibilidad | Auxiliar externo `toPublicExistencias` y utilidades de vencimiento presentan disponibilidad, marcador y costos de seis decimales, con fecha comercial del Service. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU22 | ExistenciasPage | `frontend/src/features/inventario/pages/ExistenciasPage.jsx` | — | useConsulta llama a consultarExistencias(id), función externa que valida ID. Actualizar usa consulta.retry, callback del hook. |
+| CU22 | ExistenciasTable | `frontend/src/features/inventario/components/ExistenciasTable.jsx` | — | Sin handlers locales; props existencias/canSeeMovimientos/canAdjust/canRetire. Historial para Administrador/Regente; ajuste/retiros solo Regente. |
+| CU22 | Hook de lectura | `frontend/src/hooks/useConsulta.js` | `useConsulta(consultar, clave, filtros, habilitada = true)` | Clave/filtros=idMedicamento; carga, errores y respuesta obsoleta según 9.1. |
+| CU22 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `getExistencias(req, res, next)` | validateId(data)/validateSinFiltros(data) de inventarioValidator. |
+| CU22 | inventarioService | `backend/src/business/services/inventario.service.js` | `getExistencias(idMedicamento, fechaComercial = obtenerFechaComercial())` | Usa toPublicExistencias externo con incluirUltimoMovimiento=true; no ejecuta getInventario ni Repository de movimientos. |
+| CU22 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findMedicamentoConExistencias(idMedicamento)` | SELECT de producto/include opcional con MAX correlacionado de movimiento_inventario. |
+| CU22 | Tres modelos Entity | `backend/src/data/models/medicamento.js`; `existencia-medicamento.js`; `movimiento-inventario.js` (mismo directorio) | — | 12/7/12 atributos completos; solo id_movimiento participa en subconsulta, sin include del modelo de movimientos. |
+| CU22 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `getExistenciasMedicamento(idMedicamento)` | Promise.all de api.get del endpoint CU22 y getMedicamento de CU15. Combina { data: { medicamento, existencias }, meta }; conserva identidad con lista vacía. |
+| CU22 | Lectura de apoyo CU15 | `frontend/src/features/medicamentos/services/medicamento.service.js` | `getMedicamento(idMedicamento)` | Exportación HTTP reutilizada; GET /api/medicamentos/:idMedicamento aporta catálogo, no precondiciones de saldo/historial. Flujo verificado en Fase 3 sin repetir cajas. |
+| CU22 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `GET /api/inventario/medicamentos/:idMedicamento/existencias` | Tres roles; GET de apoyo `GET /api/medicamentos/:idMedicamento` en paralelo. |
 
 `GET /api/inventario/medicamentos/:idMedicamento/existencias` devuelve 200 `{ data: existencias, meta }`, incluida lista vacía. ID/query inválido produce 400; medicamento inexistente, 404; sesión/permisos, 401/403; fallo inesperado, 500. El Regente vuelve a consultar este CU al preparar ajuste/retiro, sin reutilizar el marcador antiguo de la tabla. `findUltimoIdParaExistencia` se reserva para comprobación bloqueante de escritura, no esta lectura. Referencias: RF15/RF17/RF18; RN18/RN24/RN27–RN29/RN103 y CU22.
 
@@ -3232,8 +4025,10 @@ No se exige saldo positivo, actividad, compra o movimiento para incluir una exis
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaRegistrarAjuste | Boundary | Recoge conteo, observación y costo de entrada, y conserva el par observado para revisión. |
-| ControlRegistrarAjuste | Control | Comprueba precondiciones bajo bloqueo, calcula diferencia/valoración y confirma efectos atómicos. |
+| AjusteFormPage / AjusteConteo / AjusteForm | Boundary; componentes funcionales | Obtienen IDs, coordinan borrador/consulta/POST y revisión con funciones locales reales. |
+| ExistenciaObservada / AjusteResultado | Boundary; componentes funcionales | Presentan estado observado y resultado confirmado; reciben props/callbacks. |
+| inventarioController / inventarioService | Control; clases | Validan contrato y coordinan precondiciones, diferencia/valoración y efectos atómicos. |
+| existenciaMedicamentoRepository / movimientoInventarioRepository | Repository; clases | Bloquean existencia/marcador y escriben saldo/movimiento solo con diferencia. |
 | ExistenciaMedicamento | Entity | Aporta saldo/promedio actual y recibe valores conciliados si corresponde. |
 | MovimientoInventario | Entity | Aporta marcador actual y registra entrada o salida independiente de ajuste. |
 | Usuario | Entity | Identifica al responsable del ajuste desde la sesión autenticada. |
@@ -3244,36 +4039,78 @@ No se exige saldo positivo, actividad, compra o movimiento para incluir una exis
 classDiagram
     direction LR
     class Regente { <<actor>> }
-    class VistaRegistrarAjuste {
+    class AjusteFormPage {
         <<boundary>>
-        -Integer idExistencia
-        -Integer saldoContado
-        -Integer stockObservado
-        -Integer ultimoMovimientoObservado
-        -String observacion
-        -String costoUnitario
-        +revisarConteo()
-        +confirmarAjuste()
+        -String idMedicamento
+        -String idExistencia
     }
-    class ControlRegistrarAjuste {
+    class AjusteConteo {
+        <<boundary>>
+        -String idMedicamento
+        -String idExistencia
+        -Object consulta
+        -Object form
+        -Object resultado
+        -Boolean requiereConsulta
+        +actualizar()
+        +guardar(data)
+    }
+    class AjusteForm {
+        <<boundary>>
+        -Object form
+        -Object existencia
+        -Object review
+        -Function onChange
+        -Function onSubmit
+        +close()
+        +revisar(event)
+        +confirmar()
+    }
+    class ExistenciaObservada {
+        <<boundary>>
+        -Object existencia
+    }
+    class AjusteResultado {
+        <<boundary>>
+        -Object resultado
+        -Function onNuevoConteo
+    }
+    class inventarioController {
         <<control>>
-        +validarSolicitud()
-        +comprobarParObservado()
-        +calcularDiferenciaYValoracion()
-        +actualizarExistencia()
-        +registrarMovimiento()
-        +prepararResultado()
+        +registrarAjuste(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +registrarAjuste(data, idUsuarioAutenticado)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findByIdParaMovimiento(...)$
+        +updateSaldoYCosto(...)$
+    }
+    class movimientoInventarioRepository {
+        <<repository>>
+        +findUltimoIdParaExistencia(...)$
+        +create(...)$
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
+        -DATE fecha_vencimiento
+        -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
     }
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
+        -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
+        -INT id_movimiento_original
         -ENUM_ENTRADA_SALIDA direccion
         -INT cantidad
         -DECIMAL_14_6 costo_unitario_aplicado
@@ -3285,19 +4122,38 @@ classDiagram
         <<entity>>
         -INT id_usuario
         -VARCHAR_60 nombre_usuario
+        -INT id_rol
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
-    Regente --> VistaRegistrarAjuste
-    VistaRegistrarAjuste ..> ControlRegistrarAjuste : solicita
-    ControlRegistrarAjuste ..> ExistenciaMedicamento : bloquea y concilia
-    ControlRegistrarAjuste ..> MovimientoInventario : marcador y escritura condicional
-    ControlRegistrarAjuste ..> Usuario : responsable autenticado
+    Regente --> AjusteFormPage
+    Regente --> AjusteForm
+    AjusteFormPage ..> AjusteConteo : renderiza con IDs y key
+    AjusteForm ..> AjusteConteo : onChange a setForm y onSubmit a guardar
+    AjusteConteo ..> ExistenciaObservada : renderiza par consultado
+    AjusteConteo ..> AjusteResultado : renderiza resultado del POST
+    AjusteResultado ..> AjusteConteo : callback onNuevoConteo inline
+    AjusteConteo ..> inventarioController : POST /api/inventario/ajustes (resumen)
+    inventarioController ..> inventarioService : registrarAjuste
+    inventarioService ..> existenciaMedicamentoRepository : bloqueo y escritura si diferencia
+    inventarioService ..> movimientoInventarioRepository : marcador y create si diferencia
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : bloquea y concilia
+    movimientoInventarioRepository ..> MovimientoInventario : marcador y escritura condicional
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
+    note for AjusteFormPage "Solo obtiene IDs; actualizar y guardar pertenecen a AjusteConteo."
+    note for AjusteConteo "Funciones locales React; no metodos de clase.\nPOST via registrarAjuste exportado, sin llamada directa.\nGET de preparacion/reconsulta reutiliza CU22 y CU15."
+    note for AjusteForm "close, revisar y confirmar son locales React.\nonChange y onSubmit son props; Modal recibe close."
+    note for Usuario "FK del responsable desde sesion; el POST no consulta Usuario."
 ```
 
-**Descripción de relaciones:** el Control toma el responsable de sesión, bloquea la existencia y lee actualmente su último movimiento. Compara saldo y marcador con el par preparado antes de calcular diferencia, incluso si el conteo coincide. Que el saldo vuelva al valor anterior no elimina el conflicto si cambió el historial. El marcador observado admite null solo si CU22 informó explícitamente ausencia de movimientos; un campo ausente/incorrecto no se convierte en null.
+**Descripción de relaciones:** AjusteFormPage renderiza AjusteConteo con IDs/key; este consulta el estado fresco mediante useConsulta/consultarExistencia, renderiza ExistenciaObservada y pasa setForm/guardar al formulario. revisar prepara review; confirmar llama a onSubmit=guardar; close atiende Modal. guardar solicita POST mediante la exportación HTTP registrarAjuste y presenta AjusteResultado. Su onNuevoConteo es callback inline del padre que reinicia borrador y llama actualizar; actualizar reconsulta CU22/CU15, sin POST automático. La dependencia hacia Controller es HTTP resumido. Controller → Service coordina Repositories para bloquear existencia y leer actualmente último movimiento; compara saldo y marcador antes de diferencia, incluso si el conteo coincide. Que el saldo vuelva al valor anterior no elimina el conflicto si cambió el historial. El marcador observado admite null solo si CU22 informó explícitamente ausencia; un campo ausente/incorrecto no se convierte en null.
 
-Usuario representa responsabilidad de dominio; su nombre público corresponde al resultado del movimiento y no implica otro mantenimiento de cuentas. Medicamento no se consulta en este POST: la identificación/pertenencia preparatorias reutilizan CU22/CU15. Actividad/vencimiento no son condiciones para contar una existencia registrada; agotadas, vencidas o de productos inactivos son válidas, sin crear existencias ni reactivar producto o modificar fechas.
+Usuario representa responsabilidad de dominio por FK; el resultado del POST contiene idUsuario, no nombre público ni consulta del modelo Usuario. Medicamento no se consulta en este POST: la identificación/pertenencia preparatorias reutilizan CU22/CU15. Actividad/vencimiento no son condiciones para contar una existencia registrada; agotadas, vencidas o de productos inactivos son válidas, sin crear existencias ni reactivar producto o modificar fechas.
 
 | Camino | Valoración y efecto |
 |---|---|
@@ -3309,14 +4165,22 @@ La dirección, cantidad, diferencia, motivo y valoración son decisiones del bac
 
 **Correspondencia con la implementación:** `/inventario/medicamentos/:idMedicamento/existencias/:idExistencia/ajuste`, `frontend/src/features/inventario/pages/AjusteFormPage.jsx`, `frontend/src/features/inventario/components/AjusteForm.jsx`, revisión en Modal y AjusteResultado representan la vista. `frontend/src/features/inventario/utils/consultaExistencia.js` vuelve a consultar CU22/CU15 y valida IDs/pertenencia y par fresco antes de habilitar preparación.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarSolicitud | `inventarioController.registrarAjuste`, `inventarioValidator.validateSinFiltros` y `validateAjuste` validan query vacío/body estricto y coherencia de costo según conteo observado. |
-| comprobarParObservado | `inventarioService.registrarAjuste` usa `existenciaMedicamentoRepository.findByIdParaMovimiento` y `movimientoInventarioRepository.findUltimoIdParaExistencia` bajo bloqueo; compara ambos valores antes de diferencia. |
-| calcularDiferenciaYValoracion | El flujo `registrarAjuste` y utilidades decimales calculan diferencia y promedio exacto, verificando saldos/costos representables; no ejecutan registrarRetiro. |
-| actualizarExistencia | `existenciaMedicamentoRepository.updateSaldoYCosto` se ejecuta solo con diferencia distinta de cero dentro de la transacción. |
-| registrarMovimiento | `movimientoInventarioRepository.create` se ejecuta solo con diferencia, con cantidad positiva, dirección derivada, motivo AJUSTE y referencias de origen NULL. |
-| prepararResultado | `registrarAjuste` retorna los valores confirmados y el Controller responde directamente; no invoca consultas de inventario/stock/historial para construir el resultado. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU23 | AjusteFormPage / AjusteConteo | `frontend/src/features/inventario/pages/AjusteFormPage.jsx` | Locales de AjusteConteo `actualizar()`; `guardar(data)` | Página exportada solo obtiene IDs. guardar usa inFlight/active y fija resultado=response.data; actualizar llama consulta.retry. borradorVacio() es externo; setForm es setter. |
+| CU23 | AjusteForm | `frontend/src/features/inventario/components/AjusteForm.jsx` | Locales `close()`; `revisar(event)`; `confirmar()` | revisar crea review con par/observación/costo de entrada; confirmar llama prop onSubmit. onChange inline llama setForm recibido. saldoValido(value) es auxiliar externo al componente. |
+| CU23 | ExistenciaObservada / AjusteResultado | `frontend/src/features/inventario/components/ExistenciaObservada.jsx`; `frontend/src/features/inventario/components/AjusteResultado.jsx` | — | Solo props de presentación. onNuevoConteo recibido ejecuta callback inline del padre que vacía borrador y llama actualizar. Sin cálculo de valoración. |
+| CU23 | Modal de revisión | `frontend/src/components/Modal.jsx` | Prop onClose | Recibe close; no se le atribuyen revisar/confirmar. |
+| CU23 | Consulta preparatoria reutilizada | `frontend/src/features/inventario/utils/consultaExistencia.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/services/inventario.service.js` | Exportadas `consultarExistencia({ idMedicamento, idExistencia })`; `getExistenciasMedicamento(idMedicamento)`; `useConsulta(consultar, clave, filtros, habilitada = true)` | consultarExistencia valida IDs/pertenencia/par y selecciona existencia; rechazar(status, message) es privado. Reutiliza `GET /api/inventario/medicamentos/:idMedicamento/existencias` y `GET /api/medicamentos/:idMedicamento` de CU22/CU15. No atribuye esos GET al POST ni a inventarioService.registrarAjuste. |
+| CU23 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `registrarAjuste(req, res, next)` | validateSinFiltros(data)/validateAjuste(data); ID autenticado desde req.usuario; 201/200 según ajusteRealizado. |
+| CU23 | inventarioService | `backend/src/business/services/inventario.service.js` | `registrarAjuste(data, idUsuarioAutenticado)` | Transacción Sequelize sin fijar aislamiento; compara par antes de diferencia. Cálculo exacto dentro del método con auxiliares/utilidades externos, sin registrarRetiro ni GET interno para DTO. |
+| CU23 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findByIdParaMovimiento({ idExistencia, transaction })`; `updateSaldoYCosto({ idExistencia, cantidadFisica, costoUnitarioPromedio, transaction })` | Bloqueo FOR UPDATE; actualización solo con diferencia. |
+| CU23 | movimientoInventarioRepository | `backend/src/data/repositories/movimiento-inventario.repository.js` | `findUltimoIdParaExistencia({ idExistencia, transaction })`; `create({ data, transaction })` | Lectura bloqueante siempre tras existencia encontrada; create solo con diferencia. STR_TO_DATE persiste hora civil. |
+| CU23 | Tres modelos Entity | `backend/src/data/models/existencia-medicamento.js`; `movimiento-inventario.js`; `usuario.js` (mismo directorio) | — | Atributos completos; Usuario participa por FK, sin consulta del POST ni include. |
+| CU23 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `registrarAjuste(data)` | api.post; devuelve envoltorio { message, data }. Resultado no causa GET automático. |
+| CU23 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `POST /api/inventario/ajustes` | Solo Regente; query vacío y body estricto, sin llamada directa React–Controller. |
 
 `registrarAjuste` HTTP usa `POST /api/inventario/ajustes`, con idExistencia, saldoContado, stockObservado, ultimoMovimientoObservado y observacion; agrega costoUnitario únicamente en entrada. Conteo/saldo observado son enteros 0–2147483647; marcador es ID positivo dentro de INT o null; observación, 1–500 tras trim; costo positivo en cadena, hasta 99999999.999999 y máximo seis decimales. No envía dirección, cantidad de movimiento, diferencia, promedio, motivo, fecha o responsable.
 
@@ -3334,8 +4198,9 @@ La interfaz evita doble confirmación y conserva borrador ante errores. 404/409/
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarMovimientos | Boundary | Recoge filtros y muestra hechos de entrada/salida y referencias. |
-| ControlConsultarMovimientos | Control | Valida filtros, obtiene movimientos y prepara datos históricos públicos. |
+| MovimientosPage / InventarioFilters / MovimientosTable | Boundary; componentes funcionales | Coordinan consulta por hook, filtros y presentación de hechos/referencias. |
+| inventarioController / inventarioService | Control; clases | Validan filtros y coordinan DTO histórico mediante auxiliar externo. |
+| movimientoInventarioRepository | Repository; clase | Consulta movimientos con includes, sin cargar cabeceras. |
 | MovimientoInventario | Entity | Conserva hechos originales, costo aplicado y referencia de compensación. |
 | ExistenciaMedicamento | Entity | Identifica la existencia de cada movimiento y permite filtro por producto. |
 | Medicamento | Entity | Aporta identificación actual del producto asociado a existencia. |
@@ -3350,23 +4215,36 @@ classDiagram
     direction LR
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
-    class VistaConsultarMovimientos {
+    class MovimientosPage {
         <<boundary>>
-        -Integer idMedicamento
-        -Integer idExistencia
-        -String desde
-        -String hasta
-        -String direccion
-        -String motivo
-        -Lista movimientos
-        +aplicarFiltros()
-        +actualizarConsulta()
+        -Object filtros
+        -Object consulta
+        -Function onChange
+        -Function onClear
     }
-    class ControlConsultarMovimientos {
+    class InventarioFilters {
+        <<boundary>>
+        -Object filtros
+        -Boolean movimientos
+        -Function onChange
+        -Function onClear
+        +campo(nombre, inmediato = false)
+    }
+    class MovimientosTable {
+        <<boundary>>
+        -Array movimientos
+    }
+    class inventarioController {
         <<control>>
-        +validarFiltros()
-        +consultarMovimientos()
-        +prepararHechosPublicos()
+        +getMovimientos(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +getMovimientos(filtros)$
+    }
+    class movimientoInventarioRepository {
+        <<repository>>
+        +findAll(...)$
     }
     class MovimientoInventario {
         <<entity>>
@@ -3378,61 +4256,112 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
+        -INT id_usuario
+        -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
         -VARCHAR_30 codigo_existencia
+        -INT id_medicamento
+        -DATE fecha_vencimiento
+        -ENUM_DIA_MES precision_vencimiento
+        -INT cantidad_fisica
+        -DECIMAL_14_6 costo_unitario_promedio
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
+        -INT id_proveedor_laboratorio
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
+        -BOOLEAN estado
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
         -VARCHAR_60 nombre_usuario
+        -INT id_rol
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class DetalleCompra {
         <<entity>>
         -INT id_detalle_compra
         -INT id_compra
+        -INT id_existencia
+        -INT cantidad
+        -DECIMAL_14_6 costo_unitario
+        -DECIMAL_14_2 subtotal
+        -INT saldo_anterior
+        -DECIMAL_14_6 costo_promedio_anterior
     }
     class DetalleVenta {
         <<entity>>
         -INT id_detalle_venta
         -INT id_venta
+        -INT id_receta
+        -INT id_existencia
+        -INT cantidad
+        -DECIMAL_14_2 precio_unitario
+        -DECIMAL_14_2 subtotal
     }
-    Administrador --> VistaConsultarMovimientos
-    Regente --> VistaConsultarMovimientos
-    VistaConsultarMovimientos ..> ControlConsultarMovimientos : solicita
-    ControlConsultarMovimientos ..> MovimientoInventario : consulta hechos y reversion
-    ControlConsultarMovimientos ..> ExistenciaMedicamento : identifica existencia
-    ControlConsultarMovimientos ..> Medicamento : identifica producto
-    ControlConsultarMovimientos ..> Usuario : responsable publico
-    ControlConsultarMovimientos ..> DetalleCompra : origen opcional
-    ControlConsultarMovimientos ..> DetalleVenta : origen opcional
+    Administrador --> MovimientosPage
+    Regente --> MovimientosPage
+    InventarioFilters ..> MovimientosPage : callbacks del hook
+    MovimientosPage ..> MovimientosTable : renderiza hechos
+    MovimientosPage ..> inventarioController : GET /api/inventario/movimientos (resumen)
+    inventarioController ..> inventarioService : getMovimientos
+    inventarioService ..> movimientoInventarioRepository : findAll
+    movimientoInventarioRepository ..> MovimientoInventario : hechos e include movimientoReversion
+    movimientoInventarioRepository ..> ExistenciaMedicamento : include obligatorio y filtro producto
+    movimientoInventarioRepository ..> Medicamento : include de existencia
+    movimientoInventarioRepository ..> Usuario : responsable publico
+    movimientoInventarioRepository ..> DetalleCompra : IDs de origen opcional
+    movimientoInventarioRepository ..> DetalleVenta : IDs de origen opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
     DetalleCompra "0..1" -- "0..*" MovimientoInventario : detalleCompra
     DetalleVenta "0..1" -- "0..*" MovimientoInventario : detalleVenta
     MovimientoInventario "0..1" -- "0..1" MovimientoInventario : movimientoReversion
+    note for MovimientosPage "Sin handlers locales; usa useConsultaAutomatica/getMovimientos.\nHTTP resumido, no llamada directa al Controller.\nActualizar usa consulta.retry del hook."
+    note for InventarioFilters "campo es funcion local React; no metodo de clase.\nonChange y onClear son props del hook."
 ```
 
-**Descripción de relaciones:** cada hecho corresponde a existencia y responsable; el producto se obtiene a través de existencia. Las referencias a detalle de compra o venta son opcionales y excluyentes. Sus IDs identifican operación de origen sin cargar cabeceras Compra/Venta ni Receta. Ajustes/retiros independientes pueden tener ambas referencias NULL, sin perder existencia/responsable.
+**Descripción de relaciones:** InventarioFilters devuelve props de campo e invoca callbacks del hook utilizados por MovimientosPage. La página renderiza MovimientosTable y consulta mediante useConsultaAutomatica/useConsulta y getMovimientos exportado; la dependencia HTTP no es llamada directa. Controller → Service → Repository carga hechos y sus includes. Cada hecho corresponde a existencia y responsable; el producto se obtiene a través de existencia. Las referencias a detalle de compra o venta son opcionales y excluyentes. Sus IDs identifican operación de origen sin cargar cabeceras Compra/Venta ni Receta. Ajustes/retiros independientes pueden tener ambas referencias NULL, sin perder existencia/responsable.
 
 La asociación reflexiva permite incluir la reversión única del original; id_movimiento_original identifica al original desde una reversión sin recargar todos sus atributos. Se mantienen ambos hechos, sus cantidades positivas, dirección, motivo/observación, fecha y costo aplicado. No se recalculan costos históricos con el promedio actual, se borran originales ni se compensa nada al consultar. Nombres de usuario/producto y códigos se presentan desde sus datos actuales.
 
 **Correspondencia con la implementación:** `/inventario/movimientos`, `frontend/src/features/inventario/pages/MovimientosPage.jsx`, InventarioFilters y `frontend/src/features/inventario/components/MovimientosTable.jsx` representan la vista. Accesos desde CU22/Compras preparan filtros de producto/existencia cuando corresponde. IDs/motivo esperan 300 ms; fechas, dirección y Limpiar aplican inmediatamente, con filtros en URL.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarFiltros | `inventarioController.getMovimientos` e `inventarioValidator.validateFiltrosMovimientos` validan query estricto, IDs, rango civil, dirección y motivo. |
-| consultarMovimientos | `inventarioService.getMovimientos` utiliza `movimientoInventarioRepository.findAll` con includes de existencia/producto, Usuario, detalles opcionales y movimientoReversion. |
-| prepararHechosPublicos | Auxiliar externo `toPublicMovimiento` presenta datos públicos, referencias de IDs y fecha/hora civil preservada, sin recalcular valoración histórica. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU24 | MovimientosPage | `frontend/src/features/inventario/pages/MovimientosPage.jsx` | — | Sin handlers locales; useConsultaAutomatica(getMovimientos, validarFiltrosInventario). onChange/onClear/consulta.retry vienen de hooks. |
+| CU24 | InventarioFilters | `frontend/src/features/inventario/components/InventarioFilters.jsx` | Local `campo(nombre, inmediato = false)` | movimientos=true; IDs/motivo con espera de 300 ms; fechas/dirección inmediatas; onClear prop aplica inmediato. |
+| CU24 | MovimientosTable | `frontend/src/features/inventario/components/MovimientosTable.jsx` | — | Props movimientos; details/summary nativo y enlaces, sin handlers locales ni otra consulta. |
+| CU24 | Hooks y helper de filtros | `frontend/src/hooks/useConsultaAutomatica.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/utils/filtrosInventario.js` | `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `validarFiltrosInventario(filtros)` | Propietarios y callbacks anónimos según 9.1; URL y respuesta actual. |
+| CU24 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `getMovimientos(req, res, next)` | validateFiltrosMovimientos(data); envuelve data del Service. |
+| CU24 | inventarioService | `backend/src/business/services/inventario.service.js` | `getMovimientos(filtros)` | map(toPublicMovimiento), auxiliar externo; no calcula saldos ni revalora costos. |
+| CU24 | movimientoInventarioRepository | `backend/src/data/repositories/movimiento-inventario.repository.js` | `findAll({ idMedicamento, idExistencia, desde, hasta, direccion, motivo } = {})` | Includes de existencia/producto, usuario, detalles opcionales y movimientoReversion; no findReversiones/findReferenciasParaAnular. |
+| CU24 | Seis modelos Entity | `backend/src/data/models/movimiento-inventario.js`; `existencia-medicamento.js`; `medicamento.js`; `usuario.js`; `detalle-compra.js`; `detalle-venta.js` (mismo directorio) | — | Atributos completos; proyecciones de responsables/detalles solo ID/nombre e IDs de origen, no password_hash/snapshots. |
+| CU24 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `getMovimientos(filtros = {})` | consultar('/movimientos', filtros, filtrosHistorial); devuelve envoltorio { data }, sin meta de disponibilidad. |
+| CU24 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `GET /api/inventario/movimientos` | Administrador/Regente; mismo flujo implementado de CU40, con análisis separado. |
 
 `getMovimientos` HTTP usa `GET /api/inventario/movimientos`: IDs positivos dentro de INT, fechas desde/hasta con orden válido, ENTRADA/SALIDA y motivo de 1–40 tras trim, todos opcionales/combinables. Motivo usa igualdad según colación, no coincidencia parcial ni enum que descarte textos históricos. El período abarca desde 00:00:00 hasta 23:59:59.999999 del día final sobre DATETIME almacenado, sin conversión UTC. Orden por fecha y luego ID descendentes; DATE_FORMAT publica hora civil.
 
@@ -3448,8 +4377,9 @@ Responde 200 `{ data: movimientos }`, sin meta de disponibilidad. Sin coincidenc
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarStockBajo | Boundary | Recoge filtros y muestra productos que cumplen el criterio calculado. |
-| ControlConsultarStockBajo | Control | Consulta disponibilidad amplia y selecciona activos con vendible menor o igual al mínimo. |
+| InventarioPage / InventarioFilters / InventarioTable | Boundary; componentes funcionales | Seleccionan vista stockBajo y presentan el resultado calculado del backend. |
+| inventarioController / inventarioService | Control; clases | Validan y coordinan disponibilidad amplia/selección por stock vendible. |
+| existenciaMedicamentoRepository | Repository; clase | Consulta productos con existencias opcionales. |
 | Medicamento | Entity | Aporta identidad, actividad, unidad y stock mínimo del producto. |
 | ExistenciaMedicamento | Entity | Aporta saldos, vencimientos y promedios cuando existan agrupaciones. |
 
@@ -3461,21 +4391,37 @@ classDiagram
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
     class Vendedor { <<actor>> }
-    class VistaConsultarStockBajo {
+    class InventarioPage {
         <<boundary>>
-        -Integer idMedicamento
-        -String codigoMedicamento
-        -String nombreComercial
-        -Lista medicamentos
-        +aplicarFiltros()
-        +actualizarConsulta()
+        -String vista
+        -Object filtros
+        -Object consulta
+        -Function onChange
+        -Function onClear
     }
-    class ControlConsultarStockBajo {
+    class InventarioFilters {
+        <<boundary>>
+        -Object filtros
+        -Function onChange
+        -Function onClear
+        +campo(nombre, inmediato = false)
+    }
+    class InventarioTable {
+        <<boundary>>
+        -Array medicamentos
+        -Boolean stockBajo
+    }
+    class inventarioController {
         <<control>>
-        +validarFiltros()
-        +consultarDisponibilidadAmplia()
-        +prepararDisponibilidad()
-        +seleccionarStockBajo()
+        +getStockBajo(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +getStockBajo(...)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findInventario(...)$
     }
     class Medicamento {
         <<entity>>
@@ -3485,37 +4431,58 @@ classDiagram
         -VARCHAR_50 unidad_inventario
         -INT stock_minimo
         -BOOLEAN estado
+        -INT id_proveedor_laboratorio
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
     }
-    Administrador --> VistaConsultarStockBajo
-    Regente --> VistaConsultarStockBajo
-    Vendedor --> VistaConsultarStockBajo
-    VistaConsultarStockBajo ..> ControlConsultarStockBajo : solicita
-    ControlConsultarStockBajo ..> Medicamento : actividad y minimo
-    ControlConsultarStockBajo ..> ExistenciaMedicamento : disponibilidad opcional
+    Administrador --> InventarioPage
+    Regente --> InventarioPage
+    Vendedor --> InventarioPage
+    InventarioFilters ..> InventarioPage : callbacks del hook
+    InventarioPage ..> InventarioTable : renderiza con stockBajo true
+    InventarioPage ..> inventarioController : GET /api/inventario/stock-bajo (resumen)
+    inventarioController ..> inventarioService : getStockBajo
+    inventarioService ..> existenciaMedicamentoRepository : findInventario via consultarDisponibilidad externo
+    existenciaMedicamentoRepository ..> Medicamento : actividad y minimo
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : include opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
+    note for InventarioPage "Sin handlers locales; vista stockBajo selecciona getStockBajo.\nHTTP via hooks y modulo HTTP; no llamada directa."
+    note for InventarioFilters "campo es funcion local React; no metodo de clase.\nCallbacks recibidos del hook."
 ```
 
-**Descripción de relaciones:** la asociación permite productos sin existencias, que tienen físico/vendible cero. El Control consulta disponibilidad amplia y aplica **activo y stockVendible <= stockMinimo**. Igualar el mínimo también es stock bajo; un activo sin existencias y mínimo cero se incluye. Un activo con solo unidades vencidas puede tener físico positivo y vendible cero. Los inactivos se excluyen de esta consulta, aunque sus existencias sigan visibles en CU21/CU22.
+**Descripción de relaciones:** los componentes/hooks de CU21 se reutilizan con vista='stockBajo': config selecciona getStockBajo y la tabla recibe stockBajo=true para presentación. InventarioFilters conserva campo/callbacks reales; la dependencia HTTP resume hooks/exportación/Axios, no llamada directa. Controller → Service → Repository consulta disponibilidad amplia y el Service aplica **activo y stockVendible <= stockMinimo**. La asociación permite productos sin existencias, con físico/vendible cero; un activo sin existencias y mínimo cero se incluye. Igualar el mínimo también es stock bajo. Un activo con solo unidades vencidas puede tener físico positivo y vendible cero. Los inactivos se excluyen aunque sus existencias sigan visibles en CU21/CU22.
 
 El criterio usa suma vendible, no física; no exige compra, movimiento ni saldo positivo. El DTO conserva existencias y costos cuando hay, así como metadatos comunes. La alerta es resultado de consulta, no otra entidad persistida ni disponibilidad garantizada para una futura venta.
 
 **Correspondencia con la implementación:** `/inventario/stock-bajo`, InventarioPage en vista stockBajo, InventarioFilters e InventarioTable representan la vista, reutilizando filtros automáticos, URL, ConsultaMeta/ConsultaResultado y enlaces a CU22. React no repite el criterio de selección.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarFiltros | `inventarioController.getStockBajo` utiliza `inventarioValidator.validateFiltrosInventario`, con el mismo contrato estricto que CU21. |
-| consultarDisponibilidadAmplia | `inventarioService.getStockBajo` usa `consultarDisponibilidad` externo y `existenciaMedicamentoRepository.findInventario` con soloConExistencias false por defecto/include opcional. |
-| prepararDisponibilidad | Auxiliares de disponibilidad y utilidades de vencimiento preparan cantidades físicas/vendibles y metadatos, compartidos con las demás consultas. |
-| seleccionarStockBajo | El flujo `getStockBajo` conserva únicamente activos cuyo total vendible es menor o igual al mínimo; no ejecuta getInventario. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU37 | InventarioPage | `frontend/src/features/inventario/pages/InventarioPage.jsx` | — | vista='stockBajo'; objeto externo vistas selecciona config.consultar=getStockBajo. Sin handler de selección/consulta propio. |
+| CU37 | InventarioFilters | `frontend/src/features/inventario/components/InventarioFilters.jsx` | Local `campo(nombre, inmediato = false)` | Filtros/callbacks del hook como CU21, espera de 300 ms; onClear prop inmediata. |
+| CU37 | InventarioTable | `frontend/src/features/inventario/components/InventarioTable.jsx` | — | stockBajo=true solo agrega etiqueta visual; no vuelve a filtrar ni sumar stock. |
+| CU37 | Hooks y helper de filtros | `frontend/src/hooks/useConsultaAutomatica.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/utils/filtrosInventario.js` | `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `validarFiltrosInventario(filtros)` | Intermediarios/propietarios según 9.1; consulta.retry es callback del hook, no función de la página. |
+| CU37 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `getStockBajo(req, res, next)` | validateFiltrosInventario(data), contrato compartido CU21. |
+| CU37 | inventarioService | `backend/src/business/services/inventario.service.js` | `getStockBajo(filtros, fechaComercial = obtenerFechaComercial())` | consultarDisponibilidad externo sin opción true; filtra estado y vendible <= mínimo dentro del método. No llama a getInventario. |
+| CU37 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findInventario({ idMedicamento, codigoMedicamento, nombreComercial } = {}, { soloConExistencias = false } = {})` | Include opcional por defecto; admite productos sin existencias. |
+| CU37 | Dos modelos Entity | `backend/src/data/models/medicamento.js`; `backend/src/data/models/existencia-medicamento.js` | — | 12 y 7 atributos completos; sin entidad Alerta ni cálculos de modelo. |
+| CU37 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `getStockBajo(filtros = {})` | consultar('/stock-bajo', filtros, filtrosStock); devuelve envoltorio { data, meta }. |
+| CU37 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `GET /api/inventario/stock-bajo` | Tres roles; filtros de CU21, distinta condición de selección backend. |
 
 `getStockBajo` HTTP usa `GET /api/inventario/stock-bajo` y responde 200 `{ data, meta }`, incluida lista vacía válida. Contrato/errores de filtros son los de CU21: 400/401/403/500; no modifica stock ni persiste alertas. La consulta amplia es esencial: llamar a getInventario excluiría indebidamente los productos sin existencias. Referencias: RF34; RN28/RN29/RN31/RN32/RN93/RN96 y CU37.
 
@@ -3529,8 +4496,9 @@ El criterio usa suma vendible, no física; no exige compra, movimiento ni saldo 
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarHistorialInventario | Boundary | Presenta historial filtrado con responsables, origen y vínculos original/reversión. |
-| ControlConsultarHistorialInventario | Control | Coordina la misma consulta de CU24 para el objetivo de trazabilidad histórica. |
+| MovimientosPage / InventarioFilters / MovimientosTable | Boundary; componentes funcionales | Presentan el historial con los mismos componentes/funciones de CU24. |
+| inventarioController / inventarioService | Control; clases | Coordinan la misma consulta implementada para trazabilidad histórica. |
+| movimientoInventarioRepository | Repository; clase | Lee hechos/referencias con los mismos includes de CU24. |
 | MovimientoInventario | Entity | Conserva entradas, salidas, ajustes, retiros y compensaciones sin reemplazar originales. |
 | ExistenciaMedicamento | Entity | Identifica la agrupación de unidades afectada por cada hecho. |
 | Medicamento | Entity | Identifica el producto de la existencia mediante datos actuales. |
@@ -3545,23 +4513,36 @@ classDiagram
     direction LR
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
-    class VistaConsultarHistorialInventario {
+    class MovimientosPage {
         <<boundary>>
-        -Integer idMedicamento
-        -Integer idExistencia
-        -String desde
-        -String hasta
-        -String direccion
-        -String motivo
-        -Lista movimientos
-        +aplicarFiltros()
-        +actualizarConsulta()
+        -Object filtros
+        -Object consulta
+        -Function onChange
+        -Function onClear
     }
-    class ControlConsultarHistorialInventario {
+    class InventarioFilters {
+        <<boundary>>
+        -Object filtros
+        -Boolean movimientos
+        -Function onChange
+        -Function onClear
+        +campo(nombre, inmediato = false)
+    }
+    class MovimientosTable {
+        <<boundary>>
+        -Array movimientos
+    }
+    class inventarioController {
         <<control>>
-        +validarFiltros()
-        +consultarMovimientos()
-        +prepararHechosPublicos()
+        +getMovimientos(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +getMovimientos(filtros)$
+    }
+    class movimientoInventarioRepository {
+        <<repository>>
+        +findAll(...)$
     }
     class MovimientoInventario {
         <<entity>>
@@ -3573,61 +4554,112 @@ classDiagram
         -VARCHAR_40 motivo
         -VARCHAR_500 observacion
         -DECIMAL_14_6 costo_unitario_aplicado
+        -INT id_usuario
+        -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
         -VARCHAR_30 codigo_existencia
+        -INT id_medicamento
+        -DATE fecha_vencimiento
+        -ENUM_DIA_MES precision_vencimiento
+        -INT cantidad_fisica
+        -DECIMAL_14_6 costo_unitario_promedio
     }
     class Medicamento {
         <<entity>>
         -INT id_medicamento
         -VARCHAR_20 codigo_medicamento
         -VARCHAR_150 nombre_comercial
+        -INT id_proveedor_laboratorio
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -VARCHAR_50 unidad_inventario
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
+        -BOOLEAN estado
     }
     class Usuario {
         <<entity>>
         -INT id_usuario
         -VARCHAR_60 nombre_usuario
+        -INT id_rol
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
     class DetalleCompra {
         <<entity>>
         -INT id_detalle_compra
         -INT id_compra
+        -INT id_existencia
+        -INT cantidad
+        -DECIMAL_14_6 costo_unitario
+        -DECIMAL_14_2 subtotal
+        -INT saldo_anterior
+        -DECIMAL_14_6 costo_promedio_anterior
     }
     class DetalleVenta {
         <<entity>>
         -INT id_detalle_venta
         -INT id_venta
+        -INT id_receta
+        -INT id_existencia
+        -INT cantidad
+        -DECIMAL_14_2 precio_unitario
+        -DECIMAL_14_2 subtotal
     }
-    Administrador --> VistaConsultarHistorialInventario
-    Regente --> VistaConsultarHistorialInventario
-    VistaConsultarHistorialInventario ..> ControlConsultarHistorialInventario : solicita
-    ControlConsultarHistorialInventario ..> MovimientoInventario : hechos originales y compensaciones
-    ControlConsultarHistorialInventario ..> ExistenciaMedicamento : identifica existencia
-    ControlConsultarHistorialInventario ..> Medicamento : identifica producto
-    ControlConsultarHistorialInventario ..> Usuario : responsable publico
-    ControlConsultarHistorialInventario ..> DetalleCompra : origen opcional
-    ControlConsultarHistorialInventario ..> DetalleVenta : origen opcional
+    Administrador --> MovimientosPage
+    Regente --> MovimientosPage
+    InventarioFilters ..> MovimientosPage : callbacks del hook
+    MovimientosPage ..> MovimientosTable : renderiza hechos
+    MovimientosPage ..> inventarioController : GET /api/inventario/movimientos (resumen)
+    inventarioController ..> inventarioService : getMovimientos
+    inventarioService ..> movimientoInventarioRepository : findAll
+    movimientoInventarioRepository ..> MovimientoInventario : hechos e include movimientoReversion
+    movimientoInventarioRepository ..> ExistenciaMedicamento : include obligatorio y filtro producto
+    movimientoInventarioRepository ..> Medicamento : include de existencia
+    movimientoInventarioRepository ..> Usuario : responsable publico
+    movimientoInventarioRepository ..> DetalleCompra : IDs de origen opcional
+    movimientoInventarioRepository ..> DetalleVenta : IDs de origen opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
     DetalleCompra "0..1" -- "0..*" MovimientoInventario : detalleCompra
     DetalleVenta "0..1" -- "0..*" MovimientoInventario : detalleVenta
     MovimientoInventario "0..1" -- "0..1" MovimientoInventario : movimientoReversion
+    note for MovimientosPage "Sin handlers locales; usa useConsultaAutomatica/getMovimientos.\nHTTP resumido, no llamada directa al Controller.\nCU40 comparte implementacion con CU24, sin otra ejecucion."
+    note for InventarioFilters "campo es funcion local React; no metodo de clase.\nonChange y onClear son props del hook."
 ```
 
-**Descripción de relaciones:** conserva las asociaciones/atributos de CU24: existencia y responsable obligatorios, origen por detalle opcional y reversión única. Cada hecho conserva cantidades, costo aplicado, motivo/observación y hora registrados, mientras identidad pública de producto/responsable corresponde a datos actuales. Los motivos históricos permanecen sin normalización. Nuevas compras/anulaciones identifican detalle y, en reversión, original; ajustes/retiros independientes pueden no tener detalles.
+**Descripción de relaciones:** reutiliza los mismos componentes, hooks y flujo Controller → Service → Repository de CU24. campo pertenece a InventarioFilters; callbacks de consulta/filtros provienen de hooks y la dependencia HTTP resume getMovimientos/Axios. Conserva las asociaciones/atributos de CU24: existencia y responsable obligatorios, origen por detalle opcional y reversión única. Cada hecho conserva cantidades, costo aplicado, motivo/observación y hora registrados, mientras identidad pública de producto/responsable corresponde a datos actuales. Los motivos históricos permanecen sin normalización. Nuevas compras/anulaciones identifican detalle y, en reversión, original; ajustes/retiros independientes pueden no tener detalles.
 
 Un movimiento compensado no desaparece: el vínculo permite distinguir original y reversión. Una consulta parcial no demuestra que se esté mostrando todo el historial, ni reconstruye saldo acumulado o valoración desde el promedio actual. La consulta no ejecuta un reporte de pérdidas ni de ventas, ni carga cabeceras de operaciones/Receta. Estos objetivos siguen en sus CU correspondientes.
 
 **Correspondencia con la implementación:** MovimientosPage, InventarioFilters y MovimientosTable en `/inventario/movimientos` representan también esta vista conceptual. Accesos desde existencias, compras y resultados de ajustes/retiros pueden conservar el filtro de producto/existencia. No hay otra página/Service de Reportes ni segunda ejecución adicional por llamarse historial.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarFiltros | `inventarioController.getMovimientos` e `inventarioValidator.validateFiltrosMovimientos`, idénticos a CU24. |
-| consultarMovimientos | `inventarioService.getMovimientos` y `movimientoInventarioRepository.findAll` incluyen los mismos hechos, referencias de origen, responsable y movimientoReversion. |
-| prepararHechosPublicos | Auxiliar externo `toPublicMovimiento` conserva información histórica y expone únicamente datos públicos y referencias; no calcula saldos/reportes. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU40 | MovimientosPage | `frontend/src/features/inventario/pages/MovimientosPage.jsx` | — | Mismo componente de CU24, sin handler propio de historial ni segunda ejecución. Consulta/reintento mediante hooks. |
+| CU40 | InventarioFilters | `frontend/src/features/inventario/components/InventarioFilters.jsx` | Local `campo(nombre, inmediato = false)` | movimientos=true; callbacks/espera/configuración idénticos a CU24. |
+| CU40 | MovimientosTable | `frontend/src/features/inventario/components/MovimientosTable.jsx` | — | Prop movimientos, hechos y referencias; sin funciones locales de lectura/reconstrucción. |
+| CU40 | Hooks y helper de filtros | `frontend/src/hooks/useConsultaAutomatica.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/utils/filtrosInventario.js` | `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `validarFiltrosInventario(filtros)` | onChange/onClear/consulta.retry provienen de hooks según 9.1; filtros en URL. |
+| CU40 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `getMovimientos(req, res, next)` | validateFiltrosMovimientos(data), mismo método de CU24. |
+| CU40 | inventarioService | `backend/src/business/services/inventario.service.js` | `getMovimientos(filtros)` | toPublicMovimiento(registro) es auxiliar externo; no hay método getHistorial ni ReporteService. |
+| CU40 | movimientoInventarioRepository | `backend/src/data/repositories/movimiento-inventario.repository.js` | `findAll({ idMedicamento, idExistencia, desde, hasta, direccion, motivo } = {})` | Mismos includes/proyecciones que CU24; sin cabeceras Compra/Venta ni Receta. |
+| CU40 | Seis modelos Entity | `backend/src/data/models/movimiento-inventario.js`; `existencia-medicamento.js`; `medicamento.js`; `usuario.js`; `detalle-compra.js`; `detalle-venta.js` (mismo directorio) | — | Atributos completos idénticos a CU24; las FK dibujadas no agregan lecturas de otros modelos. |
+| CU40 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `getMovimientos(filtros = {})` | Misma exportación/auxiliar consultar del CU24; devuelve { data }. |
+| CU40 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `GET /api/inventario/movimientos` | Administrador/Regente; diagrama separado por objetivo oficial, sin endpoint adicional. |
 
 `getMovimientos` HTTP usa el mismo `GET /api/inventario/movimientos`, filtros, rango inclusivo, orden descendente y respuesta 200 `{ data }` de CU24. Lista vacía válida, 400/401/403/500 y ausencia de escrituras son compartidos. El análisis/diagrama se mantienen separados para el objetivo oficial CU40, sin duplicar implementación ni inventar un endpoint. Ventas/Recetas y reportes CU38/CU39/CU41 permanecen pendientes. Referencias: RF37/RF39; RN70–RN74/RN97/RN100/RN102/RN104 y CU40.
 
@@ -3643,21 +4675,21 @@ Un movimiento compensado no desaparece: el vínculo permite distinguir original 
 | CU40 — Consultar historial de inventario | 1 | Trazabilidad con análisis separado y consulta compartida con CU24. |
 | **Total de Fase 5** | **6** | **Seis CU, numeración oficial y orden de fases conservados.** |
 
-**Criterio de comprobación:** una Vista y un Control conceptual por dibujo, con operaciones respaldadas por sus correspondencias. Se distingue persistencia de datos derivados y precondiciones temporales, y multiplicidad global de condición de selección/creación del flujo. MovimientoInventario participa en CU22 por MAX SQL, no historial completo; en CU23 por comprobación/escritura condicional; en CU24/CU40 por lectura histórica. Usuario no se repite por infraestructura. No se agregan herencias, composiciones UML ni entidades/métodos de modelo inexistentes.
+**Criterio de comprobación:** los Boundary son componentes funcionales con funciones locales reales; hooks, props, callbacks inline, setters y auxiliares externos se identifican por propietario. Los métodos propios de Controller, Service y Repository conservan firmas exactas en las tablas y $ para static en Mermaid. MovimientoInventario participa en CU22 por MAX SQL, en CU23 por comprobación/escritura condicional y en CU24/CU40 por lectura histórica. Los seis modelos muestran atributos persistentes completos, separados de proyecciones y precondiciones. Usuario participa en CU23 por FK, sin consulta propia del POST, y en CU24/CU40 por include público.
 
-**Validación de esta entrega:** se comprobaron los nombres/números CU21–CU24/CU37/CU40 contra el catálogo oficial, sin duplicados ni ausencias, y la estructura completa de los seis análisis. Los dibujos contienen seis Boundary y seis Control, con 23 operaciones conceptuales respaldadas por sus correspondencias. Se contrastaron seis entidades reales —Medicamento, ExistenciaMedicamento, MovimientoInventario, Usuario, DetalleCompra y DetalleVenta— y 87 apariciones de atributos seleccionados con los tipos del modelo general. Las 18 apariciones de asociaciones conservan participantes, multiplicidades y significado de cada CU técnico; las asociaciones de Usuario omitidas en disponibilidad corresponden exclusivamente a contexto transversal o histórico no consultado.
+**Resultado de la corrección de Fase 5:** seis CU y seis diagramas con **12 componentes funcionales**, **4 clases backend** y **6 modelos** reales. Se verificaron **6 funciones locales distintas en 9 apariciones**, **17 métodos backend distintos en 21 apariciones**, **207 apariciones de atributos persistentes completos** y **6 colaboraciones HTTP resumidas**. Se documentan las cinco exportaciones HTTP distintas de Inventario participantes y getMedicamento de apoyo, con firmas/archivos/endpoints. Se conservaron las **18 asociaciones persistentes**, con los mismos extremos, multiplicidades y alias, incluida la reversión reflexiva. CU24/CU40 conservan idénticos participantes, atributos, operaciones y dependencias implementadas; sus objetivos académicos permanecen separados.
 
-Se revisaron los permisos por operación, inclusión de productos con/sin existencias, físico/vendible y fecha efectiva, lectura conjunta de saldo/marcador y sus precondiciones, así como entrada/salida/conciliación sin efectos. CU24/CU40 conservan idénticas entidades, atributos, asociaciones y métodos reales de consulta, con análisis separados por objetivo. Se verificaron formato Markdown, tablas, enlaces y rutas de correspondencia.
+**Comprobación acotada:** nombres, funciones locales, propietarios y estados/props contrastados con fuentes React; firmas estáticas, auxiliares y respuesta con backend; atributos/tipos/asociaciones con modelos y diagrama general; endpoints/permisos con routers, rutas visuales y catálogo oficial. Se revisaron productos con/sin existencias, físico/vendible, fecha efectiva, lectura conjunta de saldo/marcador, revalidación bloqueante y entrada/salida/conciliación sin efectos. Se comprobó que AjusteConteo declara actualizar/guardar y que las páginas de lectura usan callbacks de hooks sin handlers propios inventados.
 
-Los seis diagramas se analizaron y renderizaron con Mermaid 11.12.0 y sus capturas se revisaron visualmente: actores → Boundary → Control de izquierda a derecha y entidades a la derecha, sin cajas solapadas. Los SVG permiten ampliar los atributos y multiplicidades de los dibujos más anchos. Los hashes SHA-256 de los 23 análisis académicos anteriores, sus 24 diagramas y los seis documentos fuente se conservaron; Git identifica únicamente este documento académico nuevo. La comprobación fue documental y visual, sin conexión a MySQL ni pruebas funcionales del backend.
+**6/6 diagramas con sintaxis válida en Mermaid 11.12.0**, mediante mermaid.parse. Se conservaron íntegros los bloques de fases 1–4, incluidos los cambios anteriores sin commit, y todo el bloque desde Fase 6. Permanecen los **33 CU y 34 diagramas**. `git diff --check` aprobado y únicamente cambia este Markdown. La comprobación es documental y de sintaxis; no incluye pruebas funcionales, conexiones a MySQL, suites extensas, hashes del repositorio ni capturas/SVG.
 
-**Avance al cierre de Fase 5:** veintinueve de los 33 CU implementados, con treinta diagramas de los 34 previstos. La Fase 6 se incorpora a continuación por solicitud de continuidad del usuario, conservando la numeración oficial y el orden acordado.
+**Avance de corrección al cierre de Fase 5:** **29/33 CU y 30/34 diagramas corregidos**. Fase 5 queda para revisión del usuario; Fase 6 conserva su versión conceptual anterior y requiere autorización para corregirse.
 
 ## 11. Fase 6 — Vencimientos y Retiros
 
 ### 11.1. Condiciones compartidas, fechas y valoración
 
-Cada CU conserva una Vista y un Control conceptuales. CU33/CU34 permiten **Administrador o Regente**; CU35/CU36, únicamente **Regente**. La autorización de consulta no concede permiso de retiro. Todos requieren sesión válida, cuenta activa y versión de credenciales vigente, verificadas por el backend. Usuario participa por responsabilidad del movimiento en los retiros; en las consultas su uso de autenticación es transversal y no se repite en los dibujos.
+Se conserva Actor → Boundary → Control → Entity con componentes funcionales React, Controllers/Services reales, Repositories y modelos verificables, según las convenciones de las fases corregidas. Las operaciones Boundary son funciones locales, no métodos de clases JavaScript. CU33/CU34 permiten **Administrador o Regente**; CU35/CU36, únicamente **Regente**. La autorización de consulta no concede permiso de retiro. Todos requieren sesión válida, cuenta activa y versión de credenciales vigente, verificadas por el backend. Usuario participa por la FK del responsable en los retiros, sin consulta del modelo ni nombre público en la respuesta del POST; en las consultas su uso de autenticación es transversal y no se repite en los dibujos.
 
 **Fuentes:** Fase 6 del análisis técnico, secciones 5/6 del diagrama general, CU33–CU36, RF30–RF33/RF39 y RN28–RN30/RN40/RN64–RN70/RN85–RN95/RN103/RN104, contrastadas con las decisiones de API e interfaz del contexto maestro. Se reutilizan inventarioController, inventarioValidator, inventarioService y los Repositories de existencias/movimientos; no se introducen clases técnicas de Vencimientos, Retiro o Pérdida.
 
@@ -3665,9 +4697,9 @@ Cada CU conserva una Vista y un Control conceptuales. CU33/CU34 permiten **Admin
 |---|---|---|
 | Medicamento — ExistenciaMedicamento | `1` — `0..*` | Identificación y estado del producto en CU33/CU34; solo se presentan existencias que cumplen su criterio físico/temporal. |
 | ExistenciaMedicamento — MovimientoInventario | `1` — `0..*` | Marcador actual y salida independiente en CU35/CU36. |
-| Usuario — MovimientoInventario | `1` — `0..*` | Responsable autenticado del retiro y datos públicos del resultado. |
+| Usuario — MovimientoInventario | `1` — `0..*` | Responsable autenticado del retiro; el resultado contiene idUsuario, sin consultar nombre público. |
 
-La multiplicidad persistente no exige saldo positivo ni actividad; esas condiciones dependen de cada operación. Un retiro válido crea un movimiento de cantidad positiva, sin convertir la asociación global en uno a uno. Medicamento–Existencia es contexto en los POST: la preparación reutiliza CU22/CU15, pero la escritura no consulta Medicamento. Los retiros dejan id_detalle_compra, id_detalle_venta e id_movimiento_original en NULL; no son reversión de un original ni requieren cabeceras de Compra/Venta/Receta. No se infiere composición UML de las FK.
+La multiplicidad persistente no exige saldo positivo ni actividad; esas condiciones dependen de cada operación. Un retiro válido crea un movimiento de cantidad positiva, sin convertir la asociación global en uno a uno. Medicamento–Existencia pertenece a la preparación CU22/CU15 y no se repite en el dibujo del POST, que no consulta Medicamento. Los retiros dejan id_detalle_compra, id_detalle_venta e id_movimiento_original en NULL; no son reversión de un original ni requieren cabeceras de Compra/Venta/Receta. No se infiere composición UML de las FK.
 
 | Información temporal | Significado y uso |
 |---|---|
@@ -3682,7 +4714,15 @@ Las nuevas recepciones MES almacenan fin de mes, pero estas consultas/retiros no
 
 **Stock y pérdida:** vencer o desactivar un producto deja vendible cero, pero conserva físico. CU33/CU34 pueden incluir productos inactivos; consultar no retira unidades. CU35/CU36 aplican el promedio vigente, admitido cero, y lo conservan incluso al agotar. La pérdida es cantidad retirada × costo aplicado, calculada exactamente y redondeada a dos decimales con empate hacia arriba; se devuelve como cadena, sin columna o entidad propia. El movimiento conserva costo aplicado a seis decimales. El importe derivado puede superar DECIMAL(14,2), que no es límite de ese resultado; React no convierte importes a Number ni calcula la pérdida.
 
-**Preparación:** el formulario vuelve a consultar CU22 junto con CU15 para identidad del catálogo y valida pertenencia. El par procede de saldo/marcador de la misma respuesta CU22, no de una alerta ni de la tabla previa. Un marcador ausente no se sustituye por null. Los campos de Vista son temporales; el Controller/Service reales y sus auxiliares respaldan el Control conceptual. `consultarDisponibilidad` y `registrarRetiro` son funciones externas de módulo, no métodos de inventarioService.
+**Preparación:** RetiroExistencia vuelve a consultar CU22 junto con CU15 para identidad del catálogo mediante useConsulta/consultarExistencia y valida pertenencia. El par procede de saldo/marcador de la misma respuesta CU22, no de una alerta ni de la tabla previa. Un marcador ausente no se sustituye por null. Los campos Boundary son estado/props temporales. Las lecturas de preparación y reconsulta se explican como colaboraciones reutilizadas, sin atribuirlas al POST ni a sus métodos backend.
+
+**Propietarios React y hooks:** `RetiroFormPage`, en `frontend/src/features/inventario/pages/RetiroFormPage.jsx`, recibe tipo, obtiene IDs de ruta y renderiza con key al componente local no exportado RetiroExistencia del mismo archivo. actualizar()/guardar(data) pertenecen a RetiroExistencia; borradorVacio() es externo a ambos. RetiroForm declara close(), revisar(event) y confirmar(), y recibe onChange=setForm/onSubmit=guardar; setters, eventos inline y efectos anónimos no son operaciones inventadas. RetiroResultado recibe onNuevoRetiro, callback inline del padre que reinicia borrador y llama actualizar. InventarioPage no declara handlers de consulta: el objeto externo vistas selecciona config.consultar y el hook aporta onChange/onClear/consulta.retry. InventarioFilters conserva campo(nombre, inmediato = false). `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)` y `useConsulta(consultar, clave, filtros, habilitada = true)`, en `frontend/src/hooks/`, mantienen los propietarios y callbacks documentados en 9.1; no se atribuyen a las páginas. `validarFiltrosInventario(filtros)` es exportación de `frontend/src/features/inventario/utils/filtrosInventario.js`.
+
+**Intermediarios HTTP:** `frontend/src/features/inventario/services/inventario.service.js` exporta getProximosAVencer(filtros = {}), getVencidos(filtros = {}), registrarRetiroVencimiento(data) y registrarRetiroDano(data); usa api de `frontend/src/api/api.js`, con URL base y cookies. Los GET llaman al auxiliar privado consultar(path, filtros, campos) con filtrosStock; GET/POST conservan response.data, el envoltorio data/meta o message/data. getExistenciasMedicamento(idMedicamento) combina CU22 con getMedicamento(idMedicamento) de CU15 en paralelo. Las dependencias al Controller resumen HTTP con verbo/endpoint, no llamadas directas React–Controller. `backend/src/presentation/routes/inventario.router.js` se monta en `/api/inventario` desde `backend/src/app.js` y aplica authMiddleware antes de requireRole; rutas visuales/roles en `frontend/src/app/router.jsx`.
+
+**Auxiliares externos a clases:** `consultarDisponibilidad(filtros, fechaComercial, opciones)`, `existenciasDeInventario(medicamentos)`, `compararVencimientos(a, b)`, `toPublicInventario(registro, fechaComercial)`, `toPublicExistencias(medicamento, fechaComercial, incluirUltimoMovimiento = false)`, `disponibilidadMeta(fechaComercial)`, `decimal6(valor)`, `toPlain(registro)`, `costoPromedioExistencia(existencia)` y `registrarRetiro(data, idUsuarioAutenticado, motivo)` son funciones de módulo en `backend/src/business/services/inventario.service.js`, no métodos de inventarioService. registrarRetiro comparte transacción, bloqueos, valoración y DTO de CU35/CU36; las dependencias Service–Repository resumen esa delegación real. getValidatedData(result) es externo a inventarioController. inventarioValidator de `backend/src/business/validators/inventario.validator.js` aporta validateFiltrosInventario(data), validateSinFiltros(data), validateRetiroVencimiento(data) y validateRetiroDano(data); esquemas Zod/objeto precondiciones son externos a esa clase. `calcularVencimiento(fechaVencimiento, precisionVencimiento, fechaComercial)`, `sumarMesesCalendario(fecha, meses)` y `obtenerFechaEtiquetaNormalizada(fechaVencimiento, precisionVencimiento)` pertenecen a `backend/src/shared/utils/vencimiento.js`; obtenerFechaOperacion a `fecha-operacion.js` y la aritmética exacta a `decimal.js`, sin cajas ni atribución a modelos.
+
+**Entidades completas:** Medicamento muestra sus 12 atributos persistentes; ExistenciaMedicamento, 7; MovimientoInventario, 12; Usuario, 9, incluidas todas las FK. Fuentes: `backend/src/data/models/medicamento.js`, `existencia-medicamento.js`, `movimiento-inventario.js` y `usuario.js`. DATE corresponde a DATEONLY, DATETIME a DataTypes.DATE e INT_UNSIGNED a INTEGER.UNSIGNED; timestamps:false no agrega columnas. Se omiten associate(models), métodos heredados y métodos de negocio inventados. Mostrar todos los campos no afirma que una consulta los proyecte ni que el POST consulte Usuario o publique password_hash. Fecha/precisión permanecen en el modelo completo de CU36, aunque su rama de escritura no evalúe vencimiento.
 
 ### CU33 — Consultar productos próximos a vencer
 
@@ -3694,8 +4734,9 @@ Las nuevas recepciones MES almacenan fin de mes, pero estas consultas/retiros no
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarProximosAVencer | Boundary | Recoge filtros de producto y presenta fechas, saldos y horizonte calculados. |
-| ControlConsultarProximosAVencer | Control | Consulta disponibilidad y selecciona existencias por saldo, no vencimiento e intervalo de etiqueta. |
+| InventarioPage / InventarioFilters / ExistenciasTable | Boundary; componentes funcionales | Seleccionan vista proximos y presentan filtros/fechas/disponibilidad calculados. |
+| inventarioController / inventarioService | Control; clases | Validan y coordinan disponibilidad y criterio temporal de existencias. |
+| existenciaMedicamentoRepository | Repository; clase | Consulta productos con existencias opcionales para disponibilidad amplia. |
 | Medicamento | Entity | Aporta identidad, unidad y estado del producto asociado. |
 | ExistenciaMedicamento | Entity | Aporta fecha/precisión, físico y promedio para control preventivo. |
 
@@ -3706,21 +4747,39 @@ classDiagram
     direction LR
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
-    class VistaConsultarProximosAVencer {
+    class InventarioPage {
         <<boundary>>
-        -Integer idMedicamento
-        -String codigoMedicamento
-        -String nombreComercial
-        -Lista existencias
-        +aplicarFiltros()
-        +actualizarConsulta()
+        -String vista
+        -Object filtros
+        -Object consulta
+        -Function onChange
+        -Function onClear
     }
-    class ControlConsultarProximosAVencer {
+    class InventarioFilters {
+        <<boundary>>
+        -Object filtros
+        -Function onChange
+        -Function onClear
+        +campo(nombre, inmediato = false)
+    }
+    class ExistenciasTable {
+        <<boundary>>
+        -Array existencias
+        -Boolean showMedicamento
+        -Boolean canSeeMovimientos
+        -Boolean canRetire
+    }
+    class inventarioController {
         <<control>>
-        +validarFiltros()
-        +consultarDisponibilidad()
-        +seleccionarProximasAVencer()
-        +prepararResultado()
+        +getProximosAVencer(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +getProximosAVencer(...)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findInventario(...)$
     }
     class Medicamento {
         <<entity>>
@@ -3729,36 +4788,58 @@ classDiagram
         -VARCHAR_150 nombre_comercial
         -VARCHAR_50 unidad_inventario
         -BOOLEAN estado
+        -INT id_proveedor_laboratorio
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
     }
-    Administrador --> VistaConsultarProximosAVencer
-    Regente --> VistaConsultarProximosAVencer
-    VistaConsultarProximosAVencer ..> ControlConsultarProximosAVencer : solicita
-    ControlConsultarProximosAVencer ..> Medicamento : identifica producto y estado
-    ControlConsultarProximosAVencer ..> ExistenciaMedicamento : saldo y etiqueta en intervalo
+    Administrador --> InventarioPage
+    Regente --> InventarioPage
+    InventarioFilters ..> InventarioPage : callbacks del hook
+    InventarioPage ..> ExistenciasTable : renderiza con showMedicamento true
+    InventarioPage ..> inventarioController : GET /api/inventario/proximos-a-vencer (resumen)
+    inventarioController ..> inventarioService : getProximosAVencer
+    inventarioService ..> existenciaMedicamentoRepository : findInventario via consultarDisponibilidad externo
+    existenciaMedicamentoRepository ..> Medicamento : identifica producto y estado
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : include opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
+    note for InventarioPage "Sin handlers locales; vista proximos selecciona getProximosAVencer.\nHTTP via hooks y modulo HTTP; no llamada directa."
+    note for InventarioFilters "campo es funcion local React; no metodo de clase.\nonChange y onClear son props del hook."
 ```
 
-**Descripción de relaciones:** el Control obtiene productos con existencias opcionales, aplana sus existencias y conserva únicamente físico positivo, todavía no vencida y **fechaComercial <= fechaEtiquetaNormalizada <= fechaHasta**. Productos sin existencias no aportan filas; no exige compra ni movimiento. Las existencias de productos inactivos pueden aparecer por su control físico, aunque tengan vendible cero.
+**Descripción de relaciones:** InventarioPage selecciona getProximosAVencer desde vistas según vista='proximos'; usa hooks intermediarios, recibe callbacks de filtros y renderiza ExistenciasTable. campo pertenece a InventarioFilters; Actualizar utiliza consulta.retry del hook. La dependencia HTTP resume exportación/Axios, sin llamada directa al Controller. Controller → Service → Repository obtiene productos con existencias opcionales; el Service aplana sus existencias mediante auxiliares externos y conserva físico positivo, todavía no vencida y **fechaComercial <= fechaEtiquetaNormalizada <= fechaHasta**. Productos sin existencias no aportan filas; no exige compra ni movimiento. Las existencias de productos inactivos pueden aparecer por su control físico, aunque tengan vendible cero.
 
 Para MES el intervalo utiliza el último día del mes de etiqueta, no el primer día del mes siguiente de no venta. DIA ya está vencida al comenzar su fecha y se excluye aunque coincida con el extremo inferior del intervalo. Se ordena por etiqueta normalizada e ID de existencia. Los cálculos no modifican la fecha persistida ni implican selección FEFO de una venta.
 
 **Correspondencia con la implementación:** `/vencimientos`, `frontend/src/features/inventario/pages/InventarioPage.jsx` en vista proximos, `frontend/src/features/inventario/components/InventarioFilters.jsx` y `ExistenciasTable.jsx` representan la vista. Búsqueda automática de 300 ms para texto, filtros en URL, ConsultaMeta y estados de carga/vacío/error presentan la consulta calculada; la fecha comercial y el horizonte no son campos elegidos por el usuario.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarFiltros | `inventarioController.getProximosAVencer` e `inventarioValidator.validateFiltrosInventario` validan query estricto, con ID/código/nombre de producto del contrato CU21. |
-| consultarDisponibilidad | `inventarioService.getProximosAVencer` utiliza `consultarDisponibilidad` externo y `existenciaMedicamentoRepository.findInventario` con include opcional, sin activar soloConExistencias de CU21. |
-| seleccionarProximasAVencer | El flujo `getProximosAVencer`, `existenciasDeInventario` y funciones externas `sumarMesesCalendario`/`obtenerFechaEtiquetaNormalizada` filtran físico/no vencida/intervalo y ordenan resultados. |
-| prepararResultado | Auxiliares de disponibilidad y el flujo de consulta conservan fecha almacenada, agregan etiqueta normalizada y publican meta con fechaComercial/zonaHoraria/fechaHasta. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU33 | InventarioPage | `frontend/src/features/inventario/pages/InventarioPage.jsx` | — | vista='proximos'; config.consultar=getProximosAVencer del objeto externo vistas. Sin handler propio de carga/filtros. |
+| CU33 | InventarioFilters | `frontend/src/features/inventario/components/InventarioFilters.jsx` | Local `campo(nombre, inmediato = false)` | ID/código/nombre con espera de 300 ms; onChange/onClear props del hook. submit preventDefault es inline. |
+| CU33 | ExistenciasTable | `frontend/src/features/inventario/components/ExistenciasTable.jsx` | — | showMedicamento=true, canSeeMovimientos=true para ambos roles y canRetire=false. Sin funciones locales de consulta ni cálculo temporal. |
+| CU33 | Hooks/helper UI | `frontend/src/hooks/useConsultaAutomatica.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/utils/filtrosInventario.js` | `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `validarFiltrosInventario(filtros)` | Propietarios/callbacks según 9.1/11.1; filtros en URL, respuesta vigente, retry externo a página. |
+| CU33 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `getProximosAVencer(req, res, next)` | validateFiltrosInventario(data) de inventarioValidator. |
+| CU33 | inventarioService | `backend/src/business/services/inventario.service.js` | `getProximosAVencer(filtros, fechaComercial = obtenerFechaComercial())` | consultarDisponibilidad/existenciasDeInventario externos; sumarMesesCalendario y obtenerFechaEtiquetaNormalizada de vencimiento.js. El método aplica filtros/orden e incorpora fechaHasta. |
+| CU33 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findInventario({ idMedicamento, codigoMedicamento, nombreComercial } = {}, { soloConExistencias = false } = {})` | Include opcional predeterminado; no llama a getInventario ni a Repository de movimientos. |
+| CU33 | Dos modelos Entity | `backend/src/data/models/medicamento.js`; `backend/src/data/models/existencia-medicamento.js` | — | 12/7 atributos completos; las fechas calculadas no son columnas. |
+| CU33 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `getProximosAVencer(filtros = {})` | consultar('/proximos-a-vencer', filtros, filtrosStock), auxiliar privado; conserva envoltorio { data, meta }. |
+| CU33 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `GET /api/inventario/proximos-a-vencer` | Administrador/Regente; filtros de producto, no horizonte/fecha elegidos por cliente. |
 
 `getProximosAVencer` de `frontend/src/features/inventario/services/inventario.service.js` usa `GET /api/inventario/proximos-a-vencer`. Responde 200 `{ data: existenciasConMedicamento, meta }`, incluida lista vacía válida; 400 por query inválido, 401/403 por sesión/permisos y 500 inesperado. Cada fila muestra existencia con producto, fechas/precisión, físico/vendible y costo promedio. No incluye ultimoMovimiento, no lee MovimientoInventario ni ejecuta getInventario/getExistencias/retiros; no persiste alertas. Referencias: RF32; RN28/RN29/RN85/RN93/RN94 y CU33.
 
@@ -3772,8 +4853,9 @@ Para MES el intervalo utiliza el último día del mes de etiqueta, no el primer 
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaConsultarVencidos | Boundary | Recoge filtros y muestra existencias vencidas con saldo físico. |
-| ControlConsultarVencidos | Control | Consulta disponibilidad y selecciona vencidas con físico positivo. |
+| InventarioPage / InventarioFilters / ExistenciasTable | Boundary; componentes funcionales | Seleccionan vista vencidos y presentan unidades físicas/acciones según rol. |
+| inventarioController / inventarioService | Control; clases | Validan y coordinan disponibilidad/selección de vencidas con físico positivo. |
+| existenciaMedicamentoRepository | Repository; clase | Consulta productos con existencias opcionales. |
 | Medicamento | Entity | Aporta identificación, unidad y estado actual del producto. |
 | ExistenciaMedicamento | Entity | Aporta fecha/precisión, físico y promedio de unidades pendientes. |
 
@@ -3784,21 +4866,39 @@ classDiagram
     direction LR
     class Administrador { <<actor>> }
     class Regente { <<actor>> }
-    class VistaConsultarVencidos {
+    class InventarioPage {
         <<boundary>>
-        -Integer idMedicamento
-        -String codigoMedicamento
-        -String nombreComercial
-        -Lista existencias
-        +aplicarFiltros()
-        +actualizarConsulta()
+        -String vista
+        -Object filtros
+        -Object consulta
+        -Function onChange
+        -Function onClear
     }
-    class ControlConsultarVencidos {
+    class InventarioFilters {
+        <<boundary>>
+        -Object filtros
+        -Function onChange
+        -Function onClear
+        +campo(nombre, inmediato = false)
+    }
+    class ExistenciasTable {
+        <<boundary>>
+        -Array existencias
+        -Boolean showMedicamento
+        -Boolean canSeeMovimientos
+        -Boolean canRetire
+    }
+    class inventarioController {
         <<control>>
-        +validarFiltros()
-        +consultarDisponibilidad()
-        +seleccionarVencidasPendientes()
-        +prepararResultado()
+        +getVencidos(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +getVencidos(...)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findInventario(...)$
     }
     class Medicamento {
         <<entity>>
@@ -3807,36 +4907,58 @@ classDiagram
         -VARCHAR_150 nombre_comercial
         -VARCHAR_50 unidad_inventario
         -BOOLEAN estado
+        -INT id_proveedor_laboratorio
+        -VARCHAR_80 forma_farmaceutica
+        -VARCHAR_150 presentacion
+        -INT stock_minimo
+        -VARCHAR_40 condicion_venta
+        -VARCHAR_80 via_administracion
+        -VARCHAR_80 tipo_liberacion
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
     }
-    Administrador --> VistaConsultarVencidos
-    Regente --> VistaConsultarVencidos
-    VistaConsultarVencidos ..> ControlConsultarVencidos : solicita
-    ControlConsultarVencidos ..> Medicamento : identifica producto y estado
-    ControlConsultarVencidos ..> ExistenciaMedicamento : vencida y saldo positivo
+    Administrador --> InventarioPage
+    Regente --> InventarioPage
+    InventarioFilters ..> InventarioPage : callbacks del hook
+    InventarioPage ..> ExistenciasTable : renderiza y pasa canRetire segun rol
+    InventarioPage ..> inventarioController : GET /api/inventario/vencidos (resumen)
+    inventarioController ..> inventarioService : getVencidos
+    inventarioService ..> existenciaMedicamentoRepository : findInventario via consultarDisponibilidad externo
+    existenciaMedicamentoRepository ..> Medicamento : identifica producto y estado
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : include opcional
     Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
+    note for InventarioPage "Sin handlers locales; vista vencidos selecciona getVencidos.\nHTTP via hooks y modulo HTTP; no llamada directa."
+    note for InventarioFilters "campo es funcion local React; no metodo de clase.\nonChange y onClear son props del hook."
 ```
 
-**Descripción de relaciones:** el Control aplana existencias de la disponibilidad amplia y selecciona **vencida y stockFisico > 0**, sin excluir productos inactivos. Todas las vencidas tienen vendible cero; físico se mantiene hasta una salida registrada. Una agotada no aparece aunque esté vencida y un producto sin existencias no aporta filas. Se ordena por fecha efectiva e ID.
+**Descripción de relaciones:** InventarioPage reutiliza componentes/hooks de CU33 con vista='vencidos', config.consultar=getVencidos y canRetire según rol. ExistenciasTable presenta filas y enlaces, sin handlers propios de retiro ni precondiciones de escritura. La dependencia HTTP resume hooks/exportación/Axios. Controller → Service → Repository consulta disponibilidad amplia; el Service aplana existencias y selecciona **vencida y stockFisico > 0**, sin excluir productos inactivos. Todas las vencidas tienen vendible cero; físico se mantiene hasta una salida registrada. Una agotada no aparece aunque esté vencida y un producto sin existencias no aporta filas. Se ordena por fecha efectiva e ID.
 
 El vencimiento efectivo MES comienza el primer día del mes siguiente, incluso si la fecha histórica guardada no era canónica de fin de mes. Se conserva el DATE almacenado. Consultar no pone saldo en cero ni registra automáticamente un retiro, y no necesita historial o compra vinculada.
 
 **Correspondencia con la implementación:** `/vencimientos/vencidos`, InventarioPage en vista vencidos, InventarioFilters y ExistenciasTable representan la vista. Se reutilizan consulta automática, URL, metadatos y estados de consulta. El enlace a retiro por vencimiento solo se ofrece al Regente y abre CU35 con nueva lectura CU22/CU15; el saldo de la alerta no es precondición definitiva de escritura.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarFiltros | `inventarioController.getVencidos` e `inventarioValidator.validateFiltrosInventario` utilizan el contrato de filtros de disponibilidad. |
-| consultarDisponibilidad | `inventarioService.getVencidos` utiliza `consultarDisponibilidad` externo y `existenciaMedicamentoRepository.findInventario` con include opcional amplio. |
-| seleccionarVencidasPendientes | El flujo `getVencidos`, `existenciasDeInventario` y utilidades de vencimiento filtran físico positivo/vencida según fecha comercial común y ordenan por fecha efectiva/ID. |
-| prepararResultado | Auxiliares de disponibilidad preparan existencia/producto y meta de fechaComercial/zonaHoraria, sin agregar horizonte ni marcador. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU34 | InventarioPage | `frontend/src/features/inventario/pages/InventarioPage.jsx` | — | vista='vencidos'; config.consultar=getVencidos de vistas externo; consulta.retry viene del hook. |
+| CU34 | InventarioFilters | `frontend/src/features/inventario/components/InventarioFilters.jsx` | Local `campo(nombre, inmediato = false)` | Filtros de producto y callbacks como CU33, espera de 300 ms; onClear prop inmediata. |
+| CU34 | ExistenciasTable | `frontend/src/features/inventario/components/ExistenciasTable.jsx` | — | showMedicamento=true; historial para ambos roles; canRetire solo Regente. Ofrece enlaces a CU35 y CU36, sin POST ni par definitivo desde alerta. |
+| CU34 | Hooks/helper UI | `frontend/src/hooks/useConsultaAutomatica.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/utils/filtrosInventario.js` | `useConsultaAutomatica(consultar, validar, transformar = sinTransformacion)`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `validarFiltrosInventario(filtros)` | Intermediarios según 9.1/11.1; URL y descarte de respuestas obsoletas. |
+| CU34 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `getVencidos(req, res, next)` | validateFiltrosInventario(data) del Validator. |
+| CU34 | inventarioService | `backend/src/business/services/inventario.service.js` | `getVencidos(filtros, fechaComercial = obtenerFechaComercial())` | consultarDisponibilidad/existenciasDeInventario/compararVencimientos externos; filtra físico positivo/vencida en método, sin registrar retiro. |
+| CU34 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findInventario({ idMedicamento, codigoMedicamento, nombreComercial } = {}, { soloConExistencias = false } = {})` | Include opcional amplio; no consulta movimientos. |
+| CU34 | Dos modelos Entity | `backend/src/data/models/medicamento.js`; `backend/src/data/models/existencia-medicamento.js` | — | 12/7 atributos completos; fecha almacenada sin corrección histórica. |
+| CU34 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `getVencidos(filtros = {})` | consultar('/vencidos', filtros, filtrosStock); conserva envoltorio { data, meta }. |
+| CU34 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `GET /api/inventario/vencidos` | Administrador/Regente; consulta no concede autorización de escritura. |
 
 `getVencidos` HTTP usa `GET /api/inventario/vencidos` y responde 200 `{ data: existenciasConMedicamento, meta }`, vacío válido; 400/401/403/500 según contrato compartido. No agrega fechaHasta/fechaEtiquetaNormalizada de CU33 ni ultimoMovimiento de CU22. No lee movimientos, llama a registrarRetiroVencimiento o persiste alertas. Referencias: RF33; RN27–RN29/RN86/RN87/RN93/RN95 y CU34.
 
@@ -3850,11 +4972,13 @@ El vencimiento efectivo MES comienza el primer día del mes siguiente, incluso s
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaRegistrarRetiroVencimiento | Boundary | Recoge cantidad y observación opcional, conserva par observado y permite revisión/confirmación. |
-| ControlRegistrarRetiroVencimiento | Control | Comprueba precondiciones/vencimiento bajo bloqueo, valora salida y coordina retiro atómico. |
+| RetiroFormPage / RetiroExistencia / RetiroForm | Boundary; componentes funcionales | Obtienen IDs/tipo y coordinan consulta, borrador, revisión y envío con funciones locales reales. |
+| ExistenciaObservada / RetiroResultado | Boundary; componentes funcionales | Presentan par consultado y resultado confirmado; reciben props/callbacks. |
+| inventarioController / inventarioService | Control; clases | Validan contrato y delegan retiro transaccional al auxiliar externo registrarRetiro. |
+| existenciaMedicamentoRepository / movimientoInventarioRepository | Repository; clases | Bloquean existencia/marcador y escriben saldo/movimiento tras validaciones. |
 | ExistenciaMedicamento | Entity | Aporta fecha/precisión y saldo/promedio actuales; recibe saldo reducido con promedio conservado. |
 | MovimientoInventario | Entity | Aporta marcador actual y conserva salida VENCIMIENTO con costo y responsable. |
-| Usuario | Entity | Identifica al responsable autenticado del movimiento y sus datos públicos. |
+| Usuario | Entity | Identifica al responsable por FK; el POST toma idUsuario de sesión, sin consultar nombre público. |
 
 **Diagrama de clases:**
 
@@ -3862,29 +4986,67 @@ El vencimiento efectivo MES comienza el primer día del mes siguiente, incluso s
 classDiagram
     direction LR
     class Regente { <<actor>> }
-    class VistaRegistrarRetiroVencimiento {
+    class RetiroFormPage {
         <<boundary>>
-        -Integer idExistencia
-        -Integer cantidad
-        -Integer stockObservado
-        -Integer ultimoMovimientoObservado
-        -String observacion
-        +revisarRetiro()
-        +confirmarRetiro()
+        -String idMedicamento
+        -String idExistencia
+        -String tipo
     }
-    class ControlRegistrarRetiroVencimiento {
+    class RetiroExistencia {
+        <<boundary>>
+        -String idMedicamento
+        -String idExistencia
+        -String tipo
+        -Object consulta
+        -Object form
+        -Object resultado
+        -Boolean requiereConsulta
+        +actualizar()
+        +guardar(data)
+    }
+    class RetiroForm {
+        <<boundary>>
+        -String tipo
+        -Object form
+        -Object existencia
+        -Object review
+        -Function onChange
+        -Function onSubmit
+        +close()
+        +revisar(event)
+        +confirmar()
+    }
+    class ExistenciaObservada {
+        <<boundary>>
+        -Object existencia
+    }
+    class RetiroResultado {
+        <<boundary>>
+        -Object resultado
+        -Function onNuevoRetiro
+    }
+    class inventarioController {
         <<control>>
-        +validarSolicitud()
-        +comprobarParObservado()
-        +verificarVencimiento()
-        +valorarSalida()
-        +actualizarExistencia()
-        +registrarRetiro()
-        +prepararResultado()
+        +registrarRetiroVencimiento(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +registrarRetiroVencimiento(data, idUsuarioAutenticado)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findByIdParaMovimiento(...)$
+        +updateSaldoYCosto(...)$
+    }
+    class movimientoInventarioRepository {
+        <<repository>>
+        +findUltimoIdParaExistencia(...)$
+        +create(...)$
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
         -DATE fecha_vencimiento
         -ENUM_DIA_MES precision_vencimiento
@@ -3894,6 +5056,11 @@ classDiagram
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
+        -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
+        -INT id_movimiento_original
         -ENUM_ENTRADA_SALIDA direccion
         -INT cantidad
         -DECIMAL_14_6 costo_unitario_aplicado
@@ -3904,18 +5071,38 @@ classDiagram
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
-    Regente --> VistaRegistrarRetiroVencimiento
-    VistaRegistrarRetiroVencimiento ..> ControlRegistrarRetiroVencimiento : solicita
-    ControlRegistrarRetiroVencimiento ..> ExistenciaMedicamento : bloquea valida y reduce saldo
-    ControlRegistrarRetiroVencimiento ..> MovimientoInventario : marcador y salida VENCIMIENTO
-    ControlRegistrarRetiroVencimiento ..> Usuario : responsable autenticado
+    Regente --> RetiroFormPage
+    Regente --> RetiroForm
+    RetiroFormPage ..> RetiroExistencia : renderiza con IDs y tipo y key
+    RetiroForm ..> RetiroExistencia : onChange a setForm y onSubmit a guardar
+    RetiroExistencia ..> ExistenciaObservada : renderiza par consultado
+    RetiroExistencia ..> RetiroResultado : renderiza resultado del POST
+    RetiroResultado ..> RetiroExistencia : callback onNuevoRetiro inline
+    RetiroExistencia ..> inventarioController : POST /api/inventario/retiros/vencimiento (resumen)
+    inventarioController ..> inventarioService : registrarRetiroVencimiento
+    inventarioService ..> existenciaMedicamentoRepository : via registrarRetiro externo
+    inventarioService ..> movimientoInventarioRepository : via registrarRetiro externo
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : bloquea y reduce saldo
+    movimientoInventarioRepository ..> MovimientoInventario : marcador y salida VENCIMIENTO
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
+    note for RetiroFormPage "Solo obtiene IDs y recibe tipo; handlers en RetiroExistencia."
+    note for RetiroExistencia "actualizar y guardar son locales React; no metodos de clase.\nTipo vencimiento selecciona exportacion HTTP de CU35.\nPOST resumido; preparacion/reconsulta reutiliza CU22/CU15."
+    note for RetiroForm "close, revisar y confirmar son locales React.\nonChange y onSubmit son props; Modal recibe close."
+    note for inventarioService "registrarRetiro es funcion externa al Service, no metodo propio.\nSu rama VENCIMIENTO comprueba DIA/MES tras bloqueos."
+    note for Usuario "FK del responsable desde sesion; el POST no consulta Usuario."
 ```
 
-**Descripción de relaciones:** el Control bloquea existencia y obtiene su último movimiento actual; compara ambos valores observados antes de efectos. Sin existencia rechaza antes de leer marcador. El par cambiado produce conflicto aunque el saldo haya sido restituido. El instante comercial se obtiene después de los bloqueos y se comprueba vencimiento efectivo DIA/MES, sin usar fecha del cliente o condición antigua de una alerta.
+**Descripción de relaciones:** RetiroFormPage renderiza RetiroExistencia con IDs/tipo/key. Este consulta preparación por hook, presenta ExistenciaObservada y pasa setForm/guardar a RetiroForm. revisar prepara review; confirmar llama a onSubmit=guardar; close atiende Modal. guardar selecciona registrarRetiroVencimiento exportado por el módulo HTTP y fija resultado para RetiroResultado. Su onNuevoRetiro es callback inline del padre que vacía borrador y llama actualizar; actualizar reconsulta CU22/CU15, sin POST automático. La dependencia al Controller resume HTTP, no llamada directa. Controller → Service delega al auxiliar externo registrarRetiro, que coordina Repositories para bloquear existencia y obtener último movimiento actual; compara ambos valores observados antes de efectos. Sin existencia rechaza antes de leer marcador. El par cambiado produce conflicto aunque el saldo haya sido restituido. El instante comercial se obtiene después de los bloqueos y se comprueba vencimiento efectivo DIA/MES, sin fecha del cliente ni condición antigua de una alerta.
 
 Exige cantidad positiva no superior al físico y promedio vigente representable, permitido cero. El saldo final es saldo actual menos cantidad, con promedio conservado. La pérdida se deriva del costo aplicado y cantidad, sin otra clase persistente. Actualiza exactamente una existencia y crea una SALIDA VENCIMIENTO con responsable, hora civil y observación opcional; las referencias de compra/venta/original quedan NULL. Conserva existencia/código, fecha y costos históricos, incluso al agotar o retirar producto inactivo.
 
@@ -3923,15 +5110,23 @@ No hay un retiro válido sin efectos por cantidad cero. Cabecera de producto/com
 
 **Correspondencia con la implementación:** `/inventario/medicamentos/:idMedicamento/existencias/:idExistencia/retiro-vencimiento`, `frontend/src/features/inventario/pages/RetiroFormPage.jsx` en tipo vencimiento, `frontend/src/features/inventario/components/RetiroForm.jsx`, revisión en Modal y RetiroResultado representan la vista. Accede desde CU22/CU34 y vuelve a consultar CU22/CU15 mediante `frontend/src/features/inventario/utils/consultaExistencia.js`. Antes de preparar exige saldo positivo y vencida según backend; la escritura lo comprueba nuevamente bajo bloqueo.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarSolicitud | `inventarioController.registrarRetiroVencimiento` utiliza `inventarioValidator.validateSinFiltros` y `validateRetiroVencimiento` para query vacío/body estricto. Query inválido interrumpe antes de body y Service. |
-| comprobarParObservado | `inventarioService.registrarRetiroVencimiento` delega al auxiliar externo `registrarRetiro`, que usa `existenciaMedicamentoRepository.findByIdParaMovimiento` y `movimientoInventarioRepository.findUltimoIdParaExistencia` bajo bloqueo. |
-| verificarVencimiento | La rama VENCIMIENTO del auxiliar `registrarRetiro` ejecuta la función externa `calcularVencimiento` con instante comercial posterior a bloqueos, rechazando existencia no vencida o fecha/precisión inconsistentes. |
-| valorarSalida | El auxiliar valida cantidad/saldo/promedio y calcula saldo final/pérdida mediante utilidades decimales exactas, aplicando promedio vigente y redondeo de pérdida a dos decimales. |
-| actualizarExistencia | `existenciaMedicamentoRepository.updateSaldoYCosto` reduce saldo y conserva promedio, solo después de aprobar todas las condiciones. |
-| registrarRetiro | `movimientoInventarioRepository.create` crea SALIDA VENCIMIENTO después de actualizar exactamente una existencia, dentro de la misma transacción; no es un método agregado al modelo. |
-| prepararResultado | El flujo de retiro y el Controller devuelven valores confirmados y movimiento creado después del commit; no invocan consultas de disponibilidad/historial para formar el resultado. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU35 | RetiroFormPage / RetiroExistencia | `frontend/src/features/inventario/pages/RetiroFormPage.jsx` | Locales de RetiroExistencia `actualizar()`; `guardar(data)` | Página exportada solo obtiene IDs/recibe tipo. tipo='vencimiento'; guardar usa inFlight/active y resultado=response.data; actualizar llama consulta.retry. borradorVacio() es externo. |
+| CU35 | RetiroForm | `frontend/src/features/inventario/components/RetiroForm.jsx` | Locales `close()`; `revisar(event)`; `confirmar()` | revisar crea review con cantidad/par y observación solo si contiene texto; confirmar llama onSubmit. onChange inline llama setForm recibido; confirming es ref. |
+| CU35 | ExistenciaObservada / RetiroResultado | `frontend/src/features/inventario/components/ExistenciaObservada.jsx`; `frontend/src/features/inventario/components/RetiroResultado.jsx` | — | Props de presentación; onNuevoRetiro es callback inline del padre. No calcula pérdida ni stock vendible posterior. |
+| CU35 | Modal de revisión | `frontend/src/components/Modal.jsx` | Prop onClose | Recibe close; handleKeyDown(event) es local a su efecto para Escape. No declara revisar/confirmar del retiro. |
+| CU35 | Consulta preparatoria reutilizada | `frontend/src/features/inventario/utils/consultaExistencia.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/services/inventario.service.js` | `consultarExistencia({ idMedicamento, idExistencia })`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `getExistenciasMedicamento(idMedicamento)` | Exportaciones/helpers independientes del componente. GET CU22 y CU15 en paralelo; valida IDs/pertenencia/par. No se incluyen métodos de esos GET en el flujo del POST. |
+| CU35 | Lectura de apoyo CU15 | `frontend/src/features/medicamentos/services/medicamento.service.js` | `getMedicamento(idMedicamento)` | getExistenciasMedicamento lo importa; `GET /api/medicamentos/:idMedicamento`, identificación sin precondiciones de saldo/historial. |
+| CU35 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `registrarRetiroVencimiento(req, res, next)` | validateSinFiltros(data)/validateRetiroVencimiento(data); query inválido interrumpe antes de validar body y llamar Service. |
+| CU35 | inventarioService / auxiliar externo | `backend/src/business/services/inventario.service.js` | Método `registrarRetiroVencimiento(data, idUsuarioAutenticado)`; externa `registrarRetiro(data, idUsuarioAutenticado, motivo)` | Método fija MOTIVOS_MOVIMIENTO.VENCIMIENTO y delega. Auxiliar gestiona transacción sin fijar aislamiento, bloqueos, cálculo exacto, condición temporal y DTO, sin GET interno final. |
+| CU35 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findByIdParaMovimiento({ idExistencia, transaction })`; `updateSaldoYCosto({ idExistencia, cantidadFisica, costoUnitarioPromedio, transaction })` | FOR UPDATE; reduce saldo/conserva promedio tras validaciones. Debe actualizar exactamente una existencia. |
+| CU35 | movimientoInventarioRepository | `backend/src/data/repositories/movimiento-inventario.repository.js` | `findUltimoIdParaExistencia({ idExistencia, transaction })`; `create({ data, transaction })` | Lectura actual bloqueante tras existencia encontrada; SALIDA VENCIMIENTO después de update, con STR_TO_DATE para hora civil. |
+| CU35 | Tres modelos Entity | `backend/src/data/models/existencia-medicamento.js`; `movimiento-inventario.js`; `usuario.js` (mismo directorio) | — | 7/12/9 atributos completos; Usuario participa por FK, sin consulta del POST ni publicación de nombre/hash. |
+| CU35 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `registrarRetiroVencimiento(data)` | api.post; devuelve envoltorio { message, data }, sin cálculo frontend de pérdida. |
+| CU35 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `POST /api/inventario/retiros/vencimiento` | Solo Regente. Preparación/reconsulta reutiliza `GET /api/inventario/medicamentos/:idMedicamento/existencias` y CU15, no GET automático tras éxito. |
 
 `registrarRetiroVencimiento` HTTP usa `POST /api/inventario/retiros/vencimiento`, con idExistencia/cantidad positivos hasta 2147483647, stockObservado entero 0–2147483647 y ultimoMovimientoObservado positivo dentro de INT o null. Observación opcional: si se envía, exige 1–500 caracteres tras trim; vacío/null no son válidos. React omite texto vacío y el backend conserva NULL si no se proporcionó. No envía ID de medicamento de la ruta visual, costo alternativo, pérdida, motivo, dirección, fecha o responsable.
 
@@ -3949,11 +5144,13 @@ La interfaz bloquea duplicados, conserva borrador ante error y exige reconsulta 
 
 | Clase | Estereotipo | Responsabilidad |
 |---|---|---|
-| VistaRegistrarRetiroDano | Boundary | Recoge cantidad/observación obligatoria y par observado para revisión del daño. |
-| ControlRegistrarRetiroDano | Control | Comprueba precondiciones, saldo y costo y coordina salida atómica sin condición de vencimiento. |
+| RetiroFormPage / RetiroExistencia / RetiroForm | Boundary; componentes funcionales | Reutilizan consulta, borrador y revisión con tipo dano y observación obligatoria. |
+| ExistenciaObservada / RetiroResultado | Boundary; componentes funcionales | Presentan estado observado y resultado confirmado, mediante props/callbacks. |
+| inventarioController / inventarioService | Control; clases | Validan contrato y delegan retiro atómico al auxiliar externo, sin condición de vencimiento. |
+| existenciaMedicamentoRepository / movimientoInventarioRepository | Repository; clases | Bloquean existencia/marcador y escriben saldo/movimiento tras validaciones. |
 | ExistenciaMedicamento | Entity | Aporta saldo/promedio vigente y recibe saldo reducido con promedio conservado. |
 | MovimientoInventario | Entity | Aporta marcador actual y conserva SALIDA DAÑO con observación obligatoria. |
-| Usuario | Entity | Identifica al responsable autenticado del retiro y sus datos públicos. |
+| Usuario | Entity | Identifica al responsable por FK; el POST toma idUsuario de sesión, sin consultar nombre público. |
 
 **Diagrama de clases:**
 
@@ -3961,35 +5158,81 @@ La interfaz bloquea duplicados, conserva borrador ante error y exige reconsulta 
 classDiagram
     direction LR
     class Regente { <<actor>> }
-    class VistaRegistrarRetiroDano {
+    class RetiroFormPage {
         <<boundary>>
-        -Integer idExistencia
-        -Integer cantidad
-        -Integer stockObservado
-        -Integer ultimoMovimientoObservado
-        -String observacion
-        +revisarRetiro()
-        +confirmarRetiro()
+        -String idMedicamento
+        -String idExistencia
+        -String tipo
     }
-    class ControlRegistrarRetiroDano {
+    class RetiroExistencia {
+        <<boundary>>
+        -String idMedicamento
+        -String idExistencia
+        -String tipo
+        -Object consulta
+        -Object form
+        -Object resultado
+        -Boolean requiereConsulta
+        +actualizar()
+        +guardar(data)
+    }
+    class RetiroForm {
+        <<boundary>>
+        -String tipo
+        -Object form
+        -Object existencia
+        -Object review
+        -Function onChange
+        -Function onSubmit
+        +close()
+        +revisar(event)
+        +confirmar()
+    }
+    class ExistenciaObservada {
+        <<boundary>>
+        -Object existencia
+    }
+    class RetiroResultado {
+        <<boundary>>
+        -Object resultado
+        -Function onNuevoRetiro
+    }
+    class inventarioController {
         <<control>>
-        +validarSolicitud()
-        +comprobarParObservado()
-        +valorarSalida()
-        +actualizarExistencia()
-        +registrarRetiro()
-        +prepararResultado()
+        +registrarRetiroDano(req, res, next)$
+    }
+    class inventarioService {
+        <<control>>
+        +registrarRetiroDano(data, idUsuarioAutenticado)$
+    }
+    class existenciaMedicamentoRepository {
+        <<repository>>
+        +findByIdParaMovimiento(...)$
+        +updateSaldoYCosto(...)$
+    }
+    class movimientoInventarioRepository {
+        <<repository>>
+        +findUltimoIdParaExistencia(...)$
+        +create(...)$
     }
     class ExistenciaMedicamento {
         <<entity>>
         -INT id_existencia
+        -INT id_medicamento
         -VARCHAR_30 codigo_existencia
+        -DATE fecha_vencimiento
+        -ENUM_DIA_MES precision_vencimiento
         -INT cantidad_fisica
         -DECIMAL_14_6 costo_unitario_promedio
     }
     class MovimientoInventario {
         <<entity>>
         -INT id_movimiento
+        -INT id_usuario
+        -INT id_existencia
+        -INT id_detalle_compra
+        -INT id_detalle_venta
+        -INT id_movimiento_original
         -ENUM_ENTRADA_SALIDA direccion
         -INT cantidad
         -DECIMAL_14_6 costo_unitario_aplicado
@@ -4000,33 +5243,62 @@ classDiagram
     class Usuario {
         <<entity>>
         -INT id_usuario
+        -INT id_rol
         -VARCHAR_60 nombre_usuario
+        -VARCHAR_255 password_hash
+        -VARCHAR_255 correo
+        -BOOLEAN estado
+        -INT_UNSIGNED version_credenciales
+        -INT_UNSIGNED intentos_fallidos_login
+        -DATETIME bloqueado_hasta
     }
-    Regente --> VistaRegistrarRetiroDano
-    VistaRegistrarRetiroDano ..> ControlRegistrarRetiroDano : solicita
-    ControlRegistrarRetiroDano ..> ExistenciaMedicamento : bloquea y reduce saldo
-    ControlRegistrarRetiroDano ..> MovimientoInventario : marcador y salida DAÑO
-    ControlRegistrarRetiroDano ..> Usuario : responsable autenticado
+    Regente --> RetiroFormPage
+    Regente --> RetiroForm
+    RetiroFormPage ..> RetiroExistencia : renderiza con IDs y tipo y key
+    RetiroForm ..> RetiroExistencia : onChange a setForm y onSubmit a guardar
+    RetiroExistencia ..> ExistenciaObservada : renderiza par consultado
+    RetiroExistencia ..> RetiroResultado : renderiza resultado del POST
+    RetiroResultado ..> RetiroExistencia : callback onNuevoRetiro inline
+    RetiroExistencia ..> inventarioController : POST /api/inventario/retiros/dano (resumen)
+    inventarioController ..> inventarioService : registrarRetiroDano
+    inventarioService ..> existenciaMedicamentoRepository : via registrarRetiro externo
+    inventarioService ..> movimientoInventarioRepository : via registrarRetiro externo
+    existenciaMedicamentoRepository ..> ExistenciaMedicamento : bloquea y reduce saldo
+    movimientoInventarioRepository ..> MovimientoInventario : marcador y salida DAÑO
     ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
     Usuario "1" -- "0..*" MovimientoInventario : usuario
+    note for RetiroFormPage "Solo obtiene IDs y recibe tipo; handlers en RetiroExistencia."
+    note for RetiroExistencia "actualizar y guardar son locales React; no metodos de clase.\nTipo dano selecciona exportacion HTTP de CU36.\nPOST resumido; preparacion/reconsulta reutiliza CU22/CU15."
+    note for RetiroForm "close, revisar y confirmar son locales React.\nonChange y onSubmit son props; observacion obligatoria."
+    note for inventarioService "registrarRetiro es funcion externa al Service, no metodo propio.\nRama DANO fija DAÑO y no evalua vencimiento."
+    note for Usuario "FK del responsable desde sesion; el POST no consulta Usuario."
 ```
 
-**Descripción de relaciones:** mantiene existencia y responsable obligatorios del movimiento, con el mismo protocolo de bloqueo y comparación del par de CU35. Una referencia de origen de compra/venta o reversión no es necesaria: quedan NULL en este retiro independiente. Usuario identifica responsable, no una cuenta elegida por el formulario.
+**Descripción de relaciones:** reutiliza los componentes/funciones de CU35 con tipo='dano'. RetiroFormPage renderiza RetiroExistencia; actualizar/guardar pertenecen a este último y close/revisar/confirmar, a RetiroForm. Los callbacks recibidos conducen al setter/handler del padre, mientras onNuevoRetiro inline reinicia borrador y reconsulta. guardar selecciona registrarRetiroDano importado; la dependencia HTTP resume el POST, no llamada directa al Controller. Controller → Service delega a registrarRetiro externo, con los mismos Repositories y protocolo de bloqueo/comparación del par de CU35. Mantiene existencia y responsable obligatorios del movimiento; referencias de compra/venta/original quedan NULL. Usuario identifica responsable por FK/ID autenticado, sin consulta de nombre ni cuenta elegida por formulario.
 
-El daño admite existencias vencidas y productos inactivos sin cambiar vencimientos o reactivar catálogo. No ejecuta calcularVencimiento ni exige actividad; por eso fecha/precisión no se seleccionan como atributos del objetivo de escritura en este dibujo. Preparar la pantalla con CU22/CU15 sigue mostrando identidad y disponibilidad, sin atribuir sus consultas al POST.
+El daño admite existencias vencidas y productos inactivos sin cambiar vencimientos o reactivar catálogo. No ejecuta calcularVencimiento ni exige actividad; fecha/precisión se muestran por completitud del modelo, no como condición temporal de esta escritura. Preparar la pantalla con CU22/CU15 sigue mostrando identidad y disponibilidad, sin atribuir sus consultas al POST.
 
 Con saldo suficiente y promedio válido, aplica costo vigente, permitido cero, reduce físico y conserva promedio aun al agotar. Crea SALIDA DAÑO con observación obligatoria, costo aplicado, responsable y hora civil. La pérdida deriva exactamente de cantidad/costo y se devuelve a dos decimales; no es ajuste negativo ni retiro por vencimiento. El costo guardado permanece histórico aunque después cambie el promedio. La transacción mantiene atomicidad de saldo y movimiento, y no completa una nueva entidad de baja/pérdida ni el reporte CU41.
 
 **Correspondencia con la implementación:** `/inventario/medicamentos/:idMedicamento/existencias/:idExistencia/retiro-dano`, RetiroFormPage en tipo dano, RetiroForm, Modal y RetiroResultado representan la vista. Reutiliza la preparación fresca CU22/CU15 y validación de pertenencia por consultaExistencia; solo Regente puede preparar/confirmar. Cantidad se valida como entero positivo no superior al físico observado y observación como texto obligatorio.
 
-| Operación conceptual | Comportamiento real de respaldo |
-|---|---|
-| validarSolicitud | `inventarioController.registrarRetiroDano` utiliza `inventarioValidator.validateSinFiltros` y `validateRetiroDano`, con observación obligatoria/body estricto. |
-| comprobarParObservado | `inventarioService.registrarRetiroDano` delega al auxiliar externo `registrarRetiro`, con `existenciaMedicamentoRepository.findByIdParaMovimiento` y `movimientoInventarioRepository.findUltimoIdParaExistencia` bajo bloqueo. |
-| valorarSalida | El auxiliar `registrarRetiro` comprueba saldo/cantidad/promedio y calcula saldo final y pérdida exacta; la rama de daño no ejecuta calcularVencimiento. |
-| actualizarExistencia | `existenciaMedicamentoRepository.updateSaldoYCosto` reduce físico y conserva promedio vigente, después de las validaciones. |
-| registrarRetiro | `movimientoInventarioRepository.create` crea SALIDA DAÑO con observación normalizada y referencias de origen NULL, después de actualizar exactamente una existencia en la transacción. |
-| prepararResultado | El flujo de retiro y el Controller devuelven el DTO confirmado de CU35 tras commit, con pérdida derivada y movimiento, sin calcular vendible posterior. |
+**Correspondencia verificable y firmas exactas:**
+
+| CU | Elemento / intermediario | Archivo fuente | Método o función real | Simplificación UML / condición |
+|---|---|---|---|---|
+| CU36 | RetiroFormPage / RetiroExistencia | `frontend/src/features/inventario/pages/RetiroFormPage.jsx` | Locales de RetiroExistencia `actualizar()`; `guardar(data)` | Página exportada solo obtiene IDs/recibe tipo. tipo='dano'; guardar elige registrarRetiroDano con inFlight/active; actualizar llama consulta.retry. |
+| CU36 | RetiroForm | `frontend/src/features/inventario/components/RetiroForm.jsx` | Locales `close()`; `revisar(event)`; `confirmar()` | porDano exige observación; revisar prepara review con par/cantidad/texto. confirmar llama onSubmit; onChange inline llama setForm recibido, sin operación propia de cambio. |
+| CU36 | ExistenciaObservada / RetiroResultado | `frontend/src/features/inventario/components/ExistenciaObservada.jsx`; `frontend/src/features/inventario/components/RetiroResultado.jsx` | — | Props de presentación; onNuevoRetiro es callback inline del padre, no función local del resultado. |
+| CU36 | Modal de revisión | `frontend/src/components/Modal.jsx` | Prop onClose | Recibe close; handleKeyDown(event) es local a su efecto, no handler de retiro. |
+| CU36 | Consulta preparatoria reutilizada | `frontend/src/features/inventario/utils/consultaExistencia.js`; `frontend/src/hooks/useConsulta.js`; `frontend/src/features/inventario/services/inventario.service.js` | `consultarExistencia({ idMedicamento, idExistencia })`; `useConsulta(consultar, clave, filtros, habilitada = true)`; `getExistenciasMedicamento(idMedicamento)` | GET CU22/CU15 y validación de pertenencia/par, como CU35. No fabrica marcador ni reutiliza saldo de alerta como precondición. |
+| CU36 | Lectura de apoyo CU15 | `frontend/src/features/medicamentos/services/medicamento.service.js` | `getMedicamento(idMedicamento)` | Exportación reutilizada por getExistenciasMedicamento; `GET /api/medicamentos/:idMedicamento`, flujo de catálogo independiente del POST. |
+| CU36 | inventarioController | `backend/src/presentation/controllers/inventario.controller.js` | `registrarRetiroDano(req, res, next)` | validateSinFiltros(data)/validateRetiroDano(data) por etapas; ID autenticado desde req.usuario. |
+| CU36 | inventarioService / auxiliar externo | `backend/src/business/services/inventario.service.js` | Método `registrarRetiroDano(data, idUsuarioAutenticado)`; externa `registrarRetiro(data, idUsuarioAutenticado, motivo)` | Método fija MOTIVOS_MOVIMIENTO.DANO, literal DAÑO. Auxiliar comparte transacción sin fijar aislamiento, bloqueos/cálculo/DTO; rama de daño sin calcularVencimiento. |
+| CU36 | existenciaMedicamentoRepository | `backend/src/data/repositories/existencia-medicamento.repository.js` | `findByIdParaMovimiento({ idExistencia, transaction })`; `updateSaldoYCosto({ idExistencia, cantidadFisica, costoUnitarioPromedio, transaction })` | FOR UPDATE y actualización de exactamente una existencia; promedio conservado. |
+| CU36 | movimientoInventarioRepository | `backend/src/data/repositories/movimiento-inventario.repository.js` | `findUltimoIdParaExistencia({ idExistencia, transaction })`; `create({ data, transaction })` | Lectura actual bloqueante; create después de update, SALIDA DAÑO con observación y referencias NULL. |
+| CU36 | Tres modelos Entity | `backend/src/data/models/existencia-medicamento.js`; `movimiento-inventario.js`; `usuario.js` (mismo directorio) | — | 7/12/9 atributos completos como CU35; FK de responsable sin consulta del POST. |
+| CU36 | Exportación HTTP | `frontend/src/features/inventario/services/inventario.service.js` | `registrarRetiroDano(data)` | api.post; conserva envoltorio { message, data }; no envía motivo/costo/pérdida. |
+| CU36 | API, relación HTTP resumida | `backend/src/presentation/routes/inventario.router.js`; `backend/src/app.js` | `POST /api/inventario/retiros/dano` | Solo Regente. Preparación/reconsulta reutiliza `GET /api/inventario/medicamentos/:idMedicamento/existencias` y CU15; no GET automático tras éxito. |
 
 `registrarRetiroDano` HTTP usa `POST /api/inventario/retiros/dano`, con los mismos IDs/cantidad/par observado de CU35 y observacion obligatoria de 1–500 tras trim. No admite costo alternativo, pérdida, motivo, dirección, responsable o fecha. El método backend fija MOTIVOS_MOVIMIENTO.DANO, cuyo literal persistido es DAÑO; el formulario no selecciona el motivo mediante un body parametrizado.
 
@@ -4044,13 +5316,15 @@ Tras 404/409/red/500 conserva borrador y requiere reconsulta/revisión explícit
 | CU36 — Registrar retiro por daño | 1 | Observación obligatoria, salida DAÑO sin condición temporal y promedio conservado. |
 | **Total de Fase 6** | **4** | **Cuatro CU y cuatro diagramas; alcance implementado completo.** |
 
-**Criterio de comprobación:** una Vista y un Control por CU con operaciones conceptuales respaldadas, atributos relevantes de entidades reales y asociaciones persistentes. Se distingue fecha almacenada, etiqueta y fecha efectiva; alerta consultada frente a nueva preparación de retiro; y saldo físico frente a vendible. Usuario aparece por responsabilidad del movimiento, sin repetir infraestructura en consultas. La pérdida es resultado derivado; el retiro se representa por ExistenciaMedicamento/MovimientoInventario, sin entidades ni métodos de modelo nuevos.
+**Criterio de comprobación:** componentes funcionales como Boundary con funciones locales/props reales y propietario explícito; Controller/Service como Control y Repositories como acceso a datos, con métodos propios y firmas exactas. Los cuatro modelos conservan atributos persistentes completos. Se distingue fecha almacenada/etiqueta/fecha efectiva, alerta frente a preparación nueva y físico frente a vendible. Usuario participa por FK en retiro, sin consulta de nombre/hash en el POST. registrarRetiro es auxiliar externo al Service; la pérdida es resultado derivado, sin entidad ni método de modelo inventado.
 
-**Validación de esta entrega:** se contrastaron los nombres/números CU33–CU36 con el catálogo oficial y la estructura completa de cada análisis. Los dibujos contienen cuatro Boundary y cuatro Control, con 21 operaciones conceptuales respaldadas por sus correspondencias. Se comprobaron cuatro entidades reales —Medicamento, ExistenciaMedicamento, MovimientoInventario y Usuario— y 50 apariciones de atributos relevantes con sus tipos del modelo general. Las seis apariciones de asociaciones conservan participantes, multiplicidades y significado del CU técnico; Usuario transversal se omite en las consultas y se incorpora por responsabilidad en los retiros.
+**Resultado de la corrección de Fase 6:** cuatro CU y cuatro diagramas con **8 componentes funcionales**, **4 clases backend** y **4 modelos** reales. Se verificaron **6 funciones locales distintas en 12 apariciones**, **13 métodos backend distintos en 18 apariciones**, **94 apariciones de atributos persistentes completos** y **4 colaboraciones HTTP resumidas**. Las cuatro exportaciones HTTP de consulta/retiro y las dos de preparación reutilizadas se documentan con firmas, archivos y endpoints. Se conservaron las **6 asociaciones persistentes**, con idénticos extremos, multiplicidades y alias. Las funciones actualizar/guardar pertenecen a RetiroExistencia y close/revisar/confirmar, a RetiroForm; no se atribuyen a la página exportada ni a Modal.
 
-Se revisaron permisos de consulta/escritura, etiqueta normalizada frente a fecha efectiva, intervalo inclusivo de tres meses calendario, histórico MES conservado e inactivos con saldo físico. Se comprobaron preparación fresca CU22/CU15, par revalidado bajo bloqueo, corte temporal exclusivo de CU35, observación opcional/obligatoria, saldo suficiente, promedio aplicado/conservado y pérdida derivada sin columna ni límite artificial DECIMAL(14,2). También se verificaron transacción, referencias NULL de retiro independiente, errores y reconsulta sin POST automático o garantía de idempotencia.
+**Comprobación acotada:** nombres, firmas, propietarios y estados/props contrastados con componentes/hooks/backend; tipos/FK/asociaciones con modelos y análisis técnico; endpoints/permisos con routers y rutas protegidas. Se revisaron etiqueta normalizada frente a fecha efectiva, tres meses calendario inclusivos, MES histórico conservado e inactivos con físico. Se comprobaron preparación fresca CU22/CU15, par revalidado bajo bloqueo, corte temporal exclusivo de CU35, observación opcional/obligatoria, saldo suficiente, promedio conservado y pérdida derivada sin columna ni límite artificial DECIMAL(14,2). Se verificaron delegación al auxiliar transaccional, referencias NULL, errores y reconsulta sin POST automático ni garantía de idempotencia.
 
-Los cuatro diagramas se analizaron y renderizaron con Mermaid 11.12.0 y sus capturas se revisaron visualmente: actores → Boundary → Control de izquierda a derecha, entidades a la derecha y cajas sin solapamientos. Los SVG permiten ampliar atributos y multiplicidades. Se comprobaron formato Markdown, tablas, enlaces y rutas. Los hashes SHA-256 de los 29 análisis académicos anteriores, sus 30 diagramas y los seis documentos fuente se conservaron; Git identifica únicamente este documento académico nuevo. La comprobación fue documental y visual, sin conexión a MySQL ni pruebas funcionales del backend.
+**4/4 diagramas con sintaxis válida en Mermaid 11.12.0**, mediante mermaid.parse. Se conservaron íntegros los bloques de fases 1–5, incluidos los cambios anteriores sin commit, y la sección de ocho CU futuros. Permanecen el título/subtítulo, las seis fases, los **33 CU y 34 diagramas**, incluidas las dos variantes de CU08. `git diff --check` aprobado y únicamente cambia este Markdown. La comprobación es documental y de sintaxis, sin pruebas funcionales, conexión a MySQL, instalación de dependencias, suites extensas, hashes del repositorio ni capturas/SVG.
+
+**Avance de corrección al cierre de Fase 6:** **33/33 CU y 34/34 diagramas corregidos**. Fase 6 queda para revisión del usuario junto con el cierre acumulado; no equivale a aprobación visual del trazado ni aceptación funcional adicional.
 
 ## 13. Cobertura acumulada y cierre del alcance académico implementado
 
@@ -4066,9 +5340,9 @@ Los cuatro diagramas se analizaron y renderizaron con Mermaid 11.12.0 y sus capt
 
 Cada caso conserva actores, objetivo, tabla de participantes, diagrama de clases BCE, descripción de relaciones y correspondencia resumida con la implementación. CU08 mantiene variante propia/administrativa; CU11/CU15/CU18/CU19 agrupan sus caminos y permisos. CU24/CU40 conservan análisis/dibujos independientes sobre el mismo flujo. Compras precede a Inventario por el orden de fases acordado, sin renumerar el catálogo.
 
-**Comprobación acumulada:** los 33 identificadores son únicos y coinciden con el alcance implementado del análisis técnico; cada caso tiene un diagrama salvo CU08, con dos. Los 34 dibujos conservan un Boundary y un Control por variante, y todos los análisis mantienen su plantilla completa. Los 30 diagramas de las entregas previas permanecen idénticos a sus versiones verificadas; los cuatro de esta entrega completan el conjunto renderizado en las seis fases. Los ocho casos funcionalmente pendientes del catálogo no tienen análisis ni diagramas anticipados.
+**Comprobación acumulada:** los 33 identificadores son únicos y coinciden con el alcance implementado del análisis técnico; cada caso tiene un diagrama salvo CU08, con dos. Los 34 dibujos conservan BCE mediante componentes reales, Controllers/Services, Repositories y modelos, y todos los análisis mantienen su plantilla completa. Las funciones Boundary pertenecen a sus componentes; props/callbacks, efectos y eventos inline, exportaciones HTTP, endpoints y métodos backend se distinguen en notas/tablas. Los modelos muestran atributos persistentes completos y las asociaciones conservan multiplicidades/alias sin inferir composición. Los 30 diagramas de fases 1–5 permanecen idénticos a sus versiones corregidas; las validaciones de sintaxis de esas entregas y los cuatro diagramas actuales cubren **34/34 diagramas** en Mermaid 11.12.0. No se presenta ese resultado como renderizado ni revisión visual exhaustiva. Los ocho CU funcionalmente pendientes conservan su estado, sin análisis/diagramas anticipados.
 
-**Estado de revisión:** esta entrega completa el análisis académico de los 33 CU implementados y queda para revisión del usuario. El documento técnico independiente mantiene capas, firmas y atributos completos; este documento mantiene abstracciones BCE y atributos relevantes. Las comprobaciones documentales/visuales no representan aceptación funcional adicional ni despliegue. El pendiente operativo de activar/validar el envío de CU09 a un buzón real se conserva conforme a la documentación del proyecto.
+**Estado de revisión:** esta entrega completa la corrección del análisis académico de los **33 CU implementados y 34 diagramas**, y queda para revisión del usuario. El documento técnico independiente conserva su detalle por capas; este documento conserva el enfoque BCE con componentes, funciones locales, clases backend y atributos completos verificables, usando tablas para intermediarios y simplificaciones. La validación documental/de sintaxis no representa aceptación funcional, revisión visual exhaustiva ni despliegue. El pendiente operativo de activar/validar el envío de CU09 a un buzón real se conserva conforme a la documentación del proyecto.
 
 ## 14. Casos futuros fuera del alcance implementado
 
