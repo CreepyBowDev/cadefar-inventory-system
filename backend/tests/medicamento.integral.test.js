@@ -13,6 +13,7 @@ const { composicionCanonica } = await import('../src/business/services/identidad
 const { usuarioRepository } = await import('../src/data/repositories/usuario.repository.js');
 const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
+const { simularAuditoriaCatalogo } = await import('./helpers/auditoria-transversal.js');
 
 const componente = (idPrincipioActivo = 1, cantidadPrincipioActivo = 500) => ({
     idPrincipioActivo, cantidadPrincipioActivo, unidadPrincipioActivo: 'mg', cantidadReferencia: 1, unidadReferencia: 'tableta'
@@ -33,6 +34,7 @@ const texto = s => s.trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u03
 
 // Mutex, READ COMMITTED, UNIQUE y rollback son simulados; no prueba InnoDB real.
 const fixture = (t, inicial = []) => {
+    simularAuditoriaCatalogo(t);
     const estado = { medicamentos: inicial.map((d, i) => modelo(d, i + 1)),
         composiciones: inicial.flatMap((d, i) => d.composicion.map((c, j) => relacion(c, i + 1, (i + 1) * 10 + j))), compras: [], movimientos: [] };
     const locks = new Map(), eventos = [], transactions = [];

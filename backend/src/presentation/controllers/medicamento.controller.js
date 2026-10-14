@@ -1,9 +1,12 @@
 import { medicamentoService } from '../../business/services/medicamento.service.js';
 import { medicamentoValidator } from '../../business/validators/medicamento.validator.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { ejecutarConAuditoria } from '../../shared/utils/auditoria-http.js';
 
 const getValidatedData = (result) => {
-    if (!result.success) throw new AppError('Datos inválidos', 400, result.error.issues);
+    if (!result.success) throw anotarErrorAuditoria(new AppError('Datos inválidos', 400, result.error.issues),
+        { tipoEvento: 'VALIDACION_RECHAZADA', causa: 'ENTRADA_INVALIDA' });
     return result.data;
 };
 const getIdMedicamento = (params) => getValidatedData(medicamentoValidator.validateId(params)).idMedicamento;
@@ -27,7 +30,7 @@ export class medicamentoController {
     static async createMedicamento(req, res, next) {
         try {
             const data = getValidatedData(medicamentoValidator.validateCreate(req.body));
-            const medicamento = await medicamentoService.createMedicamento(data);
+            const medicamento = await ejecutarConAuditoria(req, auditoria => medicamentoService.createMedicamento(data, auditoria));
             return res.status(201).json({ message: 'Medicamento creado exitosamente', data: medicamento });
         } catch (error) { next(error); }
     }
@@ -36,7 +39,7 @@ export class medicamentoController {
         try {
             const idMedicamento = getIdMedicamento(req.params);
             const data = getValidatedData(medicamentoValidator.validateUpdate(req.body));
-            const medicamento = await medicamentoService.updateMedicamento(idMedicamento, data);
+            const medicamento = await ejecutarConAuditoria(req, auditoria => medicamentoService.updateMedicamento(idMedicamento, data, auditoria));
             return res.status(200).json({ message: 'Medicamento modificado exitosamente', data: medicamento });
         } catch (error) { next(error); }
     }
@@ -45,7 +48,7 @@ export class medicamentoController {
         try {
             const idMedicamento = getIdMedicamento(req.params);
             const data = getValidatedData(medicamentoValidator.validateUpdateEstado(req.body));
-            const medicamento = await medicamentoService.updateEstado(idMedicamento, data);
+            const medicamento = await ejecutarConAuditoria(req, auditoria => medicamentoService.updateEstado(idMedicamento, data, auditoria));
             return res.status(200).json({
                 message: data.estado ? 'Medicamento activado exitosamente' : 'Medicamento desactivado exitosamente',
                 data: medicamento

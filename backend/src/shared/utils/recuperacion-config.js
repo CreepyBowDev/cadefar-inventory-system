@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { z } from 'zod';
 import { AppError } from '../errors/app-error.js';
+import { anotarErrorAuditoria } from './auditoria-error.js';
 
 const correoSchema = z.string().trim().toLowerCase().max(255).email();
 const disabled = Object.freeze({ habilitada: false });
@@ -43,7 +44,8 @@ export const obtenerConfiguracionRecuperacion = (env = process.env) => {
 export const exigirRecuperacionHabilitada = () => {
     const config = obtenerConfiguracionRecuperacion();
     if (!config.habilitada) {
-        throw new AppError('La recuperación de contraseña no está disponible', 503);
+        throw anotarErrorAuditoria(new AppError('La recuperación de contraseña no está disponible', 503),
+            { causa: 'RECUPERACION_NO_HABILITADA' });
     }
     return config;
 };

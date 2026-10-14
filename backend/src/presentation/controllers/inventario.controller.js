@@ -1,9 +1,12 @@
 import { inventarioService } from '../../business/services/inventario.service.js';
 import { inventarioValidator } from '../../business/validators/inventario.validator.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { ejecutarConAuditoria } from '../../shared/utils/auditoria-http.js';
 
 const getValidatedData = (result) => {
-    if (!result.success) throw new AppError('Datos inválidos', 400, result.error.issues);
+    if (!result.success) throw anotarErrorAuditoria(new AppError('Datos inválidos', 400, result.error.issues),
+        { tipoEvento: 'VALIDACION_RECHAZADA', causa: 'ENTRADA_INVALIDA' });
     return result.data;
 };
 
@@ -12,7 +15,8 @@ export class inventarioController {
         try {
             getValidatedData(inventarioValidator.validateSinFiltros(req.query));
             const datos = getValidatedData(inventarioValidator.validateRetiroVencimiento(req.body));
-            const data = await inventarioService.registrarRetiroVencimiento(datos, req.usuario.idUsuario);
+            const data = await ejecutarConAuditoria(req, auditoria =>
+                inventarioService.registrarRetiroVencimiento(datos, req.usuario.idUsuario, auditoria));
             return res.status(201).json({ message: 'Retiro por vencimiento registrado exitosamente', data });
         } catch (error) { next(error); }
     }
@@ -21,7 +25,8 @@ export class inventarioController {
         try {
             getValidatedData(inventarioValidator.validateSinFiltros(req.query));
             const datos = getValidatedData(inventarioValidator.validateRetiroDano(req.body));
-            const data = await inventarioService.registrarRetiroDano(datos, req.usuario.idUsuario);
+            const data = await ejecutarConAuditoria(req, auditoria =>
+                inventarioService.registrarRetiroDano(datos, req.usuario.idUsuario, auditoria));
             return res.status(201).json({ message: 'Retiro por daño registrado exitosamente', data });
         } catch (error) { next(error); }
     }
@@ -30,7 +35,8 @@ export class inventarioController {
         try {
             getValidatedData(inventarioValidator.validateSinFiltros(req.query));
             const datos = getValidatedData(inventarioValidator.validateAjuste(req.body));
-            const data = await inventarioService.registrarAjuste(datos, req.usuario.idUsuario);
+            const data = await ejecutarConAuditoria(req, auditoria =>
+                inventarioService.registrarAjuste(datos, req.usuario.idUsuario, auditoria));
             return res.status(data.ajusteRealizado ? 201 : 200).json({
                 message: data.ajusteRealizado ? 'Ajuste registrado exitosamente' : 'No fue necesario ajustar la existencia',
                 data

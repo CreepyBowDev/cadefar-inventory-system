@@ -5,6 +5,10 @@ import { obtenerPrefijoMedicamento } from '../../shared/utils/codigo-medicamento
 import { composicionMedicamentoRepository } from '../../data/repositories/composicion-medicamento.repository.js';
 import { transaccionCatalogo, bloquearProveedoresIdentidad, validarIdentidadDisponible,
     convertirErrorContencionCatalogo } from './identidad-medicamento.js';
+import { bitacoraAuditoriaService } from './bitacora-auditoria.service.js';
+import { snapshotMedicamento } from '../../shared/utils/auditoria-catalogo.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { AUDITORIA } from '../../shared/constants/auditoria.js';
 
 const campos = {
     idProveedorLaboratorio: 'id_proveedor_laboratorio',
@@ -70,7 +74,7 @@ const toPublicMedicamento = (medicamento) => {
 
 const validateCodigoNoEnviado = (data) => {
     if (Object.hasOwn(data, 'codigoMedicamento')) {
-        throw new AppError('El código del medicamento lo genera el sistema y no puede modificarse', 400);
+        throw anotarErrorAuditoria(new AppError('El código del medicamento lo genera el sistema y no puede modificarse', 400), { causa: 'ENTRADA_INVALIDA' });
     }
 };
 
@@ -90,7 +94,7 @@ const generarCodigo = async (prefijo, transaction) => {
             return codigoMedicamento;
         }
     }
-    throw new AppError(`Se agotaron los códigos del prefijo ${prefijo}: el correlativo máximo es 999`, 409);
+    throw anotarErrorAuditoria(new AppError(`Se agotaron los códigos del prefijo ${prefijo}: el correlativo máximo es 999`, 409), { causa: 'CONFLICTO' });
 };
 
 const MAXIMOS_INTENTOS_CODIGO = 5;
@@ -103,106 +107,138 @@ export class medicamentoService {
 
     static async getMedicamentoById(idMedicamento, transaction = undefined) {
         const medicamento = await medicamentoRepository.findById({ idMedicamento, transaction });
-        if (!medicamento) throw new AppError('Medicamento no encontrado', 404);
+        if (!medicamento) throw anotarErrorAuditoria(new AppError('Medicamento no encontrado', 404), {
+            causa: 'NO_ENCONTRADO', registro: { tipo: 'MEDICAMENTO', id: idMedicamento }
+        });
         return toPublicMedicamento(medicamento);
     }
 
     static async getMedicamentoForUpdate(idMedicamento, transaction) {
         const medicamento = await medicamentoRepository.findById({ idMedicamento, transaction, lock: true });
-        if (!medicamento) throw new AppError('Medicamento no encontrado', 404);
+        if (!medicamento) throw anotarErrorAuditoria(new AppError('Medicamento no encontrado', 404), { causa: 'NO_ENCONTRADO' });
         return medicamento;
     }
 
     static async validateSinHistorial(idMedicamento, transaction) {
         const tieneHistorial = await medicamentoRepository.hasMovimientos({ idMedicamento, transaction });
         if (tieneHistorial) {
-            throw new AppError('El medicamento tiene historial: no se puede modificar su identidad ni su composición. Registre un nuevo medicamento si cambia el producto', 409);
+            throw anotarErrorAuditoria(new AppError('El medicamento tiene historial: no se puede modificar su identidad ni su composición. Registre un nuevo medicamento si cambia el producto', 409), { causa: 'CONFLICTO' });
         }
     }
 
-    static async createMedicamento(data) {
-        validateCodigoNoEnviado(data);
-        const { composicion, ...datosMedicamento } = data;
-        if (!Array.isArray(composicion) || !composicion.length) {
-            throw new AppError('La composición debe contener al menos un principio activo', 400);
-        }
-        if (new Set(composicion.map(c => c.idPrincipioActivo)).size !== composicion.length) {
-            throw new AppError('No se permite repetir un principio activo en la composición', 400);
-        }
-        const prefijo = obtenerPrefijoMedicamento(data.nombreComercial);
-        for (let intento = 0; intento < MAXIMOS_INTENTOS_CODIGO; intento++) {
-            try {
-                return await transaccionCatalogo(async (transaction) => {
-                    const proveedores = await bloquearProveedoresIdentidad([data.idProveedorLaboratorio], transaction);
-                    if (!proveedores.get(data.idProveedorLaboratorio).estado) {
-                        throw new AppError('El proveedor o laboratorio está inactivo', 409);
-                    }
-                    for (const componente of [...composicion].sort((a, b) => a.idPrincipioActivo - b.idPrincipioActivo)) {
-                        const principio = await composicionMedicamentoRepository.findPrincipioById({
-                            idPrincipioActivo: componente.idPrincipioActivo, transaction
-                        });
-                        if (!principio) throw new AppError('Principio activo no encontrado', 404);
-                    }
-                    const values = toModelData(datosMedicamento);
-                    await validarIdentidadDisponible(values, composicion, transaction);
-                    const codigo = await generarCodigo(prefijo, transaction);
-                    const medicamento = await medicamentoRepository.create({
-                        data: { ...values, codigo_medicamento: codigo }, transaction
-                    });
-                    for (const componente of composicion) {
-                        await composicionMedicamentoRepository.create({ transaction, data: {
-                            id_medicamento: medicamento.id_medicamento,
-                            id_principio_activo: componente.idPrincipioActivo,
-                            cantidad_principio_activo: componente.cantidadPrincipioActivo,
-                            unidad_principio_activo: componente.unidadPrincipioActivo,
-                            cantidad_referencia: componente.cantidadReferencia,
-                            unidad_referencia: componente.unidadReferencia
-                        } });
-                    }
-                    return this.getMedicamentoById(medicamento.id_medicamento, transaction);
-                });
-            } catch (error) {
-                // La transacción gestionada ya terminó su rollback. Cada vuelta
-                // abre otra transacción y otro snapshot; nunca repetir solo el INSERT.
-                if (esColisionCodigo(error)) continue;
-                throw convertirErrorContencionCatalogo(error);
+    static async createMedicamento(data, auditoria) {
+        return bitacoraAuditoriaService.ejecutarCambio('MEDICAMENTO_CREAR', auditoria, undefined, async seguimiento => {
+            const eventoBase = { ...seguimiento.evento };
+            validateCodigoNoEnviado(data);
+            const { composicion, ...datosMedicamento } = data;
+            if (!Array.isArray(composicion) || !composicion.length) {
+                throw anotarErrorAuditoria(new AppError('La composición debe contener al menos un principio activo', 400), { causa: 'ENTRADA_INVALIDA' });
             }
-        }
-        throw new AppError('No se pudo asignar un código por registros simultáneos. Intente nuevamente', 409);
-    }
-
-    static async updateMedicamento(idMedicamento, data) {
-        validateCodigoNoEnviado(data);
-        return transaccionCatalogo(async (transaction) => {
-            const medicamento = await this.getMedicamentoForUpdate(idMedicamento, transaction);
-            const actual = medicamento.get({ plain: true });
-            const values = toModelData(data);
-            const proveedores = await bloquearProveedoresIdentidad([
-                actual.id_proveedor_laboratorio, values.id_proveedor_laboratorio ?? actual.id_proveedor_laboratorio
-            ], transaction);
-            const cambiaIdentidad = camposIdentidad.some((campo) =>
-                values[campo] !== undefined && values[campo] !== medicamento.get(campo)
-            );
-            if (cambiaIdentidad) await this.validateSinHistorial(idMedicamento, transaction);
-            if (data.idProveedorLaboratorio !== undefined) {
-                if (!proveedores.get(data.idProveedorLaboratorio).estado) {
-                    throw new AppError('El proveedor o laboratorio está inactivo', 409);
+            if (new Set(composicion.map(c => c.idPrincipioActivo)).size !== composicion.length) {
+                throw anotarErrorAuditoria(new AppError('No se permite repetir un principio activo en la composición', 400), { causa: 'ENTRADA_INVALIDA' });
+            }
+            const prefijo = obtenerPrefijoMedicamento(data.nombreComercial);
+            for (let intento = 0; intento < MAXIMOS_INTENTOS_CODIGO; intento++) {
+                try {
+                    return await transaccionCatalogo(async (transaction) => {
+                        seguimiento.transaction = transaction;
+                        seguimiento.evento = { ...eventoBase };
+                        seguimiento.etapa = 'VERIFICACION';
+                        const proveedores = await bloquearProveedoresIdentidad([data.idProveedorLaboratorio], transaction);
+                        if (!proveedores.get(data.idProveedorLaboratorio).estado) {
+                            throw anotarErrorAuditoria(new AppError('El proveedor o laboratorio está inactivo', 409), { causa: 'CONFLICTO' });
+                        }
+                        for (const componente of [...composicion].sort((a, b) => a.idPrincipioActivo - b.idPrincipioActivo)) {
+                            const principio = await composicionMedicamentoRepository.findPrincipioById({
+                                idPrincipioActivo: componente.idPrincipioActivo, transaction
+                            });
+                            if (!principio) throw anotarErrorAuditoria(new AppError('Principio activo no encontrado', 404), { causa: 'NO_ENCONTRADO' });
+                        }
+                        const values = toModelData(datosMedicamento);
+                        await validarIdentidadDisponible(values, composicion, transaction);
+                        const codigo = await generarCodigo(prefijo, transaction);
+                        const medicamento = await medicamentoRepository.create({
+                            data: { ...values, codigo_medicamento: codigo }, transaction
+                        });
+                        for (const componente of composicion) {
+                            await composicionMedicamentoRepository.create({ transaction, data: {
+                                id_medicamento: medicamento.id_medicamento,
+                                id_principio_activo: componente.idPrincipioActivo,
+                                cantidad_principio_activo: componente.cantidadPrincipioActivo,
+                                unidad_principio_activo: componente.unidadPrincipioActivo,
+                                cantidad_referencia: componente.cantidadReferencia,
+                                unidad_referencia: componente.unidadReferencia
+                            } });
+                        }
+                        const resultado = await this.getMedicamentoById(medicamento.id_medicamento, transaction);
+                        const referencias = resultado.composicion.map(c => ({ tipo: 'COMPOSICION', id: c.idComposicion }));
+                        await bitacoraAuditoriaService.registrarCambio(seguimiento, {
+                            registro: { tipo: 'MEDICAMENTO', id: resultado.idMedicamento }, despues: snapshotMedicamento(resultado),
+                            referencias: referencias.slice(0, AUDITORIA.MAX_REFERENCIAS),
+                            metadatos: { cantidadComponentes: resultado.composicion.length,
+                                cantidadReferenciasOmitidas: Math.max(0, referencias.length - AUDITORIA.MAX_REFERENCIAS) }
+                        }, transaction);
+                        return resultado;
+                    });
+                } catch (error) {
+                    // La transacción gestionada ya terminó su rollback. Cada vuelta
+                    // abre otra transacción y otro snapshot; nunca repetir solo el INSERT.
+                    if (esColisionCodigo(error)) {
+                        seguimiento.evento = { ...eventoBase };
+                        seguimiento.etapa = 'VERIFICACION';
+                        continue;
+                    }
+                    throw convertirErrorContencionCatalogo(error);
                 }
             }
-            if (['nombre_comercial', ...camposIdentidad].some(campo => values[campo] !== undefined && values[campo] !== actual[campo])) {
-                const composicion = await composicionMedicamentoRepository.findAllForMedicamento({ idMedicamento, transaction });
-                await validarIdentidadDisponible({ ...actual, ...values }, composicion, transaction, idMedicamento);
-            }
-            await medicamentoRepository.update({ idMedicamento, data: values, transaction });
-            return this.getMedicamentoById(idMedicamento, transaction);
+            throw anotarErrorAuditoria(new AppError('No se pudo asignar un código por registros simultáneos. Intente nuevamente', 409), { causa: 'CONFLICTO' });
         });
     }
 
-    static async updateEstado(idMedicamento, { estado }) {
-        return db.sequelize.transaction(async (transaction) => {
-            await this.getMedicamentoForUpdate(idMedicamento, transaction);
-            await medicamentoRepository.updateEstado({ idMedicamento, estado, transaction });
-            return this.getMedicamentoById(idMedicamento, transaction);
-        });
+    static async updateMedicamento(idMedicamento, data, auditoria) {
+        return bitacoraAuditoriaService.ejecutarCambio('MEDICAMENTO_MODIFICAR', auditoria,
+            { tipo: 'MEDICAMENTO', id: idMedicamento }, async seguimiento => {
+                validateCodigoNoEnviado(data);
+                return transaccionCatalogo(async (transaction) => {
+                    seguimiento.transaction = transaction;
+                    const medicamento = await this.getMedicamentoForUpdate(idMedicamento, transaction);
+                    const antes = snapshotMedicamento(toPublicMedicamento(medicamento));
+                    const actual = medicamento.get({ plain: true });
+                    const values = toModelData(data);
+                    const proveedores = await bloquearProveedoresIdentidad([
+                        actual.id_proveedor_laboratorio, values.id_proveedor_laboratorio ?? actual.id_proveedor_laboratorio
+                    ], transaction);
+                    const cambiaIdentidad = camposIdentidad.some((campo) =>
+                        values[campo] !== undefined && values[campo] !== medicamento.get(campo)
+                    );
+                    if (cambiaIdentidad) await this.validateSinHistorial(idMedicamento, transaction);
+                    if (data.idProveedorLaboratorio !== undefined) {
+                        if (!proveedores.get(data.idProveedorLaboratorio).estado) {
+                            throw anotarErrorAuditoria(new AppError('El proveedor o laboratorio está inactivo', 409), { causa: 'CONFLICTO' });
+                        }
+                    }
+                    if (['nombre_comercial', ...camposIdentidad].some(campo => values[campo] !== undefined && values[campo] !== actual[campo])) {
+                        const composicion = await composicionMedicamentoRepository.findAllForMedicamento({ idMedicamento, transaction });
+                        await validarIdentidadDisponible({ ...actual, ...values }, composicion, transaction, idMedicamento);
+                    }
+                    await medicamentoRepository.update({ idMedicamento, data: values, transaction });
+                    const resultado = await this.getMedicamentoById(idMedicamento, transaction);
+                    await bitacoraAuditoriaService.registrarCambio(seguimiento, { antes, despues: snapshotMedicamento(resultado) }, transaction);
+                    return resultado;
+                });
+            });
+    }
+
+    static async updateEstado(idMedicamento, { estado }, auditoria) {
+        return bitacoraAuditoriaService.ejecutarCambio('MEDICAMENTO_ESTADO', auditoria,
+            { tipo: 'MEDICAMENTO', id: idMedicamento }, async seguimiento => db.sequelize.transaction(async (transaction) => {
+                seguimiento.transaction = transaction;
+                const medicamento = await this.getMedicamentoForUpdate(idMedicamento, transaction);
+                const antes = snapshotMedicamento(toPublicMedicamento(medicamento));
+                await medicamentoRepository.updateEstado({ idMedicamento, estado, transaction });
+                const resultado = await this.getMedicamentoById(idMedicamento, transaction);
+                await bitacoraAuditoriaService.registrarCambio(seguimiento, { antes, despues: snapshotMedicamento(resultado) }, transaction);
+                return resultado;
+            }));
     }
 }

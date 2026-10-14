@@ -14,6 +14,7 @@ const { composicionMedicamentoRepository: compRepo } = await import('../src/data
 const { usuarioRepository } = await import('../src/data/repositories/usuario.repository.js');
 const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
+const { simularAuditoriaCatalogo } = await import('./helpers/auditoria-transversal.js');
 
 const datos = (nombreComercial = 'Paracetamol 500 mg') => ({
     idProveedorLaboratorio: 1, nombreComercial, formaFarmaceutica: 'Tableta',
@@ -34,6 +35,7 @@ const unique = (indice = 'uq_medicamento_codigo') => new db.Sequelize.UniqueCons
 const normalizar = codigo => codigo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
 
 const almacenamiento = (t, inicial = []) => {
+    simularAuditoriaCatalogo(t);
     let registros = structuredClone(inicial), sequence = 100, antesDeInsertar;
     const eventos = [], transacciones = [];
     t.mock.method(db.sequelize.connectionManager, 'getConnection', () => { throw new Error('MySQL prohibido'); });
@@ -309,6 +311,7 @@ test('HTTP real sin MySQL: POST/PATCH, consultas, composición y permisos', asyn
 });
 
 test('Transacciones Sequelize gestionadas reales con transporte SQL simulado', async t => {
+    simularAuditoriaCatalogo(t);
     const eventos = [], snapshots = new Map();
     let confirmado = false;
     t.mock.method(db.sequelize.connectionManager, 'getConnection', async () => ({}));

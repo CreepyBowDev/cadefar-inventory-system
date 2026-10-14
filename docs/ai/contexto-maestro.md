@@ -119,6 +119,7 @@ El sistema contempla:
 - Retiros por daño.
 - Anulaciones y reversiones.
 - Consultas y reportes.
+- Bitácora de auditoría implementada en backend (CU42; sección 38), con aceptación e infraestructura documentadas en `bitacora-auditoria.md`.
 
 ### Fuera de alcance
 
@@ -448,6 +449,7 @@ Contiene las reglas completas relacionadas con:
 - Alertas.
 - Reportes.
 - Integridad y trazabilidad.
+- Bitácora de auditoría (RN116–RN133).
 
 ### Casos de uso
 
@@ -457,7 +459,7 @@ Consultar:
 docs/ai/casos-uso.md
 ```
 
-Contiene 41 casos de uso, numerados desde CU01 hasta CU41, y los actores correspondientes.
+Contiene 42 casos de uso, numerados desde CU01 hasta CU42, y los actores correspondientes. CU42 incorpora la consulta de Bitácora, implementada en backend, al final del catálogo.
 
 Antes de implementar una funcionalidad nueva que afecte comportamiento del sistema, revisar estos tres documentos.
 
@@ -2067,6 +2069,8 @@ Pero el backend debe volver a verificar:
 
 Actualmente están implementados autenticación, usuarios, proveedores/laboratorios, medicamentos/composición, Inventario y Compras. El estado y la evidencia de cada bloque se detallan a continuación.
 
+Actualización de Bitácora (13/10/2026): incorporados CU42, RF43–RF53, RI16, RNF18–RNF22 y RN116–RN133; posteriormente implementadas las Fases 1–6 del backend con autorización. La sección 38 recoge las decisiones aprobadas y `bitacora-auditoria.md` mantiene cobertura y evidencia de Fase 7. La implementación no acredita por sí sola despliegue, privilegios efectivos ni aceptación de producción.
+
 Implementado o diseñado:
 
 - Creación de usuarios.
@@ -2137,6 +2141,8 @@ Después de completar Usuarios:
 7. Reportes.
 
 Este orden puede ajustarse si una dependencia funcional requiere adelantar una parte concreta.
+
+Bitácora es un módulo transversal implementado en backend para los procesos existentes, según la sección 38. La cobertura se ampliará cuando se implementen Ventas y Recetas. Su frontend y puesta en funcionamiento en el entorno de destino requieren su propia entrega.
 
 ---
 
@@ -2272,6 +2278,99 @@ Antes de implementar una funcionalidad:
 8. No modificar arquitectura, modelo o alcance sin una razón derivada de un requisito nuevo.
 9. Si una nueva necesidad contradice una decisión anterior, señalar la contradicción antes de cambiar el diseño.
 10. Elegir la solución más simple que respete las reglas y arquitectura actuales.
+
+---
+
+## 38. Bitácora de auditoría — backend implementado
+
+### Objetivo y justificación
+
+El módulo fue solicitado por el docente de Sistemas de Información I para disponer de un historial persistente de eventos relevantes, prioritariamente de autenticación y seguridad. Permitirá investigar qué operación ocurrió, cuándo, desde qué IP disponible, sobre qué registro, con qué resultado y con qué información de responsabilidad comprobada.
+
+**Registro y API de consulta implementados en backend (Fases 1–6).** La Fase 7 reúne revisión integral, sincronización documental y aceptación. La migración crea `bitacora_auditoria`; su aplicación en el entorno de destino es necesaria para operar. La evidencia y la matriz de cobertura se mantienen en `bitacora-auditoria.md`. Los logs sanitizados de consola y los movimientos de inventario no sustituyen este módulo.
+
+### Funcionalidad existente y cobertura integrada
+
+La inspección del software confirma login/logout, control de bloqueo, usuarios, cambio propio y restablecimiento administrativo de contraseña; recuperación por correo en backend y frontend; proveedores/laboratorios, principios activos, medicamentos y composición; registro/anulación de compras; consultas de inventario, ajustes y retiros por vencimiento/daño. Estos procesos están integrados con Bitácora según la matriz de 46 endpoints. Que exista recuperación implementada no acredita envío real de correo ni otra fuente IP aprobada.
+
+Los roles siguen siendo fijos: Administrador, Regente y Vendedor. Existe asignación/cambio de rol de una cuenta por el Administrador, no administración dinámica de roles. La bitácora no agrega actores, permisos dinámicos ni una tabla de sesiones.
+
+Ventas y Recetas conservan sus operaciones funcionales pendientes. La existencia de sus modelos no acredita endpoints, flujos ni auditoría implementados. Se prevé integrar el registro/confirmación y anulación de ventas, así como el registro/revisión de recetas, al desarrollar CU28, CU30, CU31 y CU32. Reportes conserva su estado de desarrollo independiente.
+
+### Eventos de autenticación y seguridad
+
+La captura automática comprende:
+
+- Login exitoso: usuario reconocido, identificador y rol pertinente, fecha/hora, IP y resultado.
+- Contraseña incorrecta: nombre ingresado, cuenta objetivo si existe, instante, IP y contador consecutivo cuando corresponda.
+- Fallo que desencadena el bloqueo y evento del bloqueo producido, relacionados, con contador, instante, duración de diez minutos de RN07 y finalización prevista.
+- Intento durante el bloqueo: rechazo por bloqueo vigente, no nueva comprobación de contraseña ni ampliación de su duración.
+- Nombre de usuario inexistente: intento sin identificador válido y sin crear un contador de bloqueo; respuesta pública genérica como en el login actual.
+- Cuenta desactivada: rechazo de acceso diferenciado internamente.
+- Logout explícito completado mediante `POST /api/auth/logout`, que actualmente requiere autenticación y elimina la cookie.
+- Rechazos por token inválido, expirado o versión de credenciales desactualizada y denegaciones por rol, separados del logout. Se observan al recibir una solicitud, no al cerrar una pestaña o navegador ni necesariamente en el instante de expiración.
+- Errores de validación y errores técnicos relevantes del servidor, incluidos conexión y problemas inesperados, con diagnóstico mínimo sanitizado. No se garantiza capturar una petición que nunca llegó al backend.
+- Solicitud de recuperación, rechazo o supresión por límites/condiciones, restablecimiento exitoso o fallido, cambio propio y restablecimiento administrativo. Se distingue emisión, resultado técnico del intento de envío y cambio efectivo de contraseña; aceptación del proveedor no prueba entrega al buzón.
+
+La política existente permanece en RN07: umbral de tres fallos, bloqueo de diez minutos, reinicios y efectos actuales sobre cuenta y sesiones. Bitácora la observa, no la modifica. Los resultados internos deben distinguirse aunque compartan estado HTTP: actualmente el tercer fallo y el intento durante bloqueo producen 423. Se mantienen también los límites y efectos de recuperación de RN107–RN115, las respuestas públicas y JWT versionado.
+
+### Operaciones administrativas y críticas
+
+Se auditan altas, modificaciones y cambios de estado de usuarios y proveedores/laboratorios, principios activos y medicamentos, y modificaciones independientes de composición permitidas por las reglas históricas. Un alta integral de medicamento comprende su composición inicial en la misma operación lógica. El cambio/restablecimiento de contraseña se cubre específicamente como evento de seguridad.
+
+Compras e Inventario aportan eventos de registro/anulación de compra, ajuste y retiro por vencimiento/daño, con responsable, resultado y referencias a compra, existencia y movimientos cuando correspondan. Las modificaciones de existencias derivadas de esos procesos pertenecen a su operación de origen; no se presupone una edición independiente.
+
+La auditoría complementa el historial de compras, futuras ventas y `MovimientoInventario`; no reemplaza sus registros ni modifica saldos, FEFO, valoración, reversiones o precondiciones. Una conciliación sin diferencia registra solo resultado sin cambios y referencia a la existencia, sin snapshots, conteo, observación ni movimiento. No constituye un historial detallado de conteos, conforme a RF49/RN129.
+
+No se audita cada pulsación, renderizado, consulta rutinaria o solicitud automática. Se priorizan eventos de seguridad y operaciones críticas; una misma causa no debe duplicarse por atravesar varias capas. Los hechos distintos de una solicitud, como fallo y bloqueo, se relacionan sin inflar el número de intentos incorrectos.
+
+### Consulta y roles autorizados
+
+CU42 reúne consulta general, filtros, paginación y detalle como un objetivo del Administrador. El backend comprueba sesión válida y rol Administrador en cada consulta; Regente y Vendedor generan eventos mediante sus procesos, pero no acceden a la bitácora general.
+
+`GET /api/bitacora` ofrece filtros combinables por período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo, resultado y registro afectado. Ordena por fecha de registro e ID descendentes; página predeterminada 25 y máxima 100, con total coincidente. Página y total comparten transacción REPEATABLE READ; páginas de distintas solicitudes no comparten snapshot. `GET /api/bitacora/:idEvento` devuelve detalle histórico. El historial vacío se distingue de un fallo de consulta. No permite editar ni eliminar eventos mediante las operaciones ordinarias, tampoco al Administrador.
+
+El registro automático es comportamiento transversal de los CU de origen, no un CU manual por evento. La consulta solo comprende hechos realmente capturados desde su puesta en funcionamiento; no se reconstruye retrospectivamente una auditoría inexistente. CU04/CU05 y CU42 registran una consulta sensible después de materializarla; los éxitos rutinarios y `/auth/me` se excluyen, conservando rechazos y errores relevantes.
+
+### Información, privacidad e infraestructura
+
+RI16 define la información requerida: identificador y tipo del evento, módulo/operación, instante del servidor, resultado y causa sanitizada, responsable autenticado cuando exista, cuenta objetivo o nombre ingresado cuando corresponda, rol comprobado, IP/procedencia, registro afectado y referencias pertinentes; contador y datos de bloqueo para sus eventos, y resumen mínimo de cambios permitidos cuando corresponda. Una tabla `bitacora_auditoria`, PK INT AUTO_INCREMENT y modelo `BitacoraAuditoria`, sin FK/cascadas, conserva identidades históricas. Los JSON combinados se limitan a 32 KiB y las referencias a 100 por evento, con omisiones explícitas para operaciones grandes. La versión inicial del formato es 1.
+
+Los datos del responsable deben mantener el contexto del momento del evento aunque su nombre o rol cambien. En login exitoso, las credenciales verificadas por el backend permiten identificar al usuario aunque no hubiera sesión previa. El mero reconocimiento de una cuenta en un login fallido o en recuperación identifica una cuenta objetivo, no un solicitante autenticado; los fallos pueden ocurrir sin sesión y sin cuenta válida. La IP es un dato de conexión, no prueba de identidad personal.
+
+Se excluyen contraseñas, hashes, JWT, cookies, códigos y HMAC de recuperación, secretos, cuerpos completos sin filtrado e información personal innecesaria. No se copian objetos de error, SQL, parámetros, stacks o respuestas externas sin sanitizar. La captura utilizará datos permitidos, acotados y tratados como datos al consultarlos, sin revelar al cliente motivos internos que permitan enumerar cuentas.
+
+Estado comprobado de IP: `backend/src/app.js` no configura `trust proxy`; los Controllers de recuperación reciben `req.socket.remoteAddress` y RN110 conserva esa fuente con cuotas IP protegidas mediante HMAC. Bitácora normaliza exclusivamente el socket como `SOCKET_PEER` o indica `NO_DISPONIBLE`; no usa cabeceras reenviadas ni `req.ip`. No hay una cadena de proxies Railway verificada. Detrás de un proxy, el socket puede identificar al intermediario; no se presenta automáticamente como IP original del cliente ni se modifican las cuotas de recuperación.
+
+Los nuevos instantes proceden del servidor en UTC con milisegundos; almacenamiento DATETIME(3), presentación ISO 8601 con `Z` y filtros con zona explícita. No se reinterpretan fechas históricas ni se cambia el día comercial de Inventario/Compras. La captura respeta las capas: contexto HTTP en presentación, resultados/reglas/transacciones en negocio y persistencia en acceso a datos, sin Services que reciban `req`/`res` ni registros manuales en React.
+
+### Consistencia y fiabilidad
+
+Un éxito debe corresponder a efectos confirmados; un rollback no puede dejar un evento que presente la operación como realizada. Debe distinguirse el efecto persistido de un fallo posterior de respuesta. Los fallos esperados de login o recuperación pueden confirmar contador/bloqueo antes de producir el error público; la auditoría no debe revertir esos controles ni asumir que todo error HTTP implica rollback.
+
+Los éxitos críticos comparten transacción de negocio; un fallo obligatorio revierte el conjunto y produce 503 sanitizado. Los rechazos/fallos se registran en una transacción independiente después del rollback o de controles ya confirmados. Logout, emisión/cuotas/envío de recuperación y lecturas sensibles materializadas conservan efectos/respuestas ante fallo exclusivo del auditor. La pérdida de respuesta del commit expresa incertidumbre, sin reintentos automáticos. El seguimiento privado evita duplicaciones y recursión. No puede garantizarse escribir en un almacenamiento caído ni afirmar captura absoluta durante caídas del servidor.
+
+### Correspondencias documentales
+
+| Alcance | Casos de uso | Requerimientos funcionales | Reglas de Bitácora principales |
+|---|---|---|---|
+| Login y bloqueo | CU01 | RF43–RF44 | RN117–RN123, RN125, RN130–RN131 |
+| Logout y rechazos de sesión/acceso | CU02 y controles transversales de rutas protegidas | RF45–RF46 | RN118, RN121, RN124–RN125, RN131–RN133 |
+| Recuperación y contraseñas | CU08–CU09 | RF47; RF46 para errores técnicos | RN117–RN118, RN121, RN125, RN130–RN133 |
+| Usuarios y catálogo | CU03, CU06–CU07, CU10, CU12–CU14, CU16–CU19 | RF48 | RN117, RN125, RN129–RN133 |
+| Compras, ajustes y retiros | CU23, CU25, CU27, CU35–CU36 | RF49 | RN129–RN133 |
+| Integración futura de Ventas/Recetas | CU28, CU30–CU32, pendientes de implementación | RF49 | RN129–RN133 |
+| Consulta, filtros, páginas y detalle | CU42, API implementada | RF50–RF53 | RN117–RN121, RN125–RN128, RN131, RN133 |
+
+RN116 regula toda la captura automática. RI16 define la información permitida y RNF18–RNF22 sus condiciones de integridad, privacidad, persistencia, rendimiento y fiabilidad. Las referencias detalladas están en `requerimientos.md` y CU42; RN07 y RN107–RN115 siguen siendo la fuente de las políticas de autenticación existentes.
+
+### Conservación y pendientes operativos
+
+Conservación mínima aprobada: cinco años, 60 meses calendario desde registro, o períodos legales superiores cuando correspondan. No acredita cumplimiento legal automático. La primera versión no incluye cron, DELETE, archivado ni eliminación automática; tampoco edición ordinaria. Cumplir el plazo mínimo no autoriza borrar y `down()` rechaza la reversión destructiva automática.
+
+Pendientes: aplicar la migración en el entorno de destino; verificar cadena de proxies Railway antes de capturar IP original; separar cuentas de migración/aplicación y comprobar privilegios efectivos; asignar responsabilidades de conservación, respaldo y recuperación con RPO/RTO; definir volumen representativo y objetivos medibles de rendimiento. Los hooks append-only y la API no protegen frente a una cuenta SQL con privilegios de modificación/DDL.
+
+La autorización de pruebas en MySQL local aislado no autoriza cambios en las bases existentes, Railway, despliegues, commits ni pushes. La evidencia de esa aceptación se registra en `bitacora-auditoria.md`.
 
 ---
 

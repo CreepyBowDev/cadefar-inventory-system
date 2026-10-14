@@ -918,7 +918,7 @@ Todo ajuste debe registrar:
 - Motivo.
 - Observación obligatoria.
 
-El responsable es el Regente autenticado y la fecha/hora real la determina el backend. La observación se exige también en una conciliación sin diferencia; como esta no genera movimiento ni otro registro histórico, su observación y respuesta no constituyen una auditoría persistida del conteo. No se crea una entidad adicional para registrarla.
+El responsable es el Regente autenticado y la fecha/hora real la determina el backend. La observación se exige también en una conciliación sin diferencia, pero no se conserva como historial del conteo. Esa conciliación no genera movimiento; Bitácora guarda solo el resultado sin cambios y la existencia conforme a RN129, sin snapshots, conteo ni observación. No se crea una entidad adicional para conteos.
 
 ---
 
@@ -1128,3 +1128,138 @@ Antes de implementar una funcionalidad:
 4. Mantener las decisiones definidas en `contexto-maestro.md`.
 5. No omitir una regla de negocio por simplificar la implementación.
 6. Si una nueva necesidad contradice una regla existente, señalar la contradicción antes de modificarla.
+
+---
+
+# 19. Bitácora de auditoría
+
+**Estado:** backend implementado en Fases 1–6; cobertura, documentación y aceptación MySQL local de Fase 7 verificadas. RN116–RN133 complementan la trazabilidad actual sin cambiar las políticas vigentes de autenticación, compras o inventario. La disponibilidad operativa exige aplicar la migración en destino; la evidencia y los pendientes de infraestructura se registran en `bitacora-auditoria.md`.
+
+## RN116. Registro automático de eventos relevantes
+
+El backend debe registrar automáticamente los resultados relevantes de autenticación y seguridad y las operaciones administrativas o críticas previstas en RF43–RF49. El usuario no decide si registra su acción ni proporciona el resultado de auditoría como fuente de verdad.
+
+El registro es transversal a los casos de uso de origen; CU42 representa su consulta. No se requiere registrar cada pulsación, renderizado, consulta rutinaria o petición automática. Los rechazos relevantes de autenticación y autorización se distinguen de esas consultas ordinarias.
+
+## RN117. Responsable y cuenta objetivo
+
+Cuando exista sesión validada, el responsable debe obtenerse del contexto autenticado del backend, nunca de un ID, nombre o rol arbitrario enviado por el cliente. Deben conservarse sus datos identificativos pertinentes del momento del evento, sin que un cambio posterior reatribuya el historial.
+
+En un login exitoso, la identidad se obtiene de las credenciales verificadas por el backend, aunque no hubiera sesión previa; reconocer el nombre por sí solo no basta.
+
+La cuenta sobre la que se actúa es una referencia distinta: en un restablecimiento administrativo, por ejemplo, Administrador responsable y cuenta objetivo pueden ser diferentes. El mero reconocimiento de una cuenta en login o recuperación no autentica al solicitante ni demuestra que su titular haya realizado el intento.
+
+## RN118. Eventos sin autenticación o sin cuenta reconocida
+
+Los eventos de login, recuperación y rechazos de autenticación pueden registrarse sin sesión, sin responsable autenticado y sin un `id_usuario` válido. El nombre ingresado en un login debe conservarse cuando esté disponible y sea válido, con sanitización y longitud acotada; un cuerpo inválido no obliga a copiar sus valores arbitrarios.
+
+No deben crearse usuarios ficticios ni atribuir roles desde la entrada o desde un JWT no validado. Registrar un intento contra un nombre inexistente en Bitácora no crea un contador de bloqueo para ese nombre y no modifica RN07. La respuesta pública no debe revelar información interna de auditoría que permita enumerar cuentas.
+
+## RN119. Fecha y hora del servidor
+
+El instante del evento debe obtenerse del servidor, sin aceptar como fecha real una proporcionada por el cliente. Debe distinguirse del vencimiento de un bloqueo o de una fecha comercial de adquisición.
+
+Los nuevos eventos se almacenan en UTC mediante `DATETIME(3)` y se presentan como ISO 8601 con `Z` y milisegundos. Los filtros exigen zona u offset explícitos, se convierten a UTC y operan sobre fecha de registro con extremos inclusivos. Esta decisión no autoriza convertir ni reinterpretar los `DATETIME` históricos ni modificar el día comercial America/La_Paz de RN29.
+
+## RN120. Captura segura de dirección IP
+
+La IP debe obtenerse en el backend a partir de la conexión o de una cadena de proxies de confianza verificada. No se acepta como autoridad una IP del body ni una cabecera reenviada arbitraria. El dato debe conservar su procedencia y, si no está disponible, indicarse esa condición sin inventarlo.
+
+Actualmente `app.js` no configura `trust proxy` y CU09 usa `req.socket.remoteAddress` conforme a RN110. Bitácora normaliza ese socket como `SOCKET_PEER` o indica `NO_DISPONIBLE`; no usa cabeceras reenviadas ni `req.ip`. Detrás de un proxy puede corresponder al intermediario; no debe presentarse automáticamente como la IP original del cliente. La cadena de Railway y cualquier nueva fuente/confianza quedan pendientes de verificación y aprobación. Esta regla no cambia la fuente ni la protección HMAC de las cuotas actuales de recuperación.
+
+Una IP no identifica por sí sola a una persona; puede ser compartida, cambiar o pertenecer a un proxy.
+
+## RN121. Resultado y causa del evento
+
+Cada evento debe identificar operación y resultado exitoso, rechazado o fallido, con causa sanitizada pertinente. Deben distinguirse credenciales incorrectas, cuenta desactivada, cuenta bloqueada, falta de autorización, entrada inválida y fallo técnico.
+
+No basta con copiar un código HTTP: el resultado funcional depende de la causa y del estado confirmado. Una respuesta genérica de recuperación no prueba emisión o envío; una aceptación del proveedor de correo no prueba entrega. Si el resultado de la solicitud difiere del efecto persistido, debe conservarse esa distinción; si el efecto es incierto, no se debe afirmar éxito confirmado.
+
+## RN122. Auditoría del fallo que desencadena el bloqueo
+
+Debe registrarse el intento de contraseña incorrecta que alcanza el umbral de RN07, con cuenta objetivo, nombre ingresado, fecha/hora, IP y contador confirmado correspondiente. Debe poder relacionarse con el evento de bloqueo producido sin contarlo como dos contraseñas incorrectas.
+
+El tercer fallo es una causa diferente de intentar ingresar con un bloqueo ya vigente, aunque la implementación actual devuelve 423 en ambos casos. La auditoría debe observar el resultado interno confirmado, sin cambiar las respuestas ni la política de login.
+
+## RN123. Auditoría del bloqueo y de los intentos durante su vigencia
+
+El evento de bloqueo debe conservar cuenta objetivo, instante, duración de diez minutos establecida por RN07, finalización prevista y relación con el fallo desencadenante. Cada intento recibido mientras el bloqueo siga vigente debe registrarse como rechazo durante el bloqueo, conservando los datos pertinentes disponibles.
+
+No se debe describir ese intento como nueva comprobación de contraseña ni como nuevo bloqueo. La auditoría observa el vencimiento y los reinicios existentes sin prolongar el bloqueo, cambiar el estado administrativo o revocar sesiones por su cuenta. RN07 continúa siendo la fuente de la política y RN113/RN115 de los efectos de recuperación; no se crean nuevas sanciones ni límites.
+
+## RN124. Logout explícito y eventos de sesión
+
+Solo se registra como logout explícito exitoso el cierre completado por el endpoint de autenticación después de validar la sesión y eliminar su cookie. Un rechazo previo del middleware no acredita cierre de sesión.
+
+La expiración o invalidez de un token, una versión de credenciales desactualizada y un acceso denegado son eventos distintos, observables al recibir una solicitud. El cierre de una pestaña o del navegador y la expiración sin solicitud no se consideran logout explícito ni eventos garantizados del backend. La auditoría no agrega revocación inmediata ni tabla de sesiones.
+
+## RN125. Exclusión de datos sensibles
+
+La Bitácora y los diagnósticos asociados no deben contener:
+
+- Contraseñas, actuales o nuevas, ni hashes de contraseña.
+- JWT, cookies de sesión ni cabeceras que los contengan.
+- Códigos de recuperación ni su HMAC u otros valores secretos de verificación.
+- Secretos del sistema, credenciales de base de datos o claves de proveedores externos.
+- Cuerpos completos de solicitudes sin filtrado, respuestas externas completas o errores técnicos sin sanitizar.
+- Información personal innecesaria, incluidos datos clínicos o de pacientes ajenos al objetivo del evento.
+
+Solo se incorporan datos expresamente permitidos y pertinentes de RI16. Los textos externos o ingresados deben validarse, acotarse y tratarse como datos, sin permitir que inyecten contenido de registro o ejecución al consultarlos. No se guardan valores sensibles anteriores/nuevos al auditar cambios de contraseña ni se copia el correo de recuperación por defecto.
+
+## RN126. Consulta exclusiva del Administrador
+
+Listado, filtros y detalle de CU42 requieren sesión válida de una cuenta activa y rol Administrador comprobado en el backend con los mecanismos actuales de autenticación y autorización.
+
+Regente y Vendedor generan eventos mediante sus operaciones, pero no tienen acceso a la bitácora general. No se crean roles nuevos, permisos dinámicos ni excepciones por ocultar o mostrar una pantalla.
+
+## RN127. Protección frente a modificaciones ordinarias
+
+Los registros de auditoría no deben poder editarse ni eliminarse mediante las operaciones ordinarias del sistema, tampoco por el Administrador desde CU42. Un cambio posterior de una operación de negocio no reescribe su evento anterior; debe originar el evento pertinente de la nueva acción.
+
+Esta restricción no afirma protección absoluta frente a intervenciones en la infraestructura. Cualquier archivo o depuración extraordinaria deberá sujetarse a una política aprobada según RN128.
+
+## RN128. Conservación y retención de auditoría
+
+Los eventos confirmados deben persistir y continuar disponibles para consulta autorizada después de reiniciar la aplicación. La conservación mínima aprobada es de cinco años: 60 meses calendario desde la fecha de registro. Se aplican períodos superiores cuando una obligación legal pertinente lo requiera; esta decisión técnica no acredita por sí sola cumplimiento legal.
+
+La primera versión no incluye cron, eliminación ni archivado automático, ni edición ordinaria de eventos, tampoco por el Administrador. Cumplir el mínimo no autoriza borrar. Las responsabilidades operativas, respaldos, eventual archivo y cualquier procedimiento extraordinario de depuración siguen pendientes de aprobación. La ausencia de borrado no constituye una decisión de retención ilimitada ni reemplaza la planificación del volumen y recuperación de información.
+
+## RN129. Complemento de los historiales administrativos y de inventario
+
+La Bitácora identifica operación, responsable cuando exista, instante, registro afectado y resultado, con referencias a compras, existencias y movimientos pertinentes. No sustituye el historial de compras, futuras ventas ni `MovimientoInventario`; tampoco autoriza saldos directos sin movimiento ni cambios de valoración histórica.
+
+La creación/modificación de existencias derivada de una compra, anulación, ajuste o retiro pertenece a la operación de origen; no se inventa una edición independiente. Un alta integral de medicamento incluye su composición inicial en el mismo evento lógico; las modificaciones independientes de composición se auditan como sus propias operaciones permitidas.
+
+CU23, RF19/RI09 y RN84/RN103 distinguen el conteo del resultado de la operación. Bitácora registra la conciliación sin diferencia como operación sin cambios, con referencia a la existencia, sin snapshots, conteo, observación, movimiento ni cambios de saldo/promedio. No crea un historial detallado de conteos ni reemplaza RN82–RN84 o sus precondiciones.
+
+Ventas y Recetas se integrarán cuando se implementen sus operaciones; su previsión de auditoría no acredita que ya estén desarrolladas.
+
+## RN130. Consistencia con las transacciones y efectos confirmados
+
+Un evento de éxito debe corresponder a efectos confirmados; un rollback no puede dejar la operación como realizada exitosamente. Los éxitos críticos comparten transacción con el negocio. Debe distinguirse una operación confirmada de un fallo posterior al preparar o enviar su respuesta, respetando las transacciones vigentes.
+
+Los eventos de rechazo o fallo no deben perderse simplemente por intentar conservarlos en una transacción de negocio revertida. En login y verificación de recuperación hay fallos esperados cuyos contadores o bloqueos se confirman antes del error público; debe auditarse ese estado confirmado sin revertir la protección ni tratar todo error HTTP como rollback.
+
+Una caída que impida conocer el resultado no autoriza inventar éxito o repetir automáticamente la operación. Un commit sin confirmación se clasifica como efecto `INCIERTO`. El resultado `NO_CONFIRMADO` de la escritura del auditor no demuestra ausencia del evento; no ocasiona reintento. El tratamiento por proceso se describe en RN132.
+
+## RN131. Eventos diferenciados sin duplicación innecesaria
+
+La misma causa no debe registrarse varias veces por atravesar Middleware, Controller, Service y manejador global de errores. Debe definirse un responsable de captura por evento y conservar relaciones pertinentes cuando una solicitud origine hechos distintos.
+
+El fallo desencadenante y el bloqueo producido son dos hechos relacionados; no dos intentos incorrectos. Los detalles o movimientos de una misma operación no exigen duplicar su evento de cabecera. Los reintentos internos del catálogo no son operaciones exitosas adicionales; un nuevo intento real recibido del usuario puede generar su propio evento con el resultado efectivo.
+
+La consulta ordinaria de Bitácora no debe originar un ciclo de auditoría de sus propias lecturas. Esto no excluye registrar un rechazo relevante de acceso no autorizado. No se promete idempotencia universal ni se cambia la clave de operación de Compras.
+
+## RN132. Fallos de escritura de auditoría
+
+Un fallo de persistencia debe detectarse y producir diagnóstico técnico sanitizado sin afirmar que el evento se guardó. No debe generar un ciclo de intentos de auditar su propio error, exponer secretos ni revertir o repetir automáticamente una operación ya confirmada.
+
+La política aprobada exige auditoría en la transacción de login exitoso, cambios efectivos de contraseña y escrituras administrativas/críticas, incluida conciliación sin diferencia. Si falla antes de confirmar, se revierte el conjunto y se devuelve 503 sanitizado. Los rechazos, contadores/bloqueos ya confirmados, emisión/cuotas de recuperación, resultado del envío, logout y consultas sensibles materializadas usan auditoría independiente; un fallo exclusivo del auditor conserva su efecto y respuesta originales. No se reenvía correo ni se repite negocio automáticamente. El diagnóstico seguro es `AUDITORIA_PERSISTENCIA_NO_CONFIRMADA`. Un fallo no autoriza permitir un login rechazado, suprimir límites, eliminar un bloqueo ni romper atomicidad de inventario.
+
+Si el almacenamiento está caído, no puede garantizarse registrar el fallo en ese mismo almacenamiento. La eventual alternativa de conservación y recuperación queda pendiente, sin asumir nuevos servicios, colas ni disponibilidad absoluta. No se considera aceptable omitir silenciosamente el fallo ni presentar consola como persistencia de Bitácora.
+
+## RN133. Información técnica segura para investigación
+
+Los errores técnicos deben conservar operación, categoría o código seguro, fecha/hora, resultado y contexto mínimo disponible según RI16, con referencias pertinentes y sin copiar el objeto de error completo. No se almacenan SQL, parámetros, stacks o respuestas externas sin filtrar que puedan revelar secretos.
+
+Las categorías de validación, credenciales, bloqueo y denegación no se etiquetan como errores técnicos del servidor por el solo hecho de producir una respuesta no exitosa. Los fallos de conexión y envío se distinguen de esos rechazos. El diagnóstico público conserva mensajes seguros; el detalle de auditoría solo está disponible para el Administrador conforme a RN126.

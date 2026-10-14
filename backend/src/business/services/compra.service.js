@@ -9,11 +9,14 @@ import { decimalAEntero, enteroADecimal, dividirYRedondear,
 import { calcularVencimiento } from '../../shared/utils/vencimiento.js';
 import { obtenerFechaOperacion } from '../../shared/utils/fecha-operacion.js';
 import { MOTIVOS_MOVIMIENTO, MOTIVOS_MOVIMIENTO_HISTORICOS } from '../../shared/constants/motivos-movimiento.js';
+import { bitacoraAuditoriaService } from './bitacora-auditoria.service.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { snapshotCompra, referenciasAuditoriaAcotadas } from '../../shared/utils/auditoria-catalogo.js';
 
 const MAXIMO_INT = 2147483647n;
 const validarImporte = (valor, nombre) => {
     if (valor > MAXIMO_COEFICIENTE_DECIMAL_14) {
-        throw new AppError(`${nombre} supera el importe máximo permitido`, 400);
+        throw anotarErrorAuditoria(new AppError(`${nombre} supera el importe máximo permitido`, 400), { causa: 'ENTRADA_INVALIDA' });
     }
     return valor;
 };
@@ -26,25 +29,26 @@ const manejarErrorRegistro = (error) => {
         const campos = Object.keys(error.fields || {});
         if (indice === 'uq_compra_clave_operacion' ||
             (!indice && campos.length === 1 && campos[0] === 'clave_operacion')) {
-            throw new AppError('La clave de operación ya está registrada', 409);
+            throw anotarErrorAuditoria(new AppError('La clave de operación ya está registrada', 409), { causa: 'CONFLICTO' });
         }
         if (indice === 'uq_existencia_codigo') {
-            throw new AppError('Conflicto al generar el código de existencia', 409);
+            throw anotarErrorAuditoria(new AppError('Conflicto al generar el código de existencia', 409), { causa: 'CONFLICTO' });
         }
         if (indice === 'uq_existencia_medicamento_vencimiento_precision') {
-            throw new AppError('Conflicto al identificar la existencia recibida', 409);
+            throw anotarErrorAuditoria(new AppError('Conflicto al identificar la existencia recibida', 409), { causa: 'CONFLICTO' });
         }
     }
     const codigo = error.parent?.code || error.original?.code;
     if (codigo === 'ER_LOCK_DEADLOCK' || codigo === 'ER_LOCK_WAIT_TIMEOUT') {
-        throw new AppError('La compra no pudo confirmarse por contención temporal. Reintente con la misma clave de operación', 409);
+        throw anotarErrorAuditoria(new AppError('La compra no pudo confirmarse por contención temporal. Reintente con la misma clave de operación', 409), { causa: 'CONFLICTO' });
     }
     throw error;
 };
 
 const toPlain = (registro) => registro.get ? registro.get({ plain: true }) : registro;
 const decimal = (valor, escala) => enteroADecimal(decimalAEntero(String(valor), escala), escala);
-const inconsistenciaAnulacion = () => new AppError('No se puede anular: el historial o el estado anterior de la compra es inconsistente', 409);
+const inconsistenciaAnulacion = () => anotarErrorAuditoria(
+    new AppError('No se puede anular: el historial o el estado anterior de la compra es inconsistente', 409), { causa: 'CONFLICTO' });
 const cantidadHistorica = (valor, permiteCero = false) => {
     if (!Number.isInteger(valor) || valor < (permiteCero ? 0 : 1) || valor > Number(MAXIMO_INT)) {
         throw inconsistenciaAnulacion();
@@ -154,7 +158,7 @@ const calcularCompensacion = (existencia, detalles, movimientos, referencias) =>
     if (anterior !== null && anterior.saldo + cantidadTotal > MAXIMO_INT) throw inconsistenciaAnulacion();
     let saldoFinal, promedioFinal;
     if (posteriores.length === 0) {
-        if (anterior === null) throw new AppError('No se puede anular: falta el estado anterior de la compra histórica', 409);
+        if (anterior === null) throw anotarErrorAuditoria(new AppError('No se puede anular: falta el estado anterior de la compra histórica', 409), { causa: 'CONFLICTO' });
         const saldoEsperado = anterior.saldo + cantidadTotal;
         const promedioEsperado = dividirYRedondear(anterior.saldo * anterior.costo + valorTotal, saldoEsperado);
         if (saldoActual !== saldoEsperado || promedioActual !== promedioEsperado) throw inconsistenciaAnulacion();
@@ -162,17 +166,17 @@ const calcularCompensacion = (existencia, detalles, movimientos, referencias) =>
     } else {
         saldoFinal = saldoActual - cantidadTotal;
         const residual = saldoActual * promedioActual - valorTotal;
-        if (saldoFinal < 0n) throw new AppError('No se puede anular: stock físico insuficiente', 409);
+        if (saldoFinal < 0n) throw anotarErrorAuditoria(new AppError('No se puede anular: stock físico insuficiente', 409), { causa: 'STOCK_INSUFICIENTE' });
         if (residual < 0n || (saldoFinal === 0n && residual !== 0n)) {
-            throw new AppError('No se puede anular: la valoración residual es incompatible', 409);
+            throw anotarErrorAuditoria(new AppError('No se puede anular: la valoración residual es incompatible', 409), { causa: 'CONFLICTO' });
         }
         promedioFinal = saldoFinal === 0n ? promedioActual : dividirYRedondear(residual, saldoFinal);
         if (promedioFinal > MAXIMO_COEFICIENTE_DECIMAL_14) {
-            throw new AppError('No se puede anular: el costo promedio resultante supera el máximo permitido', 409);
+            throw anotarErrorAuditoria(new AppError('No se puede anular: el costo promedio resultante supera el máximo permitido', 409), { causa: 'CONFLICTO' });
         }
     }
     return { idExistencia: existencia.id_existencia, saldoFinal: Number(saldoFinal),
-        promedioFinal: enteroADecimal(promedioFinal, 6), originales };
+        promedioFinal: enteroADecimal(promedioFinal, 6), originales, modo: posteriores.length ? 'A' : 'B1' };
 };
 const toPublicUsuario = (usuario) => usuario ? {
     idUsuario: usuario.id_usuario, nombreUsuario: usuario.nombre_usuario
@@ -227,19 +231,27 @@ const toPublicDetalle = (data) => {
 };
 
 export class compraService {
-    static async anularCompra(idCompra, motivo, idUsuarioAutenticado) {
+    static async anularCompra(idCompra, motivo, idUsuarioAutenticado, auditoria) {
         if (!Number.isInteger(idUsuarioAutenticado) || idUsuarioAutenticado <= 0 ||
             idUsuarioAutenticado > Number(MAXIMO_INT)) throw new AppError('No autenticado', 401);
+        return bitacoraAuditoriaService.ejecutarCambio('COMPRA_ANULAR', auditoria,
+            { tipo: 'COMPRA', id: idCompra }, seguimiento => this.#anularCompra(idCompra, motivo, idUsuarioAutenticado, seguimiento));
+    }
+
+    static async #anularCompra(idCompra, motivo, idUsuarioAutenticado, seguimiento) {
         try {
             return await db.sequelize.transaction(async transaction => {
+                seguimiento.transaction = transaction;
                 const registro = await compraRepository.findParaAnular({ idCompra, transaction });
-                if (!registro) throw new AppError('Compra no encontrada', 404);
+                if (!registro) throw anotarErrorAuditoria(new AppError('Compra no encontrada', 404), { causa: 'NO_ENCONTRADO' });
                 const compra = toPlain(registro);
-                if (compra.estado_operacion === 'ANULADA') throw new AppError('La compra ya está anulada', 409);
+                if (compra.estado_operacion === 'ANULADA') throw anotarErrorAuditoria(new AppError('La compra ya está anulada', 409), { causa: 'CONFLICTO' });
                 if (compra.estado_operacion !== 'CONFIRMADA' || compra.fecha_anulacion !== null ||
                     compra.motivo_anulacion !== null || compra.id_usuario_anulador !== null) throw inconsistenciaAnulacion();
                 const detalles = (await compraRepository.findDetallesParaAnular({ idCompra, transaction })).map(toPlain);
                 if (!detalles.length || detalles.some(d => d.id_compra !== compra.id_compra)) throw inconsistenciaAnulacion();
+                const antes = snapshotCompra({ estadoOperacion: compra.estado_operacion,
+                    total: decimal(compra.total, 2), idProveedorLaboratorio: compra.id_proveedor_laboratorio, detalles });
                 // No se exige actividad del catálogo/proveedor ni vencimiento
                 // vendible: se compensa una operación histórica ya registrada.
                 const idsExistencias = [...new Set(detalles.map(d => d.id_existencia))].sort((a, b) => a - b);
@@ -272,24 +284,40 @@ export class compraService {
                         idExistencia: grupo.idExistencia, cantidadFisica: grupo.saldoFinal, costoUnitarioPromedio: grupo.promedioFinal });
                     if (actualizadas !== 1) throw inconsistenciaAnulacion();
                 }
+                const idsReversiones = [];
                 for (const original of originales) {
-                    await movimientoInventarioRepository.create({ transaction, data: {
+                    const reversion = await movimientoInventarioRepository.create({ transaction, data: {
                         id_existencia: original.id_existencia, id_usuario: idUsuarioAutenticado,
                         id_detalle_compra: original.id_detalle_compra, id_detalle_venta: null,
                         id_movimiento_original: original.id_movimiento, direccion: 'SALIDA', cantidad: original.cantidad,
                         costo_unitario_aplicado: original.costo_unitario_aplicado, motivo: MOTIVOS_MOVIMIENTO.ANULACION_COMPRA,
                         observacion: motivo, fecha_movimiento: fechaHoraComercial
                     } });
+                    idsReversiones.push(reversion.id_movimiento);
                 }
                 const [actualizadas] = await compraRepository.anular({ idCompra, motivo, idUsuario: idUsuarioAutenticado,
                     fechaHora: fechaHoraComercial, transaction });
                 if (actualizadas !== 1) throw inconsistenciaAnulacion();
-                return this.getCompraById(idCompra, transaction);
+                const resultado = await this.getCompraById(idCompra, transaction);
+                const { referencias: referenciasEvento, cantidadReferenciasOmitidas } = referenciasAuditoriaAcotadas([
+                    ...idsExistencias.map(id => ({ tipo: 'EXISTENCIA', id })),
+                    ...detalles.map(d => ({ tipo: 'DETALLE_COMPRA', id: d.id_detalle_compra })),
+                    ...originales.map(m => ({ tipo: 'MOVIMIENTO', id: m.id_movimiento })),
+                    ...idsReversiones.map(id => ({ tipo: 'MOVIMIENTO', id }))
+                ]);
+                await bitacoraAuditoriaService.registrarCambio(seguimiento, {
+                    antes,
+                    despues: snapshotCompra(resultado), referencias: referenciasEvento,
+                    metadatos: { cantidadDetalles: detalles.length, cantidadExistencias: existencias.length,
+                        cantidadMovimientos: idsReversiones.length, cantidadReferenciasOmitidas,
+                        modoAnulacion: new Set(grupos.map(g => g.modo)).size > 1 ? 'MIXTO' : grupos[0].modo }
+                }, transaction);
+                return resultado;
             });
         } catch (error) {
             const codigo = error.parent?.code || error.original?.code;
             if (codigo === 'ER_LOCK_DEADLOCK' || codigo === 'ER_LOCK_WAIT_TIMEOUT') {
-                throw new AppError('La compra no pudo anularse por contención temporal. Consulte su estado y reintente', 409);
+                throw anotarErrorAuditoria(new AppError('La compra no pudo anularse por contención temporal. Consulte su estado y reintente', 409), { causa: 'CONFLICTO' });
             }
             if (error.name === 'SequelizeUniqueConstraintError' &&
                 /uq_movimiento_original/.test(error.parent?.sqlMessage || error.original?.sqlMessage || '')) {
@@ -299,10 +327,14 @@ export class compraService {
         }
     }
 
-    static async createCompra(data, idUsuarioAutenticado) {
+    static async createCompra(data, idUsuarioAutenticado, auditoria) {
         if (!Number.isInteger(idUsuarioAutenticado) || idUsuarioAutenticado <= 0 ||
             idUsuarioAutenticado > Number(MAXIMO_INT)) throw new AppError('No autenticado', 401);
+        return bitacoraAuditoriaService.ejecutarCambio('COMPRA_REGISTRAR', auditoria, undefined,
+            seguimiento => this.#createCompra(data, idUsuarioAutenticado, seguimiento));
+    }
 
+    static async #createCompra(data, idUsuarioAutenticado, seguimiento) {
         const grupos = new Map();
         let total = 0n;
         const lineas = data.detalles.map((detalle) => {
@@ -316,7 +348,7 @@ export class compraService {
             grupo.cantidadTotal += cantidad;
             grupo.valorTotal += cantidad * costo;
             if (grupo.cantidadTotal > MAXIMO_INT) {
-                throw new AppError('La cantidad agrupada supera el máximo permitido', 400);
+                throw anotarErrorAuditoria(new AppError('La cantidad agrupada supera el máximo permitido', 400), { causa: 'ENTRADA_INVALIDA' });
             }
             return { ...detalle, clave, subtotal: enteroADecimal(subtotal, 2) };
         });
@@ -325,24 +357,25 @@ export class compraService {
             // Auxiliar fuera de la transacción para no abrir una lectura snapshot
             // anterior a los bloqueos. El UNIQUE sigue siendo la garantía final.
             if (await compraRepository.findByClave({ claveOperacion: data.claveOperacion })) {
-                throw new AppError('La clave de operación ya está registrada', 409);
+                throw anotarErrorAuditoria(new AppError('La clave de operación ya está registrada', 409), { causa: 'CONFLICTO' });
             }
             return await db.sequelize.transaction(async (transaction) => {
+                seguimiento.transaction = transaction;
                 const medicamentos = new Map();
                 const ids = [...new Set(lineas.map((linea) => linea.idMedicamento))].sort((a, b) => a - b);
                 for (const idMedicamento of ids) {
                     const registro = await medicamentoRepository.findById({ idMedicamento, transaction, lock: true });
-                    if (!registro) throw new AppError('Medicamento no encontrado', 404);
+                    if (!registro) throw anotarErrorAuditoria(new AppError('Medicamento no encontrado', 404), { causa: 'NO_ENCONTRADO' });
                     const medicamento = toPlain(registro);
-                    if (!medicamento.estado) throw new AppError('No se puede recibir un medicamento inactivo', 409);
+                    if (!medicamento.estado) throw anotarErrorAuditoria(new AppError('No se puede recibir un medicamento inactivo', 409), { causa: 'CONFLICTO' });
                     medicamentos.set(idMedicamento, medicamento);
                 }
                 const proveedores = new Set([...medicamentos.values()].map((m) => m.id_proveedor_laboratorio));
-                if (proveedores.size !== 1) throw new AppError('Todos los medicamentos deben pertenecer al mismo proveedor', 409);
+                if (proveedores.size !== 1) throw anotarErrorAuditoria(new AppError('Todos los medicamentos deben pertenecer al mismo proveedor', 409), { causa: 'CONFLICTO' });
                 const [idProveedorLaboratorio] = proveedores;
                 const proveedor = await medicamentoRepository.findProveedorById({ idProveedorLaboratorio, transaction });
-                if (!proveedor) throw new AppError('Proveedor o laboratorio no encontrado', 404);
-                if (!toPlain(proveedor).estado) throw new AppError('El proveedor o laboratorio está inactivo', 409);
+                if (!proveedor) throw anotarErrorAuditoria(new AppError('Proveedor o laboratorio no encontrado', 404), { causa: 'NO_ENCONTRADO' });
+                if (!toPlain(proveedor).estado) throw anotarErrorAuditoria(new AppError('El proveedor o laboratorio está inactivo', 409), { causa: 'CONFLICTO' });
 
                 const existencias = new Map(), correlativos = new Map();
                 for (const idMedicamento of ids) {
@@ -361,16 +394,16 @@ export class compraService {
 
                 // Un instante después de los bloqueos, antes de cualquier INSERT.
                 const { fechaComercial, fechaHoraComercial } = obtenerFechaOperacion();
-                if (data.fechaCompra > fechaComercial) throw new AppError('La fecha de compra no puede ser futura', 400);
+                if (data.fechaCompra > fechaComercial) throw anotarErrorAuditoria(new AppError('La fecha de compra no puede ser futura', 400), { causa: 'ENTRADA_INVALIDA' });
                 for (const [clave, grupo] of grupos) {
                     if (calcularVencimiento(grupo.fechaVencimiento, grupo.precisionVencimiento, fechaComercial).vencida) {
-                        throw new AppError('No se puede recibir una existencia vencida', 409);
+                        throw anotarErrorAuditoria(new AppError('No se puede recibir una existencia vencida', 409), { causa: 'CONFLICTO' });
                     }
                     const anterior = existencias.get(clave);
                     const saldoAnterior = BigInt(anterior?.cantidad_fisica ?? 0);
                     const promedioAnterior = decimalAEntero(String(anterior?.costo_unitario_promedio ?? '0'), 6);
                     const saldoFinal = saldoAnterior + grupo.cantidadTotal;
-                    if (saldoFinal > MAXIMO_INT) throw new AppError('El saldo final supera el máximo permitido', 409);
+                    if (saldoFinal > MAXIMO_INT) throw anotarErrorAuditoria(new AppError('El saldo final supera el máximo permitido', 409), { causa: 'CONFLICTO' });
                     const promedioFinal = validarImporte(dividirYRedondear(
                         saldoAnterior * promedioAnterior + grupo.valorTotal, saldoFinal), 'El costo promedio');
                     Object.assign(grupo, {
@@ -384,7 +417,7 @@ export class compraService {
                         const correlativo = correlativos.get(grupo.idMedicamento) + 1n;
                         correlativos.set(grupo.idMedicamento, correlativo);
                         grupo.codigoExistencia = `${medicamentos.get(grupo.idMedicamento).codigo_medicamento}-${String(correlativo).padStart(3, '0')}`;
-                        if (grupo.codigoExistencia.length > 30) throw new AppError('El código de existencia supera la longitud permitida', 409);
+                        if (grupo.codigoExistencia.length > 30) throw anotarErrorAuditoria(new AppError('El código de existencia supera la longitud permitida', 409), { causa: 'CONFLICTO' });
                     }
                 }
 
@@ -406,9 +439,10 @@ export class compraService {
                             idExistencia: grupo.idExistencia, cantidadFisica: grupo.saldoFinal,
                             costoUnitarioPromedio: grupo.promedioFinal, transaction
                         });
-                        if (actualizadas !== 1) throw new AppError('No se pudo actualizar la existencia recibida', 409);
+                        if (actualizadas !== 1) throw anotarErrorAuditoria(new AppError('No se pudo actualizar la existencia recibida', 409), { causa: 'CONFLICTO' });
                     }
                 }
+                const idsMovimientos = [];
                 for (const linea of lineas) {
                     const grupo = grupos.get(linea.clave);
                     const detalle = await compraRepository.createDetalle({ transaction, data: {
@@ -416,17 +450,29 @@ export class compraService {
                         costo_unitario: linea.costoUnitario, subtotal: linea.subtotal,
                         saldo_anterior: grupo.saldoAnterior, costo_promedio_anterior: grupo.promedioAnterior
                     } });
-                    await movimientoInventarioRepository.create({ transaction, data: {
+                    const movimiento = await movimientoInventarioRepository.create({ transaction, data: {
                         id_usuario: idUsuarioAutenticado, id_existencia: grupo.idExistencia,
                         id_detalle_compra: detalle.id_detalle_compra, id_detalle_venta: null,
                         id_movimiento_original: null, direccion: 'ENTRADA', cantidad: linea.cantidad,
                         costo_unitario_aplicado: linea.costoUnitario, fecha_movimiento: fechaHoraComercial,
                         motivo: MOTIVOS_MOVIMIENTO.COMPRA, observacion: null
                     } });
+                    idsMovimientos.push(movimiento.id_movimiento);
                 }
                 // Leer la respuesta dentro de la transacción: si falla, rollback.
                 // La promesa gestionada no devuelve al Controller hasta el commit.
-                return this.getCompraById(compra.id_compra, transaction);
+                const resultado = await this.getCompraById(compra.id_compra, transaction);
+                const { referencias, cantidadReferenciasOmitidas } = referenciasAuditoriaAcotadas([
+                    ...[...grupos.values()].map(g => ({ tipo: 'EXISTENCIA', id: g.idExistencia })),
+                    ...resultado.detalles.map(d => ({ tipo: 'DETALLE_COMPRA', id: d.idDetalleCompra })),
+                    ...idsMovimientos.map(id => ({ tipo: 'MOVIMIENTO', id }))
+                ]);
+                await bitacoraAuditoriaService.registrarCambio(seguimiento, {
+                    registro: { tipo: 'COMPRA', id: resultado.idCompra }, despues: snapshotCompra(resultado), referencias,
+                    metadatos: { cantidadDetalles: lineas.length, cantidadExistencias: grupos.size,
+                        cantidadMovimientos: idsMovimientos.length, cantidadReferenciasOmitidas }
+                }, transaction);
+                return resultado;
             });
         } catch (error) { manejarErrorRegistro(error); }
     }
@@ -447,7 +493,9 @@ export class compraService {
 
     static async getCompraById(idCompra, transaction) {
         const compra = await compraRepository.findById(idCompra, { transaction });
-        if (!compra) throw new AppError('Compra no encontrada', 404);
+        if (!compra) throw anotarErrorAuditoria(new AppError('Compra no encontrada', 404), {
+            causa: 'NO_ENCONTRADO', registro: { tipo: 'COMPRA', id: idCompra }
+        });
         const data = toPlain(compra);
         return { ...toPublicCompra(data), detalles: data.detallesCompra.map(toPublicDetalle) };
     }

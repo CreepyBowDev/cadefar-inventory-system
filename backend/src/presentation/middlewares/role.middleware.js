@@ -1,4 +1,5 @@
 import { AppError } from '../../shared/errors/app-error.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
 
 export const requireRole = (...rolesPermitidos) => {
 
@@ -6,10 +7,10 @@ export const requireRole = (...rolesPermitidos) => {
 
         if (!req.usuario) {
             return next(
-                new AppError(
+                anotarErrorAuditoria(new AppError(
                     'Usuario no autenticado',
                     401
-                )
+                ), { tipoEvento: 'SESION_AUSENTE', causa: 'SESION_AUSENTE' })
             );
         }
 
@@ -17,10 +18,10 @@ export const requireRole = (...rolesPermitidos) => {
 
         if (!rolesPermitidos.includes(idRol)) {
             return next(
-                new AppError(
+                anotarErrorAuditoria(new AppError(
                     'No tiene permisos para realizar esta acción',
                     403
-                )
+                ), { tipoEvento: 'ACCESO_DENEGADO', causa: 'ROL_NO_PERMITIDO' })
             );
         }
 

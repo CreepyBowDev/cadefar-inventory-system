@@ -1,6 +1,7 @@
 import db from '../../data/models/index.js';
 import { medicamentoRepository } from '../../data/repositories/medicamento.repository.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
 import { decimalAEntero } from '../../shared/utils/decimal.js';
 
 // Unidades y textos se comparan en MySQL con la colación de cada columna.
@@ -30,7 +31,7 @@ export const bloquearProveedoresIdentidad = async (ids, transaction) => {
         const proveedor = await medicamentoRepository.findProveedorById({
             idProveedorLaboratorio, transaction, exclusivo: true
         });
-        if (!proveedor) throw new AppError('Proveedor o laboratorio no encontrado', 404);
+        if (!proveedor) throw anotarErrorAuditoria(new AppError('Proveedor o laboratorio no encontrado', 404), { causa: 'NO_ENCONTRADO' });
         proveedores.set(idProveedorLaboratorio, proveedor);
     }
     return proveedores;
@@ -41,21 +42,21 @@ export const validarIdentidadDisponible = async (medicamento, composicion, trans
         medicamento, composicion: composicionCanonica(composicion), transaction, idMedicamento
     });
     if (coincidencias.length) {
-        throw new AppError('Ya existe un medicamento registrado con estas características y composición.', 409,
+        throw anotarErrorAuditoria(new AppError('Ya existe un medicamento registrado con estas características y composición.', 409,
             { medicamentosExistentes: coincidencias.map(c => ({
                 idMedicamento: c.id_medicamento, codigoMedicamento: c.codigo_medicamento,
                 nombreComercial: c.nombre_comercial, estado: Boolean(c.estado)
-            })) });
+            })) }), { causa: 'CONFLICTO' });
     }
 };
 
 export const convertirErrorContencionCatalogo = error => {
     const codigo = error.parent?.code || error.original?.code;
     if (codigo === 'ER_LOCK_DEADLOCK') {
-        return new AppError('Conflicto temporal del catálogo: se detectó un bloqueo mutuo. Intente nuevamente', 409);
+        return anotarErrorAuditoria(new AppError('Conflicto temporal del catálogo: se detectó un bloqueo mutuo. Intente nuevamente', 409), { causa: 'CONFLICTO' });
     }
     if (codigo === 'ER_LOCK_WAIT_TIMEOUT') {
-        return new AppError('Se agotó la espera de bloqueo del catálogo. Intente nuevamente', 409);
+        return anotarErrorAuditoria(new AppError('Se agotó la espera de bloqueo del catálogo. Intente nuevamente', 409), { causa: 'CONFLICTO' });
     }
     return error;
 };

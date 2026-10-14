@@ -1,10 +1,13 @@
 import { proveedorLaboratorioService } from '../../business/services/proveedor-laboratorio.service.js';
 import { proveedorLaboratorioValidator } from '../../business/validators/proveedor-laboratorio.validator.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { ejecutarConAuditoria } from '../../shared/utils/auditoria-http.js';
 
 const getValidatedData = (result) => {
     if (!result.success) {
-        throw new AppError('Datos inválidos', 400, result.error.issues);
+        throw anotarErrorAuditoria(new AppError('Datos inválidos', 400, result.error.issues),
+            { tipoEvento: 'VALIDACION_RECHAZADA', causa: 'ENTRADA_INVALIDA' });
     }
 
     return result.data;
@@ -20,7 +23,7 @@ export class proveedorLaboratorioController {
             const data = getValidatedData(
                 proveedorLaboratorioValidator.validateCreate(req.body)
             );
-            const proveedor = await proveedorLaboratorioService.createProveedorLaboratorio(data);
+            const proveedor = await ejecutarConAuditoria(req, auditoria => proveedorLaboratorioService.createProveedorLaboratorio(data, auditoria));
 
             return res.status(201).json({
                 message: 'Proveedor o laboratorio creado exitosamente',
@@ -58,10 +61,11 @@ export class proveedorLaboratorioController {
             const data = getValidatedData(
                 proveedorLaboratorioValidator.validateUpdate(req.body)
             );
-            const proveedor = await proveedorLaboratorioService.updateProveedorLaboratorio(
+            const proveedor = await ejecutarConAuditoria(req, auditoria => proveedorLaboratorioService.updateProveedorLaboratorio(
                 idProveedorLaboratorio,
-                data
-            );
+                data,
+                auditoria
+            ));
 
             return res.status(200).json({
                 message: 'Proveedor o laboratorio modificado exitosamente',
@@ -78,10 +82,11 @@ export class proveedorLaboratorioController {
             const data = getValidatedData(
                 proveedorLaboratorioValidator.validateUpdateEstado(req.body)
             );
-            const proveedor = await proveedorLaboratorioService.updateEstado(
+            const proveedor = await ejecutarConAuditoria(req, auditoria => proveedorLaboratorioService.updateEstado(
                 idProveedorLaboratorio,
-                data
-            );
+                data,
+                auditoria
+            ));
 
             return res.status(200).json({
                 message: data.estado

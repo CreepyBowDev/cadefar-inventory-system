@@ -1,5 +1,11 @@
 import { AppError } from '../../shared/errors/app-error.js';
 
+const nombresTecnicos = new Set(['Error', 'TypeError', 'RangeError',
+    'SequelizeDatabaseError', 'SequelizeValidationError', 'SequelizeUniqueConstraintError',
+    'SequelizeForeignKeyConstraintError', 'SequelizeConnectionError', 'SequelizeConnectionRefusedError',
+    'SequelizeConnectionAcquireTimeoutError', 'SequelizeHostNotFoundError', 'SequelizeHostNotReachableError',
+    'SequelizeInvalidConnectionError', 'SequelizeConnectionTimedOutError']);
+
 export const errorHandler = (error, req, res, next) => {
 
     // El parser de Express genera errores HTTP antes de llegar al Controller.
@@ -12,10 +18,14 @@ export const errorHandler = (error, req, res, next) => {
 
     // Errores técnicos de Sequelize pueden contener SQL y hashes en sus valores.
     console.error({
-        name: error instanceof AppError ? 'AppError' : error.name,
+        name: error instanceof AppError ? 'AppError' : nombresTecnicos.has(error.name) ? error.name : 'Error',
         message: error instanceof AppError ? error.message : 'Error interno del servidor',
         statusCode: error instanceof AppError ? error.statusCode : 500
     });
+
+    // Ya no es posible emitir otro JSON. Cerrar la respuesta parcial sin pasar
+    // el error técnico al handler por defecto, que podría imprimir su stack/SQL.
+    if (res.headersSent) return res.destroy();
 
     if (error instanceof AppError) {
 

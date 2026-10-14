@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-// Capas HTTP/Service/Repository y generador SQL reales; únicamente se simulan
-// los resultados de SELECT. Estas pruebas no conectan ni escriben en MySQL.
+// Capas HTTP/Service/Repository y generador SQL reales; SELECT y persistencia
+// transversal simulados. Estas pruebas no conectan ni escriben en MySQL.
 process.env.NODE_ENV = 'test';
 process.env.DB_NAME_TEST = 'compras_sin_conexion';
 process.env.JWT_SECRET = 'clave_sintetica_exclusiva_de_pruebas_compras';
@@ -12,8 +12,10 @@ const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
 const { ROLES } = await import('../src/shared/constants/roles.js');
 const { compraService } = await import('../src/business/services/compra.service.js');
+const { simularAuditoriaTransversal } = await import('./helpers/auditoria-transversal.js');
 
 test('Fase 2.2: consultas de Compras y permisos sin conexión ni escrituras MySQL', async t => {
+    simularAuditoriaTransversal(t);
     const usuarios = Object.values(ROLES).map(idRol => ({
         id_usuario: idRol, id_rol: idRol, nombre_usuario: `usuario${idRol}`,
         estado: true, version_credenciales: 0

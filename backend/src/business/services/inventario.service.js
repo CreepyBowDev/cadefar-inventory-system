@@ -8,6 +8,9 @@ import { decimalAEntero, enteroADecimal, dividirYRedondear,
     MAXIMO_COEFICIENTE_DECIMAL_14 } from '../../shared/utils/decimal.js';
 import { obtenerFechaOperacion } from '../../shared/utils/fecha-operacion.js';
 import { MOTIVOS_MOVIMIENTO } from '../../shared/constants/motivos-movimiento.js';
+import { bitacoraAuditoriaService } from './bitacora-auditoria.service.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { snapshotExistencia } from '../../shared/utils/auditoria-catalogo.js';
 
 const toPlain = (registro) => registro.get ? registro.get({ plain: true }) : registro;
 const decimal6 = (valor) => {
@@ -21,10 +24,10 @@ const costoPromedioExistencia = (existencia) => {
         costo = decimalAEntero(String(existencia.costo_unitario_promedio), 6);
     } catch (error) {
         if (!(error instanceof TypeError || error instanceof RangeError)) throw error;
-        throw new AppError('El costo promedio de la existencia es inconsistente', 409);
+        throw anotarErrorAuditoria(new AppError('El costo promedio de la existencia es inconsistente', 409), { causa: 'CONFLICTO' });
     }
     if (costo > MAXIMO_COEFICIENTE_DECIMAL_14) {
-        throw new AppError('El costo promedio de la existencia es inconsistente', 409);
+        throw anotarErrorAuditoria(new AppError('El costo promedio de la existencia es inconsistente', 409), { causa: 'CONFLICTO' });
     }
     return costo;
 };
@@ -133,27 +136,34 @@ const toPublicMovimiento = (registro) => {
 
 // Flujo compartido exclusivamente por CU35/CU36. El motivo lo seleccionan los
 // métodos de negocio, nunca el cuerpo enviado por el cliente.
-const registrarRetiro = async (data, idUsuarioAutenticado, motivo) => {
+const registrarRetiro = async (data, idUsuarioAutenticado, motivo, auditoria) => {
     if (!Number.isInteger(idUsuarioAutenticado) || idUsuarioAutenticado <= 0 ||
         idUsuarioAutenticado > 2147483647) throw new AppError('No autenticado', 401);
+    const tipo = motivo === MOTIVOS_MOVIMIENTO.VENCIMIENTO ? 'INVENTARIO_RETIRAR_VENCIMIENTO' : 'INVENTARIO_RETIRAR_DANO';
+    return bitacoraAuditoriaService.ejecutarCambio(tipo, auditoria,
+        { tipo: 'EXISTENCIA', id: data.idExistencia }, seguimiento => ejecutarRetiro(data, idUsuarioAutenticado, motivo, seguimiento));
+};
+
+const ejecutarRetiro = async (data, idUsuarioAutenticado, motivo, seguimiento) => {
     try {
         return await db.sequelize.transaction(async transaction => {
+            seguimiento.transaction = transaction;
             const registro = await existenciaMedicamentoRepository.findByIdParaMovimiento({
                 idExistencia: data.idExistencia, transaction
             });
-            if (!registro) throw new AppError('Existencia no encontrada', 404);
+            if (!registro) throw anotarErrorAuditoria(new AppError('Existencia no encontrada', 404), { causa: 'NO_ENCONTRADO' });
             const existencia = toPlain(registro);
             const ultimoMovimiento = await movimientoInventarioRepository.findUltimoIdParaExistencia({
                 idExistencia: data.idExistencia, transaction
             });
             if (existencia.cantidad_fisica !== data.stockObservado ||
                 ultimoMovimiento !== data.ultimoMovimientoObservado) {
-                throw new AppError('La existencia cambió. Consulte su saldo e historial antes de retirar', 409);
+                throw anotarErrorAuditoria(new AppError('La existencia cambió. Consulte su saldo e historial antes de retirar', 409), { causa: 'PRECONDICIONES_DESACTUALIZADAS' });
             }
             const { fechaComercial, fechaHoraComercial } = obtenerFechaOperacion();
             if (!Number.isInteger(existencia.cantidad_fisica) || existencia.cantidad_fisica < 0 ||
                 existencia.cantidad_fisica > 2147483647) {
-                throw new AppError('El saldo de la existencia es inconsistente', 409);
+                throw anotarErrorAuditoria(new AppError('El saldo de la existencia es inconsistente', 409), { causa: 'CONFLICTO' });
             }
             if (motivo === MOTIVOS_MOVIMIENTO.VENCIMIENTO) {
                 let vencimiento;
@@ -162,12 +172,12 @@ const registrarRetiro = async (data, idUsuarioAutenticado, motivo) => {
                         existencia.precision_vencimiento, fechaComercial);
                 } catch (error) {
                     if (!(error instanceof RangeError)) throw error;
-                    throw new AppError('El vencimiento de la existencia es inconsistente', 409);
+                    throw anotarErrorAuditoria(new AppError('El vencimiento de la existencia es inconsistente', 409), { causa: 'CONFLICTO' });
                 }
-                if (!vencimiento.vencida) throw new AppError('La existencia todavía no está vencida', 409);
+                if (!vencimiento.vencida) throw anotarErrorAuditoria(new AppError('La existencia todavía no está vencida', 409), { causa: 'CONFLICTO' });
             }
             if (data.cantidad > existencia.cantidad_fisica) {
-                throw new AppError('Stock físico insuficiente para el retiro', 409);
+                throw anotarErrorAuditoria(new AppError('Stock físico insuficiente para el retiro', 409), { causa: 'STOCK_INSUFICIENTE' });
             }
             const promedio = costoPromedioExistencia(existencia);
             const costoAplicado = enteroADecimal(promedio, 6);
@@ -175,11 +185,12 @@ const registrarRetiro = async (data, idUsuarioAutenticado, motivo) => {
             // Solo se limita lo persistido. El importe derivado puede superar
             // DECIMAL(14,2); se conserva como cadena exacta, sin columna nueva.
             const perdida = enteroADecimal(dividirYRedondear(BigInt(data.cantidad) * promedio, 10000n), 2);
+            const antes = snapshotExistencia(existencia);
             const [actualizadas] = await existenciaMedicamentoRepository.updateSaldoYCosto({
                 idExistencia: data.idExistencia, cantidadFisica: stockFisico,
                 costoUnitarioPromedio: costoAplicado, transaction
             });
-            if (actualizadas !== 1) throw new AppError('No se pudo actualizar la existencia', 409);
+            if (actualizadas !== 1) throw anotarErrorAuditoria(new AppError('No se pudo actualizar la existencia', 409), { causa: 'CONFLICTO' });
             const observacion = data.observacion ?? null;
             const movimiento = await movimientoInventarioRepository.create({ transaction, data: {
                 id_existencia: data.idExistencia, id_usuario: idUsuarioAutenticado,
@@ -187,6 +198,11 @@ const registrarRetiro = async (data, idUsuarioAutenticado, motivo) => {
                 direccion: 'SALIDA', cantidad: data.cantidad, costo_unitario_aplicado: costoAplicado,
                 motivo, observacion, fecha_movimiento: fechaHoraComercial
             } });
+            await bitacoraAuditoriaService.registrarCambio(seguimiento, { antes,
+                despues: { ...antes, stockFisico, costoUnitarioPromedio: costoAplicado },
+                referencias: [{ tipo: 'MOVIMIENTO', id: movimiento.id_movimiento }],
+                metadatos: { cantidadRetirada: data.cantidad, cantidadMovimientos: 1, perdida }
+            }, transaction);
             return {
                 idExistencia: existencia.id_existencia, saldoAnterior: existencia.cantidad_fisica,
                 cantidadRetirada: data.cantidad, stockFisico, costoUnitarioPromedio: costoAplicado,
@@ -202,44 +218,50 @@ const registrarRetiro = async (data, idUsuarioAutenticado, motivo) => {
     } catch (error) {
         const codigo = error.parent?.code || error.original?.code;
         if (codigo === 'ER_LOCK_DEADLOCK' || codigo === 'ER_LOCK_WAIT_TIMEOUT') {
-            throw new AppError('El retiro no pudo confirmarse por contención temporal. Consulte la existencia y reintente', 409);
+            throw anotarErrorAuditoria(new AppError('El retiro no pudo confirmarse por contención temporal. Consulte la existencia y reintente', 409), { causa: 'CONFLICTO' });
         }
         throw error;
     }
 };
 
 export class inventarioService {
-    static async registrarRetiroVencimiento(data, idUsuarioAutenticado) {
-        return registrarRetiro(data, idUsuarioAutenticado, MOTIVOS_MOVIMIENTO.VENCIMIENTO);
+    static async registrarRetiroVencimiento(data, idUsuarioAutenticado, auditoria) {
+        return registrarRetiro(data, idUsuarioAutenticado, MOTIVOS_MOVIMIENTO.VENCIMIENTO, auditoria);
     }
 
-    static async registrarRetiroDano(data, idUsuarioAutenticado) {
-        return registrarRetiro(data, idUsuarioAutenticado, MOTIVOS_MOVIMIENTO.DANO);
+    static async registrarRetiroDano(data, idUsuarioAutenticado, auditoria) {
+        return registrarRetiro(data, idUsuarioAutenticado, MOTIVOS_MOVIMIENTO.DANO, auditoria);
     }
 
-    static async registrarAjuste(data, idUsuarioAutenticado) {
+    static async registrarAjuste(data, idUsuarioAutenticado, auditoria) {
         if (!Number.isInteger(idUsuarioAutenticado) || idUsuarioAutenticado <= 0 ||
             idUsuarioAutenticado > 2147483647) throw new AppError('No autenticado', 401);
+        return bitacoraAuditoriaService.ejecutarCambio('INVENTARIO_AJUSTAR', auditoria,
+            { tipo: 'EXISTENCIA', id: data.idExistencia }, seguimiento => this.#registrarAjuste(data, idUsuarioAutenticado, seguimiento));
+    }
+
+    static async #registrarAjuste(data, idUsuarioAutenticado, seguimiento) {
         try {
             return await db.sequelize.transaction(async transaction => {
+                seguimiento.transaction = transaction;
                 const registro = await existenciaMedicamentoRepository.findByIdParaMovimiento({
                     idExistencia: data.idExistencia, transaction
                 });
-                if (!registro) throw new AppError('Existencia no encontrada', 404);
+                if (!registro) throw anotarErrorAuditoria(new AppError('Existencia no encontrada', 404), { causa: 'NO_ENCONTRADO' });
                 const existencia = toPlain(registro);
                 const ultimoMovimiento = await movimientoInventarioRepository.findUltimoIdParaExistencia({
                     idExistencia: data.idExistencia, transaction
                 });
                 if (existencia.cantidad_fisica !== data.stockObservado ||
                     ultimoMovimiento !== data.ultimoMovimientoObservado) {
-                    throw new AppError('La existencia cambió. Consulte su saldo e historial antes de ajustar', 409);
+                    throw anotarErrorAuditoria(new AppError('La existencia cambió. Consulte su saldo e historial antes de ajustar', 409), { causa: 'PRECONDICIONES_DESACTUALIZADAS' });
                 }
                 // Un instante posterior a ambos bloqueos, sin leer Medicamento
                 // ni abrir un snapshot ordinario para comprobar precondiciones.
                 const { fechaHoraComercial } = obtenerFechaOperacion();
                 if (!Number.isInteger(existencia.cantidad_fisica) || existencia.cantidad_fisica < 0 ||
                     existencia.cantidad_fisica > 2147483647) {
-                    throw new AppError('El saldo de la existencia es inconsistente', 409);
+                    throw anotarErrorAuditoria(new AppError('El saldo de la existencia es inconsistente', 409), { causa: 'CONFLICTO' });
                 }
                 const promedioAnterior = costoPromedioExistencia(existencia);
                 const diferencia = data.saldoContado - existencia.cantidad_fisica;
@@ -254,7 +276,15 @@ export class inventarioService {
                     ultimoMovimiento,
                     movimiento: null
                 };
-                if (diferencia === 0) return respuesta;
+                if (diferencia === 0) {
+                    // Solo el resultado sin cambios: no guardar conteo, saldo,
+                    // costo, observación ni marcador como historial de conteos.
+                    seguimiento.evento.tipoEvento = 'INVENTARIO_CONCILIAR';
+                    await bitacoraAuditoriaService.registrarCambio(seguimiento, {
+                        metadatos: { ajusteRealizado: false, cantidadMovimientos: 0 }
+                    }, transaction);
+                    return respuesta;
+                }
 
                 const entrada = diferencia > 0;
                 const cantidad = Math.abs(diferencia);
@@ -263,14 +293,15 @@ export class inventarioService {
                     BigInt(existencia.cantidad_fisica) * promedioAnterior + BigInt(cantidad) * costoAplicado,
                     BigInt(data.saldoContado)) : promedioAnterior;
                 if (promedioFinal > MAXIMO_COEFICIENTE_DECIMAL_14) {
-                    throw new AppError('El costo promedio resultante supera el máximo permitido', 409);
+                    throw anotarErrorAuditoria(new AppError('El costo promedio resultante supera el máximo permitido', 409), { causa: 'CONFLICTO' });
                 }
                 respuesta.costoUnitarioPromedio = enteroADecimal(promedioFinal, 6);
+                const antes = snapshotExistencia(existencia);
                 const [actualizadas] = await existenciaMedicamentoRepository.updateSaldoYCosto({
                     idExistencia: data.idExistencia, cantidadFisica: data.saldoContado,
                     costoUnitarioPromedio: respuesta.costoUnitarioPromedio, transaction
                 });
-                if (actualizadas !== 1) throw new AppError('No se pudo actualizar la existencia', 409);
+                if (actualizadas !== 1) throw anotarErrorAuditoria(new AppError('No se pudo actualizar la existencia', 409), { causa: 'CONFLICTO' });
                 const movimiento = await movimientoInventarioRepository.create({ transaction, data: {
                     id_existencia: data.idExistencia, id_usuario: idUsuarioAutenticado,
                     id_detalle_compra: null, id_detalle_venta: null, id_movimiento_original: null,
@@ -287,13 +318,18 @@ export class inventarioService {
                     costoUnitarioAplicado: enteroADecimal(costoAplicado, 6), motivo: MOTIVOS_MOVIMIENTO.AJUSTE,
                     observacion: data.observacion, fechaMovimiento: fechaHoraComercial
                 };
+                await bitacoraAuditoriaService.registrarCambio(seguimiento, { antes,
+                    despues: { ...antes, stockFisico: respuesta.stockFisico, costoUnitarioPromedio: respuesta.costoUnitarioPromedio },
+                    referencias: [{ tipo: 'MOVIMIENTO', id: movimiento.id_movimiento }],
+                    metadatos: { ajusteRealizado: true, diferencia, cantidadMovimientos: 1 }
+                }, transaction);
                 // La transacción gestionada entrega la respuesta solo tras commit.
                 return respuesta;
             });
         } catch (error) {
             const codigo = error.parent?.code || error.original?.code;
             if (codigo === 'ER_LOCK_DEADLOCK' || codigo === 'ER_LOCK_WAIT_TIMEOUT') {
-                throw new AppError('El ajuste no pudo confirmarse por contención temporal. Consulte la existencia y reintente', 409);
+                throw anotarErrorAuditoria(new AppError('El ajuste no pudo confirmarse por contención temporal. Consulte la existencia y reintente', 409), { causa: 'CONFLICTO' });
             }
             throw error;
         }
@@ -305,7 +341,9 @@ export class inventarioService {
 
     static async getExistencias(idMedicamento, fechaComercial = obtenerFechaComercial()) {
         const registro = await existenciaMedicamentoRepository.findMedicamentoConExistencias(idMedicamento);
-        if (!registro) throw new AppError('Medicamento no encontrado', 404);
+        if (!registro) throw anotarErrorAuditoria(new AppError('Medicamento no encontrado', 404), {
+            causa: 'NO_ENCONTRADO', registro: { tipo: 'MEDICAMENTO', id: idMedicamento }
+        });
         return {
             data: toPublicExistencias(toPlain(registro), fechaComercial, true),
             meta: disponibilidadMeta(fechaComercial)

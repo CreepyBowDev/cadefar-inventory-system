@@ -11,8 +11,10 @@ const { default: db } = await import('../src/data/models/index.js');
 const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
 const { ROLES } = await import('../src/shared/constants/roles.js');
+const { simularAuditoriaNegocio } = await import('./helpers/auditoria-transversal.js');
 
 test('Fase 2.3: registro completo, reglas, SQL y rollback simulado sin MySQL', async t => {
+    simularAuditoriaNegocio(t);
     const instanteInicial = new Date('2026-11-01T03:59:59.999Z');
     t.mock.timers.enable({ apis: ['Date'], now: instanteInicial });
     const medicamento = (id, codigo, proveedor = 5) => ({

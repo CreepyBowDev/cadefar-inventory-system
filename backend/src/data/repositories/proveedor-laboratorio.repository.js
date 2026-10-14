@@ -9,29 +9,30 @@ export class proveedorLaboratorioRepository {
         });
     }
 
-    static async findById({ idProveedorLaboratorio }) {
-        return ProveedorLaboratorio.findByPk(idProveedorLaboratorio);
+    static async findById({ idProveedorLaboratorio, transaction, lock = false }) {
+        return ProveedorLaboratorio.findByPk(idProveedorLaboratorio, { transaction,
+            ...(transaction && lock ? { lock: transaction.LOCK.UPDATE } : {}) });
     }
 
-    static async create({ nombre, telefono, direccion, estado }) {
+    static async create({ nombre, telefono, direccion, estado }, { transaction } = {}) {
         return ProveedorLaboratorio.create({
             nombre,
             ...(telefono !== undefined ? { telefono } : {}),
             ...(direccion !== undefined ? { direccion } : {}),
             ...(estado !== undefined ? { estado } : {})
-        });
+        }, { transaction });
     }
 
-    static async update({ idProveedorLaboratorio, data }) {
+    static async update({ idProveedorLaboratorio, data, transaction }) {
         return ProveedorLaboratorio.update(data, {
-            where: { id_proveedor_laboratorio: idProveedorLaboratorio }
+            where: { id_proveedor_laboratorio: idProveedorLaboratorio }, transaction
         });
     }
 
-    static async updateEstado({ idProveedorLaboratorio, estado }) {
+    static async updateEstado({ idProveedorLaboratorio, estado, transaction }) {
         return ProveedorLaboratorio.update(
             { estado },
-            { where: { id_proveedor_laboratorio: idProveedorLaboratorio } }
+            { where: { id_proveedor_laboratorio: idProveedorLaboratorio }, transaction }
         );
     }
 }

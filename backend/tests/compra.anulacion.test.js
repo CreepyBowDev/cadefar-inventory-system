@@ -10,8 +10,10 @@ const { compraService } = await import('../src/business/services/compra.service.
 const { compraRepository } = await import('../src/data/repositories/compra.repository.js');
 const { existenciaMedicamentoRepository } = await import('../src/data/repositories/existencia-medicamento.repository.js');
 const { movimientoInventarioRepository } = await import('../src/data/repositories/movimiento-inventario.repository.js');
+const { simularAuditoriaNegocio } = await import('./helpers/auditoria-transversal.js');
 
 test('CU27: motivos, referencias e integridad con B1/A, sin MySQL', async t => {
+    simularAuditoriaNegocio(t);
     t.mock.method(db.sequelize.connectionManager, 'getConnection', () => {
         throw new Error('Esta suite no permite conexiones MySQL');
     });
@@ -83,7 +85,9 @@ test('CU27: motivos, referencias e integridad con B1/A, sin MySQL', async t => {
         dentro(args); eventos.push('movimiento');
         if (fallo === 'movimiento') throw new Error('fallo_sintetico');
         assert.equal(args.data.motivo, 'ANULACION_COMPRA');
-        pendiente.movimientos.push({ id_movimiento: 100 + pendiente.movimientos.length, ...args.data });
+        const creado = { id_movimiento: 100 + pendiente.movimientos.length, ...args.data };
+        pendiente.movimientos.push(creado);
+        return creado;
     });
     t.mock.method(compraRepository, 'anular', async args => {
         dentro(args); eventos.push('anular');

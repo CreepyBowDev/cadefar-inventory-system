@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { AppError } from '../errors/app-error.js';
+import { anotarErrorAuditoria } from './auditoria-error.js';
 
 export const esVersionCredencialesValida = (version) => (
     Number.isInteger(version) && version >= 0 && version <= 4294967295
@@ -37,7 +38,9 @@ export const verificarToken = (token) => {
         process.env.JWT_SECRET
     );
     if (!esPayloadValido(payload)) {
-        throw new AppError('Token inválido o expirado', 401);
+        throw anotarErrorAuditoria(new AppError('Token inválido o expirado', 401), {
+            tipoEvento: 'TOKEN_INVALIDO', causa: 'TOKEN_INVALIDO'
+        });
     }
     return payload;
 };
