@@ -11,8 +11,10 @@ const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
 const { ROLES } = await import('../src/shared/constants/roles.js');
 const { inventarioService } = await import('../src/business/services/inventario.service.js');
+const { simularAuditoriaNegocio } = await import('./helpers/auditoria-transversal.js');
 
 test('CU23: registro y conciliación HTTP con SQL y rollback simulados, sin MySQL', async t => {
+    simularAuditoriaNegocio(t);
     const instante = new Date('2026-11-01T03:59:59.999Z');
     t.mock.timers.enable({ apis: ['Date'], now: instante });
     const inicial = {

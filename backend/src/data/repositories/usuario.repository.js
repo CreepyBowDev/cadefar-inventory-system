@@ -71,7 +71,7 @@ export class usuarioRepository {
 
     static async findByIdForRecovery({ idUsuario, transaction }) {
         return Usuario.findByPk(idUsuario, {
-            attributes: ['id_usuario', 'correo', 'estado', 'version_credenciales'],
+            attributes: ['id_usuario', 'id_rol', 'nombre_usuario', 'correo', 'estado', 'version_credenciales'],
             transaction,
             lock: transaction.LOCK.UPDATE,
             logging: false
@@ -89,6 +89,7 @@ export class usuarioRepository {
             attributes: [
                 'id_usuario',
                 'id_rol',
+                'nombre_usuario',
                 'estado',
                 'password_hash',
                 'version_credenciales'
@@ -103,13 +104,13 @@ export class usuarioRepository {
         return Rol.findByPk(idRol, { transaction });
     }
 
-    static async createUsuario({ idRol, nombreUsuario, passwordHash, correo = null }) {
+    static async createUsuario({ idRol, nombreUsuario, passwordHash, correo = null, transaction }) {
         return Usuario.create({
             id_rol: idRol,
             nombre_usuario: nombreUsuario,
             password_hash: passwordHash,
             correo
-        });
+        }, { transaction });
     }
 
     static async updateUsuario({ idUsuario, idRol, nombreUsuario, correo, transaction = undefined }) {
@@ -133,10 +134,10 @@ export class usuarioRepository {
         });
     }
 
-    static async updateEstado({ idUsuario, estado }) {
+    static async updateEstado({ idUsuario, estado, transaction }) {
         return Usuario.update(
             { estado },
-            { where: { id_usuario: idUsuario } }
+            { where: { id_usuario: idUsuario }, transaction }
         );
     }
 

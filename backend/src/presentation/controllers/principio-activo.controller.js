@@ -1,9 +1,12 @@
 import { principioActivoService } from '../../business/services/principio-activo.service.js';
 import { principioActivoValidator } from '../../business/validators/principio-activo.validator.js';
 import { AppError } from '../../shared/errors/app-error.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { ejecutarConAuditoria } from '../../shared/utils/auditoria-http.js';
 
 const getValidatedData = (result) => {
-    if (!result.success) throw new AppError('Datos inválidos', 400, result.error.issues);
+    if (!result.success) throw anotarErrorAuditoria(new AppError('Datos inválidos', 400, result.error.issues),
+        { tipoEvento: 'VALIDACION_RECHAZADA', causa: 'ENTRADA_INVALIDA' });
     return result.data;
 };
 const getIdPrincipioActivo = (params) => getValidatedData(principioActivoValidator.validateId(params)).idPrincipioActivo;
@@ -26,7 +29,7 @@ export class principioActivoController {
     static async createPrincipioActivo(req, res, next) {
         try {
             const data = getValidatedData(principioActivoValidator.validateCreate(req.body));
-            const principio = await principioActivoService.createPrincipioActivo(data);
+            const principio = await ejecutarConAuditoria(req, auditoria => principioActivoService.createPrincipioActivo(data, auditoria));
             return res.status(201).json({ message: 'Principio activo creado exitosamente', data: principio });
         } catch (error) { next(error); }
     }
@@ -35,7 +38,7 @@ export class principioActivoController {
         try {
             const idPrincipioActivo = getIdPrincipioActivo(req.params);
             const data = getValidatedData(principioActivoValidator.validateUpdate(req.body));
-            const principio = await principioActivoService.updatePrincipioActivo(idPrincipioActivo, data);
+            const principio = await ejecutarConAuditoria(req, auditoria => principioActivoService.updatePrincipioActivo(idPrincipioActivo, data, auditoria));
             return res.status(200).json({ message: 'Principio activo modificado exitosamente', data: principio });
         } catch (error) { next(error); }
     }
@@ -44,7 +47,7 @@ export class principioActivoController {
         try {
             const idPrincipioActivo = getIdPrincipioActivo(req.params);
             const data = getValidatedData(principioActivoValidator.validateUpdateEstado(req.body));
-            const principio = await principioActivoService.updateEstado(idPrincipioActivo, data);
+            const principio = await ejecutarConAuditoria(req, auditoria => principioActivoService.updateEstado(idPrincipioActivo, data, auditoria));
             return res.status(200).json({
                 message: data.estado ? 'Principio activo activado exitosamente' : 'Principio activo desactivado exitosamente',
                 data: principio

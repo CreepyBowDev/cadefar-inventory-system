@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 // Pruebas sin conexión ni preparación de MySQL. Ejecutar las capas HTTP,
 // autenticación, Service, Repository y generación SQL reales; simular únicamente
-// el resultado de SELECT. La integración contra MySQL se verifica por separado.
+// SELECT y persistencia transversal. La integración MySQL se verifica aparte.
 process.env.NODE_ENV = 'test';
 process.env.DB_NAME_TEST = 'inventario_sin_conexion';
 process.env.JWT_SECRET = 'clave_sintetica_exclusiva_de_pruebas_inventario';
@@ -12,8 +12,10 @@ const { default: db } = await import('../src/data/models/index.js');
 const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
 const { ROLES } = await import('../src/shared/constants/roles.js');
+const { simularAuditoriaTransversal } = await import('./helpers/auditoria-transversal.js');
 
 test('Fase 1A: HTTP, permisos, disponibilidad e historial sin escribir ni conectar a MySQL', async t => {
+    simularAuditoriaTransversal(t);
     t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-01T03:59:59Z') });
     const existencia = (id, fecha, precision, cantidad, costo = '1.250000') => ({
         id_existencia: id, id_medicamento: 1, codigo_existencia: `PAR-${id}`,

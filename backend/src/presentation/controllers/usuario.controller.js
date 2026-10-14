@@ -2,10 +2,17 @@ import { usuarioService } from '../../business/services/usuario.service.js';
 import { usuarioValidator } from '../../business/validators/usuario.validator.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { AUTH_COOKIE_OPTIONS, AUTH_COOKIE_MAX_AGE } from '../../shared/constants/auth-cookie.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import { ejecutarConAuditoria } from '../../shared/utils/auditoria-http.js';
+
+const contextoSeguridad = req => ({ contexto: req.contextoAuditoria,
+    responsable: { idUsuario: req.usuario.idUsuario, idRol: req.usuario.idRol,
+        nombreUsuario: req.usuario.nombreUsuario } });
 
 const getValidatedData = (result) => {
     if (!result.success) {
-        throw new AppError('Datos inválidos', 400, result.error.issues);
+        throw anotarErrorAuditoria(new AppError('Datos inválidos', 400, result.error.issues),
+            { tipoEvento: 'VALIDACION_RECHAZADA', causa: 'ENTRADA_INVALIDA' });
     }
 
     return result.data;
@@ -25,7 +32,7 @@ export class usuarioController {
             const data = getValidatedData(
                 usuarioValidator.validateCreateUsuario(req.body)
             );
-            const usuario = await usuarioService.createUsuario(data);
+            const usuario = await ejecutarConAuditoria(req, auditoria => usuarioService.createUsuario(data, auditoria));
 
             return res.status(201).json({
                 message: 'Usuario creado exitosamente',
@@ -38,7 +45,7 @@ export class usuarioController {
 
     static async getUsuarios(req, res, next) {
         try {
-            const usuarios = await usuarioService.getUsuarios();
+            const usuarios = await ejecutarConAuditoria(req, auditoria => usuarioService.getUsuarios(auditoria));
 
             return res.status(200).json({ data: usuarios });
         } catch (error) {
@@ -49,7 +56,7 @@ export class usuarioController {
     static async getUsuarioById(req, res, next) {
         try {
             const idUsuario = getIdUsuario(req.params);
-            const usuario = await usuarioService.getUsuarioById(idUsuario);
+            const usuario = await ejecutarConAuditoria(req, auditoria => usuarioService.getUsuarioById(idUsuario, undefined, auditoria));
 
             return res.status(200).json({ data: usuario });
         } catch (error) {
@@ -63,7 +70,7 @@ export class usuarioController {
             const data = getValidatedData(
                 usuarioValidator.validateUpdateUsuario(req.body)
             );
-            const usuario = await usuarioService.updateUsuario(idUsuario, data);
+            const usuario = await ejecutarConAuditoria(req, auditoria => usuarioService.updateUsuario(idUsuario, data, auditoria));
 
             return res.status(200).json({
                 message: 'Usuario modificado exitosamente',
@@ -80,7 +87,7 @@ export class usuarioController {
             const data = getValidatedData(
                 usuarioValidator.validateUpdateEstado(req.body)
             );
-            const usuario = await usuarioService.updateEstado(idUsuario, data);
+            const usuario = await ejecutarConAuditoria(req, auditoria => usuarioService.updateEstado(idUsuario, data, auditoria));
 
             return res.status(200).json({
                 message: data.estado
@@ -100,7 +107,9 @@ export class usuarioController {
                 usuarioValidator.validateUpdatePassword(req.body)
             );
 
-            await usuarioService.updatePassword(idUsuario, data);
+            const resultado = await usuarioService.updatePassword(idUsuario, data, contextoSeguridad(req));
+            req.resultadoAuditoriaAuth = { efecto: 'CONFIRMADO', etapa: 'RESPUESTA',
+                responsable: contextoSeguridad(req).responsable, cuentaObjetivo: resultado.cuentaObjetivo };
 
             return res.status(200).json({
                 message: 'Contraseña modificada exitosamente'
@@ -119,14 +128,18 @@ export class usuarioController {
             const resultado = await usuarioService.updateOwnPassword(
                 req.usuario.idUsuario,
                 data,
-                req.usuario.versionCredenciales
+                req.usuario.versionCredenciales,
+                contextoSeguridad(req)
             );
 
+            req.resultadoAuditoriaAuth = { efecto: 'CONFIRMADO', etapa: 'COOKIE',
+                responsable: contextoSeguridad(req).responsable, cuentaObjetivo: resultado.cuentaObjetivo };
             res.cookie('token', resultado.token, {
                 ...AUTH_COOKIE_OPTIONS,
                 maxAge: AUTH_COOKIE_MAX_AGE
             });
 
+            req.resultadoAuditoriaAuth.etapa = 'RESPUESTA';
             return res.status(200).json({
                 message: 'Contraseña modificada exitosamente'
             });

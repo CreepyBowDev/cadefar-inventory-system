@@ -128,7 +128,7 @@ El sistema debe permitir consultar el stock realmente disponible para venta, exc
 
 El sistema debe permitir registrar ajustes derivados de diferencias detectadas durante conteos físicos.
 
-El Regente proporciona el saldo físico contado, incluido cero, y una observación obligatoria; el sistema calcula diferencia, dirección y cantidad conforme a RN26 y RN82–RN84. Una entrada requiere costo positivo y actualiza el promedio ponderado; una salida aplica el promedio vigente y lo conserva. Sin diferencia se informa que no fue necesario ajustar, sin movimiento ni modificación de saldo/promedio ni auditoría persistida del conteo.
+El Regente proporciona el saldo físico contado, incluido cero, y una observación obligatoria; el sistema calcula diferencia, dirección y cantidad conforme a RN26 y RN82–RN84. Una entrada requiere costo positivo y actualiza el promedio ponderado; una salida aplica el promedio vigente y lo conserva. Sin diferencia se informa que no fue necesario ajustar, sin movimiento ni modificación de saldo/promedio ni historial detallado del conteo. Bitácora registra exclusivamente el resultado sin cambios y la existencia conforme a RF49/RN129.
 
 Se comprueban las precondiciones de saldo e historial de RN103 incluso sin diferencia. Se admiten existencias registradas vencidas o de medicamentos inactivos, sin reactivación ni cambio de vencimiento; los daños identificados y vencimientos se registran mediante RF30/RF31.
 
@@ -251,6 +251,72 @@ El sistema debe permitir establecer una nueva contraseña después de verificar 
 El restablecimiento exitoso debe invalidar el código utilizado y los demás códigos de recuperación anteriores correspondientes a la cuenta, reiniciar los intentos fallidos y eliminar el bloqueo temporal de inicio de sesión, sin activar una cuenta desactivada administrativamente.
 
 La recuperación de CU09 es independiente del cambio propio y del restablecimiento administrativo de CU08; no los reemplaza.
+
+### Bitácora de auditoría — backend implementado
+
+RF43–RF53 incorporan el módulo solicitado para Sistemas de Información I. Su captura automática y API CU42 están implementadas en backend, conforme a RN116, con información de RI16 y sin alterar las políticas vigentes. La puesta en funcionamiento requiere la migración. La evidencia de aceptación se mantiene en `bitacora-auditoria.md`; Ventas/Recetas y frontend de Bitácora conservan su estado pendiente.
+
+## RF43. Auditar inicios de sesión
+
+El sistema debe conservar un evento por cada resultado de inicio de sesión: exitoso, contraseña incorrecta, usuario inexistente o acceso rechazado por cuenta desactivada. Debe registrar fecha/hora, IP y resultado; usuario, identificador y rol cuando estén comprobados y sean pertinentes; nombre de usuario ingresado y contador consecutivo cuando correspondan.
+
+Un nombre inexistente no requiere un identificador válido ni un contador de cuenta. La información de auditoría no debe agregarse a las respuestas públicas ni permitir enumerar cuentas; se conserva la respuesta genérica para nombre inexistente o contraseña incorrecta. Relaciones: CU01; RN117–RN121 y RN125.
+
+## RF44. Auditar bloqueo temporal de inicio de sesión
+
+El sistema debe conservar el intento incorrecto que desencadena el bloqueo y un evento diferenciado del bloqueo producido, relacionados como parte de la misma solicitud. Debe conservar el contador correspondiente, instante del bloqueo, duración de diez minutos definida por RN07 y fecha/hora de finalización prevista.
+
+También debe registrar cada intento recibido durante un bloqueo vigente sin confundirlo con otra contraseña comprobada ni con un nuevo bloqueo. La auditoría observa RN07, no cambia umbral, duración, reinicios ni efectos sobre sesiones. Relaciones: CU01; RN122, RN123 y RN131.
+
+## RF45. Auditar cierre de sesión y rechazos de sesión
+
+El sistema debe registrar el logout explícito completado mediante `POST /api/auth/logout`, con responsable autenticado, fecha/hora, IP y resultado. Una solicitud de logout rechazada por autenticación no se debe registrar como cierre exitoso.
+
+Los rechazos por token inválido, expirado o credenciales de sesión desactualizadas son eventos diferentes. Solo pueden observarse cuando el backend recibe una solicitud y detecta esa condición; no se afirma capturar el instante exacto de expiración sin solicitud, ni el cierre de pestaña o navegador. Relaciones: CU02 y rutas protegidas; RN118, RN124 y RN131.
+
+## RF46. Auditar errores y denegaciones de autenticación y acceso
+
+El sistema debe distinguir credenciales incorrectas, cuenta desactivada, bloqueo, falta de autorización, errores de validación y errores técnicos del servidor. Debe registrar contexto mínimo de operación, categoría o código seguro, fecha/hora, IP y resultado, incluida la información disponible cuando la validación o autenticación falla antes del Controller.
+
+La categoría no debe deducirse únicamente del estado HTTP: actualmente tanto el tercer fallo de login como un intento durante el bloqueo producen 423. Deben poder investigarse fallos internos, de conexión y otros errores técnicos recibidos por el backend sin copiar errores completos ni secretos. Un fallo de red que impide que la petición llegue al servidor no puede garantizarse como evento capturado. Relaciones: CU01, CU02, CU08, CU09 y controles de acceso; RN118, RN121, RN125, RN132 y RN133.
+
+## RF47. Auditar recuperación y modificación de contraseñas
+
+El sistema debe registrar solicitud de recuperación, solicitud rechazada o suprimida por límites o condiciones de cuenta, restablecimiento exitoso o fallido, cambio propio y restablecimiento administrativo, distinguiendo responsable autenticado y cuenta objetivo cuando corresponda.
+
+Debe diferenciar la emisión de una recuperación y el resultado técnico del intento de envío: aceptación, rechazo o resultado incierto del proveedor no prueban entrega al buzón ni restablecimiento de contraseña. La respuesta genérica de recuperación tampoco prueba que se haya emitido un código. Se conservan los límites, respuestas públicas y efectos actuales de CU08/CU09 y RN107–RN115, sin almacenar contraseñas, hashes, códigos, HMAC de recuperación, JWT o cookies. Relaciones: RN117, RN118, RN121, RN125, RN130 y RN133.
+
+## RF48. Auditar operaciones administrativas y de catálogo
+
+El sistema debe registrar las altas, modificaciones y cambios de estado de usuarios, proveedores/laboratorios, principios activos y medicamentos, así como las altas, modificaciones y retiradas permitidas de relaciones de composición. Debe distinguir asignación o cambio de rol de una cuenta de una gestión dinámica de roles, que no existe en el alcance actual.
+
+Debe conservar operación, responsable autenticado, registro afectado, fecha/hora, IP y resultado exitoso, rechazado o fallido. Para cambios efectivos debe identificar los campos permitidos afectados y un resumen mínimo sanitizado, sin copiar registros completos ni valores sensibles. La creación integral de un medicamento comprende su composición inicial como una operación lógica. CU08 se cubre específicamente por RF47. Relaciones: CU03, CU06, CU07, CU10, CU12, CU13, CU14 y CU16–CU19; RN117, RN125 y RN129–RN133.
+
+## RF49. Auditar operaciones críticas de negocio
+
+El sistema debe registrar solicitudes de registro y anulación de compras, ajustes y retiros por vencimiento o daño, distinguiendo éxito confirmado, rechazo y fallo técnico. Debe conservar responsable, fecha/hora, IP, resultado y referencias pertinentes a compra, existencia y movimientos, sin sustituir esos registros ni modificar reglas de stock, valoración, reversión o concurrencia.
+
+Una conciliación de CU23 sin diferencia debe identificarse como operación completada sin cambios de inventario, sin generar movimiento ni historial detallado de conteos. Este evento pertenece exclusivamente a Bitácora; conserva referencia a la existencia y resultado, sin snapshots, conteo ni observación. RF19/RI09 describen la ausencia de historial detallado de conteos, no la ausencia de este evento.
+
+El registro de existencias y sus modificaciones derivadas de compras, anulaciones, ajustes y retiros se auditan dentro de sus operaciones de origen; no se presupone una edición independiente de existencias. Se prevé integrar las futuras operaciones de registro/confirmación y anulación de ventas, y registro/revisión de recetas cuando se implementen CU28, CU30, CU31 y CU32. Relaciones actuales: CU23, CU25, CU27, CU35 y CU36; RN129–RN133, sin reemplazar RN43, RN80 ni RN103/RN104.
+
+## RF50. Consultar historial de auditoría
+
+El sistema debe permitir al Administrador consultar los eventos persistidos, ordenados de más reciente a más antiguo con desempate estable por identificador. Sin coincidencias debe mostrar una lista vacía; un fallo de lectura debe informarse como error, no como ausencia de eventos. La consulta comprende información capturada desde la puesta en funcionamiento, sin inferir eventos históricos faltantes. Relaciones: CU42; RN126–RN128.
+
+## RF51. Filtrar y paginar eventos de auditoría
+
+El sistema debe permitir combinar filtros por período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo de evento, resultado y registro afectado, y navegar por páginas acotadas conservando los criterios. Debe validar rango temporal y paginación y devolver el total de coincidencias; los tamaños permitidos se definirán antes de implementar, sin descarga completa por defecto.
+
+La consulta por tipo de intento fallido debe permitir conocer cuántos eventos coinciden en el período sin sumar los eventos de bloqueo como contraseñas incorrectas adicionales. La ordenación estable no implica que páginas sucesivas sean una instantánea inmutable mientras se agregan eventos. Relaciones: CU42; RN119, RN126 y RN131; RNF21.
+
+## RF52. Consultar detalle de evento de auditoría
+
+El sistema debe permitir al Administrador consultar un evento por su identificador y ver la información pertinente de RI16 y las referencias disponibles. Debe volver a comprobar autorización para el detalle, informar si el evento no existe y excluir datos sensibles incluso en errores. Relaciones: CU42; RN125–RN128 y RN133.
+
+## RF53. Restringir acceso a la bitácora general
+
+El sistema debe comprobar en el backend una sesión válida y rol Administrador para listado, filtros y detalle, conforme a los mecanismos actuales de autenticación y autorización por roles fijos. Regente y Vendedor generan eventos mediante sus operaciones, pero no pueden consultar la bitácora general. La restricción visual no sustituye la comprobación del backend. Relaciones: CU42; RN126 y RN127; RNF18/RNF19.
 
 ---
 
@@ -475,6 +541,24 @@ El sistema debe conservar de manera protegida la información necesaria para vin
 
 El correo es opcional, nullable y único; su asignación administrativa supervisada normaliza trim exterior/minúsculas y conserva puntos y `+`. Un cambio efectivo o retirada invalida recuperaciones, sin reiniciar cuotas. Se utilizan `recuperacion_password` (nueve atributos funcionales, HMAC y estados) y `limite_recuperacion_ip` (cuotas persistentes por ámbito/IP protegida mediante HMAC).
 
+## RI16. Eventos de auditoría
+
+**Estado:** implementada en `bitacora_auditoria`, modelo `BitacoraAuditoria`, con referencias lógicas sin FK ni cascadas. El contrato HTTP y los límites se describen en `bitacora-auditoria.md`.
+
+Conservar únicamente los datos pertinentes de cada evento:
+
+- Identificador del evento, tipo, módulo y operación.
+- Fecha y hora obtenidas del servidor: UTC con milisegundos, `DATETIME(3)` y presentación ISO 8601 con `Z`.
+- Resultado y causa o categoría sanitizada, distinguiendo el resultado de la solicitud del efecto persistido cuando difieran.
+- Identificador y nombre del responsable autenticado, cuando exista, y rol comprobado cuando corresponda; información identificativa del momento del evento para que cambios posteriores de nombre o rol no reatribuyan el pasado.
+- Cuenta objetivo cuando haya sido reconocida, diferenciada del responsable. En login fallido, nombre ingresado validado/sanitizado aunque no exista cuenta; no se exige un usuario válido ni se asume que el titular realizó el intento.
+- Dirección IP obtenida por el backend y procedencia confiable de la captura; si no puede determinarse, indicar su indisponibilidad sin fabricar una dirección ni confiar en el cliente.
+- Tipo e identificador del registro afectado y referencias disponibles a operación y movimientos, cuando correspondan.
+- Contador consecutivo, instante, duración y finalización prevista del bloqueo, para los eventos pertinentes; datos relacionados para distinguir el fallo desencadenante del bloqueo producido.
+- Campos permitidos afectados y resumen mínimo sanitizado de cambios administrativos, cuando corresponda.
+
+No conservar contraseñas, hashes de contraseña, JWT, cookies, códigos ni HMAC de recuperación, secretos, cuerpos completos sin filtrado ni información personal innecesaria. Los datos ingresados no se consideran identidad autenticada. No se exige copiar el correo de recuperación para auditar su resultado. Relaciones: RF43–RF53; RN117–RN125, RN129–RN133 y RNF18–RNF22.
+
 ---
 
 # 3. Requerimientos no funcionales
@@ -580,6 +664,28 @@ El envío se intenta una sola vez fuera de transacciones MySQL, con timeout de c
 La implementación de CU09 debe contemplar una estrategia segura para invalidar las sesiones previamente emitidas después de un restablecimiento exitoso, de acuerdo con RN115.
 
 Se exige `versionCredenciales` en JWT y se contrasta con `Usuario.version_credenciales`. CU08 y CU09 incrementan la versión de forma transaccional; JWT anteriores, ausentes o desactualizados se rechazan. CU08 propio renueva su cookie; CU09 no inicia sesión automáticamente. Se conserva la cookie HttpOnly y no se agrega tabla de sesiones.
+
+### Bitácora de auditoría — backend implementado
+
+## RNF18. Integridad y protección de registros de auditoría
+
+Los eventos persistidos deben conservar su información histórica y no admitir edición ni eliminación mediante las operaciones ordinarias, incluida la interfaz del Administrador. Debe comprobarse que el listado y detalle no permiten escrituras y que las solicitudes no autorizadas son rechazadas en el backend. Esta protección no equivale a garantizar inviolabilidad frente a un administrador de la infraestructura. Relaciones: RF50–RF53; RN126–RN128.
+
+## RNF19. Seguridad y privacidad de la auditoría
+
+La captura, persistencia, consulta y diagnóstico de auditoría deben excluir los datos prohibidos por RN125 y limitarse a RI16. La verificación deberá cubrir eventos exitosos, rechazados, fallidos y errores de validación con entradas sintéticas, así como intentos de consulta sin sesión y con roles no autorizados. Ninguna respuesta pública de autenticación debe incorporar los motivos internos exclusivos de auditoría. Relaciones: RF43–RF53; RN117, RN118, RN120, RN125, RN126 y RN133.
+
+## RNF20. Persistencia, conservación y disponibilidad de auditoría
+
+Los eventos cuya persistencia se haya confirmado deben permanecer consultables después de reiniciar la aplicación durante un mínimo de cinco años: 60 meses calendario desde registro, o períodos legales superiores cuando correspondan. Consola y memoria temporal no cumplen por sí solas este requisito. Una consulta fallida debe distinguirse de un historial vacío. La primera versión no elimina ni archiva automáticamente; superar el mínimo no autoriza borrar. Responsabilidades, respaldo, archivo y eventual depuración extraordinaria requieren definición según RN128; el plazo técnico no acredita cumplimiento legal automático. Relaciones: RF50–RF52; RN127, RN128 y RN132.
+
+## RNF21. Rendimiento de la captura y consulta de auditoría
+
+La consulta debe utilizar filtros y páginas acotadas en el servidor, sin cargar el historial completo en React. La captura debe limitarse a eventos relevantes y datos mínimos, sin registrar cada renderizado ni cada petición automática. Antes de implementar se definirán tamaños permitidos de página, volumen de prueba y objetivos medibles de tiempo de respuesta para verificar captura y consultas con datos sintéticos. No se fijan cuotas de almacenamiento ni tiempos arbitrarios en esta incorporación documental. Relaciones: RF43–RF53; RN116 y RN131.
+
+## RNF22. Fiabilidad y consistencia de la auditoría
+
+La verificación futura debe demostrar que un rollback no deja una operación como exitosa, que los intentos fallidos y bloqueos confirmados no se pierden por confundir un rechazo HTTP con rollback, y que no se generan eventos duplicados por registrar la misma causa en distintas capas. Los fallos de escritura deben ser detectables con diagnóstico sanitizado, sin afirmar persistencia inexistente ni provocar ciclos de registro de errores. La política por proceso y el tratamiento de indisponibilidad se aprobarán antes de implementar, conforme a RN130–RN133. No se promete captura completa durante una caída del servidor o del almacenamiento. Relaciones: RF43–RF49 y RI16.
 
 ---
 

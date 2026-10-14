@@ -68,6 +68,12 @@ test('CU09: emisión/consumo atómicos, cuotas persistentes y concurrencia MySQL
             return db.Usuario.create({ id_rol: 3, nombre_usuario: `cu09_fixture_${index}`,
                 password_hash: await originalHash(initialPassword, 4), correo: `persona.nombre+${index}@example.test`, ...extra });
         };
+        const { crearContextoAuditoriaConexion } = await import('../src/shared/utils/auditoria-contexto.js');
+        const administradorCatalogo = await makeUsuario({ id_rol: 1 });
+        const auditoriaAdministrativa = () => ({ contexto: crearContextoAuditoriaConexion(ip), responsable: {
+            idUsuario: administradorCatalogo.id_usuario, idRol: administradorCatalogo.id_rol,
+            nombreUsuario: administradorCatalogo.nombre_usuario
+        } });
         const rowsFor = usuario => db.RecuperacionPassword.findAll({ where: { id_usuario: usuario.id_usuario }, order: [['id_recuperacion', 'ASC']] });
         const latest = async usuario => (await rowsFor(usuario)).at(-1);
         const context = (usuario, row) => ({ idUsuario: usuario.id_usuario, correo: usuario.correo, nonce: row.nonce, expiraEn: row.expira_en });
@@ -236,7 +242,7 @@ test('CU09: emisión/consumo atómicos, cuotas persistentes y concurrencia MySQL
 
         await t.test('Cambio/retirada de correo no reinicia cuota de cuenta y el código anterior no puede consumir', async () => {
             const f = await prepare();
-            await usuarioService.updateUsuario(f.usuario.id_usuario, { correo: 'nuevo.correo@example.test' });
+            await usuarioService.updateUsuario(f.usuario.id_usuario, { correo: 'nuevo.correo@example.test' }, auditoriaAdministrativa());
             await f.usuario.reload();
             await issue(f.usuario);
             assert.equal((await rowsFor(f.usuario)).length, 1);
@@ -244,7 +250,7 @@ test('CU09: emisión/consumo atómicos, cuotas persistentes y concurrencia MySQL
             advance(60000);
             await issue(f.usuario);
             assert.equal((await rowsFor(f.usuario)).length, 2);
-            await usuarioService.updateUsuario(f.usuario.id_usuario, { correo: null });
+            await usuarioService.updateUsuario(f.usuario.id_usuario, { correo: null }, auditoriaAdministrativa());
             await expectError(() => service.restablecerPassword({ correo: 'nuevo.correo@example.test', codigo: f.codigo, passwordNueva: newPassword }, ip));
             assert.equal((await rowsFor(f.usuario)).length, 2);
         });
@@ -460,10 +466,17 @@ test('CU09: emisión/consumo atómicos, cuotas persistentes y concurrencia MySQL
 
         await t.test('CU08 administrativo entre preverificación y consumo no puede ser sobrescrito por CU09', async () => {
             const f = await prepare();
+            const administrador = await makeUsuario({ id_rol: 1 });
+            const { crearContextoAuditoriaConexion } = await import('../src/shared/utils/auditoria-contexto.js');
             await withBcryptPaused(f, async () => {
                 // Usa bcrypt original durante la operación concurrente para evitar el gate del CU09.
                 bcrypt.hash = originalHash;
-                await usuarioService.updatePassword(f.usuario.id_usuario, { password: 'Administrativa-789!' });
+                await usuarioService.updatePassword(f.usuario.id_usuario, { password: 'Administrativa-789!' }, {
+                    contexto: crearContextoAuditoriaConexion(ip), responsable: {
+                        idUsuario: administrador.id_usuario, idRol: administrador.id_rol,
+                        nombreUsuario: administrador.nombre_usuario
+                    }
+                });
             });
             await f.usuario.reload(); await f.row.reload();
             assert.equal(await bcrypt.compare('Administrativa-789!', f.usuario.password_hash), true);
@@ -504,7 +517,7 @@ test('CU09: emisión/consumo atómicos, cuotas persistentes y concurrencia MySQL
 
         await t.test('Cambio de correo durante bcrypt impide consumo y no retiene bloqueo de Usuario', async () => {
             const f = await prepare();
-            await withBcryptPaused(f, () => usuarioService.updateUsuario(f.usuario.id_usuario, { correo: 'cambio.concurrente@example.test' }));
+            await withBcryptPaused(f, () => usuarioService.updateUsuario(f.usuario.id_usuario, { correo: 'cambio.concurrente@example.test' }, auditoriaAdministrativa()));
             await f.usuario.reload(); await f.row.reload();
             assert.equal(f.usuario.version_credenciales, 0);
             assert.equal(f.row.invalidada_en instanceof Date, true);
@@ -516,7 +529,7 @@ test('CU09: emisión/consumo atómicos, cuotas persistentes y concurrencia MySQL
                 const f = await prepare();
                 if (mode === 'fifth-failure') await f.row.update({ intentos_fallidos: 4 });
                 await withBcryptPaused(f, async () => {
-                    if (mode === 'inactive') await usuarioService.updateEstado(f.usuario.id_usuario, { estado: false });
+                    if (mode === 'inactive') await usuarioService.updateEstado(f.usuario.id_usuario, { estado: false }, auditoriaAdministrativa());
                     if (mode === 'expired') advance(SECURITY.CODE_TTL_MS);
                     if (mode === 'fifth-failure') await expectError(() => reset(f, { codigo: wrongCode(f.codigo) }));
                 });
@@ -545,7 +558,7 @@ test('CU09: emisión/consumo atómicos, cuotas persistentes y concurrencia MySQL
                 const found = await original.call(usuarioRepository, options);
                 if (first) {
                     first = false;
-                    await usuarioService.updateUsuario(usuario.id_usuario, { correo: 'reasignacion@example.test' });
+                    await usuarioService.updateUsuario(usuario.id_usuario, { correo: 'reasignacion@example.test' }, auditoriaAdministrativa());
                 }
                 return found;
             };

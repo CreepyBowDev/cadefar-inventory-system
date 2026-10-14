@@ -8,7 +8,8 @@ module.exports = {
     password: process.env.PASSWORD_DB,
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
-    dialect: 'mysql'
+    dialect: 'mysql',
+    logging: false
   },
 
   test: {
@@ -16,7 +17,8 @@ module.exports = {
     password: process.env.PASSWORD_DB,
     database: process.env.DB_NAME_TEST,
     host: process.env.DB_HOST,
-    dialect: 'mysql'
+    dialect: 'mysql',
+    logging: false
   },
 
   production: {
@@ -24,6 +26,7 @@ module.exports = {
     password: process.env.PASSWORD_DB,
     database: process.env.DB_NAME_PRODUCTION,
     host: process.env.DB_HOST,
-    dialect: 'mysql'
+    dialect: 'mysql',
+    logging: false
   }
 };

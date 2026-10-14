@@ -1,6 +1,7 @@
 import { verificarToken } from '../../shared/utils/jwt.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { authService } from '../../business/services/auth.service.js';
+import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
 
 export const authMiddleware = async (req, res, next) => {
 
@@ -9,10 +10,10 @@ export const authMiddleware = async (req, res, next) => {
         const token = req.cookies?.token;
 
         if (!token) {
-            throw new AppError(
+            throw anotarErrorAuditoria(new AppError(
                 'No autenticado',
                 401
-            );
+            ), { tipoEvento: 'SESION_AUSENTE', causa: 'SESION_AUSENTE' });
         }
 
         const payload = verificarToken(token);
@@ -25,6 +26,7 @@ export const authMiddleware = async (req, res, next) => {
         req.usuario = {
             idUsuario: usuario.idUsuario,
             idRol: usuario.idRol,
+            nombreUsuario: usuario.nombreUsuario,
             versionCredenciales: payload.versionCredenciales
         };
 
@@ -44,10 +46,11 @@ export const authMiddleware = async (req, res, next) => {
 
         if (jwtErrorNames.includes(error.name)) {
             return next(
-                new AppError(
+                anotarErrorAuditoria(new AppError(
                     'Token inválido o expirado',
                     401
-                )
+                ), { tipoEvento: error.name === 'TokenExpiredError' ? 'TOKEN_EXPIRADO' : 'TOKEN_INVALIDO',
+                    causa: error.name === 'TokenExpiredError' ? 'TOKEN_EXPIRADO' : 'TOKEN_INVALIDO' })
             );
         }
 

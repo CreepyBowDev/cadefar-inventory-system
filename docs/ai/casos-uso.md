@@ -1,7 +1,7 @@
 # CADEFAR — Casos de Uso del Sistema
 
 > Este archivo contiene los casos de uso completos del sistema CADEFAR.
-> El catálogo contiene 41 casos de uso, numerados consecutivamente desde CU01 hasta CU41.
+> El catálogo contiene 42 casos de uso, numerados consecutivamente desde CU01 hasta CU42. CU42 corresponde al módulo Bitácora, implementado en backend; su puesta en funcionamiento requiere la migración y aceptación del entorno.
 >
 > Forma parte de la documentación ubicada en:
 >
@@ -490,14 +490,14 @@ Registrar diferencias encontradas durante un conteo físico.
 
 **Casos alternativos:**
 
-- Sin diferencia, tras comprobar precondiciones y observación, informa que no fue necesario ajustar; no modifica saldo/promedio ni genera movimiento u otro registro histórico.
+- Sin diferencia, tras comprobar precondiciones y observación, informa que no fue necesario ajustar; no modifica saldo/promedio ni genera movimiento. Registra en Bitácora únicamente el resultado sin cambios y la existencia, sin historial detallado del conteo.
 - Saldo o historial desactualizado: rechaza por conflicto y exige volver a consultar la existencia.
 - Existencia inexistente, entrada inválida o error: rechaza sin cambios parciales. Un daño identificado o vencimiento se registra mediante CU36 o CU35, no mediante ajuste genérico.
 
 **Resultado:**  
 
 - Cuando existe diferencia, se genera un movimiento de inventario de cantidad positiva y se actualiza el saldo de la existencia al contado, con valoración según RN82/RN83.
-- Sin diferencia, se devuelve la conciliación sin efectos; su observación y respuesta no constituyen una auditoría persistida del conteo.
+- Sin diferencia, se devuelve la conciliación sin efectos de inventario; Bitácora registra solo resultado y existencia. Su observación y respuesta no constituyen un historial persistido del conteo.
 - Se conserva el historial y se cumple RN103; un ajuste efectivo es posterior para RN76, mientras la conciliación sin diferencia no agrega posteriores.
 
 ---
@@ -983,3 +983,81 @@ Antes de implementar un caso de uso:
 4. No convertir un caso de uso en una simple pantalla o botón.
 5. No omitir condiciones o resultados definidos para simplificar la implementación.
 6. Si una necesidad nueva contradice un caso de uso existente, señalar la contradicción antes de modificarlo.
+
+---
+
+# 14. Bitácora
+
+**Estado del módulo:** captura y API implementadas en backend (Fases 1–6). La evidencia de aceptación, matriz de endpoints y pendientes operativos se registran en `bitacora-auditoria.md`. La puesta en funcionamiento exige aplicar la migración; el frontend de CU42 está pendiente.
+
+## CU42. Consultar bitácora del sistema
+
+**Actor:**
+
+Administrador.
+
+**Objetivo:**
+
+Consultar e investigar los eventos de autenticación, seguridad y operaciones relevantes del sistema, identificando qué ocurrió, cuándo, sobre qué registro y con qué resultado, con los datos de responsabilidad disponibles.
+
+**Precondiciones:**
+
+- Sesión válida de una cuenta activa con rol Administrador.
+- Módulo Bitácora implementado y almacenamiento de auditoría disponible. Puede no haber eventos para los criterios solicitados.
+
+**Información principal:**
+
+- Identificador, tipo de evento, módulo y operación.
+- Fecha y hora del servidor, resultado y causa sanitizada.
+- Responsable autenticado cuando exista; cuenta objetivo o nombre ingresado cuando corresponda, sin atribuir un intento fallido al titular de esa cuenta.
+- Rol cuando esté comprobado y sea pertinente.
+- Dirección IP y procedencia de su captura, sin considerarla prueba de identidad personal.
+- Registro afectado y referencias de la operación, cuando existan.
+- Contador de intentos y datos del bloqueo cuando correspondan al evento, sin secretos.
+
+**Flujo principal:**
+
+1. El Administrador solicita consultar la bitácora.
+2. El backend comprueba autenticación y autorización de Administrador.
+3. El sistema muestra una página del historial, ordenada de más reciente a más antiguo y con un desempate estable por identificador.
+4. El Administrador puede combinar filtros de período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo de evento, resultado o registro afectado. El sistema valida los criterios y devuelve los eventos coincidentes y el total correspondiente, sin cargar todo el historial.
+5. El Administrador navega por los resultados y selecciona un evento.
+6. El sistema vuelve a comprobar el acceso y muestra su detalle permitido, incluidas las referencias disponibles, sin modificarlo ni mostrar datos sensibles.
+
+**Casos alternativos y errores:**
+
+- Sin eventos coincidentes: muestra un resultado vacío, no un error.
+- Filtros, período o paginación inválidos: rechaza la consulta e informa cómo corregirla, sin detalles internos.
+- Evento inexistente: informa que no fue encontrado, después de comprobar autorización.
+- Sesión ausente, inválida o expirada: rechaza por falta de autenticación; no equivale a un logout explícito.
+- Regente o Vendedor: rechaza el acceso general, incluso mediante una petición directa al backend.
+- Fallo de consulta o almacenamiento indisponible: informa que la consulta no pudo completarse; no presenta el fallo como ausencia de eventos.
+
+**Resultado:**
+
+El Administrador consulta el historial y los detalles disponibles. La consulta no cambia datos de negocio ni permite editar o eliminar eventos. Solo comprende eventos realmente capturados desde la puesta en funcionamiento; no reconstruye automáticamente auditoría de operaciones anteriores. Cada lectura CU42 materializada registra una consulta sensible posterior, sin recursión ni filtros completos; si falla exclusivamente ese registro se conserva la lectura original.
+
+**Reglas de negocio relacionadas:**
+
+RN117–RN121 y RN125–RN128; RN133 para la información técnica permitida. RN116–RN133 rigen el comportamiento transversal del módulo.
+
+**Requerimientos relacionados:**
+
+RF50–RF53, RI16 y RNF18–RNF22. Los eventos consultables proceden del registro transversal de RF43–RF49.
+
+### Registro automático asociado a los casos de uso
+
+Registrar un evento no es un objetivo manual del actor: es un comportamiento automático del backend asociado a los procesos existentes. Por ello no se agrega un CU interno independiente ni un CU por cada tipo de evento; filtros y detalles forman parte del objetivo de consulta de CU42.
+
+| Procesos relacionados | Auditoría de backend | Requerimientos |
+|---|---|---|
+| CU01 | Login exitoso; contraseña incorrecta; tercer fallo y bloqueo; intento durante el bloqueo; nombre inexistente; cuenta desactivada | RF43, RF44, RF46 |
+| CU02 y solicitudes protegidas | Logout explícito; rechazo por sesión inválida o expirada y por falta de autorización, diferenciados del cierre de sesión | RF45, RF46 |
+| CU08 y CU09 | Cambio propio, restablecimiento administrativo, solicitud de recuperación, rechazo o limitación, restablecimiento exitoso o fallido y problemas técnicos de envío | RF47, RF46 |
+| CU03, CU06, CU07, CU10, CU12, CU13 y escrituras de CU14/CU16–CU19 | Altas, modificaciones, cambios de estado y cambios de composición; responsable y registro afectado | RF48 |
+| CU23, CU25, CU27, CU35 y CU36 | Ajustes, registro/anulación de compra y retiros, con resultado y referencias a operaciones y movimientos existentes | RF49 |
+| CU28, CU30, CU31 y CU32 | Integración futura del registro y confirmación de venta, anulación, registro y revisión de recetas | RF49 |
+
+Los procesos de autenticación, administración, catálogo, compras, ajustes y retiros indicados están integrados con Bitácora. Ventas y Recetas conservan su estado funcional pendiente. Los éxitos de CU04/CU05 y CU42 se auditan como consultas sensibles; los éxitos rutinarios del catálogo/inventario y `/auth/me` se excluyen. Sus rechazos y errores relevantes recibidos por el backend conservan captura transversal.
+
+CU23 registra el resultado sin cambios según RF49/RN129, sin crear un movimiento, un historial detallado de conteos ni alterar las precondiciones y valoración actuales. No guarda la observación ni el conteo de esa conciliación. La bitácora complementa, pero no sustituye, CU24/CU40 ni el historial de compras y futuras ventas.
