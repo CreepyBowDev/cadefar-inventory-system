@@ -111,10 +111,79 @@ Cada ejecución de integración crea otra base aleatoria local y la conserva inc
 
 ## Integraciones futuras y pendientes operativos
 
-CU28–CU32 (Ventas/Recetas), CU38/CU39 (reportes) y CU41 (pérdidas) conservan su estado funcional pendiente. Integrar auditoría cuando existan sus operaciones; no se crearon fases, endpoints ni migraciones exclusivas para eventos futuros. La UI de Bitácora queda pendiente.
+CU28–CU32 (Ventas/Recetas), CU38/CU39 (reportes) y CU41 (pérdidas) conservan su estado funcional pendiente. Integrar auditoría cuando existan sus operaciones; no se crearon fases, endpoints ni migraciones exclusivas para eventos futuros. Las cuatro entregas frontend están completas: acceso, listado, filtros, paginación del servidor y detalle histórico, con aceptación integrada local React/Express/MySQL en Fase 4. La habilitación en el entorno de destino conserva sus pendientes operativos.
 
 Para el entorno de operación: aplicar migración con cuenta de migración y verificar esquema; separar cuenta de aplicación con SELECT/INSERT en Bitácora y sin UPDATE/DELETE/DDL sobre ella. La cuenta local revisada mediante SHOW GRANTS permite modificación/DDL: no se acredita protección SQL append-only con esa cuenta. No se crearon usuarios ni GRANT. Los hooks ORM pueden evitarse con SQL directo o hooks desactivados.
 
 También pendientes: responsables de conservación, respaldos/restauración, RPO/RTO y obligaciones legales superiores; volumen representativo y objetivos de rendimiento; topología/cadena de confianza Railway antes de capturar IP original. Esta prueba no acredita envío al buzón, restauración de respaldo, cumplimiento legal ni disponibilidad de producción. Sequelize 6 puede emitir warnings propios con el mensaje original ante fallos de COMMIT/ROLLBACK; los diagnósticos de la aplicación son sanitizados, pero falta resolver ese comportamiento de dependencia para una garantía completa sobre todos los logs de infraestructura.
 
 Sin tabla disponible, login correcto, cambios efectivos de contraseña y escrituras críticas integradas requieren auditoría y devuelven 503 si no pueden registrarla. No se realizó despliegue ni migración en el entorno operativo.
+
+## Frontend — Fase 1: acceso y listado
+
+Implementada la ruta `/bitacora` dentro de ProtectedRoute/RoleRoute para Administrador, con acceso desde el menú y desde Inicio. Feature `frontend/src/features/bitacora/`: Service, página, tabla, resultado, presentación y estilos. Diseño guiado por `.agents/skills/frontend-design/` conservando los tokens y layout de CADEFAR.
+
+La consulta usa exclusivamente `GET /api/bitacora?pagina=1&limite=25` mediante Axios común y cookie HttpOnly. Muestra eventos en el orden del backend y el total recibido, con etiquetas legibles, resultado textual/color, registro afectado, responsable histórico y cuenta objetivo diferenciados. No hace consultas adicionales de usuarios para reconstruir identidades. Las fechas de registro se convierten desde ISO con zona a `America/La_Paz`, con segundos y milisegundos; los instantes originales del backend siguen siendo UTC.
+
+Actualizar/reintentar son explícitos. Carga nueva retira resultados anteriores; respuestas tardías tras salir no alteran otras pantallas. 401/403 bloquean reintentos y 401 ofrece volver al login. Los errores 400/404/500/503/red se distinguen de un historial vacío; una respuesta incompleta tampoco se presenta como cero eventos. Los códigos desconocidos y textos del servidor se muestran como datos, sin HTML ejecutable. La tabla admite desplazamiento horizontal y foco visible por teclado en móvil.
+
+Verificación: `tests/bitacora.browser.test.mjs`, 15 pruebas aprobadas y 20 consultas Bitácora interceptadas; regresiones `app-shell.browser.test.mjs` y `compras.browser.test.mjs`, 54 pruebas aprobadas. Total: 69, cero fallidas/canceladas/omitidas. Revisión de capturas en escritorio y 320/375/768/1440 px. `pnpm build` aprobado, con aviso de chunk superior a 500 kB (560.43 kB, gzip 159.83 kB). API simulada en Chrome real; esta entrega no conectó ni escribió en MySQL y no acredita aún aceptación integrada frontend/backend.
+
+La Fase 2 amplía esta entrega con filtros explícitos y paginación del servidor con criterios en URL; la Fase 3 incorpora detalle histórico y retorno conservando consulta. La Fase 4 completa la aceptación integrada local.
+
+## Frontend — Fase 2: filtros y paginación
+
+Implementados los doce filtros del contrato: desde/hasta, responsable, cuenta objetivo, nombre ingresado, dirección IP capturada, módulo, operación, tipo de evento, resultado, tipo de registro e ID del registro. Los seis principales quedan visibles y los complementarios se agrupan en Más filtros. No se consulta un catálogo de usuarios actuales para filtrar identidades históricas.
+
+Buscar aplica el borrador y reinicia página; editar controles o expandir filtros no consulta ni registra lecturas. Actualizar conserva criterios aplicados incluso con cambios pendientes. Limpiar reinicia filtros, página 1 y tamaño 25. Paginación Anterior/Siguiente con 25/50/100 eventos; cambiar tamaño reinicia página conservando criterios aplicados. Cada acción explícita de lectura hace una petición acotada, sin descargar todo el historial ni reintentos periódicos.
+
+Los criterios aplicados, tamaño y página se conservan en query string. Recarga y Atrás/Adelante restauran consulta y controles; una respuesta tardía de otra página se ignora. Se validan IDs canónicos hasta INT máximo, límites, códigos, rangos y dependencia ID/tipo de registro. Las URLs desconocidas, repetidas o inválidas bloquean la lectura y ofrecen corrección mediante Buscar/Limpiar, sin descartarlas silenciosamente.
+
+Los datetime-local representan hora de Bolivia, no la zona del equipo; se envían como ISO con `-04:00`. Al recuperar una URL UTC o con otra zona se conserva el instante y los milisegundos. Los extremos son inclusivos sobre fecha de registro. Resultado vacío con filtros orienta a modificarlos; página fuera de rango ofrece volver explícitamente a la primera página, sin lectura correctiva automática. Se indica que solicitudes de páginas distintas no comparten una instantánea fija. El Service comprueba también página, límite y totalPaginas recibidos antes de presentar resultados.
+
+Verificación de esta entrega: 29 pruebas de Bitácora aprobadas (5 de contrato/fechas/validación y 24 de navegador, incluida la prueba contenedora), con 50 lecturas interceptadas; 54 regresiones de navegación/Compras aprobadas. Total 83, cero fallidas/canceladas/omitidas. Chrome con API simulada, zona del equipo Asia/Tokyo y revisión de capturas de filtros, tabla y paginador a 320/375/768/1440 px. `pnpm build` y comprobaciones de sintaxis/formato aprobados; permanece el aviso de chunk mayor a 500 kB (569.97 kB, gzip 162.69 kB). No se conectó a MySQL en esta entrega. El detalle se implementa en Fase 3; la aceptación integrada frontend/backend corresponde a Fase 4.
+
+## Frontend — Fase 3: detalle histórico
+
+Implementada `/bitacora/:idEvento` dentro de la misma protección del Administrador. El nombre del evento en cada fila abre su detalle; filtros, página y límite viajan en la URL de React, permitiendo recarga o apertura en otra pestaña y retorno mediante Volver a Bitácora. El Service solicita exclusivamente `GET /api/bitacora/:idEvento`, sin trasladar criterios del listado al backend. El enlace al evento relacionado conserva también la consulta de retorno y no dispara lecturas anticipadas.
+
+Se presentan identificador, tipo de evento, módulo/operación, resultado/causa, fecha de registro y fecha del evento, identidades históricas del responsable y cuenta objetivo, nombre ingresado, registro afectado, IP/procedencia, correlación, relación y versión. La interfaz distingue responsable autenticado de cuenta objetivo y no reconstruye identidades mediante usuarios actuales. Las fechas se muestran en Bolivia con milisegundos; los metadatos de bloqueo almacenados como texto SQL UTC se convierten explícitamente, sin tomar la zona del equipo.
+
+Valores registrados compara únicamente campos permitidos del contrato antes/después y campos modificados capturados. Distingue ausente, nulo, cero y booleanos, conserva cadenas decimales sin redondeo y muestra cambios sin valores conservados cuando corresponde (correo/teléfono/dirección/descripción). Contexto de la operación presenta los metadatos pertinentes; referencias presenta las capturadas y el contador de omisiones cuando existe. No consulta automáticamente los recursos referenciados ni interpreta ausencia de snapshots como fallo. No se vuelca JSON arbitrario; claves ajenas al contrato quedan fuera de la presentación, y todos los textos se renderizan como datos. Una versión futura muestra datos generales y aviso de incompatibilidad sin interpretar sus JSON como versión 1.
+
+IDs inválidos no solicitan la API; 404 informa evento no encontrado. El Service identifica respuestas incompletas o referencias inválidas antes de renderizar. Actualizar y reintentar son explícitos; se retira el detalle anterior durante carga, y respuestas tardías al cambiar evento/salir se ignoran. 401/403 bloquean reintentos; 401 ofrece navegación al login. El detalle enfoca el encabezado y comienza arriba al cambiar evento. No incorpora formularios de edición o eliminación.
+
+Verificación: 40 pruebas de Bitácora aprobadas (5 de contrato/fechas/validación y 35 de navegador, incluida la contenedora), más 54 regresiones de navegación/Compras: 94 aprobadas, cero fallidas/canceladas/omitidas. Se interceptaron 53 lecturas de listado y 30 de detalle; ninguna escritura ni API de recursos adicionales. Chrome con API simulada y zona Asia/Tokyo; revisión visual a 320/375/768/1440 px, con nombres largos y 100 referencias. Build, sintaxis y formato aprobados; aviso de chunk mayor a 500 kB (584.57 kB, gzip 166.21 kB). Esta entrega no conectó a MySQL; la aceptación integrada se registra en Fase 4.
+
+## Frontend — Fase 4: aceptación integrada local (13/10/2026)
+
+Nueva suite `frontend/tests/bitacora-real.browser.test.mjs`, con opt-in `BITACORA_FRONTEND_MYSQL_ACCEPTANCE=1`. Crea estrictamente una base local nueva, aplica migrations y el seeder de roles, y conserva base/eventos al terminar o fallar. No reutiliza/migra bases preexistentes ni ejecuta suites históricas que eliminan sus bases temporales. Reutiliza `tests/helpers/navegadorReal.mjs` con selector de espera configurable, tamaño de ventana, zona horaria y observación de query CU42; no utiliza su intercepción de respuestas. Chrome solicita DTOs, cookies y estados HTTP al Express real, que accede a MySQL real.
+
+**Resultado aprobado: 14 pruebas integradas, cero fallidas/canceladas/omitidas, MySQL 8.0.46.** Base final conservada: `cadefar_bitacora_ui_b2f20788ca1e`. Ejecución inicial de preparación conservada: `cadefar_bitacora_ui_a2c1a4fa4a23`; falló por tres expectativas del fixture: compra con referencias aún inferiores al límite, búsqueda que encontraba el 404 recién auditado, y diagnósticos de rechazos esperados que no eran una lista vacía. Se corrigieron las expectativas, sin cambiar frontend/backend funcional por esos resultados.
+
+Escenarios verificados de extremo a extremo:
+
+- Login real en sesiones independientes, cookie HttpOnly/SameSite Lax, CORS con credenciales y sesión restaurada por recarga; ningún token en almacenamiento React accesible.
+- Orden descendente estable de 63 eventos sintéticos con igual instante, páginas 25/50/100 y total contrastados contra la base. Los eventos históricos de preparación se insertan mediante el preparador/Repository del backend con fecha explícita; no se presentan como capturas de solicitudes reales anteriores.
+- Filtros combinados, extremos temporales exactos inclusivos y milisegundos en Bolivia desde navegador Asia/Tokyo; editar/expandir no hace consultas. Cuenta objetivo y nombre ingresado también llegan al backend y distinguen resultados vacíos.
+- Cada lectura materializada genera su evento posterior, excluido de su propio snapshot. El rechazo 404 real queda consultable al buscar el registro de Bitácora correspondiente; no se confunde con ausencia de eventos.
+- Cambio real del nombre/rol/correo de un usuario: valores antes/después y campos privados sin valores conservados; eventos anteriores mantienen nombre/rol históricos. Detalle, recarga y retorno conservan criterios/página/tamaño sin pasar filtros al GET por ID.
+- Tres contraseñas incorrectas desde Login generan tres fallos y un bloqueo distinto, correlacionados; la UI distingue responsable ausente de cuenta objetivo y presenta tiempos/metadatos del bloqueo.
+- Compra real de 52 líneas: una operación/evento, 52 detalles/movimientos, importes recibidos sin recálculo en React, 100 referencias capturadas y 5 omitidas. Se crean exclusivamente datos sintéticos de la base aislada mediante el endpoint existente.
+- Regente/Vendedor/sin sesión: restricciones visuales y rechazos reales 403/401 de listado y detalle. Cambio del rol en servidor frente a Context previo provoca 403; logout por API frente a Context previo provoca 401, bloqueo de reintento y enlace al login.
+- URLs inválidas bloquean lecturas en React; la API valida 400 y detalle inexistente 404. Una parada real del servidor HTTP provoca error de red, retira datos y admite reintento explícito tras reiniciar el listener. Otro proceso Node recupera exactamente el evento/fecha/total persistidos; los DTOs anteriores permanecen intactos.
+- Revisión visual de datos reales a 320/375/768/1440 px; ausencia de desbordamiento, sin contraseñas/hashes/correo privado en DTOs, DOM o diagnósticos sanitizados. Las 39 solicitudes CU42 observadas son GET; Bitácora no origina escrituras ni formularios de edición.
+
+Regresión final: **185 pruebas frontend sin MySQL** (Bitácora/contrato, navegación, Compras, Inventario, Medicamentos, CU09/Usuarios) y **492 backend sin suites MySQL**, todas aprobadas. Con las 14 integradas: **691 pruebas aprobadas, cero fallidas/canceladas/omitidas en las ejecuciones finales**. La aceptación MySQL backend de 19 pruebas de Fase 7 conserva su evidencia anterior; no se repitió en esta entrega. Build, sintaxis y formato aprobados; permanece el aviso de bundle de 584.57 kB (gzip 166.21 kB). No se realizó despliegue, migración de base operativa, commit ni push.
+
+Reproducción desde `frontend/`, después de autorizar otra base local nueva y conservada:
+
+```powershell
+$env:BITACORA_FRONTEND_MYSQL_ACCEPTANCE = '1'
+node --test tests/bitacora-real.browser.test.mjs
+
+node --test --test-concurrency=1 tests/bitacora-consulta.test.mjs tests/bitacora.browser.test.mjs tests/app-shell.browser.test.mjs tests/compras.browser.test.mjs tests/inventario.browser.test.mjs tests/medicamentos.browser.test.mjs tests/cu09.browser.test.mjs
+pnpm build
+```
+
+Las credenciales se leen de la configuración local backend; no se copian en comandos/documentación. La aceptación acredita el alcance local ejercido, sin sustituir la revisión manual con datos del entorno de destino ni resolver los pendientes operativos descritos arriba.

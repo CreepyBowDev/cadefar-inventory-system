@@ -21,6 +21,8 @@ import { RetiroFormPage } from '../features/inventario/pages/RetiroFormPage.jsx'
 import { ComprasPage } from '../features/compras/pages/ComprasPage.jsx';
 import { CompraDetailPage } from '../features/compras/pages/CompraDetailPage.jsx';
 import { CompraFormPage } from '../features/compras/pages/CompraFormPage.jsx';
+import { BitacoraPage } from '../features/bitacora/pages/BitacoraPage.jsx';
+import { BitacoraDetailPage } from '../features/bitacora/pages/BitacoraDetailPage.jsx';
 import { AuthLayout } from '../layouts/AuthLayout.jsx';
 import { MainLayout } from '../layouts/MainLayout.jsx';
 import { ROLES } from '../constants/roles.js';
@@ -105,6 +107,8 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR]} />,
             children: [
+              { path: '/bitacora', element: <BitacoraPage /> },
+              { path: '/bitacora/:idEvento', element: <BitacoraDetailPage /> },
               {
                 path: '/proveedores/nuevo',
                 element: <ProveedorLaboratorioFormPage mode="create" />

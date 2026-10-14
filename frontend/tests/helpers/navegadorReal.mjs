@@ -55,6 +55,7 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl }) => {
       if (method === 'Runtime.exceptionThrown') errors.push({ session: session.name, exception: params.exceptionDetails.text });
       if (method === 'Network.requestWillBeSent' && params.request.url.startsWith(`${apiUrl}/`)) {
         const request = { session: session.name, id: params.requestId, method: params.request.method, path: new URL(params.request.url).pathname };
+        if (request.path.startsWith('/api/bitacora')) request.query = Object.fromEntries(new URL(params.request.url).searchParams);
         // Nunca retener contraseñas de login ni headers/cookies en el registro.
         if (params.request.postData && !request.path.startsWith('/api/auth')) request.body = JSON.parse(params.request.postData);
         session.network.set(params.requestId, request); requests.push(request);
@@ -103,7 +104,7 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl }) => {
           await send('Page.navigate', { url: `${origin}${path}` }, sessionId);
           await wait('!window.__navigating && document.readyState === "complete"'); await settle();
         },
-        ready: () => wait('!!document.querySelector(".inventario-page, .compras-page") && document.querySelector("[aria-busy]")?.getAttribute("aria-busy") === "false"'),
+        ready: (selector = '.inventario-page, .compras-page') => wait(`!!document.querySelector(${JSON.stringify(selector)}) && document.querySelector('[aria-busy]')?.getAttribute('aria-busy') === 'false'`),
         contains: (text) => wait(`document.body.textContent.includes(${JSON.stringify(text)})`),
         click: (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`),
         clickText: (text) => evaluate(`(() => { const b = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(text)}); if (!b) throw new Error('Botón no encontrado'); b.click(); })()`),
@@ -116,6 +117,8 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl }) => {
         dropNextPost: async (path) => { session.dropPath = path; await send('Fetch.enable', { patterns: [{ urlPattern: `${apiUrl.replace(/\/api$/, '')}${path}`, requestStage: 'Response' }] }, sessionId); },
         cookies: async () => (await send('Storage.getCookies', { browserContextId })).cookies,
         mobile: () => send('Emulation.setDeviceMetricsOverride', { width: 375, height: 900, deviceScaleFactor: 1, mobile: true }, sessionId),
+        viewport: (width, height = 900) => send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 620 }, sessionId),
+        timezone: (timezoneId) => send('Emulation.setTimezoneOverride', { timezoneId }, sessionId),
         screenshot: async (name) => {
           if (!process.env.CADEFAR_SCREENSHOT_DIR) return;
           const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId);
