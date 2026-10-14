@@ -66,6 +66,13 @@ const iconPaths = {
       <path d="M9 16v-3M12 16V9M15 16v-5" />
     </>
   ),
+  audit: (
+    <>
+      <path d="M14 21H5V3h12v7M8 7h6M8 11h3" />
+      <circle cx="17" cy="16" r="5" />
+      <path d="M17 13v3l2 1" />
+    </>
+  ),
   logout: (
     <>
       <path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9" />

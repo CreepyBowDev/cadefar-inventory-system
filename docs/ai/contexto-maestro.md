@@ -2142,7 +2142,7 @@ Después de completar Usuarios:
 
 Este orden puede ajustarse si una dependencia funcional requiere adelantar una parte concreta.
 
-Bitácora es un módulo transversal implementado en backend para los procesos existentes, según la sección 38. La cobertura se ampliará cuando se implementen Ventas y Recetas. Su frontend y puesta en funcionamiento en el entorno de destino requieren su propia entrega.
+Bitácora es un módulo transversal implementado en backend para los procesos existentes, según la sección 38. La cobertura se ampliará cuando se implementen Ventas y Recetas. Frontend implementa acceso exclusivo del Administrador, listado, filtros explícitos, paginación con criterios en URL y detalle histórico; las cuatro entregas están completas con aceptación integrada local React/Express/MySQL aprobada en Fase 4. La puesta en funcionamiento en el entorno de destino requiere su propia habilitación.
 
 ---
 
@@ -2288,6 +2288,8 @@ Antes de implementar una funcionalidad:
 El módulo fue solicitado por el docente de Sistemas de Información I para disponer de un historial persistente de eventos relevantes, prioritariamente de autenticación y seguridad. Permitirá investigar qué operación ocurrió, cuándo, desde qué IP disponible, sobre qué registro, con qué resultado y con qué información de responsabilidad comprobada.
 
 **Registro y API de consulta implementados en backend (Fases 1–6).** La Fase 7 reúne revisión integral, sincronización documental y aceptación. La migración crea `bitacora_auditoria`; su aplicación en el entorno de destino es necesaria para operar. La evidencia y la matriz de cobertura se mantienen en `bitacora-auditoria.md`. Los logs sanitizados de consola y los movimientos de inventario no sustituyen este módulo.
+
+**Frontend — cuatro entregas completas:** rutas `/bitacora` y `/bitacora/:idEvento`, acceso desde menú/Inicio solo para Administrador, listado con total del servidor, actualización explícita, errores y estados vacíos. Presenta identidades históricas y fechas en America/La_Paz con milisegundos. Los doce filtros se aplican mediante Buscar; paginación del servidor 25/50/100, reinicio de página al buscar/cambiar tamaño, criterios en URL para recarga/Atrás/Adelante y validación local de consultas inválidas. No consulta al escribir ni aplica borradores pendientes al actualizar/paginar. Detalle con responsable/cuenta objetivo diferenciados, correlación, IP/procedencia, valores antes/después, metadatos y referencias/omisiones; retorno y evento relacionado conservan la consulta, sin enviarla al GET por ID. Fase 4 aprobó 14 pruebas integradas React/Express/MySQL 8.0.46, 185 frontend sin MySQL y 492 backend sin integración MySQL (691 en las ejecuciones finales), con revisión visual y build aprobado. Base aislada final conservada: `cadefar_bitacora_ui_b2f20788ca1e`; evidencia, preparación inicial y límites de aceptación en `bitacora-auditoria.md`. Esta aceptación local no habilita ni migra el entorno operativo.
 
 ### Funcionalidad existente y cobertura integrada
 

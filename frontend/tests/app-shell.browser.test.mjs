@@ -131,7 +131,7 @@ test('Estructura interna: alineación, roles y menú móvil con API simulada', {
 
     await t.test('Los tres roles conservan accesos operativos y pendientes legibles; nombres largos no se superponen', async () => {
       const expected = [
-        ['/dashboard', '/usuarios', '/proveedores', '/medicamentos', '/principios-activos', '/compras', '/inventario', '/vencimientos'],
+        ['/dashboard', '/usuarios', '/proveedores', '/medicamentos', '/principios-activos', '/compras', '/inventario', '/vencimientos', '/bitacora'],
         ['/dashboard', '/proveedores', '/medicamentos', '/principios-activos', '/compras', '/inventario', '/vencimientos'],
         ['/dashboard', '/medicamentos', '/inventario']
       ];

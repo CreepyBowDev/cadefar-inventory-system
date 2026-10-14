@@ -1,8 +1,8 @@
 import { AppIcon } from './AppIcon.jsx';
 
-export const CatalogoState = ({ loading = false, title, message, onRetry, children }) => (
+export const CatalogoState = ({ loading = false, title, message, onRetry, children, icon = 'pill' }) => (
   <div className="catalogo-state" role={loading ? 'status' : onRetry ? 'alert' : undefined}>
-    {loading ? <span className="session-loader__mark" aria-hidden="true" /> : <AppIcon name="pill" size={28} />}
+    {loading ? <span className="session-loader__mark" aria-hidden="true" /> : <AppIcon name={icon} size={28} />}
     {title && <h3>{title}</h3>}
     {message && <p>{message}</p>}
     {onRetry && <button className="button button--secondary" type="button" onClick={onRetry}>

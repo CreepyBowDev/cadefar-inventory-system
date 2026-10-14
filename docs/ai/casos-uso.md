@@ -988,7 +988,7 @@ Antes de implementar un caso de uso:
 
 # 14. Bitácora
 
-**Estado del módulo:** captura y API implementadas en backend (Fases 1–6). La evidencia de aceptación, matriz de endpoints y pendientes operativos se registran en `bitacora-auditoria.md`. La puesta en funcionamiento exige aplicar la migración; el frontend de CU42 está pendiente.
+**Estado del módulo:** captura y API implementadas en backend (Fases 1–6). Frontend implementado: acceso del Administrador, listado, filtros con Buscar, paginación del servidor 25/50/100, criterios en URL para recarga/Atrás/Adelante y detalle histórico con retorno conservando consulta. Las cuatro entregas frontend están completas; Fase 4 aprobó 14 pruebas integradas React/Express/MySQL 8.0.46 en una base local nueva conservada. La evidencia de aceptación, matriz de endpoints y pendientes operativos se registran en `bitacora-auditoria.md`. La puesta en funcionamiento exige aplicar la migración en destino.
 
 ## CU42. Consultar bitácora del sistema
 

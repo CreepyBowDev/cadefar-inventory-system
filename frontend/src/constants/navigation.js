@@ -102,6 +102,15 @@ export const NAVIGATION_ITEMS = Object.freeze([
     icon: 'report',
     roles: [],
     available: false
+  },
+  {
+    key: 'bitacora',
+    label: 'Bitácora',
+    description: 'Eventos, responsables y resultados del sistema',
+    path: '/bitacora',
+    icon: 'audit',
+    roles: [ROLES.ADMINISTRADOR],
+    available: true
   }
 ]);
 
@@ -142,5 +151,6 @@ export const getPageTitle = (pathname) => {
     return 'Editar usuario';
   }
 
+  if (pathname.startsWith('/bitacora/')) return 'Detalle de Bitácora';
   return NAVIGATION_ITEMS.find((item) => item.path === pathname)?.label || 'CADEFAR';
 };

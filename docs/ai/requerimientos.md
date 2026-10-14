@@ -254,7 +254,7 @@ La recuperación de CU09 es independiente del cambio propio y del restablecimien
 
 ### Bitácora de auditoría — backend implementado
 
-RF43–RF53 incorporan el módulo solicitado para Sistemas de Información I. Su captura automática y API CU42 están implementadas en backend, conforme a RN116, con información de RI16 y sin alterar las políticas vigentes. La puesta en funcionamiento requiere la migración. La evidencia de aceptación se mantiene en `bitacora-auditoria.md`; Ventas/Recetas y frontend de Bitácora conservan su estado pendiente.
+RF43–RF53 incorporan el módulo solicitado para Sistemas de Información I. Su captura automática y API CU42 están implementadas en backend, conforme a RN116, con información de RI16 y sin alterar las políticas vigentes. La puesta en funcionamiento requiere la migración en destino. La evidencia de aceptación se mantiene en `bitacora-auditoria.md`; Ventas/Recetas permanecen pendientes. Frontend incorpora acceso, listado, filtros explícitos, paginación 25/50/100 con criterios en URL y detalle histórico; las cuatro entregas están completas con aceptación integrada local React/Express/MySQL aprobada en Fase 4.
 
 ## RF43. Auditar inicios de sesión
 
