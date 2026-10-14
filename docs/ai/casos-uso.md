@@ -617,6 +617,8 @@ Vendedor.
 **Objetivo:**  
 Preparar, guardar y confirmar la venta de medicamentos.
 
+**Estado de implementación:** CU28–CU32 permanecen pendientes; los modelos y migraciones representan su diseño. Antes de implementar la confirmación debe definirse la correspondencia entre los valores de condición de venta y la exigencia de receta, conforme a RN58.
+
 **Registro pendiente:**
 
 - El Vendedor guarda la venta en estado `PENDIENTE` con sus detalles y recetas cuando correspondan.
@@ -1020,7 +1022,7 @@ Consultar e investigar los eventos de autenticación, seguridad y operaciones re
 1. El Administrador solicita consultar la bitácora.
 2. El backend comprueba autenticación y autorización de Administrador.
 3. El sistema muestra una página del historial, ordenada de más reciente a más antiguo y con un desempate estable por identificador.
-4. El Administrador puede combinar filtros de período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo de evento, resultado o registro afectado. El sistema valida los criterios y devuelve los eventos coincidentes y el total correspondiente, sin cargar todo el historial.
+4. El Administrador puede combinar filtros de período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo de evento, resultado o registro afectado. El sistema valida los criterios y devuelve los eventos coincidentes y el total correspondiente, sin cargar todo el historial. La API utiliza `pagina` predeterminada 1 y `limite` entero de 1 a 100, predeterminado 25; la interfaz permite elegir 25/50/100.
 5. El Administrador navega por los resultados y selecciona un evento.
 6. El sistema vuelve a comprobar el acceso y muestra su detalle permitido, incluidas las referencias disponibles, sin modificarlo ni mostrar datos sensibles.
 

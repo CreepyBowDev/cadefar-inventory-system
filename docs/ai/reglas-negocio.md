@@ -683,6 +683,8 @@ Si alguna parte de la confirmación falla, la venta conserva su estado pendiente
 
 Cuando un medicamento requiera receta, su detalle no puede confirmarse respaldado por una receta inexistente o no aprobada. Mientras la venta esté pendiente, la receta puede estar registrada sin revisión o rechazada, pero no autoriza la entrega.
 
+**Definición pendiente para Ventas/Recetas:** el catálogo actual admite `condicionVenta` como texto de hasta 40 caracteres, sin un conjunto cerrado de valores. Antes de implementar la confirmación de ventas debe definirse qué valores exigen receta, considerando los valores históricos existentes. Esta definición no está implementada ni autoriza normalizar automáticamente esos datos.
+
 ## RN59. Receta y venta
 
 Una receta debe estar relacionada con la venta en la que será utilizada.

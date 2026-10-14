@@ -154,6 +154,8 @@ El Vendedor debe poder guardar la venta en estado `PENDIENTE` junto con sus rece
 
 La confirmación debe volver a validar disponibilidad, vencimientos y FEFO, finalizar la asignación de existencias en los detalles y registrar la fecha de venta y sus efectos sobre inventario de forma atómica.
 
+**Estado:** RF23–RF28 corresponden a CU28–CU32, pendientes de implementación funcional. El modelo y las migraciones preparan el flujo; la correspondencia entre condición de venta y exigencia de receta queda pendiente según RN58.
+
 ## RF24. Seleccionar existencias para venta
 
 El sistema debe utilizar primero las existencias vendibles con vencimiento más próximo.
@@ -306,7 +308,7 @@ El sistema debe permitir al Administrador consultar los eventos persistidos, ord
 
 ## RF51. Filtrar y paginar eventos de auditoría
 
-El sistema debe permitir combinar filtros por período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo de evento, resultado y registro afectado, y navegar por páginas acotadas conservando los criterios. Debe validar rango temporal y paginación y devolver el total de coincidencias; los tamaños permitidos se definirán antes de implementar, sin descarga completa por defecto.
+El sistema debe permitir combinar filtros por período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo de evento, resultado y registro afectado, y navegar por páginas acotadas conservando los criterios. Debe validar rango temporal y paginación y devolver el total de coincidencias, sin descarga completa por defecto. La API implementada utiliza `pagina` predeterminada 1 y `limite` entero de 1 a 100, predeterminado 25; la interfaz ofrece tamaños 25/50/100.
 
 La consulta por tipo de intento fallido debe permitir conocer cuántos eventos coinciden en el período sin sumar los eventos de bloqueo como contraseñas incorrectas adicionales. La ordenación estable no implica que páginas sucesivas sean una instantánea inmutable mientras se agregan eventos. Relaciones: CU42; RN119, RN126 y RN131; RNF21.
 
@@ -681,11 +683,11 @@ Los eventos cuya persistencia se haya confirmado deben permanecer consultables d
 
 ## RNF21. Rendimiento de la captura y consulta de auditoría
 
-La consulta debe utilizar filtros y páginas acotadas en el servidor, sin cargar el historial completo en React. La captura debe limitarse a eventos relevantes y datos mínimos, sin registrar cada renderizado ni cada petición automática. Antes de implementar se definirán tamaños permitidos de página, volumen de prueba y objetivos medibles de tiempo de respuesta para verificar captura y consultas con datos sintéticos. No se fijan cuotas de almacenamiento ni tiempos arbitrarios en esta incorporación documental. Relaciones: RF43–RF53; RN116 y RN131.
+La consulta debe utilizar filtros y páginas acotadas en el servidor, sin cargar el historial completo en React. La captura debe limitarse a eventos relevantes y datos mínimos, sin registrar cada renderizado ni cada petición automática. La paginación está implementada conforme a RF51. Permanecen pendientes la definición de un volumen representativo y objetivos medibles de tiempo de respuesta, y su verificación; la aceptación local existente no acredita rendimiento bajo ese volumen. No se fijan cuotas de almacenamiento ni tiempos arbitrarios. La evidencia y los pendientes se mantienen en `bitacora-auditoria.md`. Relaciones: RF43–RF53; RN116 y RN131.
 
 ## RNF22. Fiabilidad y consistencia de la auditoría
 
-La verificación futura debe demostrar que un rollback no deja una operación como exitosa, que los intentos fallidos y bloqueos confirmados no se pierden por confundir un rechazo HTTP con rollback, y que no se generan eventos duplicados por registrar la misma causa en distintas capas. Los fallos de escritura deben ser detectables con diagnóstico sanitizado, sin afirmar persistencia inexistente ni provocar ciclos de registro de errores. La política por proceso y el tratamiento de indisponibilidad se aprobarán antes de implementar, conforme a RN130–RN133. No se promete captura completa durante una caída del servidor o del almacenamiento. Relaciones: RF43–RF49 y RI16.
+La verificación debe demostrar que un rollback no deja una operación como exitosa, que los intentos fallidos y bloqueos confirmados no se pierden por confundir un rechazo HTTP con rollback, y que no se generan eventos duplicados por registrar la misma causa en distintas capas. Los fallos de escritura deben ser detectables con diagnóstico sanitizado, sin afirmar persistencia inexistente ni provocar ciclos de registro de errores. La política por proceso y el tratamiento de indisponibilidad están aprobados e implementados conforme a RN130–RN133. La evidencia de verificaciones simuladas y de aceptación MySQL local se mantiene en `bitacora-auditoria.md`, junto con sus límites y pendientes operativos; no acredita por sí sola habilitación del entorno de destino. No se promete captura completa durante una caída del servidor o del almacenamiento. Relaciones: RF43–RF49 y RI16.
 
 ---
 

@@ -370,6 +370,8 @@ Los reportes de ventas realizadas utilizan la fecha de confirmación y distingue
 
 Esta decisión amplía el diseño anterior, que solo contemplaba ventas confirmadas y anuladas. El modelo y las migraciones representan el flujo; su ejecución y autorización pertenecen a los futuros Services y rutas de Ventas y Recetas.
 
+El catálogo actual admite `condicionVenta` como texto de hasta 40 caracteres. Antes de implementar la confirmación de ventas queda pendiente definir la correspondencia entre sus valores y la exigencia de receta, considerando los valores históricos existentes, conforme a RN58.
+
 ---
 
 ### 4.12. Identidad histórica y gestión de composición
@@ -2297,7 +2299,7 @@ La inspección del software confirma login/logout, control de bloqueo, usuarios,
 
 Los roles siguen siendo fijos: Administrador, Regente y Vendedor. Existe asignación/cambio de rol de una cuenta por el Administrador, no administración dinámica de roles. La bitácora no agrega actores, permisos dinámicos ni una tabla de sesiones.
 
-Ventas y Recetas conservan sus operaciones funcionales pendientes. La existencia de sus modelos no acredita endpoints, flujos ni auditoría implementados. Se prevé integrar el registro/confirmación y anulación de ventas, así como el registro/revisión de recetas, al desarrollar CU28, CU30, CU31 y CU32. Reportes conserva su estado de desarrollo independiente.
+Ventas y Recetas conservan sus operaciones funcionales pendientes. La existencia de sus modelos no acredita endpoints, flujos ni auditoría implementados. Se prevé integrar el registro/confirmación y anulación de ventas, así como el registro/revisión de recetas, al desarrollar CU28, CU30, CU31 y CU32. Los reportes CU38/CU39 y la consulta de pérdidas CU41 también permanecen pendientes; las consultas existentes de compras por período y la pérdida derivada al registrar un retiro no acreditan esas funcionalidades específicas.
 
 ### Eventos de autenticación y seguridad
 
@@ -2330,7 +2332,7 @@ No se audita cada pulsación, renderizado, consulta rutinaria o solicitud autom�
 
 CU42 reúne consulta general, filtros, paginación y detalle como un objetivo del Administrador. El backend comprueba sesión válida y rol Administrador en cada consulta; Regente y Vendedor generan eventos mediante sus procesos, pero no acceden a la bitácora general.
 
-`GET /api/bitacora` ofrece filtros combinables por período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo, resultado y registro afectado. Ordena por fecha de registro e ID descendentes; página predeterminada 25 y máxima 100, con total coincidente. Página y total comparten transacción REPEATABLE READ; páginas de distintas solicitudes no comparten snapshot. `GET /api/bitacora/:idEvento` devuelve detalle histórico. El historial vacío se distingue de un fallo de consulta. No permite editar ni eliminar eventos mediante las operaciones ordinarias, tampoco al Administrador.
+`GET /api/bitacora` ofrece filtros combinables por período, responsable o cuenta objetivo, nombre ingresado, IP, módulo, operación, tipo, resultado y registro afectado. Ordena por fecha de registro e ID descendentes; `pagina` comienza en 1 por defecto y `limite` admite enteros de 1 a 100, con valor predeterminado 25 y total coincidente. La interfaz ofrece tamaños 25/50/100. Página y total comparten transacción REPEATABLE READ; páginas de distintas solicitudes no comparten snapshot. `GET /api/bitacora/:idEvento` devuelve detalle histórico. El historial vacío se distingue de un fallo de consulta. No permite editar ni eliminar eventos mediante las operaciones ordinarias, tampoco al Administrador.
 
 El registro automático es comportamiento transversal de los CU de origen, no un CU manual por evento. La consulta solo comprende hechos realmente capturados desde su puesta en funcionamiento; no se reconstruye retrospectivamente una auditoría inexistente. CU04/CU05 y CU42 registran una consulta sensible después de materializarla; los éxitos rutinarios y `/auth/me` se excluyen, conservando rechazos y errores relevantes.
 
