@@ -111,6 +111,7 @@ const iconPaths = {
   ),
   arrowLeft: <path d="M19 12H5M11 6l-6 6 6 6" />,
   arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
+  chevronDown: <path d="M6 9l6 6 6-6" />,
   retry: (
     <>
       <path d="M20 7v5h-5" />

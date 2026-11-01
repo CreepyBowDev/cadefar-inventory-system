@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AppIcon } from '../../components/AppIcon.jsx';
-import { getNavigationForRole } from '../../constants/navigation.js';
+import { getActiveSidebarItem, getNavigationForRole } from '../../constants/navigation.js';
 import logoCadefar from '../../assets/images/brand/logo-cadefar.png';
 
 export const AppSidebar = ({
@@ -16,6 +16,21 @@ export const AppSidebar = ({
 }) => {
   const navigationItems = getNavigationForRole(usuario.idRol);
   const sidebarRef = useRef(null);
+  const location = useLocation();
+  const activeItem = getActiveSidebarItem(navigationItems, location.pathname, location.state?.sidebarItemKey);
+  const activeModuleKey = activeItem?.moduleKey;
+  const [expandedItems, setExpandedItems] = useState(() =>
+    activeModuleKey ? { [activeModuleKey]: true } : {}
+  );
+
+  useEffect(() => {
+    if (!activeModuleKey) return;
+    setExpandedItems((current) => ({ ...current, [activeModuleKey]: true }));
+  }, [location.key, activeModuleKey]);
+
+  const toggleItem = (key) => {
+    setExpandedItems((current) => ({ ...current, [key]: !current[key] }));
+  };
 
   useEffect(() => {
     if (!mobile || !open) return undefined;
@@ -90,9 +105,42 @@ export const AppSidebar = ({
         <nav className="app-sidebar__navigation" aria-label="Navegación principal">
           <p className="app-sidebar__section-label">Módulos</p>
           <ul>
-            {navigationItems.map((item) => (
+            {navigationItems.map((item) => {
+              const expanded = Boolean(expandedItems[item.key]);
+              const active = activeModuleKey === item.key;
+
+              return (
               <li key={item.key}>
-                {item.available ? (
+                {item.available && item.children?.length ? (
+                  <>
+                    <button
+                      className={`app-sidebar__link app-sidebar__toggle${active ? ' is-active' : ''}`}
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={`sidebar-package-${item.key}`}
+                      onClick={() => toggleItem(item.key)}
+                    >
+                      <AppIcon name={item.icon} size={19} />
+                      <span>{item.label}</span>
+                      <AppIcon name="chevronDown" size={16} className={`app-sidebar__chevron${expanded ? ' is-expanded' : ''}`} />
+                    </button>
+                    <ul className="app-sidebar__submenu" id={`sidebar-package-${item.key}`} hidden={!expanded}>
+                      {item.children.map((child) => (
+                        <li key={child.key}>
+                          <Link
+                            to={child.path}
+                            state={{ sidebarItemKey: child.key }}
+                            onClick={onNavigate}
+                            className={`app-sidebar__link app-sidebar__sublink${activeItem?.childKey === child.key ? ' is-active' : ''}`}
+                            aria-current={activeItem?.childKey === child.key ? 'page' : undefined}
+                          >
+                            <span>{child.label}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : item.available ? (
                   <NavLink
                     to={item.path}
                     onClick={onNavigate}
@@ -114,7 +162,8 @@ export const AppSidebar = ({
                   </div>
                 )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </nav>
 

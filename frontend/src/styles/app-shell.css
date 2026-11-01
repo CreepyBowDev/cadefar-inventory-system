@@ -131,6 +131,38 @@
   color: var(--color-accent-soft);
 }
 
+.app-sidebar__toggle {
+  width: 100%;
+  grid-template-columns: 1.35rem minmax(0, 1fr) 1rem;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app-sidebar__chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+.app-sidebar__navigation .app-sidebar__submenu {
+  margin-block: .2rem;
+  padding-left: 2rem;
+}
+
+.app-sidebar__submenu[hidden] {
+  display: none;
+}
+
+.app-sidebar__sublink {
+  grid-template-columns: minmax(0, 1fr);
+  font-size: .8125rem;
+}
+
+.app-sidebar__sublink.is-active::before {
+  left: -.65rem;
+}
+
 .app-sidebar__link--disabled {
   color: #a1a5ab;
   cursor: not-allowed;
