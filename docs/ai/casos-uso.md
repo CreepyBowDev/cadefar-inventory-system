@@ -617,14 +617,14 @@ Vendedor.
 **Objetivo:**  
 Preparar, guardar y confirmar la venta de medicamentos.
 
-**Estado de implementación:** CU28–CU32 permanecen pendientes; los modelos y migraciones representan su diseño. Antes de implementar la confirmación debe definirse la correspondencia entre los valores de condición de venta y la exigencia de receta, conforme a RN58.
+**Estado de implementación backend:** CU28–CU32 están implementados y verificados localmente para el alcance aprobado sin adjuntos: ventas pendientes/confirmadas, consulta y anulación, registro de recetas mediante formulario y aprobación/rechazo por el Regente. RN58 exige receta aprobada de la misma venta para `RECETA_MEDICA`, no para `LIBRE`, y bloquea valores desconocidos. La migración `20261101120000-allow-null-receta-archivo.js` permite NULL en el campo legado y debe aplicarse antes de utilizar esta versión en una base existente. La evidencia actual de `bitacora-auditoria.md` corresponde al flujo completo de formulario; no acredita frontend ni despliegue en el entorno operativo.
 
 **Registro pendiente:**
 
 - El Vendedor guarda la venta en estado `PENDIENTE` con sus detalles y recetas cuando correspondan.
 - Los medicamentos incluidos en una nueva venta deben estar activos, conforme a RN14.
 - Se calcula el total y se registra la fecha de registro, sin fecha de venta todavía.
-- Las existencias indicadas en los detalles son una selección provisional.
+- Cada detalle mantiene una referencia obligatoria a una existencia real mediante `id_existencia`, conforme al modelo vigente; esta selección es provisional y no garantiza disponibilidad.
 - No se descuenta ni reserva stock ni se generan movimientos de inventario.
 - Las recetas quedan vinculadas con la venta para que el Regente las revise.
 
@@ -634,7 +634,7 @@ Preparar, guardar y confirmar la venta de medicamentos.
 - El medicamento debe estar activo.
 - La existencia no debe estar vencida.
 - Debe existir stock suficiente.
-- Si el medicamento requiere receta, su detalle debe estar respaldado por una receta de esa misma venta aprobada por el Regente.
+- Conforme a RN58, `LIBRE` no requiere receta y `RECETA_MEDICA` exige que su detalle esté respaldado por una receta de esa misma venta aprobada por el Regente. Cualquier condición de venta desconocida o no reconocida bloquea la confirmación con un error controlado.
 
 **Durante la confirmación, realizada por el Vendedor:**
 
@@ -651,7 +651,7 @@ La confirmación y sus efectos sobre inventario se registran de forma conjunta m
 
 **Flujo alternativo:**
 
-Si una receta necesaria está pendiente o rechazada, la venta permanece pendiente y no puede confirmarse ni descontar inventario.
+Si una receta necesaria está pendiente o rechazada, o la condición de venta es desconocida o no reconocida, la venta permanece pendiente y no puede confirmarse ni descontar inventario.
 
 ---
 
@@ -712,11 +712,16 @@ Registrar una receta utilizada para respaldar medicamentos que requieren prescri
 - Fecha.
 - Datos del paciente.
 - Datos del médico.
-- Archivo adjunto.
 - Modalidad.
 
 **Resultado:**  
 La receta queda vinculada con la venta pendiente correspondiente, mediante `id_venta` obligatorio, y disponible para revisión antes de la confirmación de la venta.
+
+**Registro mediante formulario:**
+
+Se registran los datos de la receta física presentada, sin carga de imágenes, PDF ni otros adjuntos. El formulario no emite una prescripción médica ni aprueba automáticamente la receta. El acceso a sus datos personales debe comprobar autenticación y permisos.
+
+**Persistencia y vinculación:** `archivo_receta` es un campo legado nullable mediante la migración `20261101120000-allow-null-receta-archivo.js`; las nuevas recetas guardan NULL y las referencias históricas se conservan. `idsDetallesVenta`, opcional en el registro, permite vincular varios detalles de esa misma venta en la misma transacción que receta y auditoría. Si se omite, la receta pertenece a la venta, pero no respalda automáticamente ningún detalle. Se rechazan detalles ajenos y no se sustituye silenciosamente una receta ya vinculada. La revisión inicial queda pendiente mediante campos nulos, incluso si registra el Regente.
 
 ---
 
@@ -736,7 +741,7 @@ Registrar la revisión de una receta.
 - Observación.
 
 **Resultado:**  
-La receta puede quedar aprobada o rechazada. Su revisión no descuenta inventario ni confirma automáticamente la venta. El Vendedor confirma cuando se cumplen las condiciones de CU28.
+El Regente revisa la receta física presentada y los datos del formulario, y aprueba o rechaza la receta vinculada a una venta pendiente, mediante los resultados `APROBADA` o `RECHAZADA`. Se registran conjuntamente resultado, responsable y fecha de validación, sin exigir una copia digital. La ausencia de resultado, responsable y fecha representa una revisión pendiente. Una receta pendiente o rechazada no satisface la exigencia de RN58. La revisión no confirma la venta, no modifica inventario ni genera movimientos. El Vendedor confirma cuando se cumplen las condiciones de CU28.
 
 ---
 

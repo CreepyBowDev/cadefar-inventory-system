@@ -1,0 +1,18 @@
+@import '../../ventas/styles/ventas.css';
+
+.receta-form { display: grid; gap: 1.5rem; padding: clamp(1rem, 3vw, 2rem); }
+.receta-form fieldset, .receta-revision fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.receta-form legend { margin-bottom: 1rem; font-size: .95rem; font-weight: 650; }
+.receta-form input, .receta-revision input, .receta-revision select { width: 100%; min-width: 0; }
+.receta-form .receta-productos { border-top: 1px solid var(--color-line); padding-top: 1rem; }
+.receta-producto { display: flex; align-items: start; gap: .75rem; padding: .85rem 0; font-size: .86rem; }
+.receta-producto input { width: 1.1rem; height: 1.1rem; flex-shrink: 0; margin-top: .15rem; accent-color: var(--color-accent); }
+.receta-producto small, .receta-detail dd small { display: block; margin-top: .35rem; color: var(--color-muted); font-size: .8rem; }
+.receta-note { color: var(--color-muted); font-size: .86rem; line-height: 1.6; }
+.receta-revision { display: grid; gap: 1rem; padding: 1.25rem; }
+.receta-revision h3 { margin: 0; font-size: 1rem; }
+.receta-revision p { margin: 0; font-size: .86rem; line-height: 1.6; }
+.receta-revision form { display: grid; gap: 1rem; }
+.receta-table { min-width: 58rem; }
+.receta-table td { vertical-align: top; }
+.receta-table th { white-space: nowrap; }

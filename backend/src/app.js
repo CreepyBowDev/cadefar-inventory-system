@@ -8,6 +8,7 @@ import { medicamentoRouter } from './presentation/routes/medicamento.router.js';
 import { principioActivoRouter } from './presentation/routes/principio-activo.router.js';
 import { inventarioRouter } from './presentation/routes/inventario.router.js';
 import { compraRouter } from './presentation/routes/compra.router.js';
+import { ventaRouter } from './presentation/routes/venta.router.js';
 import { bitacoraAuditoriaRouter } from './presentation/routes/bitacora-auditoria.router.js';
 import { errorHandler } from './presentation/middlewares/error.middleware.js';
 import { auditoriaContextoMiddleware } from './presentation/middlewares/auditoria-contexto.middleware.js';
@@ -31,6 +32,7 @@ app.use('/api/medicamentos', medicamentoRouter);
 app.use('/api/principios-activos', principioActivoRouter);
 app.use('/api/inventario', inventarioRouter);
 app.use('/api/compras', compraRouter);
+app.use('/api/ventas', ventaRouter);
 app.use('/api/bitacora', bitacoraAuditoriaRouter);
 
 app.use(auditoriaAuthErrorMiddleware);

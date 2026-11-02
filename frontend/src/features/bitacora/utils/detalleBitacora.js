@@ -9,7 +9,8 @@ export const CAMPOS_BITACORA = Object.freeze({
   idMedicamento: 'ID de medicamento', idPrincipioActivo: 'ID de principio activo', cantidadPrincipioActivo: 'Cantidad de principio activo',
   unidadPrincipioActivo: 'Unidad del principio activo', cantidadReferencia: 'Cantidad de referencia', unidadReferencia: 'Unidad de referencia',
   estadoOperacion: 'Estado de la operación', total: 'Total', cantidadDetalles: 'Cantidad de detalles',
-  codigoExistencia: 'Código de existencia', stockFisico: 'Stock físico', costoUnitarioPromedio: 'Costo unitario promedio'
+  codigoExistencia: 'Código de existencia', stockFisico: 'Stock físico', costoUnitarioPromedio: 'Costo unitario promedio',
+  idVenta: 'ID de venta', resultadoRevision: 'Resultado de revisión', idUsuarioValidador: 'ID del usuario validador'
 });
 const camposSinValor = { correo: 'Correo', telefono: 'Teléfono', direccion: 'Dirección', descripcion: 'Descripción' };
 export const METADATOS_BITACORA = Object.freeze({
@@ -30,17 +31,19 @@ const causas = {
   CODIGO_INVALIDO: 'Código inválido', CODIGO_VENCIDO: 'Código vencido', CODIGO_UTILIZADO: 'Código utilizado',
   CORREO_NO_DISPONIBLE: 'Correo no disponible', ENVIO_RECHAZADO: 'Envío rechazado', ENVIO_INCIERTO: 'Envío incierto',
   PRECONDICIONES_DESACTUALIZADAS: 'Precondiciones desactualizadas', STOCK_INSUFICIENTE: 'Stock insuficiente',
-  ERROR_CONEXION: 'Error de conexión', ERROR_PERSISTENCIA: 'Error de persistencia', ERROR_ENVIO: 'Error de envío', ERROR_INTERNO: 'Error interno'
+  ERROR_CONEXION: 'Error de conexión', ERROR_PERSISTENCIA: 'Error de persistencia', ERROR_ENVIO: 'Error de envío', ERROR_INTERNO: 'Error interno',
+  ALMACENAMIENTO_NO_CONFIGURADO: 'Almacenamiento no configurado (evento histórico)'
 };
 const codigos = { CONFIRMADO: 'Confirmado', NO_APLICA: 'No aplica', INCIERTO: 'Incierto', ACEPTADO: 'Aceptado', RECHAZADO: 'Rechazado',
   VERIFICACION: 'Verificación', FIRMA_TOKEN: 'Firma del token', SEGURIDAD: 'Seguridad', AUDITORIA: 'Auditoría', CONFIRMACION: 'Confirmación', COOKIE: 'Cookie', RESPUESTA: 'Respuesta' };
 export const nombreCausaBitacora = causa => Object.hasOwn(causas, causa) ? causas[causa] : causa || 'Sin causa registrada';
 export const valorBitacora = (valor, campo) => {
   if (valor === undefined) return 'No capturado';
-  if (valor === null) return 'Sin valor';
+  if (valor === null) return campo === 'resultadoRevision' ? 'Pendiente de revisión' : 'Sin valor';
   if (typeof valor === 'boolean') return campo === 'estado' ? valor ? 'Activo' : 'Inactivo' : valor ? 'Sí' : 'No';
   if (!['string', 'number'].includes(typeof valor)) return 'Valor no disponible';
   if (campo === 'idRol') return `${getRoleName(valor)} (#${valor})`;
+  if (campo === 'resultadoRevision') return valor === 'APROBADA' ? 'Aprobada' : valor === 'RECHAZADA' ? 'Rechazada' : String(valor);
   if (['efecto', 'estadoEnvio', 'etapa'].includes(campo) && Object.hasOwn(codigos, valor)) return codigos[valor];
   return valor === '' ? 'Texto vacío' : String(valor);
 };

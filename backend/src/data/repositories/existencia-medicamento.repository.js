@@ -14,6 +14,37 @@ const existenciasInclude = {
 const contiene = (texto) => `%${texto.replace(/[\\%_]/g, '\\$&')}%`;
 
 export class existenciaMedicamentoRepository {
+    static async reintegrarPorAnulacionVenta({ idExistencia, saldoAnterior, promedioAnterior,
+        saldoFinal, promedioFinal, transaction }) {
+        return ExistenciaMedicamento.update({ cantidad_fisica: saldoFinal, costo_unitario_promedio: promedioFinal }, {
+            where: { id_existencia: idExistencia, cantidad_fisica: saldoAnterior,
+                costo_unitario_promedio: promedioAnterior }, transaction
+        });
+    }
+
+    static async findReferenciasParaVenta({ idsExistencias, transaction }) {
+        return ExistenciaMedicamento.findAll({ attributes: ['id_existencia', 'id_medicamento'],
+            where: { id_existencia: { [Op.in]: idsExistencias } }, transaction });
+    }
+
+    static async findParaConfirmarVenta({ idsMedicamentos, transaction }) {
+        // Bloquear también agotadas/vencidas. El Service calcula vendibilidad y
+        // FEFO con el instante comercial obtenido después de adquirir bloqueos.
+        return ExistenciaMedicamento.findAll({ where: { id_medicamento: { [Op.in]: idsMedicamentos } },
+            transaction, lock: transaction.LOCK.UPDATE, order: [['id_existencia', 'ASC']] });
+    }
+
+    static async descontarParaVenta({ idExistencia, saldoEsperado, cantidad, transaction }) {
+        return ExistenciaMedicamento.update({ cantidad_fisica: saldoEsperado - cantidad }, {
+            where: { id_existencia: idExistencia,
+                cantidad_fisica: { [Op.eq]: saldoEsperado, [Op.gte]: cantidad } }, transaction
+        });
+    }
+
+    static async findByIdParaVenta({ idExistencia, transaction }) {
+        return ExistenciaMedicamento.findByPk(idExistencia, { transaction, lock: transaction.LOCK.UPDATE });
+    }
+
     static async findByIdParaMovimiento({ idExistencia, transaction }) {
         return ExistenciaMedicamento.findByPk(idExistencia, { transaction, lock: transaction.LOCK.UPDATE });
     }

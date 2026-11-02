@@ -3,7 +3,7 @@ import db from '../../data/models/index.js';
 import { movimientoInventarioRepository } from '../../data/repositories/movimiento-inventario.repository.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { calcularVencimiento, obtenerFechaComercial, obtenerFechaEtiquetaNormalizada,
-    sumarMesesCalendario, ZONA_HORARIA_COMERCIAL } from '../../shared/utils/vencimiento.js';
+    sumarMesesCalendario, ZONA_HORARIA_COMERCIAL, compararVencimientos } from '../../shared/utils/vencimiento.js';
 import { decimalAEntero, enteroADecimal, dividirYRedondear,
     MAXIMO_COEFICIENTE_DECIMAL_14 } from '../../shared/utils/decimal.js';
 import { obtenerFechaOperacion } from '../../shared/utils/fecha-operacion.js';
@@ -31,9 +31,6 @@ const costoPromedioExistencia = (existencia) => {
     }
     return costo;
 };
-const compararVencimientos = (a, b) => Number(a.fechaEfectivaVencimiento.replaceAll('-', '')) -
-    Number(b.fechaEfectivaVencimiento.replaceAll('-', '')) || a.idExistencia - b.idExistencia;
-
 const toPublicExistencias = (medicamento, fechaComercial, incluirUltimoMovimiento = false) => (
     (medicamento.existencias || []).map((existencia) => {
         const vencimiento = calcularVencimiento(existencia.fecha_vencimiento,

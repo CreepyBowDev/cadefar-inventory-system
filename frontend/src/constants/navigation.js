@@ -100,8 +100,14 @@ export const NAVIGATION_ITEMS = Object.freeze([
     label: 'Ventas',
     description: 'Registro de ventas de medicamentos',
     icon: 'sales',
-    roles: [ROLES.VENDEDOR],
-    available: false
+    path: '/ventas',
+    roles: ALL_ROLES,
+    children: [
+      { key: 'registrar-venta', label: 'Registrar venta', path: '/ventas/nueva', roles: [ROLES.VENDEDOR] },
+      { key: 'consultar-ventas', label: 'Consultar ventas', path: '/ventas', roles: ALL_ROLES },
+      { key: 'anular-venta', label: 'Anular venta', path: '/ventas', roles: [ROLES.ADMINISTRADOR] }
+    ],
+    available: true
   },
   {
     key: 'inventario',
@@ -139,8 +145,13 @@ export const NAVIGATION_ITEMS = Object.freeze([
     label: 'Recetas',
     description: 'Revisión y control de recetas',
     icon: 'prescription',
-    roles: [ROLES.REGENTE],
-    available: false
+    path: '/recetas',
+    roles: [ROLES.REGENTE, ROLES.VENDEDOR],
+    children: [
+      { key: 'registrar-receta', label: 'Registrar receta', path: '/recetas/registrar', matchPaths: ['/ventas/:idVenta/recetas/nueva'], roles: [ROLES.REGENTE, ROLES.VENDEDOR] },
+      { key: 'revisar-receta', label: 'Revisar receta', path: '/recetas', matchPaths: ['/ventas/:idVenta/recetas', '/ventas/:idVenta/recetas/:idReceta'], roles: [ROLES.REGENTE] }
+    ],
+    available: true
   },
   {
     key: 'reportes',
@@ -164,9 +175,13 @@ export const NAVIGATION_ITEMS = Object.freeze([
 export const getNavigationForRole = (idRol) =>
   NAVIGATION_ITEMS
     .filter((item) => item.roles.includes(idRol))
-    .map((item) => item.children
-      ? { ...item, children: item.children.filter((child) => child.roles.includes(idRol)) }
-      : item);
+    .map((item) => {
+      if (!item.children) return item;
+      const children = item.children.filter((child) => child.roles.includes(idRol));
+      // El acceso del dashboard también debe apuntar a una opción permitida.
+      const path = children.some(child => child.path === item.path) ? item.path : children[0]?.path || item.path;
+      return { ...item, path, children };
+    });
 
 export const getActiveSidebarItem = (items, pathname, selectedKey) => {
   const options = items.filter((item) => item.available).flatMap((item) =>
@@ -177,7 +192,7 @@ export const getActiveSidebarItem = (items, pathname, selectedKey) => {
 
   // La intención solo se conserva si corresponde a la ruta y al rol actuales.
   const selected = options.find((option) => option.child.key === selectedKey &&
-    (option.child.path === pathname || matchesInternalRoute(option)));
+    (option.child.path === pathname || matchesInternalRoute(option) || pathname.startsWith(`${option.child.path}/`)));
   const matched = selected || options.find(matchesInternalRoute) ||
     options.find(({ child }) => child.path === pathname);
 
@@ -191,6 +206,12 @@ export const getActiveSidebarItem = (items, pathname, selectedKey) => {
 };
 
 export const getPageTitle = (pathname) => {
+  if (pathname === '/recetas/registrar' || /^\/ventas\/[^/]+\/recetas\/nueva$/.test(pathname)) return 'Registrar receta';
+  if (pathname === '/recetas') return 'Revisar recetas';
+  if (/^\/ventas\/[^/]+\/recetas\/[^/]+$/.test(pathname)) return 'Detalle de receta';
+  if (/^\/ventas\/[^/]+\/recetas$/.test(pathname)) return 'Recetas de la venta';
+  if (pathname === '/ventas/nueva') return 'Registrar venta';
+  if (pathname.startsWith('/ventas/')) return 'Detalle de la venta';
   if (pathname.startsWith('/inventario/medicamentos/') && pathname.endsWith('/retiro-vencimiento')) return 'Retirar por vencimiento';
   if (pathname.startsWith('/inventario/medicamentos/') && pathname.endsWith('/retiro-dano')) return 'Retirar por daño';
   if (pathname.startsWith('/inventario/medicamentos/') && pathname.endsWith('/ajuste')) return 'Conciliar conteo físico';

@@ -1,0 +1,64 @@
+@import '../../../styles/catalogo.css';
+
+.venta-filters { padding: 1.25rem; border-bottom: 1px solid var(--color-line); }
+.venta-filters fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.venta-filters__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.venta-filters__actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+.ventas-page .catalogo-table-wrap { min-width: 0; max-width: 100%; contain: content; }
+.venta-table { min-width: 58rem; }
+.venta-table td { vertical-align: top; }
+.venta-table th { white-space: nowrap; }
+.venta-table .venta-number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.venta-link { color: var(--color-ink); font-weight: 650; text-decoration-color: var(--color-accent); text-underline-offset: .22em; }
+.venta-link:hover { text-decoration-thickness: 2px; }
+.venta-clave { overflow-wrap: anywhere; }
+.venta-table .venta-clave { max-width: 16rem; }
+.venta-estado { display: inline-flex; width: fit-content; padding: .35rem .65rem; border: 1px solid var(--color-line-strong); border-radius: .3rem; color: var(--color-muted); background: var(--color-surface-subtle); font-size: .76rem; font-weight: 650; white-space: nowrap; }
+.venta-estado--confirmada { border-color: #c8dec2; color: #3f653f; background: #f1f7ef; }
+.venta-estado--anulada { border-color: #ecc4bf; color: var(--color-danger); background: #fff0ed; }
+.venta-estado--pendiente { border-color: #e8cf9f; color: #805000; background: var(--color-accent-pale); }
+.venta-detail .venta-total { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.venta-aviso { margin: 1.25rem; padding: 1rem; border-left: 3px solid var(--color-accent); background: var(--color-accent-pale); color: var(--color-ink); font-size: .86rem; line-height: 1.6; }
+.venta-anulacion { margin: 1.25rem; padding: 1.25rem; border-left: 3px solid var(--color-danger); background: #fff8f6; }
+.venta-anulacion h3 { margin: 0 0 1rem; color: var(--color-danger); font-size: 1rem; }
+.venta-anulacion dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 0; }
+.venta-anulacion dt { margin-bottom: .4rem; color: var(--color-muted); font-size: .75rem; }
+.venta-anulacion dd { margin: 0; font-size: .86rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+.venta-anulacion__motivo { grid-column: 1 / -1; }
+.venta-anulacion p { margin: 1rem 0 0; color: var(--color-muted); font-size: .82rem; line-height: 1.6; }
+.venta-recetas { display: grid; gap: 1rem; list-style: none; margin: 0; padding: 1.25rem; }
+.venta-recetas li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; font-size: .86rem; }
+.venta-recetas__acciones { display: flex; flex-wrap: wrap; gap: .6rem; }
+.venta-form { display: grid; gap: 1.5rem; padding: clamp(1rem, 3vw, 2rem); }
+.venta-form > .form-field { max-width: 40rem; }
+.venta-form h3, .venta-confirmacion h3 { margin: 0 0 .75rem; font-size: 1rem; }
+.venta-linea { min-width: 0; margin: 1rem 0; padding: 1.25rem; border: 1px solid var(--color-line); border-left: 3px solid var(--color-accent); border-radius: .4rem; }
+.venta-linea legend { padding-inline: .4rem; font-weight: 650; font-size: .9rem; }
+.venta-linea__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.venta-linea__wide { grid-column: 1 / -1; }
+.venta-linea__actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; font-size: .86rem; }
+.venta-form input, .venta-form select { min-width: 0; width: 100%; }
+.venta-form__total { margin: 0; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.venta-form .venta-aviso { margin: 0; }
+.venta-review { max-height: 40vh; overflow-y: auto; padding-left: 1.5rem; font-size: .86rem; }
+.venta-review li { padding: .75rem .25rem; border-bottom: 1px solid var(--color-line); }
+.venta-review p { line-height: 1.6; }
+.venta-confirmacion { display: grid; gap: 1rem; padding: 1.25rem; }
+.venta-confirmacion p { margin: 0; font-size: .86rem; line-height: 1.6; }
+.venta-confirmacion .venta-aviso { margin: 0; }
+.venta-confirmacion > .button { justify-self: start; }
+.venta-anular-form fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.venta-anular-form legend { margin-bottom: 1rem; font-size: .95rem; font-weight: 650; }
+.venta-anular-form textarea { width: 100%; padding: .8rem; font: inherit; color: var(--color-ink); border: 1px solid var(--color-line-strong); border-radius: .4rem; resize: vertical; }
+.venta-anular-review { display: grid; gap: 1rem; margin: 0 0 1rem; }
+.venta-anular-review dt { color: var(--color-muted); font-size: .8rem; }
+.venta-anular-review dd { margin: .25rem 0 0; overflow-wrap: anywhere; white-space: pre-wrap; font-size: .9rem; }
+@media (max-width: 900px) { .venta-filters__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) {
+  .venta-filters__fields, .venta-anulacion dl { grid-template-columns: 1fr; }
+  .venta-linea__fields { grid-template-columns: 1fr; }
+  .venta-linea__wide { grid-column: auto; }
+  .venta-form .venta-aviso .button { width: 100%; white-space: normal; }
+  .venta-anulacion__motivo { grid-column: auto; }
+  .venta-filters__actions { flex-direction: column; }
+}

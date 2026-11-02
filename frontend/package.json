@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:ventas-recetas": "node --test tests/venta-anulacion.test.mjs tests/venta-form.test.mjs tests/ventas-consulta.test.mjs tests/ventas-recetas-services.test.mjs tests/receta-form.test.mjs tests/bitacora-consulta.test.mjs tests/ventas-consulta.browser.test.mjs tests/recetas.browser.test.mjs tests/bitacora.browser.test.mjs",
+    "test:ventas-recetas:real": "node --test tests/ventas-recetas-real.browser.test.mjs"
   },
   "dependencies": {
     "axios": "^1.20.0",

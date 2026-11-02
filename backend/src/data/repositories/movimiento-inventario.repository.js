@@ -5,6 +5,19 @@ const { MovimientoInventario, ExistenciaMedicamento, Medicamento, Usuario,
 const { Op, fn, col, where } = Sequelize;
 
 export class movimientoInventarioRepository {
+    static async findParaAnularVenta({ idsDetallesVenta, transaction }) {
+        // Incluir todas las referencias del detalle, aunque apunten a otra
+        // existencia o sean compensaciones: el Service detecta la inconsistencia.
+        return MovimientoInventario.findAll({ where: { id_detalle_venta: { [Op.in]: idsDetallesVenta } },
+            transaction, lock: transaction.LOCK.UPDATE, order: [['id_movimiento', 'ASC']] });
+    }
+
+    static async findPorDetallesVenta({ idsDetallesVenta, transaction }) {
+        return MovimientoInventario.findAll({ attributes: ['id_movimiento'],
+            where: { id_detalle_venta: { [Op.in]: idsDetallesVenta } }, transaction,
+            lock: transaction.LOCK.UPDATE, order: [['id_movimiento', 'ASC']] });
+    }
+
     static async findUltimoIdParaExistencia({ idExistencia, transaction }) {
         // El Service debe bloquear primero la existencia y conservar ese
         // bloqueo hasta terminar. FOR UPDATE evita un snapshot previo en RR.

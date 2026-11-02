@@ -1,10 +1,10 @@
 # CADEFAR — Diagrama de clases actualizado del proyecto
 
-> **Actualizado:** 12/10/2026.
+> **Base estructural:** 12/10/2026. Actualización puntual de Ventas/Recetas: 02/11/2026.
 >
 > **Estado:** referencia estructural del código y del diseño funcional vigente. Sustituye el inventario de la primera versión de `Diagrama de clases cadefar SI1.drawio`.
 >
-> **Cobertura:** 15 modelos persistentes y 9 clases de servicio implementadas. Ventas y Recetas tienen modelos y migraciones, pero sus operaciones funcionales están pendientes. El módulo de Reportes también está pendiente.
+> **Cobertura de los módulos representados:** 15 modelos persistentes y 11 servicios, incluidos `ventaService` y `recetaService`. CU28–CU32 están implementados en backend para formulario sin adjuntos. Reportes continúa pendiente. Este inventario estructural no incluye Bitácora; la cobertura global y evidencia actual se mantienen en `contexto-maestro.md` y `bitacora-auditoria.md`.
 
 ## 0. Alcance, fuentes y notación
 
@@ -41,9 +41,9 @@ Este documento reúne atributos, operaciones y relaciones para servir de base al
 | Medicamentos, principios activos y composición | `Medicamento`, `PrincipioActivo`, `ComposicionMedicamento` | `medicamentoService`, `principioActivoService`, `composicionMedicamentoService` | CU14–CU20. |
 | Compras | `Compra`, `DetalleCompra` | `compraService` | CU25–CU27. |
 | Inventario, existencias, movimientos y vencimientos | `ExistenciaMedicamento`, `MovimientoInventario` | `inventarioService` | CU21–CU24, CU33–CU37 y CU40. |
-| Ventas y recetas | `Venta`, `DetalleVenta`, `Receta` | Ninguno implementado para estas operaciones | CU28–CU32 pendientes; modelos y migraciones existentes. |
+| Ventas y recetas | `Venta`, `DetalleVenta`, `Receta` | `ventaService`, `recetaService` | CU28–CU32 implementados en backend sin adjuntos; aplicar migración de nulabilidad en bases existentes. |
 | Reportes | Sin modelo propio | Sin servicio de reportes implementado | CU38, CU39 y CU41 pendientes. CU40 ya está cubierto por Inventario. |
-| **Total** | **15 modelos** | **9 servicios** | **33 CU implementados en código; 8 pendientes.** |
+| **Total de los módulos representados** | **15 modelos** | **11 servicios** | **38 CU implementados; CU38/CU39/CU41 pendientes. CU42/Bitácora queda fuera de este inventario.** |
 
 Los valores calculados y las validaciones de configuración no amplían el inventario de entidades. Las pruebas y la activación de funciones se distinguen de la existencia del código en la sección 10.
 
@@ -627,9 +627,9 @@ Este módulo reutiliza Medicamento, ExistenciaMedicamento, MovimientoInventario 
 
 Las operaciones reales son `getProximosAVencer`, `getVencidos`, `getStockBajo` y los retiros de `inventarioService`. `VencimientoService` y `confirmarRetiro()` de la primera versión no existen como clase/método en el código actual. No hay tabla `Alerta` ni `Vencimiento`.
 
-## 7. Ventas y recetas: modelos existentes, operaciones pendientes
+## 7. Ventas y recetas: modelos y operaciones backend implementadas
 
-Los atributos y asociaciones siguientes **sí existen en modelos y migraciones**. Registrar/confirmar/anular ventas, registrar/revisar recetas y ejecutar FEFO siguen documentados pero pendientes de Services, rutas e interfaz funcional. No se representan como operaciones terminadas.
+Los atributos y asociaciones siguientes existen en modelos y migraciones. CU28–CU32 están implementados en backend: `ventaService` registra pendientes, consulta, confirma mediante RN58/FEFO y anula; `recetaService` registra formularios y vínculos, consulta y aprueba/rechaza por el Regente. Las operaciones críticas incluyen auditoría transaccional. Esta entrega no implementa frontend ni aplica migraciones a bases existentes.
 
 ### 7.1. `Venta` — modelo
 
@@ -678,24 +678,26 @@ La migración `20261003120100-add-pending-venta-state.js` establece `PENDIENTE` 
 | `nombre_paciente` | VARCHAR(150) | No | — |
 | `documento_paciente` | VARCHAR(40) | No | — |
 | `nombre_medico` | VARCHAR(150) | No | — |
-| `archivo_receta` | VARCHAR(500) | No | Referencia al archivo; no modelo de almacenamiento nuevo |
+| `archivo_receta` | VARCHAR(500) | Sí | Legado; nuevas recetas NULL, referencias históricas conservadas. Migración 20261101120000 |
 | `modalidad` | VARCHAR(50) | No | — |
 | `resultado_revision` | ENUM('APROBADA','RECHAZADA') | Sí | NULL representa ausencia de revisión |
 | `fecha_validacion` | DATETIME | Sí | — |
 | `fecha_registro` | DATETIME | No | CURRENT_TIMESTAMP |
 | `observacion` | VARCHAR(500) | Sí | — |
 
-**Reglas documentadas para implementar (CU28–CU32):**
+**Formulario sin adjuntos implementado en backend:** el Regente revisa la receta física presentada y sus datos. La tabla describe el modelo y el esquema tras aplicar `20261101120000-allow-null-receta-archivo.js`; esa migración debe aplicarse en bases existentes antes de usar el nuevo registro. Conserva referencias históricas y rechaza el rollback si existen recetas sin archivo. No se requiere proveedor de almacenamiento ni se crean rutas ficticias. No cambian los demás campos, asociaciones ni actores por esta decisión.
+
+**Reglas implementadas en backend (CU28–CU32):**
 
 - Una venta nueva tiene al menos un detalle y se guarda pendiente, sin reservar ni descontar stock ni generar movimientos.
 - Una receta pertenece a exactamente una venta; una venta admite varias recetas y una receta puede respaldar varios detalles.
-- Cada detalle tiene como máximo una receta, que debe pertenecer a su misma venta. Las FK individuales no garantizan por sí solas esa igualdad; la validación de la operación está pendiente.
+- Cada detalle tiene como máximo una receta, que debe pertenecer a su misma venta. Las FK individuales no garantizan por sí solas esa igualdad; los Services la validan al registrar vínculos y confirmar.
 - La revisión pendiente se representa por NULL, no por un tercer literal `PENDIENTE` del ENUM de Receta. La revisión aprobada/rechazada conserva resultado, validador y fecha.
 - El Regente revisa; el Vendedor confirma. La confirmación revalida stock, activos, vencimientos, FEFO y recetas aprobadas y registra efectos atómicamente.
 - La selección de existencias pendiente es provisional; confirmar puede distribuir el producto entre varios detalles.
 - Anular una pendiente no revierte stock; anular una confirmada compensa sus movimientos.
 
-No se conservan los métodos conceptuales originales de `VentaService` como métodos existentes. El diseño de sus firmas definitivas pertenece a la implementación futura, no a esta actualización estructural.
+Las operaciones reales de `ventaService` son `createVenta`, `getVentas`, `getVentaById`, `confirmarVenta` y `anularVenta`. Las de `recetaService` son `createReceta`, `getRecetas`, `getRecetaById` y `revisarReceta`. No se atribuyen métodos conceptuales del dibujo original a estas clases.
 
 ### 7.4. Diagrama de modelos de Ventas y Recetas
 
@@ -739,8 +741,8 @@ classDiagram
     Receta "0..1" -- "0..*" DetalleVenta : receta
     ExistenciaMedicamento "1" -- "0..*" DetalleVenta : existencia
     DetalleVenta "0..1" -- "0..*" MovimientoInventario : detalleVenta
-    note for Venta "Modelo existente; CU28-CU30 y ejecucion FEFO pendientes"
-    note for Receta "Modelo existente; registro y revision CU31-CU32 pendientes"
+    note for Venta "CU28-CU30 implementados en backend; confirmacion FEFO y anulacion atomicas"
+    note for Receta "CU31-CU32 implementados; formulario sin adjuntos y revision por Regente"
 ```
 
 ## 8. Reportes y consultas
@@ -749,7 +751,7 @@ No existe modelo `Reporte` ni clase `ReporteService` implementada. Las fuentes s
 
 | Caso de uso | Estado y relación con el código actual |
 |---|---|
-| CU38 — Reporte de ventas | Pendiente; depende del futuro flujo de ventas y su fecha efectiva. |
+| CU38 — Reporte de ventas | Pendiente; su fuente es el flujo de ventas implementado y la fecha efectiva. |
 | CU39 — Reporte de compras | Pendiente como bloque de reportes. CU26 ya permite consultar compras por fecha/período; no se inventa otro método existente. |
 | CU40 — Historial de inventario | Implementado mediante `inventarioService.getMovimientos(filtros)`, compartido con CU24. |
 | CU41 — Consultar pérdidas | Pendiente como consulta conjunta por período. Los retiros ya devuelven su pérdida individual derivada. |
@@ -804,29 +806,29 @@ LimiteRecuperacionIp permanece aislado en el diagrama de asociaciones persistent
 | CompraService → InventarioService | `compraService` accede a Repositories de Compra, Medicamento, Existencia y Movimiento. |
 | Usuario anulador de compra con destino ambiguo | Relación confirmada por `Compra.id_usuario_anulador` y asociaciones registrador/anulador. |
 | VencimientoService independiente | Consultas y retiros implementados en `inventarioService`. |
-| FEFO como método actual de InventarioService | Regla documentada de confirmación de ventas, aún sin operación implementada. |
+| FEFO como método actual de InventarioService | Confirmación implementada en `ventaService`, reutilizando vencimiento y comparador compartidos con Inventario. |
 | Cardinalidades y flechas por revisar | Matriz con FK, nulabilidad y distinción entre mínimo estructural y regla de negocio. |
-| Venta sin definición precisa de pendiente | ENUM y fecha nullable actuales; confirmación y recetas pendientes funcionalmente. |
-| VentaService y ReporteService como clases del sistema | Referencias del diseño original; no se cuentan como servicios implementados. |
-| 9 servicios conceptuales | 9 servicios reales, con composición diferente y 48 métodos públicos estáticos inventariados. |
+| Venta sin definición precisa de pendiente | Pendiente sin stock ni movimientos; confirmación y recetas implementadas en backend. |
+| VentaService y ReporteService como clases del sistema | `ventaService` ya está implementado; no existe un servicio de Reportes implementado. |
+| 9 servicios conceptuales | Inventario original de 9 servicios y 48 métodos; se incorporan los 2 servicios de Ventas/Recetas descritos en sección 7. |
 
 ### 9.3. Cómo trasladarlo al dibujo UML
 
 1. Crear las dos cajas nuevas de modelos de recuperación y actualizar las trece existentes con las tablas de atributos de este documento.
 2. Mostrar tipos, campos opcionales y claves; mantener una leyenda si se abrevia el dibujo.
-3. Usar los nueve servicios reales y las firmas de sus tablas. Los diagramas Mermaid son vistas resumidas; no sustituyen el inventario completo.
+3. Usar los servicios reales y sus firmas, incluidos Ventas/Recetas de sección 7. Los diagramas Mermaid son vistas resumidas; no sustituyen el inventario completo.
 4. Representar Repositories como clases auxiliares de acceso a datos cuando se analice la implementación por CU. Las dependencias aquí mostradas son las principales, no un inventario completo de imports, utilidades, Controllers o Validators.
 5. Usar asociaciones, responsables diferenciados y multiplicidades de la matriz. Si se conserva composición UML conceptual para detalles/componentes, indicar el criterio de pertenencia sin atribuirle cascadas físicas.
 6. Añadir notas para restricciones no expresables solo con multiplicidad: exclusión compra/venta en movimientos, receta de la misma venta, mínimo de hijos al registrar, estado previo completo y reversiones legítimas.
-7. Identificar Ventas/Recetas como modelos existentes con comportamiento pendiente, y Reportes como consultas futuras. No dibujar métodos futuros como implementados.
+7. Identificar Ventas/Recetas como backend implementado sin adjuntos, y Reportes como consultas futuras. No confundir implementación backend con frontend o migración ya aplicada al entorno de uso.
 
 ## 10. Verificación y límites de esta referencia
 
-- Comprobación de esta actualización: 15 modelos, 123 atributos con tipos/nulabilidad/claves y valores predeterminados, 23 FK y 48 métodos de los 9 servicios contrastados con sus definiciones. Los cinco diagramas se analizaron y renderizaron localmente con Mermaid 11.12.0. Se instanciaron metadatos de Sequelize sin importar el inicializador de conexión del proyecto ni conectar a MySQL.
+- Comprobación estructural original del 12/10/2026: 15 modelos, 123 atributos, 23 FK y 48 métodos de 9 servicios. Los cinco diagramas se analizaron y renderizaron entonces con Mermaid 11.12.0. La actualización puntual de Ventas/Recetas no repite esa renderización ni afirma una nueva revisión integral del documento.
 - Esta actualización se contrasta con archivos del repositorio; no certifica el estado de migraciones o los datos de cualquier servidor desplegado.
 - Las verificaciones documentadas del proyecto incluyen integración real de Inventario/Compras y pruebas de concurrencia del registro integral de Medicamentos en bases temporales. La corrección posterior del criterio de listado de Inventario tiene pruebas simuladas; su nueva verificación MySQL sigue pendiente.
 - CU09 tiene backend y frontend; la validación del envío a un buzón real y su activación/configuración de entorno son pendientes independientes del diagrama.
-- Las asociaciones de Venta, DetalleVenta y Receta existen; no acreditan ejecución de CU28–CU32 ni cumplimiento de sus reglas por un Service todavía inexistente.
+- CU28–CU32 cuentan con implementación backend y evidencia actual de 346 pruebas focalizadas, incluidas 115 de integración MySQL local. La migración de nulabilidad se probó en bases temporales; su aplicación al entorno de uso sigue siendo un paso operativo separado. No se acredita frontend de Ventas/Recetas.
 - Los resultados calculados, borradores de React y controles de concurrencia no se convierten en entidades persistentes. No se agregan Lote, Inventario, Alerta, Reporte, Ajuste, Retiro, Perdida, Paciente ni Medico.
 - El archivo Draw.io original no forma parte de los archivos encontrados en el repositorio. Esta entrega actualiza el Markdown y sus cinco diagramas Mermaid; la sección 9.3 permite trasladar la referencia a Draw.io.
 

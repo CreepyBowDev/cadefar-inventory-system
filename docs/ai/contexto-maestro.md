@@ -361,16 +361,24 @@ El Vendedor puede guardar una venta pendiente con sus detalles y recetas para qu
 - Guardar una venta pendiente no descuenta ni reserva stock y no genera movimientos de inventario.
 - `fecha_registro` identifica cuándo se guardó la operación; `fecha_venta` permanece sin valor hasta la confirmación.
 - El Regente revisa las recetas; el Vendedor confirma la venta cuando las recetas necesarias estén aprobadas.
-- Al confirmar se comprueban nuevamente medicamento activo, stock, vencimientos y FEFO. Las existencias indicadas durante la preparación son provisionales y pueden necesitar redistribución en los detalles.
+- Cada detalle pendiente mantiene una referencia obligatoria a una existencia real mediante `id_existencia`, conforme al modelo vigente; esta selección es provisional y no garantiza disponibilidad. Al confirmar se comprueban nuevamente medicamento activo, stock, vencimientos, recetas conforme a RN58 y FEFO, y se redistribuyen las existencias si corresponde.
 - La confirmación, los detalles definitivos, la fecha de venta, los movimientos y la disminución de saldos se ejecutan en una transacción.
 - Una receta pendiente o rechazada no permite confirmar los detalles que requieren su aprobación.
+- El Regente aprueba o rechaza recetas vinculadas a una venta pendiente; resultado, responsable y fecha de validación se registran conjuntamente. La revisión no confirma ventas, no modifica inventario ni genera movimientos.
+- La receta se registra solo mediante formulario con sus datos. El Regente revisa la receta física presentada y los datos registrados antes de aprobar o rechazar; no se requieren imágenes, escaneos, PDF ni un proveedor de almacenamiento de archivos.
 - Anular una venta pendiente conserva el registro, pero no genera reversiones porque no hubo salida de inventario. Anular una venta confirmada sí compensa sus movimientos originales.
 
 Los reportes de ventas realizadas utilizan la fecha de confirmación y distinguen las operaciones confirmadas de las pendientes y anuladas.
 
-Esta decisión amplía el diseño anterior, que solo contemplaba ventas confirmadas y anuladas. El modelo y las migraciones representan el flujo; su ejecución y autorización pertenecen a los futuros Services y rutas de Ventas y Recetas.
+CU28–CU32 están implementados y verificados en backend bajo el alcance de formulario sin adjuntos. Se registran ventas pendientes sin inventario, se registran recetas y sus vínculos atómicamente, el Regente aprueba/rechaza y el Vendedor confirma con RN58 y FEFO. Consulta y anulación conservan historial, fechas, recetas y movimientos. Las 346 pruebas focalizadas incluyen 115 de integración MySQL local y aceptación con login real del flujo completo; la evidencia está en `bitacora-auditoria.md`. No incluyen implementación frontend ni despliegue. En bases existentes debe aplicarse la migración `20261101120000-allow-null-receta-archivo.js` antes de utilizar el nuevo registro de recetas.
 
-El catálogo actual admite `condicionVenta` como texto de hasta 40 caracteres. Antes de implementar la confirmación de ventas queda pendiente definir la correspondencia entre sus valores y la exigencia de receta, considerando los valores históricos existentes, conforme a RN58.
+El catálogo actual admite `condicionVenta` como texto de hasta 40 caracteres. La correspondencia aprobada en RN58 utiliza los valores canónicos `LIBRE` (no requiere receta) y `RECETA_MEDICA` (requiere una receta de la misma venta aprobada por el Regente). Cualquier valor desconocido o no reconocido bloquea la confirmación con un error controlado, sin efectos sobre inventario. No se modifican ni normalizan automáticamente datos históricos y los valores sintéticos de pruebas no se convierten en valores válidos. La aprobación corresponde a la revisión de la receta física y sus datos por el Regente; no depende de adjuntar o verificar un archivo digital. Se retiraron los bloqueos heredados de almacenamiento, conservando las validaciones de pertenencia, estado y aprobación y el bloqueo de revisiones repetidas.
+
+**Decisión vigente: formulario sin adjuntos.** Se sustituye la decisión anterior de almacenar archivos de recetas de forma privada. No se incorpora carga de fotos, escaneos, PDF ni otro adjunto y no queda pendiente seleccionar o configurar un proveedor de archivos. Los datos personales del formulario y su revisión mantienen autenticación y autorización. La limitación aceptada es que el sistema conservará los datos y la revisión, pero no una copia digital de la receta presentada.
+
+**Adaptación técnica implementada:** el modelo admite `archivo_receta = NULL` y la migración `20261101120000-allow-null-receta-archivo.js` adapta el esquema sin eliminar la columna ni las referencias históricas. Las nuevas recetas guardan NULL y los DTOs no exponen referencias antiguas. El rollback rechaza datos incompatibles sin inventar archivos ni borrar recetas. Solo se ejecutó en bases temporales locales de prueba, no sobre bases existentes ni Railway; su aplicación en el entorno de uso es un paso operativo pendiente. Los demás campos conservan sus restricciones.
+
+**Contrato del formulario:** `POST /api/ventas/:idVenta/recetas`, solo Regente/Vendedor, recibe `fechaReceta`, `nombrePaciente`, `documentoPaciente`, `nombreMedico`, `modalidad` y, opcionalmente, `numeroReceta`, `observacion` e `idsDetallesVenta`. Los IDs se obtienen del detalle de la venta pendiente y deben pertenecer a ella. Se vinculan solo detalles sin receta previa; no se sustituyen vínculos existentes silenciosamente. Si se omiten los IDs, se registra la receta de la venta sin respaldar automáticamente sus detalles. El registro nunca aprueba, reserva ni descuenta stock. `POST /api/ventas/:idVenta/recetas/:idReceta/revisar`, solo Regente, recibe `resultadoRevision` (`APROBADA` o `RECHAZADA`) y `observacion` opcional; responsable y fecha se asignan en servidor y la operación no confirma la venta. La confirmación posterior sigue siendo exclusiva del Vendedor.
 
 ---
 
@@ -573,6 +581,8 @@ Representa una línea de venta vinculada con una existencia específica.
 Representa una receta presentada para respaldar medicamentos que requieren prescripción.
 
 El sistema registra y revisa recetas, pero no las emite.
+
+El alcance registra sus datos mediante formulario y revisión de la receta física por el Regente, sin adjuntos digitales. `archivo_receta` es un campo legado nullable tras aplicar la migración `20261101120000-allow-null-receta-archivo.js`, que preserva referencias históricas.
 
 ### MovimientoInventario
 
@@ -2295,11 +2305,11 @@ El módulo fue solicitado por el docente de Sistemas de Información I para disp
 
 ### Funcionalidad existente y cobertura integrada
 
-La inspección del software confirma login/logout, control de bloqueo, usuarios, cambio propio y restablecimiento administrativo de contraseña; recuperación por correo en backend y frontend; proveedores/laboratorios, principios activos, medicamentos y composición; registro/anulación de compras; consultas de inventario, ajustes y retiros por vencimiento/daño. Estos procesos están integrados con Bitácora según la matriz de 46 endpoints. Que exista recuperación implementada no acredita envío real de correo ni otra fuente IP aprobada.
+La inspección del software confirma login/logout, control de bloqueo, usuarios, cambio propio y restablecimiento administrativo de contraseña; recuperación por correo en backend y frontend; proveedores/laboratorios, principios activos, medicamentos y composición; registro/anulación de compras; consultas de inventario, ajustes y retiros por vencimiento/daño. Estos procesos y el alcance backend de Ventas/Recetas descrito a continuación están integrados con Bitácora según la matriz actual de 55 endpoints. Que exista recuperación implementada no acredita envío real de correo ni otra fuente IP aprobada.
 
 Los roles siguen siendo fijos: Administrador, Regente y Vendedor. Existe asignación/cambio de rol de una cuenta por el Administrador, no administración dinámica de roles. La bitácora no agrega actores, permisos dinámicos ni una tabla de sesiones.
 
-Ventas y Recetas conservan sus operaciones funcionales pendientes. La existencia de sus modelos no acredita endpoints, flujos ni auditoría implementados. Se prevé integrar el registro/confirmación y anulación de ventas, así como el registro/revisión de recetas, al desarrollar CU28, CU30, CU31 y CU32. Los reportes CU38/CU39 y la consulta de pérdidas CU41 también permanecen pendientes; las consultas existentes de compras por período y la pérdida derivada al registrar un retiro no acreditan esas funcionalidades específicas.
+Ventas y Recetas integran CU28–CU32 completos en backend para formulario sin adjuntos: registro pendiente, recetas con vínculos, consulta, aprobación/rechazo, confirmación con RN58/FEFO y anulación. Los éxitos críticos comparten la transacción de negocio; la auditoría no copia datos del paciente, médico, observación ni referencias históricas de archivo. La verificación actual aprobó 346 pruebas, incluidas 115 de integración local; las 332 anteriores se conservan como evidencia histórica del diseño con bloqueos. La migración de nulabilidad debe aplicarse en el entorno de uso antes de habilitar esta versión. La evidencia y límites están en `bitacora-auditoria.md`. Los reportes CU38/CU39 y la consulta de pérdidas CU41 permanecen pendientes; no forman parte de esta entrega.
 
 ### Eventos de autenticación y seguridad
 
@@ -2363,7 +2373,7 @@ Los éxitos críticos comparten transacción de negocio; un fallo obligatorio re
 | Recuperación y contraseñas | CU08–CU09 | RF47; RF46 para errores técnicos | RN117–RN118, RN121, RN125, RN130–RN133 |
 | Usuarios y catálogo | CU03, CU06–CU07, CU10, CU12–CU14, CU16–CU19 | RF48 | RN117, RN125, RN129–RN133 |
 | Compras, ajustes y retiros | CU23, CU25, CU27, CU35–CU36 | RF49 | RN129–RN133 |
-| Integración futura de Ventas/Recetas | CU28, CU30–CU32, pendientes de implementación | RF49 | RN129–RN133 |
+| Integración de Ventas/Recetas | CU28, CU30–CU32 implementados y auditados para formulario sin adjuntos | RF49 | RN129–RN133 |
 | Consulta, filtros, páginas y detalle | CU42, API implementada | RF50–RF53 | RN117–RN121, RN125–RN128, RN131, RN133 |
 
 RN116 regula toda la captura automática. RI16 define la información permitida y RNF18–RNF22 sus condiciones de integridad, privacidad, persistencia, rendimiento y fiabilidad. Las referencias detalladas están en `requerimientos.md` y CU42; RN07 y RN107–RN115 siguen siendo la fuente de las políticas de autenticación existentes.

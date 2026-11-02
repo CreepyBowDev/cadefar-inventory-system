@@ -173,7 +173,29 @@ test('Consulta interna: rechaza rango inverso, página ilimitada y filtros ambig
     }
 });
 
-test('Catálogo extensible en código: cubre módulos actuales y CU42, sin eventos futuros activos', () => {
+test('Catálogo extensible: incluye registro/confirmación de Ventas y revisión/consulta de Recetas', () => {
     assert.ok(CATALOGO_AUDITORIA.BITACORA_CONSULTAR);
-    for (const tipo of Object.keys(CATALOGO_AUDITORIA)) assert.doesNotMatch(tipo, /^(VENTA|RECETA|REPORTE)_/);
+    assert.equal(CATALOGO_AUDITORIA.VENTA_REGISTRAR_PENDIENTE.transaccionExito, true);
+    assert.equal(CATALOGO_AUDITORIA.VENTA_CONFIRMAR.transaccionExito, true);
+    assert.equal(CATALOGO_AUDITORIA.VENTA_ANULAR.transaccionExito, true);
+    assert.equal(CATALOGO_AUDITORIA.RECETA_REVISAR.transaccionExito, true);
+    assert.equal(CATALOGO_AUDITORIA.RECETA_REGISTRAR.transaccionExito, true);
+    assert.ok(CATALOGO_AUDITORIA.RECETA_CONSULTAR);
+    for (const tipo of Object.keys(CATALOGO_AUDITORIA)) {
+        if (!['VENTA_REGISTRAR_PENDIENTE', 'VENTA_CONFIRMAR', 'VENTA_ANULAR', 'RECETA_REGISTRAR', 'RECETA_REVISAR', 'RECETA_CONSULTAR'].includes(tipo)) {
+            assert.doesNotMatch(tipo, /^(VENTA|RECETA|REPORTE)_/);
+        }
+    }
+});
+
+test('Auditoría de revisión: snapshots mínimos sin paciente, médico, observación ni archivo', () => {
+    const data = prepararEventoAuditoria(evento({ tipoEvento: 'RECETA_REVISAR', resultado: 'EXITO', causa: null,
+        responsable: { idUsuario: 2, nombreUsuario: 'regente', idRol: 2 }, registro: { tipo: 'RECETA', id: 7 },
+        antes: { idVenta: 3, resultadoRevision: null, idUsuarioValidador: null, nombrePaciente: privado },
+        despues: { idVenta: 3, resultadoRevision: 'RECHAZADA', idUsuarioValidador: 2,
+            documentoPaciente: privado, nombreMedico: privado, observacion: privado, archivoReceta: privado },
+        referencias: [{ tipo: 'VENTA', id: 3 }], metadatos: { cantidadMovimientos: 0, observacion: privado } }));
+    assert.deepEqual(data.antes, { idVenta: 3, resultadoRevision: null, idUsuarioValidador: null });
+    assert.deepEqual(data.despues, { idVenta: 3, resultadoRevision: 'RECHAZADA', idUsuarioValidador: 2 });
+    assert.doesNotMatch(JSON.stringify(data), new RegExp(privado));
 });

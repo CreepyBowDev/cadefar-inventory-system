@@ -15,6 +15,8 @@ const rutas = [
     ['medicamento', 'medicamentoRouter', '/api/medicamentos'],
     ['composicion-medicamento', 'composicionMedicamentoRouter', '/:idMedicamento/composicion'],
     ['compra', 'compraRouter', '/api/compras'], ['inventario', 'inventarioRouter', '/api/inventario'],
+    ['venta', 'ventaRouter', '/api/ventas'],
+    ['receta', 'recetaRouter', '/:idVenta/recetas'],
     ['bitacora-auditoria', 'bitacoraAuditoriaRouter', '/api/bitacora']
 ];
 const montajes = new Map(await Promise.all(rutas.map(async ([archivo, nombre, prefijo]) => {
@@ -36,11 +38,11 @@ const recorrer = (stack, prefijo = '') => {
 };
 recorrer(app.router.stack);
 
-test('Fase 7: los 46 endpoints Express, clasificador y matriz documental tienen cobertura idéntica', async () => {
+test('Los 55 endpoints Express, clasificador y matriz documental tienen cobertura idéntica', async () => {
     const esperados = contratos.map(e => clave(e.metodo, e.ruta));
-    assert.equal(actuales.length, 46); assert.equal(new Set(actuales).size, 46);
+    assert.equal(actuales.length, 55); assert.equal(new Set(actuales).size, 55);
     assert.deepEqual(actuales.sort(), esperados.sort());
-    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 20);
+    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 24);
     const documento = await readFile(new URL('../../docs/ai/bitacora-auditoria.md', import.meta.url), 'utf8');
     const matriz = [...documento.matchAll(/^\| (GET|POST|PATCH|DELETE) \| `([^`]+)` \|/gm)].map(([, metodo, ruta]) => clave(metodo, ruta));
     assert.deepEqual(matriz.sort(), esperados.sort());
@@ -54,7 +56,8 @@ test('Fase 7: todos los endpoints clasifican caja/slash/HEAD sin conservar pará
         if (e.metodo === 'GET') assert.equal(identificarOperacionAuditoria('HEAD', path), e.operacion);
     }
     assert.equal(identificarOperacionAuditoria('POST', '/api/bitacora'), undefined);
-    assert.equal(identificarOperacionAuditoria('GET', '/api/ventas'), undefined);
+    assert.equal(identificarOperacionAuditoria('GET', '/api/ventas'), 'VENTAS.CONSULTAR');
+    assert.equal(identificarOperacionAuditoria('POST', '/api/ventas'), 'VENTAS.REGISTRAR_PENDIENTE');
 });
 
 test('Fase 7: SQL logging predeterminado desactivado para no exponer valores del negocio/auditoría', () => {

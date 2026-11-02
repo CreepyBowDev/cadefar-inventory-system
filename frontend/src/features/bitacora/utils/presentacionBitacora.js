@@ -50,6 +50,9 @@ export const TIPOS_EVENTO_BITACORA = Object.freeze({
   COMPOSICION_AGREGAR: 'Componente agregado', COMPOSICION_MODIFICAR: 'Componente modificado',
   COMPOSICION_RETIRAR: 'Componente retirado',
   COMPRA_REGISTRAR: 'Registro de compra', COMPRA_ANULAR: 'Anulación de compra',
+  VENTA_REGISTRAR_PENDIENTE: 'Registro de venta pendiente', VENTA_CONFIRMAR: 'Confirmación de venta', VENTA_ANULAR: 'Anulación de venta',
+  RECETAS_CONSULTAR: 'Consulta de recetas', RECETA_CONSULTAR: 'Consulta de receta',
+  RECETA_REGISTRAR: 'Registro de receta', RECETA_REVISAR: 'Revisión de receta',
   INVENTARIO_AJUSTAR: 'Ajuste de inventario', INVENTARIO_CONCILIAR: 'Conciliación sin diferencia',
   INVENTARIO_RETIRAR_VENCIMIENTO: 'Retiro por vencimiento', INVENTARIO_RETIRAR_DANO: 'Retiro por daño',
   BITACORA_CONSULTAR: 'Consulta de Bitácora', BITACORA_EVENTO_CONSULTAR: 'Consulta de evento de Bitácora'
@@ -59,11 +62,12 @@ export const MODULOS_BITACORA = Object.freeze({
   AUTENTICACION: 'Autenticación', SEGURIDAD: 'Seguridad', USUARIOS: 'Usuarios',
   PROVEEDORES_LABORATORIOS: 'Proveedores / Laboratorios', PRINCIPIOS_ACTIVOS: 'Principios activos',
   MEDICAMENTOS: 'Medicamentos', COMPOSICION: 'Composición', COMPRAS: 'Compras',
-  INVENTARIO: 'Inventario', BITACORA: 'Bitácora'
+  INVENTARIO: 'Inventario', BITACORA: 'Bitácora', VENTAS: 'Ventas', RECETAS: 'Recetas'
 });
 export const REGISTROS_BITACORA = Object.freeze({
   USUARIO: 'Usuario', PROVEEDOR_LABORATORIO: 'Proveedor / Laboratorio', PRINCIPIO_ACTIVO: 'Principio activo',
   MEDICAMENTO: 'Medicamento', COMPOSICION: 'Componente', COMPRA: 'Compra', DETALLE_COMPRA: 'Detalle de compra',
+  VENTA: 'Venta', DETALLE_VENTA: 'Detalle de venta', RECETA: 'Receta',
   EXISTENCIA: 'Existencia', MOVIMIENTO: 'Movimiento', BITACORA: 'Evento de Bitácora'
 });
 const etiqueta = (catalogo, codigo) => Object.hasOwn(catalogo, codigo) ? catalogo[codigo] : codigo || 'No disponible';

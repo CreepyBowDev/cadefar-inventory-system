@@ -324,8 +324,8 @@ test('Fase 3: seguridad y auditoría con transacciones Sequelize y almacenamient
             assert.equal(eventos('PASSWORD_RESTABLECER_ADMINISTRADOR')[0].causa, 'NO_ENCONTRADO');
             assert.equal(eventos('ERROR_TECNICO').length, 0);
         });
-        await t.test('Seguridad transversal: sesión ausente en plantillas protegidas del catálogo de 46 endpoints', async () => {
-            assert.equal(OPERACIONES_HTTP_AUDITORIA.length, 46);
+        await t.test('Seguridad transversal: sesión ausente en plantillas protegidas del catálogo de 55 endpoints', async () => {
+            assert.equal(OPERACIONES_HTTP_AUDITORIA.length, 55);
             for (const ruta of OPERACIONES_HTTP_AUDITORIA.filter(r => !r.ruta.startsWith('/api/auth/'))) {
                 reset(); await request(ruta.ruta.replaceAll(':id', '3') + '?secreto=no_conservar', 401, { method: ruta.metodo });
                 assert.equal(eventos('SESION_AUSENTE').length, 1);

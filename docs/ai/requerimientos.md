@@ -152,9 +152,9 @@ El sistema debe permitir registrar ventas con sus detalles, cantidades, precios 
 
 El Vendedor debe poder guardar la venta en estado `PENDIENTE` junto con sus recetas para su revisión por el Regente, sin descontar ni reservar stock ni generar movimientos. El Vendedor podrá confirmarla cuando se cumplan las condiciones de venta y todas las recetas requeridas estén aprobadas.
 
-La confirmación debe volver a validar disponibilidad, vencimientos y FEFO, finalizar la asignación de existencias en los detalles y registrar la fecha de venta y sus efectos sobre inventario de forma atómica.
+Cada detalle pendiente debe mantener una referencia obligatoria a una existencia real provisional, conforme al modelo vigente, sin garantizar disponibilidad. La confirmación debe volver a validar disponibilidad, vencimientos, recetas conforme a RN58 y FEFO, finalizar la asignación de existencias en los detalles y registrar la fecha de venta y sus efectos sobre inventario de forma atómica.
 
-**Estado:** RF23–RF28 corresponden a CU28–CU32, pendientes de implementación funcional. El modelo y las migraciones preparan el flujo; la correspondencia entre condición de venta y exigencia de receta queda pendiente según RN58.
+**Estado backend:** RF23–RF28/CU28–CU32 están implementados y verificados localmente bajo la decisión de formulario sin adjuntos. Se registran recetas y vínculos atómicamente, el Regente aprueba/rechaza y el Vendedor confirma conforme a RN58: `LIBRE` no requiere receta, `RECETA_MEDICA` requiere una receta aprobada y cualquier valor desconocido bloquea la confirmación. No se normalizan valores históricos o sintéticos. La migración `20261101120000-allow-null-receta-archivo.js` debe aplicarse para habilitar el formulario sin archivo en bases existentes. La evidencia actual y los límites operativos están en `bitacora-auditoria.md`; no incluyen frontend ni despliegue.
 
 ## RF24. Seleccionar existencias para venta
 
@@ -178,11 +178,13 @@ El sistema debe permitir registrar recetas asociadas a una venta cuando los medi
 
 La venta debe guardarse como pendiente para que sus recetas puedan registrarse y revisarse antes de confirmarla. `id_venta` es obligatorio en la receta.
 
+El registro se realiza solo mediante formulario con los datos de la receta física presentada, sin exigir ni incorporar archivos adjuntos, fotos, escaneos o PDF. No se requiere un proveedor de almacenamiento de archivos. El registro no implica aprobación automática; el acceso a los datos personales continúa protegido por autenticación y permisos. El modelo admite NULL en `archivo_receta` y la migración `20261101120000-allow-null-receta-archivo.js` adapta el esquema conservando referencias históricas sin valores ficticios. El rollback se rechaza sin alterar datos si existen recetas sin archivo.
+
 ## RF28. Revisar recetas
 
 El sistema debe permitir que un usuario autorizado registre la revisión, aprobación o rechazo de una receta.
 
-La revisión corresponde al Regente. Una revisión pendiente o rechazada impide confirmar los detalles de venta que requieren esa receta.
+La revisión corresponde al Regente, quien revisa la receta física presentada y los datos del formulario, aprueba o rechaza y deja registrados conjuntamente resultado, responsable y fecha de validación. No se exige una copia digital. Una revisión pendiente o rechazada no satisface RN58 e impide confirmar los detalles de venta que requieren esa receta. La revisión no confirma ventas, no modifica inventario ni genera movimientos.
 
 ## RF29. Consultar movimientos de inventario
 
@@ -463,12 +465,13 @@ Conservar:
 - Fecha.
 - Datos del paciente.
 - Datos del médico.
-- Archivo adjunto.
 - Modalidad.
 - Resultado de revisión.
 - Usuario validador.
 - Fecha de validación.
 - Observación.
+
+No se requiere conservar una copia digital de la receta. `archivo_receta` es un campo legado nullable mediante la migración `20261101120000-allow-null-receta-archivo.js`. Las nuevas recetas guardan NULL; las referencias históricas se preservan y no se devuelven en los DTOs ni se reemplazan por rutas ficticias.
 
 ## RI09. Movimientos de inventario
 

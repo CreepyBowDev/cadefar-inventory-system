@@ -65,8 +65,9 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false
             },
             archivo_receta: {
+                // Legado: preservar referencias previas; las nuevas recetas no adjuntan archivos.
                 type: DataTypes.STRING(500),
-                allowNull: false
+                allowNull: true
             },
             modalidad: {
                 type: DataTypes.STRING(50),

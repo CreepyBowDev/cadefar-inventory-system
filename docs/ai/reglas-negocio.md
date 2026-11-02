@@ -634,7 +634,7 @@ La venta solamente puede confirmarse y utilizar una existencia para la salida de
 
 El Vendedor confirma la venta; la revisión de las recetas corresponde al Regente. Una venta confirmada o anulada no puede confirmarse nuevamente.
 
-Las condiciones se comprueban de nuevo al confirmar. Las existencias indicadas en los detalles pendientes son una selección provisional, sin garantía de disponibilidad; deben redistribuirse si la disponibilidad o FEFO lo requieren.
+Las condiciones, incluidos los requisitos de receta de RN58, se comprueban de nuevo al confirmar. Cada detalle pendiente mantiene una referencia obligatoria a una existencia real mediante `id_existencia`, conforme al modelo vigente. Esta selección es provisional, sin garantía de disponibilidad ni reserva de stock; debe redistribuirse si la disponibilidad o FEFO lo requieren.
 
 ## RN54. Prioridad por vencimiento
 
@@ -683,13 +683,23 @@ Si alguna parte de la confirmación falla, la venta conserva su estado pendiente
 
 Cuando un medicamento requiera receta, su detalle no puede confirmarse respaldado por una receta inexistente o no aprobada. Mientras la venta esté pendiente, la receta puede estar registrada sin revisión o rechazada, pero no autoriza la entrega.
 
-**Definición pendiente para Ventas/Recetas:** el catálogo actual admite `condicionVenta` como texto de hasta 40 caracteres, sin un conjunto cerrado de valores. Antes de implementar la confirmación de ventas debe definirse qué valores exigen receta, considerando los valores históricos existentes. Esta definición no está implementada ni autoriza normalizar automáticamente esos datos.
+**Decisión aprobada para Ventas/Recetas:** la confirmación utiliza los siguientes valores canónicos de `condicionVenta` (`condicion_venta` en persistencia):
+
+- `LIBRE`: el medicamento no requiere receta.
+- `RECETA_MEDICA`: el detalle requiere una receta de la misma venta aprobada por el Regente.
+- Cualquier valor desconocido o no reconocido bloquea la confirmación de la venta y produce un error controlado, sin efectos sobre inventario.
+
+El catálogo actual almacena este campo como texto de hasta 40 caracteres. Esta decisión no modifica datos históricos ni autoriza normalizarlos automáticamente. Los valores sintéticos de pruebas no se convierten en valores válidos ni en equivalencias de los valores canónicos. La exigencia de receta se satisface mediante el registro de sus datos y la aprobación del Regente tras revisar la receta física presentada; no se exige una copia digital. El backend aplica esta correspondencia y conserva la receta aprobada al distribuir los detalles definitivos mediante FEFO.
 
 ## RN59. Receta y venta
 
 Una receta debe estar relacionada con la venta en la que será utilizada.
 
 La receta se registra vinculada a una venta pendiente, antes de su confirmación. Su FK `id_venta` es obligatoria.
+
+**Decisión aprobada: registro solo mediante formulario.** El sistema conserva los datos de la receta presentada, sin exigir ni incorporar carga de imágenes, PDF u otros adjuntos. No se requiere seleccionar un proveedor de almacenamiento de archivos para completar CU31. Los datos personales del formulario continúan sujetos a autenticación y autorización.
+
+`archivo_receta` no es un requisito funcional. El modelo admite NULL y la migración `20261101120000-allow-null-receta-archivo.js` permite esa nulabilidad en el esquema, sin eliminar la columna ni modificar las referencias históricas. Las recetas nuevas guardan NULL y no reciben rutas ni archivos del cliente. El rollback impide volver a NOT NULL si existen recetas sin archivo, en lugar de inventar referencias o eliminar registros. La migración se verifica en bases temporales locales; su aplicación en el entorno de uso es un requisito operativo separado.
 
 ## RN60. Receta y detalles
 
@@ -701,7 +711,7 @@ La receta de un detalle debe pertenecer a la misma venta que ese detalle.
 
 ## RN61. Revisión de receta
 
-La revisión debe ser realizada por un usuario autorizado.
+La revisión debe ser realizada por el Regente, quien revisa la receta física presentada y los datos registrados en el formulario, y aprueba o rechaza la receta vinculada a una venta pendiente. El registro del formulario no implica aprobación automática y no se exige un archivo digital para revisar o aprobar.
 
 El sistema debe conservar:
 
@@ -716,7 +726,7 @@ Una receta puede ser aprobada o rechazada según la revisión correspondiente.
 
 La ausencia de `resultado_revision`, usuario validador y fecha de validación representa una revisión pendiente. Al registrar una revisión se conservan conjuntamente su resultado, responsable y fecha.
 
-Solo una receta aprobada puede respaldar una entrega que requiera prescripción.
+Solo una receta aprobada por el Regente puede respaldar una entrega que requiera prescripción conforme a RN58. Una receta pendiente o rechazada no satisface esa exigencia. La revisión no confirma la venta, no modifica inventario ni genera movimientos; la confirmación posterior corresponde al Vendedor en CU28.
 
 ## RN63. Alcance de la receta
 
@@ -867,6 +877,18 @@ Debe conservar:
 ## RN78. Efecto de anular venta
 
 Al anular una venta confirmada deben generarse los movimientos necesarios para devolver al inventario las cantidades descontadas originalmente. Su fecha de venta original se conserva.
+
+**Valoración aprobada de la devolución:** se calcula una sola vez por existencia, agrupando todas las salidas originales de la venta:
+
+```text
+saldoFinal = saldoActual + sumaCantidadesDevueltas
+promedioFinal = redondear6(
+  (saldoActual × promedioActual
+   + suma(cantidadOriginal × costoOriginal)) / saldoFinal
+)
+```
+
+Se utiliza el redondeo de RN40, sin redondeos intermedios ni dependencia del orden de los detalles. Si el saldo actual es cero, su promedio histórico no aporta valor. Cada movimiento de reversión conserva individualmente la existencia, cantidad y costo de su salida original conforme a RN72; no se utilizan precios de venta ni se modifican movimientos históricos. Un saldo o promedio no representable impide la anulación completa. Esta devolución no aplica las modalidades B1/A propias de la anulación de compras.
 
 Al anular una venta pendiente no se generan movimientos de reversión ni se modifican saldos, ya que no hubo salida de inventario. Su fecha de venta permanece sin valor. En ambos casos se conserva el registro con fecha de anulación, motivo y usuario responsable.
 

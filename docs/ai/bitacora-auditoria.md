@@ -15,7 +15,7 @@ Fecha de revisión: 13/10/2026. Fuentes funcionales: sección 38 del contexto ma
 | 6 | Compras, anulaciones, ajustes/conciliación y retiros | Implementada |
 | 7 | Cobertura integral, documentación y aceptación MySQL aislada | Verificada localmente; pendientes operativos al final |
 
-La revisión original comprendía 33 CU (CU01–CU27, CU33–CU37 y CU40) y 44 endpoints: 26 escrituras y 18 GET. CU42 agrega dos GET: 46 endpoints actuales y 34 CU cubiertos. Los catálogos funcionales mantienen 42 CU, 53 RF, 16 RI, 22 RNF y 133 RN. Compartir un endpoint entre CU no crea endpoints adicionales.
+La revisión original comprendía 33 CU (CU01–CU27, CU33–CU37 y CU40) y 44 endpoints: 26 escrituras y 18 GET. CU42 agregó dos GET. Las fases backend de Ventas/Recetas incorporaron sus nueve endpoints y el cierre del formulario sin adjuntos completó CU28–CU32: 55 endpoints actuales (31 no GET y 24 GET), 39 CU completos en backend; CU38/CU39 y CU41 permanecen pendientes. Los catálogos funcionales mantienen 42 CU, 53 RF, 16 RI, 22 RNF y 133 RN. Compartir un endpoint entre CU no crea endpoints adicionales.
 
 ## Matriz de endpoints
 
@@ -58,6 +58,15 @@ Todas las rutas llevan prefijo `/api`. Los nombres de parámetros reproducen las
 | DELETE | `/api/medicamentos/:idMedicamento/composicion/:idComposicion` | CU19 | COMPOSICION_RETIRAR; no es borrado de Bitácora | R/T | 5 |
 | GET | `/api/compras` | CU26 | Excluido: historial operativo rutinario | R/T | 3/6 |
 | GET | `/api/compras/:idCompra` | CU26 | Excluido: detalle operativo rutinario | R/T | 3/6 |
+| GET | `/api/ventas` | CU29 | Excluido: historial operativo rutinario | R/T | Fase 1 Ventas |
+| GET | `/api/ventas/:idVenta` | CU29 | Excluido: detalle operativo rutinario, sin datos personales ni archivos de recetas | R/T | Fase 1 Ventas |
+| POST | `/api/ventas` | CU28 (registro pendiente) | `VENTA_REGISTRAR_PENDIENTE`: éxito obligatorio en transacción de venta y detalles, sin movimientos | R/T | Fase 2 Ventas |
+| POST | `/api/ventas/:idVenta/confirmar` | CU28 | `VENTA_CONFIRMAR`: RN58, recetas aprobadas de la misma venta, FEFO, detalles, saldos, salidas y auditoría atómicos | R/T | Ventas/Recetas sin adjuntos |
+| POST | `/api/ventas/:idVenta/anular` | CU30 | `VENTA_ANULAR`: pendiente sin cambios de inventario; confirmada con reversiones únicas al costo original y promedio ponderado RN78; auditoría en la misma transacción | R/T | Fase 6 Ventas/Recetas |
+| POST | `/api/ventas/:idVenta/recetas` | CU31 | `RECETA_REGISTRAR`: formulario, vínculos y auditoría en una transacción, sin aprobación automática ni datos personales en auditoría | R/T | Ventas/Recetas sin adjuntos |
+| GET | `/api/ventas/:idVenta/recetas` | CU32 (consulta de metadatos) | `RECETAS_CONSULTAR`: lista paginada materializada, sin datos personales en auditoría | R/T | Fase 4 Ventas/Recetas |
+| GET | `/api/ventas/:idVenta/recetas/:idReceta` | CU32 (consulta de metadatos) | `RECETA_CONSULTAR`: detalle sensible solo para Regente, sin adjunto ni datos personales en auditoría | R/T | Fase 4 Ventas/Recetas |
+| POST | `/api/ventas/:idVenta/recetas/:idReceta/revisar` | CU32 | `RECETA_REVISAR`: aprobación o rechazo por Regente y auditoría atómicos, sin revisiones repetidas ni cambios de inventario | R/T | Ventas/Recetas sin adjuntos |
 | POST | `/api/compras` | CU25 | COMPRA_REGISTRAR | R/T | 6 |
 | POST | `/api/compras/:idCompra/anular` | CU27 | COMPRA_ANULAR; B1/A/MIXTO | R/T | 6 |
 | GET | `/api/inventario` | CU21 | Excluido: stock operativo rutinario | R/T | 3/6 |
@@ -109,9 +118,59 @@ node --test tests/auditoria.integration.test.js
 
 Cada ejecución de integración crea otra base aleatoria local y la conserva incluso si falla. El opt-in no habilita modificación de bases existentes ni infraestructura remota. Las otras suites MySQL históricas tienen sus propios procedimientos de limpieza; esta aceptación no las ejecutó.
 
+## Backend Ventas/Recetas — formulario sin adjuntos completado y verificado
+
+**Estado actual:** CU28–CU32 están completos en backend para el alcance aprobado. El registro crea receta y vínculos en la misma transacción que su auditoría; siempre inicia sin revisión. El Regente aprueba/rechaza sin archivo y el Vendedor confirma con recetas aprobadas de esa venta, manteniendo FEFO, stock y trazabilidad. Una receta puede respaldar varios medicamentos y los detalles que se dividan al confirmar. No se sustituyen vínculos existentes silenciosamente ni se permiten revisiones repetidas. Los roles y los 55 endpoints de la matriz no se amplían.
+
+**Resultado actual: 346 pruebas aprobadas, cero fallidas/canceladas/omitidas**, incluyendo las contenedoras de `node:test`:
+
+| Alcance | Pruebas |
+|---|---:|
+| Puras/simuladas y regresiones focalizadas de validación, DTOs, decimales, vencimientos, Inventario, Compras y Auditoría | 231 |
+| Integración HTTP/MySQL por CU de Ventas/Recetas | 101 |
+| Migración, conservación de referencias históricas y rollback seguro | 5 |
+| Aceptación conjunta con login real y cookie HttpOnly de los tres roles | 9 |
+
+La aceptación usa solo HTTP para registrar el formulario, vincularlo, aprobar/rechazar, confirmar una venta mixta LIBRE/RECETA_MEDICA y anularla. No inserta una receta de fixture para simular el registro exitoso. La conciliación SQL verifica saldo físico contra movimientos, ausencia de negativos, reversión única y costo original conservado. La auditoría no copia paciente, documento, médico, observación ni archivo legado. Las suites verifican además FEFO dividido con una receta común, conflictos de vinculación, carreras reales entre aprobar/confirmar en ambos órdenes y aprobar/rechazar, rollback de recetas/vínculos/aprobaciones/salidas/auditoría, duplicados y compatibilidad con Compras.
+
+La migración nueva `20261101120000-allow-null-receta-archivo.js` cambia solo nulabilidad, preserva las referencias previas y permite guardar NULL en recetas nuevas. Su `down` se verifica tanto con datos compatibles como ante NULL existente o insertado entre comprobación y ALTER; se rechaza sin inventar referencias ni borrar datos. **Debe aplicarse en el entorno de uso antes de habilitar esta versión.** No se ejecutó sobre bases existentes ni Railway. La ejecución final de integración utilizó ocho bases temporales aleatorias de MySQL local, todas eliminadas por sus suites.
+
+```text
+node --test --test-concurrency=1 tests/venta.consulta.integration.test.js tests/venta.pendiente.integration.test.js tests/receta.formulario-schema.integration.test.js tests/receta.registro.integration.test.js tests/receta.revision.integration.test.js tests/venta.confirmacion.integration.test.js tests/venta.anulacion.integration.test.js tests/ventas-recetas.aceptacion.integration.test.js
+```
+
+No se incorporan almacenamiento ni proveedores de archivos, ni referencias ficticias. El código de causa `ALMACENAMIENTO_NO_CONFIGURADO` se conserva únicamente como compatibilidad de auditoría histórica, no como bloqueo activo. La evidencia no incluye frontend, despliegue, validación clínica automática ni sustitución de la revisión física por el Regente. La regresión de persistencia conserva el aviso esperado de COMMIT sintético perdido, no un fallo real de MySQL.
+
+## Backend Ventas/Recetas — verificación histórica de Fase 7 del diseño anterior con adjuntos
+
+**Evidencia histórica:** los resultados siguientes corresponden al backend anterior con bloqueos de archivos. El formulario sin adjuntos ya está implementado y verificado en la sección anterior. Las referencias a controles de almacenamiento, casos parciales y 332 pruebas se conservan como antecedentes, no como estado vigente ni tareas de infraestructura pendientes.
+
+**Resultado: 332 pruebas aprobadas, cero fallidas, canceladas u omitidas**, incluyendo las contenedoras de `node:test`:
+
+| Alcance | Pruebas |
+|---|---:|
+| Validadores, DTOs, decimales, vencimientos/fecha comercial, HTTP/SQL simulado y regresiones focalizadas de Inventario, Compras y Auditoría | 231 |
+| Integración HTTP/MySQL por CU: consultas, pendientes, confirmación, anulación y guardas/revisión parcial de recetas | 93 |
+| Aceptación conjunta con login real y cookie HttpOnly de los tres roles | 8 |
+
+La aceptación nueva está en `backend/tests/ventas-recetas.aceptacion.integration.test.js`. Recorre registro pendiente sin reserva, consultas por rol, duplicados, confirmación FEFO dividida y anulación con conservación del historial. Verifica CU31 bloqueado sin persistencia ni referencias arbitrarias, consulta de metadatos solo por Regente, aprobación bloqueada, rechazo y posterior anulación de la pendiente. El registro de receta utilizado para revisar es un fixture SQL de la base temporal: **no acredita almacenamiento ni registro funcional de CU31**.
+
+La conciliación SQL final comprueba igualdad entre stock físico y entradas/salidas, ausencia de negativos, reversión única y coincidencia de existencia, cantidad y costo con el original. La auditoría se persiste realmente, sin copiar datos personales ni referencias de archivo. Las suites por CU verifican además rollback ante fallos de escrituras/lectura/auditoría, UNIQUE real, contención y concurrencia, incluidas ambas adquisiciones de bloqueo entre confirmar y anular. RN78 conserva el promedio ponderado aprobado sin reutilizar B1/A de Compras.
+
+Todas las escrituras de integración se limitaron a siete bases temporales aleatorias de MySQL local, migradas y eliminadas por sus respectivas suites. No se conectó a Railway ni se aplicaron migraciones a bases existentes. Las suites MySQL se ejecutaron con `--test-concurrency=1`; las carreras se provocan dentro de cada suite. La prueba de aceptación conjunta también se ejecutó individualmente:
+
+```text
+node --test tests/ventas-recetas.aceptacion.integration.test.js
+node --test --test-concurrency=1 tests/venta.consulta.integration.test.js tests/venta.pendiente.integration.test.js tests/receta.registro.integration.test.js tests/receta.revision.integration.test.js tests/venta.confirmacion.integration.test.js tests/venta.anulacion.integration.test.js
+```
+
+No se requirieron correcciones adicionales de lógica en esta fase. La regresión de persistencia del auditor emitió el aviso esperado de Sequelize por pérdida **sintética** de respuesta de COMMIT; no fue un fallo real de MySQL. `git diff --check` sin errores, con avisos LF/CRLF de Windows. Esta verificación no habilita producción, no sustituye revisión manual y no acredita infraestructura privada de archivos ni el flujo completo con recetas. CU29/CU30 están completos en backend; CU28/CU31/CU32 siguen parciales por ese bloqueo.
+
 ## Integraciones futuras y pendientes operativos
 
-CU28–CU32 (Ventas/Recetas), CU38/CU39 (reportes) y CU41 (pérdidas) conservan su estado funcional pendiente. Integrar auditoría cuando existan sus operaciones; no se crearon fases, endpoints ni migraciones exclusivas para eventos futuros. Las cuatro entregas frontend están completas: acceso, listado, filtros, paginación del servidor y detalle histórico, con aceptación integrada local React/Express/MySQL en Fase 4. La habilitación en el entorno de destino conserva sus pendientes operativos.
+**Alcance vigente:** formulario de recetas sin adjuntos implementado y verificado. No se requiere seleccionar infraestructura de archivos. Antes de operar con una base existente debe aplicarse la migración de nulabilidad; las referencias históricas se conservan sin exposición automática. CU28–CU32 no tienen funcionalidades pendientes dentro del alcance backend aprobado. Permanecen separados el frontend y la habilitación del entorno de uso.
+
+Registro de venta pendiente, registro/vinculación de recetas, aprobación/rechazo, confirmación y anulación integran los eventos de la matriz. Las consultas sensibles de recetas se auditan sin datos personales y conservan su respuesta ante fallo exclusivo del auditor; las consultas rutinarias de ventas excluyen éxitos y clasifican rechazos/fallos mediante `VENTAS.CONSULTAR`. CU30 conserva las reversiones únicas al costo original y promedio ponderado RN78. CU38/CU39 (reportes) y CU41 (pérdidas) permanecen pendientes. Las cuatro entregas frontend de Bitácora conservan su aceptación integrada local de Fase 4; ello no acredita frontend de Ventas/Recetas ni habilita el entorno operativo.
 
 Para el entorno de operación: aplicar migración con cuenta de migración y verificar esquema; separar cuenta de aplicación con SELECT/INSERT en Bitácora y sin UPDATE/DELETE/DDL sobre ella. La cuenta local revisada mediante SHOW GRANTS permite modificación/DDL: no se acredita protección SQL append-only con esa cuenta. No se crearon usuarios ni GRANT. Los hooks ORM pueden evitarse con SQL directo o hooks desactivados.
 

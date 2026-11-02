@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppIcon } from './AppIcon.jsx';
 
 export const Modal = ({
@@ -7,8 +7,38 @@ export const Modal = ({
   description,
   children,
   onClose,
-  size = 'medium'
+  size = 'medium',
+  manageFocus = false,
+  returnFocusRef
 }) => {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    if (!manageFocus || !open) return undefined;
+    const dialog = dialogRef.current;
+    const origen = returnFocusRef?.current || document.activeElement;
+    const controles = () => [...dialog.querySelectorAll('button, input, select, textarea, a[href], [tabindex]')]
+      .filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length > 0);
+    const enfocarInicio = () => (controles()[0] || dialog).focus();
+    enfocarInicio();
+    const mantenerFoco = event => { if (!dialog.contains(event.target)) enfocarInicio(); };
+    const manejarTab = event => {
+      if (event.key !== 'Tab') return;
+      const elementos = controles(), primero = elementos[0], ultimo = elementos.at(-1);
+      if (!primero) { event.preventDefault(); dialog.focus(); }
+      else if (event.shiftKey && (document.activeElement === primero || !dialog.contains(document.activeElement))) { event.preventDefault(); ultimo.focus(); }
+      else if (!event.shiftKey && (document.activeElement === ultimo || !dialog.contains(document.activeElement))) { event.preventDefault(); primero.focus(); }
+    };
+    document.addEventListener('focusin', mantenerFoco);
+    document.addEventListener('keydown', manejarTab);
+    return () => {
+      document.removeEventListener('focusin', mantenerFoco);
+      document.removeEventListener('keydown', manejarTab);
+      queueMicrotask(() => {
+        if (!dialogRef.current && origen?.isConnected && !origen.disabled && !origen.closest('[inert]')) origen.focus();
+      });
+    };
+  }, [open, manageFocus, returnFocusRef]);
+
   useEffect(() => {
     if (!open) {
       return undefined;
@@ -37,6 +67,8 @@ export const Modal = ({
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
+        ref={dialogRef}
+        tabIndex={manageFocus ? -1 : undefined}
         className={`modal modal--${size}`}
         role="dialog"
         aria-modal="true"

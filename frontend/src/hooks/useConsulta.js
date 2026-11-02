@@ -32,6 +32,7 @@ export const useConsulta = (consultar, clave, filtros, habilitada = true) => {
   return {
     data: current ? result.data : undefined,
     meta: current ? result.meta : undefined,
+    paginacion: current ? result.paginacion : undefined,
     loading: habilitada && (!current || Boolean(result.loading)),
     error: current ? result.error : '',
     status: current ? result.status : undefined,

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { leerConsultaBitacora, aplicarBorradorBitacora, borradorBitacora, serializarConsultaBitacora, ACCIONES_BITACORA } from '../src/features/bitacora/utils/consultaBitacora.js';
 import { MODULOS_BITACORA, TIPOS_EVENTO_BITACORA, REGISTROS_BITACORA } from '../src/features/bitacora/utils/presentacionBitacora.js';
 import { CATALOGO_AUDITORIA, TIPOS_REGISTRO_AUDITORIA, AUDITORIA } from '../../backend/src/shared/constants/auditoria.js';
+import { cambiosBitacora, valorBitacora } from '../src/features/bitacora/utils/detalleBitacora.js';
 
 test('Los filtros de la UI cubren el catálogo vigente de API sin inventar códigos', () => {
   assert.deepEqual(Object.keys(TIPOS_EVENTO_BITACORA).sort(), Object.keys(CATALOGO_AUDITORIA).sort());
@@ -10,6 +11,19 @@ test('Los filtros de la UI cubren el catálogo vigente de API sin inventar códi
   assert.deepEqual(Object.keys(ACCIONES_BITACORA).sort(), [...new Set(Object.values(CATALOGO_AUDITORIA).map(e => e.accion))].sort());
   assert.deepEqual(Object.keys(REGISTROS_BITACORA).sort(), [...TIPOS_REGISTRO_AUDITORIA].sort());
   assert.equal(AUDITORIA.PAGINA_PREDETERMINADA, 25); assert.equal(AUDITORIA.PAGINA_MAXIMA, 100);
+});
+test('Ventas y Recetas admiten los siete eventos reales y los snapshots sin datos personales', () => {
+  for (const tipoEvento of ['VENTA_REGISTRAR_PENDIENTE', 'VENTA_CONFIRMAR', 'VENTA_ANULAR', 'RECETAS_CONSULTAR', 'RECETA_CONSULTAR', 'RECETA_REGISTRAR', 'RECETA_REVISAR']) {
+    const { modulo, accion } = CATALOGO_AUDITORIA[tipoEvento];
+    assert.equal(leerConsultaBitacora(new URLSearchParams({ tipoEvento, modulo, accion, tipoRegistro: modulo === 'VENTAS' ? 'VENTA' : 'RECETA' }).toString()).error, '');
+  }
+  const cambios = cambiosBitacora({ antes: { resultadoRevision: null }, despues: {
+    idVenta: 8, resultadoRevision: 'APROBADA', idUsuarioValidador: 2, nombrePaciente: 'NO_MOSTRAR', documentoPaciente: 'NO_MOSTRAR', observacion: 'NO_MOSTRAR'
+  } });
+  assert.deepEqual(cambios.map(c => c.campo), ['idVenta', 'resultadoRevision', 'idUsuarioValidador']);
+  assert.equal(valorBitacora(null, 'resultadoRevision'), 'Pendiente de revisión');
+  assert.equal(valorBitacora('APROBADA', 'resultadoRevision'), 'Aprobada');
+  assert.equal(valorBitacora('__proto__', 'resultadoRevision'), '__proto__');
 });
 test('Fecha civil Bolivia conserva instante, milisegundos y cambio de día al recuperar URL UTC', () => {
   const filtros = { desde: '2026-10-13T03:04:05.678Z', hasta: '2026-10-13T12:00:00+02:00', pagina: '2', limite: '50' };

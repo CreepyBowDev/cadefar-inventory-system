@@ -8,6 +8,8 @@ export const ConfirmDialog = ({
   cancelLabel = 'Cancelar',
   busy = false,
   tone = 'danger',
+  manageFocus = false,
+  returnFocusRef,
   onConfirm,
   onClose
 }) => (
@@ -17,6 +19,8 @@ export const ConfirmDialog = ({
     description={description}
     onClose={busy ? () => {} : onClose}
     size="small"
+    manageFocus={manageFocus}
+    returnFocusRef={returnFocusRef}
   >
     <div className="modal__actions">
       <button

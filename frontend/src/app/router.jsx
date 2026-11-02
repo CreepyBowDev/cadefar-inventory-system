@@ -21,6 +21,12 @@ import { RetiroFormPage } from '../features/inventario/pages/RetiroFormPage.jsx'
 import { ComprasPage } from '../features/compras/pages/ComprasPage.jsx';
 import { CompraDetailPage } from '../features/compras/pages/CompraDetailPage.jsx';
 import { CompraFormPage } from '../features/compras/pages/CompraFormPage.jsx';
+import { VentasPage } from '../features/ventas/pages/VentasPage.jsx';
+import { VentaDetailPage } from '../features/ventas/pages/VentaDetailPage.jsx';
+import { VentaFormPage } from '../features/ventas/pages/VentaFormPage.jsx';
+import { RecetaFormPage } from '../features/recetas/pages/RecetaFormPage.jsx';
+import { RecetasPage } from '../features/recetas/pages/RecetasPage.jsx';
+import { RecetaDetailPage } from '../features/recetas/pages/RecetaDetailPage.jsx';
 import { BitacoraPage } from '../features/bitacora/pages/BitacoraPage.jsx';
 import { BitacoraDetailPage } from '../features/bitacora/pages/BitacoraDetailPage.jsx';
 import { AuthLayout } from '../layouts/AuthLayout.jsx';
@@ -60,12 +66,27 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR, ROLES.REGENTE, ROLES.VENDEDOR]} />,
             children: [
+              { path: '/ventas', element: <VentasPage /> },
+              { path: '/ventas/:idVenta', element: <VentaDetailPage /> },
               { path: '/inventario', element: <InventarioPage /> },
               { path: '/inventario/stock-bajo', element: <InventarioPage vista="stockBajo" /> },
               { path: '/inventario/medicamentos/:idMedicamento/existencias', element: <ExistenciasPage /> },
               { path: '/medicamentos', element: <MedicamentosPage /> },
               { path: '/medicamentos/:idMedicamento', element: <MedicamentoDetailPage /> },
               { path: '/medicamentos/:idMedicamento/composicion', element: <MedicamentoComposicionPage /> }
+            ]
+          },
+          {
+            element: <RoleRoute allowedRoles={[ROLES.REGENTE, ROLES.VENDEDOR]} />,
+            children: [
+              { path: '/recetas/registrar', element: <VentasPage modo="registrarReceta" /> },
+              { path: '/ventas/:idVenta/recetas/nueva', element: <RecetaFormPage /> }
+            ]
+          },
+          {
+            element: <RoleRoute allowedRoles={[ROLES.VENDEDOR]} />,
+            children: [
+              { path: '/ventas/nueva', element: <VentaFormPage /> }
             ]
           },
           {
@@ -82,6 +103,9 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute allowedRoles={[ROLES.REGENTE]} />,
             children: [
+              { path: '/recetas', element: <VentasPage modo="revisarRecetas" /> },
+              { path: '/ventas/:idVenta/recetas', element: <RecetasPage /> },
+              { path: '/ventas/:idVenta/recetas/:idReceta', element: <RecetaDetailPage /> },
               { path: '/inventario/medicamentos/:idMedicamento/existencias/:idExistencia/ajuste', element: <AjusteFormPage /> },
               { path: '/inventario/medicamentos/:idMedicamento/existencias/:idExistencia/retiro-vencimiento', element: <RetiroFormPage tipo="vencimiento" /> },
               { path: '/inventario/medicamentos/:idMedicamento/existencias/:idExistencia/retiro-dano', element: <RetiroFormPage tipo="dano" /> },

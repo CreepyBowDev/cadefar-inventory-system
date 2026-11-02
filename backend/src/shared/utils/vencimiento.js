@@ -63,3 +63,7 @@ export const calcularVencimiento = (fechaVencimiento, precisionVencimiento, fech
         vencida: numeroFecha(fechaComercial) >= numeroFecha(fechaEfectivaVencimiento)
     };
 };
+
+// Orden ya utilizado por Inventario: corte efectivo y desempate estable por ID.
+export const compararVencimientos = (a, b) => Number(a.fechaEfectivaVencimiento.replaceAll('-', '')) -
+    Number(b.fechaEfectivaVencimiento.replaceAll('-', '')) || a.idExistencia - b.idExistencia;

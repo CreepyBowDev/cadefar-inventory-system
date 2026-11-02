@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calcularVencimiento, esFechaCivilValida, obtenerFechaComercial,
     obtenerFechaEfectivaVencimiento, obtenerFechaEtiquetaNormalizada,
-    sumarMesesCalendario, ZONA_HORARIA_COMERCIAL } from '../src/shared/utils/vencimiento.js';
+    sumarMesesCalendario, ZONA_HORARIA_COMERCIAL, compararVencimientos } from '../src/shared/utils/vencimiento.js';
 
 test('Día comercial: el cambio de fecha ocurre a las 04:00 UTC en La Paz', () => {
     assert.equal(ZONA_HORARIA_COMERCIAL, 'America/La_Paz');
@@ -43,6 +43,16 @@ test('FEFO mixto: DIA del último día vence antes que MES del mismo mes', () =>
     const mes = obtenerFechaEfectivaVencimiento('2026-10-31', 'MES');
     assert.equal(dia < mes, true);
     assert.equal(mes, obtenerFechaEfectivaVencimiento('2026-11-01', 'DIA'));
+});
+
+test('FEFO compartido con Inventario: fecha efectiva y desempate numérico por ID, no FIFO', () => {
+    const datos = [
+        { idExistencia: 1, fechaEfectivaVencimiento: '2027-01-01' },
+        { idExistencia: 10, fechaEfectivaVencimiento: '2026-11-01' },
+        { idExistencia: 2, fechaEfectivaVencimiento: '2026-11-01' },
+        { idExistencia: 99, fechaEfectivaVencimiento: '2026-10-31' }
+    ];
+    assert.deepEqual(datos.sort(compararVencimientos).map(e => e.idExistencia), [99, 2, 10, 1]);
 });
 
 test('Fechas civiles rechazan días inexistentes y fechas con hora o formato ambiguo', () => {

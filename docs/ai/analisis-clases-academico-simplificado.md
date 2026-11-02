@@ -6,7 +6,9 @@ Sistema de Información Web para la Administración de Inventario, Ventas y Cont
 
 **Fuente principal:** [Análisis académico completo](analisis-clases-academico.md), conservado sin modificaciones. Este documento es una versión independiente contrastada con el código actual, no una propuesta de reorganización del software.
 
-**Estado actual — limpieza integral:** los 35 diagramas existentes cubren 34 casos de uso: CU01–CU27, CU33–CU37, CU40 y CU42; CU08 conserva las variantes A y B. Se depuran métodos y atributos secundarios, reutilizando las correspondencias y verificaciones aprobadas de Fases 1–6. Se conserva la cobertura de 33 CU/34 diagramas del documento fuente y CU42 — Bitácora, agregado por autorización explícita del usuario.
+**Estado actual — ampliación de Ventas y Recetas:** 40 diagramas cubren 39 casos de uso: CU01–CU37, CU40 y CU42; CU08 conserva las variantes A y B. Los 35 diagramas de Fases 1–6 se conservan sin cambios; Fase 7 incorpora CU28–CU30 y Fase 8 incorpora CU31/CU32 contrastados con el software. Las verificaciones de cada cierre corresponden a su entrega; la cobertura acumulada vigente figura en la sección 16. CU38/CU39/CU41 permanecen pendientes de implementación.
+
+**Navegación de la ampliación:** [Ventas — CU28–CU30](#13-fase-7--ventas) · [Cierre de Ventas](#14-cierre-del-bloque-ventas-y-cobertura-acumulada) · [Recetas — CU31/CU32](#15-fase-8--recetas) · [Cobertura acumulada y cierre de Recetas](#16-cierre-del-bloque-recetas-y-cobertura-acumulada). Las fases numeran bloques documentales, no el orden numérico global de los CU: se conserva su organización previa y se añaden Ventas/Recetas sin desplazar los paquetes existentes.
 
 ## 0. Notación, alcance y lectura
 
@@ -39,7 +41,7 @@ La directiva adicional `state.useMaxWidth: false` mantiene el tamaño natural en
 
 **Entidades:** los atributos se contrastan con los modelos de `backend/src/data/models/` identificados en cada fase, según las cajas de cada CU. Los métodos de Repository se agrupan en Control y no se atribuyen a los modelos. Bitácora resume el registro exitoso/cambio y los rechazos o fallos pertinentes, sin exponer su persistencia interna.
 
-**Alcance de la depuración:** se conservan handlers principales, HTTP, validaciones, negocio, acceso a datos y operaciones principales de auditoría. Se resumen cableado de campos/hooks, errores genéricos, formato, serialización, utilidades criptográficas internas y relecturas auxiliares de respuesta; sus reglas permanecen explicadas en cada CU. toPublicInventario/toPublicExistencias se mantienen por calcular sumas y vendibilidad, no por su formato. Las comprobaciones y cantidades registradas al cerrar cada fase son antecedentes anteriores a esta limpieza; la verificación vigente figura al final.
+**Alcance de la depuración:** se conservan handlers principales, HTTP, validaciones, negocio, acceso a datos y operaciones principales de auditoría. Se resumen cableado de campos/hooks, errores genéricos, formato, serialización, utilidades criptográficas internas y relecturas auxiliares de respuesta; sus reglas permanecen explicadas en cada CU. toPublicInventario/toPublicExistencias se mantienen por calcular sumas y vendibilidad, no por su formato. Las comprobaciones y cantidades anteriores a la limpieza de Fases 1–6 son antecedentes de aquellos bloques; las verificaciones de las nuevas Fases 7/8 corresponden a sus propias entregas y no están comprendidas en la validación histórica de 35 diagramas.
 
 ## 1. Fase 1 — Autenticación, Usuarios y Recuperación
 
@@ -3990,6 +3992,1056 @@ Listado sin coincidencias devuelve vacío válido; detalle inexistente, 404 desp
 
 **Estado de depuración:** limpieza aplicada a los 35 diagramas existentes, con cobertura de 34 CU y conservación de sus recorridos y relaciones funcionales. Las apariciones de métodos se reducen de 727 a 546 y las de atributos de 1242 a 803. Se eliminan errores genéricos, cableado de estado/campos/hooks, utilidades técnicas secundarias, relecturas de respuesta y todos los atributos técnicos de Control; se conservan HTTP, handlers principales, validaciones, reglas esenciales, Repositories relevantes y auditoría principal. Las correspondencias afectadas y los índices de etiquetas se actualizan.
 
-**Verificación vigente:** 35/35 diagramas válidos mediante la gramática de Mermaid 11.12.0 en Node, sin navegador ni renderizado; 34 CU cubiertos y CU08 con dos variantes. Cada diagrama conserva un Boundary/un Control, distribución horizontal, blanco/negro, nombres existentes, métodos sin parámetros/retornos y atributos sin tipos. Se contrastan los métodos conservados con los bloques ya verificados, las etiquetas con su posición y las relaciones con el estado previo; se mantienen las funciones HTTP y acciones esenciales. El análisis original permanece intacto. `git diff --check` aprobado.
+**Verificación al cierre de Fases 1–6 (antecedente):** 35/35 diagramas válidos mediante la gramática de Mermaid 11.12.0 en Node, sin navegador ni renderizado; 34 CU cubiertos y CU08 con dos variantes. Cada diagrama conserva un Boundary/un Control, distribución horizontal, blanco/negro, nombres existentes, métodos sin parámetros/retornos y atributos sin tipos. Se contrastan los métodos conservados con los bloques ya verificados, las etiquetas con su posición y las relaciones con el estado previo; se mantienen las funciones HTTP y acciones esenciales. El análisis original permanece intacto. `git diff --check` aprobado. Esta validación histórica no acredita el parseo de los cinco diagramas de Ventas/Recetas añadidos después.
 
 **Etiquetas:** se conserva temporalmente el mecanismo existente, con índices ajustados a los métodos retenidos. El sufijo directo de Mermaid se interpreta como retorno; no se introduce otra solución visual.
+
+## 13. Fase 7 — Ventas
+
+### Condiciones compartidas
+
+| Caso de uso | Actor autorizado | Operación principal |
+|---|---|---|
+| CU28 — Registrar venta | Vendedor | Guardar pendiente y confirmar posteriormente. |
+| CU29 — Consultar ventas | Administrador, Regente o Vendedor | Consultar listado y detalle. |
+| CU30 — Anular venta | Administrador | Anular pendiente o compensar confirmada. |
+
+**Recorrido y permisos:** `frontend/src/app/router.jsx` monta VentasPage/VentaDetailPage para los tres roles y VentaFormPage solo para Vendedor. VentaDetalle comprueba el rol para mostrar y ejecutar confirmar/anular. `backend/src/app.js` monta ventaRouter en `/api/ventas`; `backend/src/presentation/routes/venta.router.js` aplica authMiddleware, requireRole de los tres roles y restricciones adicionales de Vendedor para registro/confirmación y Administrador para anulación. La autorización real no depende de los botones.
+
+**Alcance BCE:** cada CU conserva un único Boundary y un único Control. Boundary agrupa componentes funcionales React, funciones locales y módulos HTTP; Control agrupa las clases reales ventaController/ventaValidator/ventaService/Repositories y funciones de apoyo identificadas debajo. No son dos clases nuevas que contengan físicamente todas las operaciones. Los atributos de Boundary de este bloque son exclusivamente propiedades de estado React comprobadas, no parámetros, variables locales ni propiedades de respuesta convertidas en atributos. Los atributos Entity son campos definidos en los modelos Sequelize y utilizados por el recorrido seleccionado.
+
+**Visibilidad en las entradas nuevas:** se mantiene la selección de nombres sin tipos y operaciones con `()` sin representar firmas completas, parámetros ni retornos. Se omiten los prefijos `+`/`-`: las agrupaciones no tienen una visibilidad JavaScript propia y los campos de los modelos no son privados. Esta diferencia respecto de las cajas anteriores evita afirmar modificadores inexistentes; no modifica los diagramas previos. Se conserva el mecanismo CSS de etiquetas de procedencia para los métodos de Control.
+
+**Relaciones resumidas:** Boundary–Control representa interfaz → servicio HTTP → `api` de `frontend/src/api/api.js` → router/middlewares → Controller. Control–Entity representa el acceso mediante los Repositories de la correspondencia, no una consulta directa del Controller. Las líneas entre entidades muestran asociaciones explícitas de sus métodos `associate()`, sin introducir composición, herencia ni multiplicidades adicionales. Una FK almacenada como NULL no implica consultar su entidad destino.
+
+**Simplificación compartida:** las opciones de medicamentos/existencias de CU28 reutilizan CU15/CU22 y no despliegan sus consultas de catálogo/composición. La preparación y actualización de la ficha para CU28/CU30 reutiliza CU29. Sí se incluyen las entidades que sus escrituras leen o devuelven; Medicamento, Usuario y Receta pueden aparecer por la relectura de respuesta, aunque no se modifiquen. Autenticación, infraestructura de auditoría y serialización se resumen como en los bloques anteriores; BitacoraAuditoria no se repite como entidad transversal.
+
+**Correspondencia compartida de esta fase:**
+
+| Elemento o conexión | Archivo real y respaldo |
+|---|---|
+| Rutas de interfaz y roles | `frontend/src/app/router.jsx`: `router`, rutas `/ventas`, `/ventas/:idVenta` y `/ventas/nueva`, RoleRoute. |
+| Cadena HTTP | `frontend/src/api/api.js`: `api`, instancia Axios con `withCredentials`; los servicios de cada CU importan y utilizan esta instancia. |
+| Montaje de API | `backend/src/app.js`: `app.use('/api/ventas', ventaRouter)`. |
+| Endpoints y autorización | `backend/src/presentation/routes/venta.router.js`: `ventaRouter`, llamadas a ventaController, authMiddleware y requireRole. |
+| Auditoría HTTP | `backend/src/shared/utils/auditoria-http.js`: `ejecutarConAuditoria()`, invocado por las escrituras de ventaController. |
+| Auditoría principal de escrituras | `backend/src/business/services/bitacora-auditoria.service.js`: `ejecutarCambio()` y `registrarCambio()`, llamados por ventaService; el segundo recibe la transacción de negocio. |
+
+### CU28 — Registrar venta
+
+**Actor:** Vendedor autenticado. **Endpoints:** `POST /api/ventas` y `POST /api/ventas/:idVenta/confirmar`, sin query. **Vistas:** `/ventas/nueva` y `/ventas/:idVenta`. Registro pendiente y confirmación son operaciones del mismo CU, no nuevos casos de uso.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(2) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(8) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(9) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(29) p::after{content:\" [auditoria]\";}.control .methods-group .label:nth-child(30) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Vendedor["○<br/>─┼─<br/>╱ ╲<br/>Vendedor"]
+    class Vendedor { <<actor>> }
+    class Boundary["VentaForm · frontend agrupado"] {
+        <<boundary>>
+        form.claveOperacion
+        form.detalles
+        review
+        resultado
+        open
+        requiereConsulta
+        prepararVenta()
+        revisar()
+        guardar()
+        guardar()
+        createVenta()
+        confirmar()
+        confirmarVenta()
+    }
+    class Control["ventaController · backend agrupado"] {
+        <<control>>
+        %% createVenta() [controller]
+        createVenta()
+        %% confirmarVenta() [controller]
+        confirmarVenta()
+        validateSinFiltros()
+        validateCreate()
+        validateId()
+        validateConfirmar()
+        validarImporte()
+        %% createVenta() [service]
+        createVenta()
+        %% confirmarVenta() [service]
+        confirmarVenta()
+        findByClave()
+        findById()
+        findByIdParaVenta()
+        create()
+        createDetalle()
+        findParaConfirmar()
+        findDetallesParaConfirmar()
+        findReferenciasParaVenta()
+        findParaConfirmacion()
+        findParaConfirmarVenta()
+        findPorDetallesVenta()
+        calcularVencimiento()
+        compararVencimientos()
+        descontarParaVenta()
+        finalizarDetalle()
+        create()
+        confirmar()
+        getVentaById()
+        findById()
+        %% ejecutarCambio() [auditoria]
+        ejecutarCambio()
+        %% registrarCambio() [auditoria]
+        registrarCambio()
+    }
+    class Venta {
+        <<entity>>
+        id_venta
+        id_usuario
+        clave_operacion
+        fecha_registro
+        fecha_venta
+        estado_operacion
+        total
+    }
+    class DetalleVenta {
+        <<entity>>
+        id_detalle_venta
+        id_venta
+        id_existencia
+        id_receta
+        cantidad
+        precio_unitario
+        subtotal
+    }
+    class ExistenciaMedicamento {
+        <<entity>>
+        id_existencia
+        id_medicamento
+        codigo_existencia
+        fecha_vencimiento
+        precision_vencimiento
+        cantidad_fisica
+        costo_unitario_promedio
+    }
+    class Medicamento {
+        <<entity>>
+        id_medicamento
+        codigo_medicamento
+        nombre_comercial
+        forma_farmaceutica
+        presentacion
+        unidad_inventario
+        estado
+        condicion_venta
+    }
+    class Receta {
+        <<entity>>
+        id_receta
+        id_venta
+        resultado_revision
+        id_usuario_validador
+        fecha_validacion
+    }
+    class MovimientoInventario {
+        <<entity>>
+        id_movimiento
+        id_usuario
+        id_existencia
+        id_detalle_venta
+        id_detalle_compra
+        id_movimiento_original
+        direccion
+        cantidad
+        costo_unitario_aplicado
+        fecha_movimiento
+        motivo
+        observacion
+    }
+    class Usuario {
+        <<entity>>
+        id_usuario
+        nombre_usuario
+    }
+    Vendedor --> Boundary : prepara guarda y confirma
+    Boundary ..> Control : POST /api/ventas
+    Boundary ..> Control : POST /api/ventas/#58;idVenta/confirmar
+    Control --> Venta : registra pendiente y confirma
+    Control --> DetalleVenta : registra y distribuye por FEFO
+    Control --> ExistenciaMedicamento : verifica y descuenta al confirmar
+    Control --> Medicamento : verifica actividad y condicion de venta
+    Control --> Receta : comprueba pertenencia y aprobacion
+    Control --> MovimientoInventario : comprueba ausencia previa y registra salidas
+    Control --> Usuario : incluye registrador publico en respuesta
+    Venta -- Usuario : usuarioRegistrador
+    Venta -- DetalleVenta : detallesVenta
+    Venta -- Receta : recetas
+    DetalleVenta -- Receta : receta
+    DetalleVenta -- ExistenciaMedicamento : existencia
+    ExistenciaMedicamento -- Medicamento : medicamento
+    MovimientoInventario -- DetalleVenta : detalleVenta
+    MovimientoInventario -- ExistenciaMedicamento : existencia
+    MovimientoInventario -- Usuario : usuario
+    Receta -- Usuario : usuarioValidador
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Vendedor" actor
+```
+
+**Colaboración:** revisar de VentaForm utiliza prepararVenta y presenta review en Modal. guardar del formulario llama, mediante onSubmit, a guardar de VentaFormPage; este ejecuta createVenta HTTP y navega al detalle únicamente tras una respuesta PENDIENTE verificable. El registro guarda cabecera y detalles con una existencia real provisional, sin reservar ni descontar stock. Después, confirmar de VentaDetalle llama a confirmarVenta HTTP a través de ConfirmDialog. El backend vuelve a comprobar el estado, las recetas y la disponibilidad; planifica FEFO antes de escribir, finaliza o divide detalles, descuenta saldos, crea salidas y confirma la venta atómicamente.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| `VentaForm`, `revisar()`, primer `guardar()`; estado `form.claveOperacion`, `form.detalles`, `review` | `frontend/src/features/ventas/components/VentaForm.jsx` |
+| `prepararVenta()`; comprueba estructura y llama a `calcularImportesVenta()` para estimación, no para decidir inventario | `frontend/src/features/ventas/utils/ventaForm.js` |
+| `VentaFormPage`, segundo `guardar()`; pasa este último como `onSubmit` a VentaForm | `frontend/src/features/ventas/pages/VentaFormPage.jsx` |
+| `VentaDetalle`, `confirmar()`; estado `resultado`, `open`, `requiereConsulta`; pasa confirmar como `onConfirm` | `frontend/src/features/ventas/pages/VentaDetailPage.jsx` |
+| `createVenta()`, `confirmarVenta()` de Boundary; llaman a `api.post()` con los dos endpoints | `frontend/src/features/ventas/services/venta.service.js` |
+| `createVenta() [controller]`, `confirmarVenta() [controller]`; invocan Validator y Service mediante ejecutarConAuditoria | `backend/src/presentation/controllers/venta.controller.js` |
+| `validateSinFiltros()`, `validateCreate()`, `validateId()`, `validateConfirmar()` | `backend/src/business/validators/venta.validator.js` |
+| `createVenta() [service]`, `confirmarVenta() [service]`, `getVentaById()`; función de módulo `validarImporte()` | `backend/src/business/services/venta.service.js` |
+| `findByClave()`, primer `create()` de Control, `createDetalle()`, `findParaConfirmar()`, `findDetallesParaConfirmar()`, `finalizarDetalle()`, `confirmar()`, segundo `findById()` | `backend/src/data/repositories/venta.repository.js` |
+| Primer `findById()` de Control: medicamentoRepository, utilizado con `lock: true` | `backend/src/data/repositories/medicamento.repository.js` |
+| `findByIdParaVenta()`, `findReferenciasParaVenta()`, `findParaConfirmarVenta()`, `descontarParaVenta()` | `backend/src/data/repositories/existencia-medicamento.repository.js` |
+| `findParaConfirmacion()`; selecciona receta de la misma venta y campos de revisión | `backend/src/data/repositories/receta.repository.js` |
+| `findPorDetallesVenta()`, segundo `create()` de Control: crea MovimientoInventario | `backend/src/data/repositories/movimiento-inventario.repository.js` |
+| `calcularVencimiento()`, `compararVencimientos()`; ventaService los aplica para descartar vencidas y ordenar FEFO | `backend/src/shared/utils/vencimiento.js` |
+| `ejecutarCambio()`, `registrarCambio()` y conexiones HTTP/roles | Correspondencia compartida de esta fase. |
+
+**Entidades y relaciones verificadas:**
+
+| Elemento del diagrama | Archivo real y evidencia |
+|---|---|
+| Venta | `backend/src/data/models/venta.js`: `Venta.init()` define los siete campos representados; `Venta.associate()` declara usuarioRegistrador, detallesVenta y recetas. `ventaService.#createVenta()` escribe los datos iniciales y `ventaRepository.confirmar()` asigna estado/fecha de confirmación. |
+| DetalleVenta | `backend/src/data/models/detalle-venta.js`: `DetalleVenta.init()` define los siete campos; `associate()` declara venta, receta, existencia y movimientosInventario. `ventaRepository.createDetalle()` y `finalizarDetalle()` respaldan registro y reparto definitivo. |
+| ExistenciaMedicamento | `backend/src/data/models/existencia-medicamento.js`: `ExistenciaMedicamento.init()` define los siete campos; `associate()` declara medicamento. `findParaConfirmarVenta()` lee saldo, vencimiento y promedio; `descontarParaVenta()` modifica solo cantidad_fisica. |
+| Medicamento | `backend/src/data/models/medicamento.js`: `Medicamento.init()` define los ocho campos seleccionados; actividad/condición se usan en negocio y la identificación se incluye en la respuesta. |
+| Receta | `backend/src/data/models/receta.js`: `Receta.init()` define los cinco campos seleccionados; `associate()` declara venta y usuarioValidador. `recetaRepository.findParaConfirmacion()` lee esos campos, sin consultar datos personales. |
+| MovimientoInventario | `backend/src/data/models/movimiento-inventario.js`: `MovimientoInventario.init()` define los doce campos; `associate()` declara detalleVenta, existencia y usuario. `ventaService.#confirmarVenta()` construye la SALIDA con esos campos y costo vigente. |
+| Usuario | `backend/src/data/models/usuario.js`: `Usuario.init()` define id_usuario/nombre_usuario. `ventaRepository.findById()`, mediante `relacionesCabecera()`, incluye usuarioRegistrador con esos campos; los IDs de responsable de movimiento/validador corresponden a las asociaciones anteriores, no a nuevas consultas de cuentas. |
+
+**Condiciones verificadas:**
+
+| Momento | Comportamiento implementado |
+|---|---|
+| Registro pendiente | Clave normalizada a minúsculas, al menos un detalle, medicamento activo y existencia real del medicamento. Cantidad entera positiva y precio decimal de hasta dos cifras. Calcula subtotal/total en backend. La selección provisional no exige saldo vendible ni vencimiento vigente. |
+| Recetas | El POST de venta no recibe recetas: `validateCreate()` admite solo claveOperacion/detalles. Se registran después por CU31 y se revisan por CU32. Si el detalle tiene receta vinculada, el backend exige aprobación incluso para LIBRE; RECETA_MEDICA exige receta y los valores de condición desconocidos bloquean la confirmación. |
+| Confirmación | Bloquea venta/detalles, recetas utilizadas, medicamentos y existencias. Comprueba aprobación, responsable y fecha de revisión; descarta existencias agotadas/vencidas y ordena las restantes por compararVencimientos. No admite movimientos previos de los detalles pendientes. |
+| Reparto y escritura | Conserva precio y receta de cada línea; reutiliza el primer detalle y crea los segmentos adicionales necesarios. Descuenta cada existencia consumida, genera una SALIDA VENTA por segmento y registra fecha_venta/CONFIRMADA. No cambia el promedio de la existencia; lo copia como costo aplicado. |
+| Atomicidad | Registro pendiente y confirmación son transacciones distintas. Cada una incluye su éxito de auditoría; un fallo revierte toda esa operación. Si falla la confirmación, la venta sigue pendiente. No se crean movimientos al guardar el pendiente. |
+
+**Aclaraciones:** los métodos públicos del Service delegan en `#createVenta()`/`#confirmarVenta()`; se representan sus entradas públicas y colaboradores, no se convierte su cuerpo en métodos inventados. `getVentaById()` aquí pertenece al Service y se usa para releer la respuesta dentro de la transacción; no representa otro GET. Primer/segundo create y findById de Control se distinguen en la tabla por propietario. El mismo createDetalle sirve para el alta pendiente y los segmentos adicionales.
+
+Las opciones se obtienen mediante `getMedicamentos()` de `frontend/src/features/medicamentos/services/medicamento.service.js` y `getExistenciasMedicamento()` de `frontend/src/features/inventario/services/inventario.service.js`, llamado por VentaLinea en `frontend/src/features/ventas/components/VentaLinea.jsx`. Reutilizan CU15/CU22; no se añaden sus entidades auxiliares de catálogo ni se les atribuye participación en las escrituras de venta. La referencia de existencia puede estar vencida o sin saldo: no autoriza su salida. React solo estima importes y no aplica FEFO.
+
+`toDetalleVenta()` de `backend/src/presentation/dtos/venta.dto.js` entrega detalles con identificación actual de existencia/medicamento y referencias/resultado de recetas, sin paciente ni archivo. Usuario representa el registrador público y las asociaciones de responsabilidad, no una lectura de contraseñas. id_detalle_compra e id_movimiento_original se escriben NULL en las nuevas salidas: Compra/DetalleCompra no participan por ese hecho. El costo promedio se utiliza en negocio pero no se expone como atributo del DTO de venta. Los datos de anulación ausentes en este recorrido se omiten del diagrama.
+
+Resultado 201 para pendiente y 200 para confirmación después del commit. React verifica ID/estado antes de anunciar éxito. La clave del borrador se conserva en reintentos; un resultado incierto de registro exige consultar CU29 y comparar clave/detalles. Tras conflicto o respuesta incierta de confirmación se exige actualizar la ficha; no hay reenvíos automáticos.
+
+### CU29 — Consultar ventas
+
+**Actores:** Administrador, Regente o Vendedor autenticado. **Endpoints:** `GET /api/ventas` y `GET /api/ventas/:idVenta`; la ficha exige query vacío. **Vistas:** `/ventas` y `/ventas/:idVenta`. Los modos de selección para registrar/revisar recetas reutilizan el listado sin crear otros CU.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(2) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(6) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(7) p::after{content:\" [service]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Administrador["○<br/>─┼─<br/>╱ ╲<br/>Administrador"]
+    class Regente["○<br/>─┼─<br/>╱ ╲<br/>Regente"]
+    class Vendedor["○<br/>─┼─<br/>╱ ╲<br/>Vendedor"]
+    class Administrador { <<actor>> }
+    class Regente { <<actor>> }
+    class Vendedor { <<actor>> }
+    class Boundary["VentasPage · frontend agrupado"] {
+        <<boundary>>
+        borrador.idVenta
+        borrador.idUsuario
+        borrador.estadoOperacion
+        borrador.campoFecha
+        borrador.desde
+        borrador.hasta
+        buscar()
+        cambiarConsulta()
+        leerConsultaVenta()
+        serializarConsultaVenta()
+        validarFiltrosVenta()
+        consultarVenta()
+        actualizar()
+        getVentas()
+        getVenta()
+    }
+    class Control["ventaController · backend agrupado"] {
+        <<control>>
+        %% getVentas() [controller]
+        getVentas()
+        %% getVentaById() [controller]
+        getVentaById()
+        validateFiltros()
+        validateId()
+        validateSinFiltros()
+        %% getVentas() [service]
+        getVentas()
+        %% getVentaById() [service]
+        getVentaById()
+        findAll()
+        findById()
+    }
+    class Venta {
+        <<entity>>
+        id_venta
+        id_usuario
+        estado_operacion
+        clave_operacion
+        fecha_registro
+        fecha_venta
+        total
+        fecha_anulacion
+        motivo_anulacion
+        id_usuario_anulador
+    }
+    class Usuario {
+        <<entity>>
+        id_usuario
+        nombre_usuario
+    }
+    class DetalleVenta {
+        <<entity>>
+        id_detalle_venta
+        id_venta
+        id_existencia
+        id_receta
+        cantidad
+        precio_unitario
+        subtotal
+    }
+    class ExistenciaMedicamento {
+        <<entity>>
+        id_existencia
+        id_medicamento
+        codigo_existencia
+        fecha_vencimiento
+        precision_vencimiento
+    }
+    class Medicamento {
+        <<entity>>
+        id_medicamento
+        codigo_medicamento
+        nombre_comercial
+        forma_farmaceutica
+        presentacion
+        unidad_inventario
+        estado
+    }
+    class Receta {
+        <<entity>>
+        id_receta
+        id_venta
+        resultado_revision
+    }
+    Administrador --> Boundary : consulta listado y ficha
+    Regente --> Boundary : consulta listado y ficha
+    Vendedor --> Boundary : consulta listado y ficha
+    Boundary ..> Control : GET /api/ventas con filtros
+    Boundary ..> Control : GET /api/ventas/#58;idVenta
+    Control --> Venta : consulta cabeceras y detalle
+    Control --> Usuario : incluye registrador y anulador publicos
+    Control --> DetalleVenta : incluye productos solo en ficha
+    Control --> ExistenciaMedicamento : incluye identificacion solo en ficha
+    Control --> Medicamento : incluye catalogo actual solo en ficha
+    Control --> Receta : incluye referencias y revision solo en ficha
+    Venta -- Usuario : usuarioRegistrador y usuarioAnulador
+    Venta -- DetalleVenta : detallesVenta
+    Venta -- Receta : recetas
+    DetalleVenta -- Receta : receta
+    DetalleVenta -- ExistenciaMedicamento : existencia
+    ExistenciaMedicamento -- Medicamento : medicamento
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Administrador,Regente,Vendedor" actor
+```
+
+**Colaboración:** VentaFilters mantiene borrador y buscar valida antes de llamar a cambiarConsulta de VentasPage. La página serializa los criterios en URL y useConsulta ejecuta getVentas HTTP; paginar/cambiar límite reutiliza cambiarConsulta mediante callbacks. VentaTable conserva ventasQuery al abrir la ficha. consultarVenta es una función de módulo utilizada por VentaDetalle mediante useConsulta; actualizar limpia el resultado de escrituras anterior y solicita otra lectura. Controller valida y delega en Service/Repository para cabeceras paginadas o ficha con relaciones.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| `VentaFilters`, `buscar()`; estado `borrador` con idVenta/idUsuario/estadoOperacion/campoFecha/desde/hasta | `frontend/src/features/ventas/components/VentaFilters.jsx` |
+| `VentasPage`, `cambiarConsulta()`; usa leerConsultaVenta/useConsulta y pasa callbacks a filtros/paginación | `frontend/src/features/ventas/pages/VentasPage.jsx` |
+| `leerConsultaVenta()`, `serializarConsultaVenta()`, `validarFiltrosVenta()` | `frontend/src/features/ventas/utils/consultaVenta.js` |
+| `consultarVenta()` de módulo; `actualizar()` de VentaDetalle, no de VentaDetailPage | `frontend/src/features/ventas/pages/VentaDetailPage.jsx` |
+| `getVentas()`, `getVenta()` de Boundary; invocan `api.get()` | `frontend/src/features/ventas/services/venta.service.js` |
+| `getVentas() [controller]`, `getVentaById() [controller]` | `backend/src/presentation/controllers/venta.controller.js` |
+| `validateFiltros()`, `validateId()`, `validateSinFiltros()` | `backend/src/business/validators/venta.validator.js` |
+| `getVentas() [service]`, `getVentaById() [service]`; coordinan consulta sin efectos de inventario | `backend/src/business/services/venta.service.js` |
+| `findAll()`, `findById()`; `atributosVenta`, `relacionesCabecera()` e includes delimitan los campos/entidades consultados | `backend/src/data/repositories/venta.repository.js` |
+| `VentaTable`; enlace a detalle con estado `ventasQuery` | `frontend/src/features/ventas/components/VentaTable.jsx` |
+| `VentaDetallesTable`; muestra identificación, vencimiento, cantidades/importes y referencia de receta | `frontend/src/features/ventas/components/VentaDetallesTable.jsx` |
+| `toResumenVenta()`, `toDetalleVenta()`; proyectan los campos seleccionados sin datos personales de receta | `backend/src/presentation/dtos/venta.dto.js` |
+
+**Entidades y relaciones verificadas:**
+
+| Elemento del diagrama | Archivo real y evidencia |
+|---|---|
+| Venta | `backend/src/data/models/venta.js`: `Venta.init()` define los diez campos; `associate()` declara usuarioRegistrador, usuarioAnulador, detallesVenta y recetas. `ventaRepository.findAll()`/`findById()` seleccionan estos datos. |
+| Usuario | `backend/src/data/models/usuario.js`: `Usuario.init()` define id_usuario/nombre_usuario. `relacionesCabecera()` en venta.repository.js incluye ambos responsables con esos dos campos. |
+| DetalleVenta | `backend/src/data/models/detalle-venta.js`: `DetalleVenta.init()` define los siete campos seleccionados; `associate()` declara venta, receta y existencia. `findById()` incluye detallesVenta; no se recalculan importes. |
+| ExistenciaMedicamento | `backend/src/data/models/existencia-medicamento.js`: `ExistenciaMedicamento.init()` define los cinco campos; `associate()` declara medicamento. El include existencia de `findById()` selecciona identificación/vencimiento, sin cantidad_fisica ni promedio. |
+| Medicamento | `backend/src/data/models/medicamento.js`: `Medicamento.init()` define los siete campos mostrados; el include medicamento de `findById()` los selecciona. Son datos actuales, no snapshots de la venta. |
+| Receta | `backend/src/data/models/receta.js`: `Receta.init()` define id_receta/id_venta/resultado_revision; `associate()` declara venta y detallesVenta. El include recetas de `findById()` limita la consulta a esos campos. |
+
+**Caminos verificados:**
+
+| Camino | Comportamiento implementado |
+|---|---|
+| Listado | Combina idVenta, idUsuario del registrador, estadoOperacion y período desde/hasta inclusivo. campoFecha distingue fechaRegistro/fechaVenta y por defecto usa registro. Ordena por fecha_registro e id_venta descendentes. No restringe al usuario autenticado. |
+| Paginación | API: pagina positiva y limite de 1 a 100, por defecto 1/25. Conteo y página comparten una transacción REPEATABLE READ; cambiar página es otra consulta. No incluye detalles ni recetas en el listado. |
+| Detalle | Consulta ID válido con query vacío; devuelve cabecera, responsables públicos, detalles ordenados por ID, existencia/medicamento actuales y referencias de recetas por ID. Una venta inexistente produce 404. |
+| Interfaz | Borrador separado de consulta aplicada; Buscar y Limpiar actualizan URL. Los enlaces conservan la consulta al volver desde el detalle; recarga/Atrás/Adelante se interpretan mediante leerConsultaVenta. Distingue vacío, filtros inválidos, fallo de consulta y página fuera de rango. |
+
+**Aclaraciones:** borrador es estado real de VentaFilters; sus propiedades representan criterios visuales y no columnas nuevas. No se elevan query/filtros/venta/consulta locales ni campos de DTO a atributos propios de VentasPage. Los hooks de lectura y los callbacks anónimos de paginación se resumen; no se inventan métodos de cargar/aplicar filtros.
+
+La ficha no consulta MovimientoInventario ni expone stock/promedio actuales. Receta solo aporta referencias y resultado, nunca paciente, médico ni archivo. La consulta de recetas completas del Regente corresponde a CU32, no a una facultad general de los tres roles en CU29. Las fechas de registro, confirmación y anulación son distintas; una pendiente no tiene fecha efectiva de venta. Los importes se muestran como fueron registrados. Los enlaces de registrar/confirmar/anular/revisar no ejecutan esas operaciones por consultar la ficha. Disponer de filtros por período no convierte CU29 en el reporte pendiente CU38.
+
+### CU30 — Anular venta
+
+**Actor:** Administrador autenticado. **Endpoint:** `POST /api/ventas/:idVenta/anular`, sin query y con body exclusivo `{ motivo }`. **Vista:** `/ventas/:idVenta`; preparación y actualización reutilizan CU29.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(5) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(17) p::after{content:\" [auditoria]\";}.control .methods-group .label:nth-child(18) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Administrador["○<br/>─┼─<br/>╱ ╲<br/>Administrador"]
+    class Administrador { <<actor>> }
+    class Boundary["VentaAnularForm · frontend agrupado"] {
+        <<boundary>>
+        motivo
+        review
+        resultado
+        requiereConsulta
+        revisar()
+        prepararAnulacionVenta()
+        confirmar()
+        anular()
+        anularVenta()
+    }
+    class Control["ventaController · backend agrupado"] {
+        <<control>>
+        %% anularVenta() [controller]
+        anularVenta()
+        validateId()
+        validateSinFiltros()
+        validateAnular()
+        %% anularVenta() [service]
+        anularVenta()
+        findParaAnular()
+        findDetallesParaAnular()
+        findByIdParaAnular()
+        findParaAnularVenta()
+        findReversiones()
+        dividirYRedondear()
+        reintegrarPorAnulacionVenta()
+        create()
+        anular()
+        getVentaById()
+        findById()
+        %% ejecutarCambio() [auditoria]
+        ejecutarCambio()
+        %% registrarCambio() [auditoria]
+        registrarCambio()
+    }
+    class Venta {
+        <<entity>>
+        id_venta
+        id_usuario
+        estado_operacion
+        clave_operacion
+        fecha_registro
+        fecha_venta
+        total
+        fecha_anulacion
+        motivo_anulacion
+        id_usuario_anulador
+    }
+    class DetalleVenta {
+        <<entity>>
+        id_detalle_venta
+        id_venta
+        id_existencia
+        id_receta
+        cantidad
+        precio_unitario
+        subtotal
+    }
+    class ExistenciaMedicamento {
+        <<entity>>
+        id_existencia
+        id_medicamento
+        codigo_existencia
+        fecha_vencimiento
+        precision_vencimiento
+        cantidad_fisica
+        costo_unitario_promedio
+    }
+    class MovimientoInventario {
+        <<entity>>
+        id_movimiento
+        id_usuario
+        id_existencia
+        id_detalle_venta
+        id_detalle_compra
+        id_movimiento_original
+        direccion
+        cantidad
+        costo_unitario_aplicado
+        fecha_movimiento
+        motivo
+        observacion
+    }
+    class Usuario {
+        <<entity>>
+        id_usuario
+        nombre_usuario
+    }
+    class Medicamento {
+        <<entity>>
+        id_medicamento
+        codigo_medicamento
+        nombre_comercial
+        forma_farmaceutica
+        presentacion
+        unidad_inventario
+        estado
+    }
+    class Receta {
+        <<entity>>
+        id_receta
+        id_venta
+        resultado_revision
+    }
+    Administrador --> Boundary : indica motivo revisa y confirma
+    Boundary ..> Control : POST /api/ventas/#58;idVenta/anular
+    Control --> Venta : bloquea anula y relee
+    Control --> DetalleVenta : comprueba salidas y conserva detalles
+    Control --> ExistenciaMedicamento : reintegra saldo y promedio si confirmada
+    Control --> MovimientoInventario : valida originales y crea reversiones
+    Control --> Usuario : incluye registrador y anulador publicos
+    Control --> Medicamento : incluye catalogo actual en respuesta
+    Control --> Receta : incluye referencias conservadas en respuesta
+    Venta -- Usuario : usuarioRegistrador y usuarioAnulador
+    Venta -- DetalleVenta : detallesVenta
+    Venta -- Receta : recetas
+    DetalleVenta -- Receta : receta
+    DetalleVenta -- ExistenciaMedicamento : existencia
+    ExistenciaMedicamento -- Medicamento : medicamento
+    MovimientoInventario -- DetalleVenta : detalleVenta
+    MovimientoInventario -- ExistenciaMedicamento : existencia
+    MovimientoInventario -- Usuario : usuario
+    MovimientoInventario -- MovimientoInventario : movimientoOriginal y movimientoReversion
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Administrador" actor
+```
+
+**Colaboración:** VentaDetalle mantiene motivo y pasa setMotivo como onChange y anular como onSubmit a VentaAnularForm. revisar prepara review mediante prepararAnulacionVenta; confirmar llama a anular y este utiliza anularVenta HTTP. El backend valida ID/query/motivo, bloquea cabecera/detalles y distingue pendiente de confirmada. Para una confirmada comprueba originales y reversiones, planifica devolución por existencia antes de escribir, reintegra saldos/promedios, registra las reversiones y marca ANULADA. Relee la ficha y registra el éxito de auditoría en la misma transacción.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| `VentaAnularForm`, `revisar()`, `confirmar()`; estado `review` | `frontend/src/features/ventas/components/VentaAnularForm.jsx` |
+| `prepararAnulacionVenta()`; recorta y valida motivo obligatorio de hasta 255 caracteres sin controles | `frontend/src/features/ventas/utils/ventaAnulacion.js` |
+| `anular()` de VentaDetalle; estado `motivo`, `resultado`, `requiereConsulta`; conexión onSubmit al formulario | `frontend/src/features/ventas/pages/VentaDetailPage.jsx` |
+| `anularVenta()` de Boundary: `api.post()` con `{ motivo }` | `frontend/src/features/ventas/services/venta.service.js` |
+| `anularVenta() [controller]`; toma responsable de req.usuario y llama a Service mediante ejecutarConAuditoria | `backend/src/presentation/controllers/venta.controller.js` |
+| `validateId()`, `validateSinFiltros()`, `validateAnular()` | `backend/src/business/validators/venta.validator.js` |
+| `anularVenta() [service]`, `getVentaById()`; ejecución privada `#anularVenta()` coordina comprobaciones y escritura | `backend/src/business/services/venta.service.js` |
+| `findParaAnular()`, `findDetallesParaAnular()`, `anular()`, `findById()` | `backend/src/data/repositories/venta.repository.js` |
+| `findByIdParaAnular()`, `reintegrarPorAnulacionVenta()`; actualiza saldo/promedio con precondiciones | `backend/src/data/repositories/existencia-medicamento.repository.js` |
+| `findParaAnularVenta()`, `findReversiones()`, `create()` de Control | `backend/src/data/repositories/movimiento-inventario.repository.js` |
+| `dividirYRedondear()`; ventaService lo llama para el promedio final por existencia | `backend/src/shared/utils/decimal.js` |
+| `ejecutarCambio()`, `registrarCambio()` y conexiones HTTP/roles | Correspondencia compartida de esta fase. |
+
+**Entidades y relaciones verificadas:**
+
+| Elemento del diagrama | Archivo real y evidencia |
+|---|---|
+| Venta | `backend/src/data/models/venta.js`: `Venta.init()` define los diez campos; `associate()` declara usuarioRegistrador, usuarioAnulador, detallesVenta y recetas. `ventaRepository.anular()` modifica solo estado, fecha_anulacion, motivo_anulacion e id_usuario_anulador. |
+| DetalleVenta | `backend/src/data/models/detalle-venta.js`: `DetalleVenta.init()` define los siete campos; `associate()` declara venta, existencia, receta y movimientosInventario. `findDetallesParaAnular()` bloquea sus registros; `findById()` conserva los datos completos en la respuesta. |
+| ExistenciaMedicamento | `backend/src/data/models/existencia-medicamento.js`: `ExistenciaMedicamento.init()` define los siete campos; `associate()` declara medicamento. Saldo/promedio se leen y reintegran para confirmadas; identificación/vencimiento se incluyen al releer, sin exigir vendibilidad. |
+| MovimientoInventario | `backend/src/data/models/movimiento-inventario.js`: `MovimientoInventario.init()` define los doce campos; `associate()` declara detalleVenta, existencia, usuario, movimientoOriginal y movimientoReversion. `findParaAnularVenta()` lee originales; `findReversiones()` comprueba ausencia de compensación; `create()` persiste las nuevas entradas referenciadas. |
+| Usuario | `backend/src/data/models/usuario.js`: `Usuario.init()` define id_usuario/nombre_usuario. `ventaRepository.findById()` incluye ambos responsables mediante `relacionesCabecera()`; el responsable de reversión procede de la sesión. |
+| Medicamento | `backend/src/data/models/medicamento.js`: `Medicamento.init()` define los siete campos seleccionados. El include medicamento de `ventaRepository.findById()` los devuelve; CU30 no llama a medicamentoRepository ni modifica el catálogo. |
+| Receta | `backend/src/data/models/receta.js`: `Receta.init()` define los tres campos seleccionados; `associate()` declara venta y detallesVenta. El include recetas de `ventaRepository.findById()` conserva referencias/resultado, sin revisión ni escritura de recetas. |
+
+**Integridad y valoración verificadas:**
+
+| Camino o comprobación | Condiciones y efecto |
+|---|---|
+| Estado | Solo PENDIENTE/CONFIRMADA, sin datos previos de anulación y con fecha_venta coherente con el estado. Una segunda anulación se rechaza. Motivo obligatorio, sin caracteres de control, hasta 255 caracteres. |
+| Pendiente | No reintegra saldo ni crea reversiones. Si sus detalles tienen movimientos asociados, rechaza la inconsistencia. Conserva fecha_venta NULL. |
+| Confirmada | Exige detalles y una única SALIDA VENTA original por detalle, misma existencia/cantidad, sin detalle de compra ni movimiento original asociado. Rechaza originales incompletos/duplicados o reversiones existentes. |
+| Valoración | Agrupa cantidades y valores originales por existencia. saldoFinal = saldoActual + cantidadDevuelta; promedioFinal = redondear6((saldoActual × promedioActual + valorDevuelto) / saldoFinal), mediante dividirYRedondear. No usa precio de venta ni las modalidades B1/A de Compras. |
+| Reversión | Una ENTRADA ANULACION_VENTA por original, con misma existencia, cantidad y costo aplicado; referencia al movimiento original y detalle de venta. Responsable/fecha/motivo proceden del backend/sesión y de la solicitud validada. No altera los originales. |
+| Atomicidad | Bloquea cabecera/detalles y existencias originales en orden por ID. Valida todo antes de escribir; saldo/promedio, reversiones, estado y éxito auditado se confirman o revierten juntos. UNIQUE de id_movimiento_original impide otra compensación del mismo original. |
+
+**Aclaraciones:** getVentaById aquí es la relectura interna del Service, no el Controller de consulta ni un GET adicional. Los métodos públicos y privados del Service no se atribuyen al modelo Venta. Medicamento, Usuario y Receta se incluyen porque participan en la respuesta real; las flechas de Control especifican ese alcance de lectura, no una modificación de todos ellos. Las referencias NULL a detalle_compra no incorporan Compra/DetalleCompra. La asociación de MovimientoInventario consigo mismo es real y no una segunda clase de Reversión.
+
+El reintegro devuelve stock físico; vencimiento o medicamento inactivo no impiden compensar y no se garantiza stock vendible. Se rechazan saldos/promedios inconsistentes o fuera de rango. Se conservan clave, total, fecha de registro, fecha de venta original si existe, detalles y recetas. `toDetalleVenta()` de `backend/src/presentation/dtos/venta.dto.js` entrega la ficha anulada sin datos personales de receta ni movimientos completos.
+
+Resultado 200 tras commit. anular de VentaDetalle verifica ID, estado, fecha, responsable y motivo antes de sustituir resultado y retirar el formulario. Ante 400 conserva motivo; 404/409/red/500 requieren actualizar por CU29 antes de otro envío y 401/403 bloquean la operación. No hay reenvíos automáticos ni anulación parcial. La revisión visual del motivo en Modal no anula por sí sola.
+
+## 14. Cierre del bloque Ventas y cobertura acumulada
+
+| Caso de uso | Diagramas añadidos | Alcance |
+|---|---|---|
+| CU28 — Registrar venta | 1 | Pendiente sin inventario y confirmación posterior con recetas/FEFO/salidas. |
+| CU29 — Consultar ventas | 1 | Listado paginado con filtros/URL y detalle con referencias públicas. |
+| CU30 — Anular venta | 1 | Pendiente sin inventario o confirmada con devolución valorizada/reversiones. |
+| **Total de Ventas** | **3** | **Tres CU, sin fusionar ni dividir sus objetivos.** |
+| **Cobertura al cierre de Ventas** | **38** | **37 CU: CU01–CU30, CU33–CU37, CU40 y CU42; CU08 conserva dos variantes. Antecedente previo al bloque Recetas.** |
+
+**Diferencias y pendientes documentales:**
+
+1. Se incorpora la implementación actual, incluidos archivos nuevos todavía no versionados. Su existencia no se confunde con despliegue, migración aplicada o aceptación manual. La migración de nulabilidad de recetas `backend/src/data/database/migrations/20261101120000-allow-null-receta-archivo.js` sigue siendo un requisito operativo separado para el registro sin adjuntos.
+2. CU28 no crea recetas junto con la cabecera: el contrato actual registra pendiente/detalles en una operación y recetas/vínculos en otra. La formulación de atomicidad conjunta de RN57 y algunas descripciones del catálogo no coincide literalmente con este recorrido; se documenta la implementación sin corregir otros archivos ni inventar una operación integral.
+3. `docs/ai/contexto-maestro.md`, `docs/ai/casos-uso.md` y `docs/ai/requerimientos.md` conservan notas de frontend pendiente/no acreditado e integración futura con auditoría. El software inspeccionado ya implementa los flujos anteriores; esta revisión documental no ejecuta sus pruebas ni sustituye evidencia de aceptación.
+4. Al cerrar Ventas, CU31/CU32 quedaron para el siguiente bloque; sus diagramas se incorporan posteriormente en la sección 15. CU38/CU39/CU41 siguen previstos, no implementados como casos completos; los listados filtrados y la pérdida de un retiro no se renombran como reportes. La sección final del contexto maestro confirma esta exclusión.
+
+**Fuentes de contraste:** CU28–CU30 de `docs/ai/casos-uso.md`, RF23–RF26/RF49 de `docs/ai/requerimientos.md`, RN48–RN62/RN71–RN74/RN77–RN79 de `docs/ai/reglas-negocio.md` y secciones 4.11/38 de `docs/ai/contexto-maestro.md`. Elementos, atributos y conexiones se respaldan en las tablas de cada CU; la auditoría transversal conserva el alcance simplificado de los bloques anteriores.
+
+**Verificación del bloque:** revisión directa de declaraciones y usos, campos de modelos, includes de respuesta, asociaciones, rutas/permisos y callbacks con propietario identificado. La comprobación documental en Node confirma 37 CU/38 diagramas, un Boundary/un Control por diagrama nuevo, 78 apariciones de métodos con correspondencia y 130 apariciones de atributos Entity definidos en sus modelos; comprueba además las 73 referencias a archivos de la fase, los extremos declarados de las relaciones y los 14 selectores CSS de procedencia. Las firmas se omiten deliberadamente: solo se representan nombres reales con `()`, sin parámetros/retornos, tipos ni visibilidad inventada.
+
+Los 35 bloques Mermaid anteriores se conservan exactamente por comparación SHA-256 con la línea base, al igual que el análisis académico original. Los cambios de esta entrega se limitan a este archivo; `git diff --check` acotado al documento no informa errores de espacios. Mermaid tiene revisión estática de estructura, directivas y relaciones, no validación mediante parser ni renderizado: no hay paquete Mermaid/DOM utilizable en el proyecto; el bundle Mermaid 10.9.5 existente en temporales exige document y no se ejecuta sin DOM. No se instalaron dependencias ni se abrieron navegadores, generaron vistas previas, ejecutaron pruebas funcionales o conectó con MySQL.
+
+## 15. Fase 8 — Recetas
+
+### Condiciones compartidas
+
+| Caso de uso | Actor autorizado | Alcance |
+|---|---|---|
+| CU31 — Registrar receta | Regente o Vendedor | Formulario sin adjuntos y vinculación opcional con detalles de una venta pendiente. |
+| CU32 — Revisar receta | Regente | Consulta por venta y decisión APROBADA/RECHAZADA de una receta pendiente de revisión. |
+
+**Notación y agrupación:** se conservan los criterios BCE de Fase 7: un Boundary y un Control por dibujo, agrupaciones identificadas de funciones/componentes y clases reales, atributos sin tipos/visibilidad y operaciones con nombre real y `()` sin parámetros/retornos representados. El estado React se identifica por propietario en las tablas; datos de URL, variables locales y DTO no se transforman en atributos de esas agrupaciones. La consulta de ventas de apoyo se incluye resumida con sus métodos reales de Controller/Validator/Service/Repository; su inventario completo permanece en CU29. Solo se seleccionan los campos de sus entidades pertinentes para identificar venta, responsables y productos, no toda la respuesta HTTP.
+
+**Permisos y recorrido HTTP:** `frontend/src/app/router.jsx`, símbolo `router`, monta RecetaFormPage para Regente/Vendedor y RecetasPage/RecetaDetailPage solo para Regente. `/recetas/registrar` reutiliza VentasPage en modo registrarReceta y `/recetas` en modo revisarRecetas; no son listados globales de recetas. `backend/src/presentation/routes/venta.router.js`, símbolo `ventaRouter`, autentica y monta recetaRouter en `/:idVenta/recetas`. `backend/src/presentation/routes/receta.router.js`, símbolo `recetaRouter`, conserva idVenta con mergeParams y aplica requireRole por operación: POST de registro Regente/Vendedor; GET de listado/detalle y POST de revisión solo Regente.
+
+Boundary–Control resume frontend → servicios HTTP → `api` de `frontend/src/api/api.js` → routers/middlewares → Controller. Control–Entity resume el acceso mediante Repositories, incluidos los de Venta para la preparación; no afirma que React o recetaController consulten modelos directamente. `ejecutarConAuditoria()` de `backend/src/shared/utils/auditoria-http.js` transporta el contexto de sesión a recetaService, sin req/res en negocio. `ejecutarCambio()`, `registrarCambio()` e `intentarRegistrar()` corresponden a `bitacoraAuditoriaService` de `backend/src/business/services/bitacora-auditoria.service.js`; las cajas no los atribuyen físicamente a recetaController.
+
+**Límites funcionales:** registrar o revisar no confirma la venta, no genera movimientos ni modifica saldos. El sistema transcribe y controla una receta física, no emite una prescripción. Las consultas completas de receta están reservadas al Regente aunque el Vendedor pueda registrar y recibir el resultado de su propio POST. La revisión no puede sustituirse silenciosamente ni repetirse sobre datos de revisión ya presentes. La infraestructura de auditoría se resume como en Fases 1–7, sin una entidad transversal adicional en estos dos dibujos.
+
+### CU31 — Registrar receta
+
+**Actores:** Regente o Vendedor autenticado. **Endpoint principal:** `POST /api/ventas/:idVenta/recetas`, sin query. **Apoyo:** `GET /api/ventas/:idVenta` de CU29. **Vistas:** selección en `/recetas/registrar` y formulario `/ventas/:idVenta/recetas/nueva`.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(4) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(6) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(10) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(16) p::after{content:\" [auditoria]\";}.control .methods-group .label:nth-child(17) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Regente["○<br/>─┼─<br/>╱ ╲<br/>Regente"]
+    class Vendedor["○<br/>─┼─<br/>╱ ╲<br/>Vendedor"]
+    class Regente { <<actor>> }
+    class Vendedor { <<actor>> }
+    class Boundary["RecetaForm · frontend agrupado"] {
+        <<boundary>>
+        form.numeroReceta
+        form.fechaReceta
+        form.nombrePaciente
+        form.documentoPaciente
+        form.nombreMedico
+        form.modalidad
+        form.observacion
+        form.idsDetallesVenta
+        review
+        blocked
+        consultarVenta()
+        getVenta()
+        prepararReceta()
+        revisar()
+        guardar()
+        guardar()
+        createReceta()
+    }
+    class Control["recetaController · backend agrupado"] {
+        <<control>>
+        %% getVentaById() [controller]
+        getVentaById()
+        validateId()
+        validateSinFiltros()
+        %% getVentaById() [service]
+        getVentaById()
+        findById()
+        %% createReceta() [controller]
+        createReceta()
+        validateVentaId()
+        validateSinFiltros()
+        validateCreate()
+        %% createReceta() [service]
+        createReceta()
+        findParaReceta()
+        findDetallesDeVenta()
+        create()
+        vincularDetalles()
+        findByIdDeVenta()
+        %% ejecutarCambio() [auditoria]
+        ejecutarCambio()
+        %% registrarCambio() [auditoria]
+        registrarCambio()
+    }
+    class Receta {
+        <<entity>>
+        id_receta
+        id_venta
+        numero_receta
+        fecha_receta
+        nombre_paciente
+        documento_paciente
+        nombre_medico
+        modalidad
+        observacion
+        archivo_receta
+        resultado_revision
+        id_usuario_validador
+        fecha_validacion
+        fecha_registro
+    }
+    class Venta {
+        <<entity>>
+        id_venta
+        estado_operacion
+        id_usuario
+        id_usuario_anulador
+    }
+    class DetalleVenta {
+        <<entity>>
+        id_detalle_venta
+        id_venta
+        id_existencia
+        id_receta
+        cantidad
+    }
+    class ExistenciaMedicamento {
+        <<entity>>
+        id_existencia
+        id_medicamento
+    }
+    class Medicamento {
+        <<entity>>
+        id_medicamento
+        nombre_comercial
+    }
+    class Usuario {
+        <<entity>>
+        id_usuario
+        nombre_usuario
+    }
+    Regente --> Boundary : transcribe selecciona y registra
+    Vendedor --> Boundary : transcribe selecciona y registra
+    Boundary ..> Control : GET /api/ventas/#58;idVenta de apoyo
+    Boundary ..> Control : POST /api/ventas/#58;idVenta/recetas
+    Control --> Receta : crea pendiente y relee sin archivo
+    Control --> Venta : consulta y bloquea estado pendiente
+    Control --> DetalleVenta : prepara seleccion y vincula si se indican IDs
+    Control --> ExistenciaMedicamento : incluye referencia en consulta de apoyo
+    Control --> Medicamento : incluye nombre del producto en apoyo
+    Control --> Usuario : incluye responsables publicos solo en apoyo
+    Receta -- Venta : venta
+    Receta -- DetalleVenta : detallesVenta
+    Venta -- DetalleVenta : detallesVenta
+    Venta -- Usuario : usuarioRegistrador y usuarioAnulador
+    DetalleVenta -- ExistenciaMedicamento : existencia
+    ExistenciaMedicamento -- Medicamento : medicamento
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Regente,Vendedor" actor
+```
+
+**Colaboración:** RecetaFormPage obtiene idVenta y renderiza el componente local RecetaRegistro. consultarVenta/getVenta cargan la ficha de CU29 y RecetaRegistro mantiene form, inicializado mediante formularioRecetaInicial. RecetaForm recibe form y onChange; revisar llama a prepararReceta y muestra ConfirmDialog. guardar del formulario llama, mediante onSubmit, a guardar de RecetaRegistro; este utiliza createReceta HTTP. El backend bloquea la venta pendiente, comprueba los detalles seleccionados, crea la receta con revisión pendiente y vincula únicamente esos detalles, todo junto con la auditoría en una transacción. La respuesta se verifica antes de volver a la venta.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| `RecetaRegistro`, `consultarVenta()` de módulo, segundo `guardar()`; estado `form` y `blocked`; conexión onSubmit a RecetaForm | `frontend/src/features/recetas/pages/RecetaFormPage.jsx` |
+| `RecetaForm`, `revisar()`, primer `guardar()`; estado `review`; guardar se pasa como onConfirm a ConfirmDialog | `frontend/src/features/recetas/components/RecetaForm.jsx` |
+| `prepararReceta()`; `formularioRecetaInicial()` define las ocho propiedades de form representadas y se utiliza como inicializador del estado | `frontend/src/features/recetas/utils/recetaForm.js` |
+| `getVenta()` de Boundary; `api.get()` para la consulta de apoyo | `frontend/src/features/ventas/services/venta.service.js` |
+| `createReceta()` de Boundary; `api.post()` con datos permitidos e idsDetallesVenta opcional | `frontend/src/features/recetas/services/receta.service.js` |
+| `getVentaById() [controller]` de ventaController; consulta preparatoria, no método de recetaController | `backend/src/presentation/controllers/venta.controller.js` |
+| `validateId()`, primer `validateSinFiltros()` de Control: ventaValidator | `backend/src/business/validators/venta.validator.js` |
+| `getVentaById() [service]` de ventaService | `backend/src/business/services/venta.service.js` |
+| `findById()` con sus includes de venta; `findParaReceta()` que bloquea id_venta/estado_operacion | `backend/src/data/repositories/venta.repository.js` |
+| `createReceta() [controller]`; llama a Validator/Service mediante ejecutarConAuditoria | `backend/src/presentation/controllers/receta.controller.js` |
+| `validateVentaId()`, segundo `validateSinFiltros()`, `validateCreate()`: recetaValidator | `backend/src/business/validators/receta.validator.js` |
+| `createReceta() [service]`; delega en el método privado `#createReceta()` | `backend/src/business/services/receta.service.js` |
+| `findDetallesDeVenta()`, `create()`, `vincularDetalles()`, `findByIdDeVenta()` | `backend/src/data/repositories/receta.repository.js` |
+| `ejecutarCambio()`, `registrarCambio()`; conexiones y permisos | Correspondencia compartida de Fase 8 y métodos de bitacoraAuditoriaService allí localizados. |
+
+**Entidades y relaciones verificadas:**
+
+| Elemento del diagrama | Archivo real y evidencia |
+|---|---|
+| Receta | `backend/src/data/models/receta.js`: `Receta.init()` define los catorce campos representados; `associate()` declara venta y detallesVenta. `recetaService.#createReceta()` escribe esos campos, incluidos archivo/revisión/validador/fecha_validacion en NULL; `recetaRepository.findByIdDeVenta()` relee sin archivo_receta. No se consulta Usuario por el validador nulo. |
+| Venta | `backend/src/data/models/venta.js`: `Venta.init()` define los cuatro campos seleccionados; `associate()` declara detallesVenta, usuarioRegistrador y usuarioAnulador. `findParaReceta()` de ventaRepository comprueba estado; `findById()` aporta los responsables públicos y productos en el GET de apoyo, sin modificarlos. |
+| DetalleVenta | `backend/src/data/models/detalle-venta.js`: `DetalleVenta.init()` define los cinco campos seleccionados; `associate()` declara venta, receta y existencia. El GET de apoyo aporta identificación/cantidad/producto; `findDetallesDeVenta()` comprueba id_detalle_venta/id_venta/id_receta y `vincularDetalles()` actualiza solo id_receta. |
+| ExistenciaMedicamento | `backend/src/data/models/existencia-medicamento.js`: `ExistenciaMedicamento.init()` define id_existencia/id_medicamento; `associate()` declara medicamento. `ventaRepository.findById()` incluye existencia como enlace al producto presentado por RecetaForm, sin consultar/modificar su saldo para registrar receta. |
+| Medicamento | `backend/src/data/models/medicamento.js`: `Medicamento.init()` define id_medicamento/nombre_comercial. El include medicamento de `ventaRepository.findById()` y `RecetaForm` respaldan la identificación de productos seleccionables; el POST no llama a medicamentoRepository. |
+| Usuario | `backend/src/data/models/usuario.js`: `Usuario.init()` define id_usuario/nombre_usuario. `relacionesCabecera()` de venta.repository.js incluye esos campos como usuarioRegistrador/usuarioAnulador en la respuesta preparatoria de CU29; no se muestran como campos del formulario ni se crea un usuario. |
+
+**Condiciones verificadas:**
+
+| Aspecto | Comportamiento implementado |
+|---|---|
+| Formulario | Fecha válida, nombre/documento del paciente, médico y modalidad obligatorios; número y observación opcionales. El Validator rechaza campos adicionales, archivos y datos de revisión. La interfaz recorta textos y comprueba longitudes/formato; el backend repite validación estructural. |
+| Venta | Debe existir y estar PENDIENTE al adquirir el bloqueo. Registrar no modifica la venta ni verifica stock, vencimiento o FEFO. El bloqueo de cabecera coordina registro con revisión, confirmación y anulación. |
+| Vínculos | Si se envía idsDetallesVenta, debe contener al menos un ID sin duplicados y todos deben pertenecer a la venta y no tener receta. La comprobación y actualización son parte de la misma transacción; se exige actualizar todos los seleccionados. No se sustituyen vínculos anteriores. |
+| Sin selección | prepararReceta omite idsDetallesVenta cuando el arreglo visual está vacío. Se registra la receta de la venta, pero no respalda automáticamente sus productos. No se envía un arreglo vacío a la API. |
+| Persistencia | Crea número/observación opcionales como NULL si faltan, archivo_receta NULL y resultado_revision/id_usuario_validador/fecha_validacion NULL, incluso si registra el Regente. La fecha de registro procede del backend. |
+| Atomicidad | Receta, vínculos seleccionados y éxito auditado se confirman juntos; si falla cualquier parte se revierte el POST. Es una transacción distinta del registro previo de la venta pendiente. No hay MovimientoInventario. |
+
+**Aclaraciones:** el dibujo selecciona todas las entidades del recorrido principal y su consulta preparatoria, pero no repite cada campo de la ficha de CU29. Medicamento/ExistenciaMedicamento/Usuario solo participan aquí en esa preparación HTTP; las flechas no implican consultas adicionales del POST. La asociación Receta–Usuario de validador no se representa en este alta porque se escribe un ID nulo, sin validador asignado; Usuario aparece por los responsables de la venta. archivo_receta es un campo real escrito NULL, no una carga de archivos, y por eso aparece en Entity pero no en Boundary. Paciente y médico son textos de Receta, no entidades nuevas.
+
+`toDetalleReceta()` de `backend/src/presentation/dtos/receta.dto.js` devuelve datos de formulario y revisión sin referencias históricas de archivo. `recetaController.createReceta()` responde 201 y Cache-Control no-store tras el commit. RecetaRegistro verifica IDs y revisión pendiente; navega al detalle de venta llevando solo el identificador de receta en el estado de navegación, no datos personales. Tras error de red/500/401/403/404/409 bloquea el envío y exige volver a consultar; 400 permite corregir. No hay clave de idempotencia ni reintentos automáticos: no se puede afirmar que repetir el POST sea seguro. El almacenamiento del formulario sin archivo requiere la migración de nulabilidad identificada en el cierre de Ventas, cuya aplicación en destino no se comprobó aquí.
+
+### CU32 — Revisar receta
+
+**Actor:** Regente autenticado. **Endpoints:** `GET /api/ventas/:idVenta/recetas`, `GET /api/ventas/:idVenta/recetas/:idReceta` y `POST /api/ventas/:idVenta/recetas/:idReceta/revisar`. Detalle/revisión exigen query vacío. **Apoyo:** `GET /api/ventas/:idVenta` de CU29. **Vistas:** selección de venta en `/recetas`, listado `/ventas/:idVenta/recetas` y detalle `/ventas/:idVenta/recetas/:idReceta`.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(2) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(3) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(9) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(10) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(11) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(17) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(20) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(22) p::after{content:\" [auditoria]\";}.control .methods-group .label:nth-child(23) p::after{content:\" [auditoria]\";}.control .methods-group .label:nth-child(24) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Regente["○<br/>─┼─<br/>╱ ╲<br/>Regente"]
+    class Regente { <<actor>> }
+    class Boundary["RecetaDetailPage · frontend agrupado"] {
+        <<boundary>>
+        form.resultadoRevision
+        form.observacion
+        review
+        resultado
+        blocked
+        consultarRecetas()
+        consultarDetalle()
+        leerConsultaRecetas()
+        cambiar()
+        actualizar()
+        revisionPendiente()
+        prepararRevision()
+        revisar()
+        guardar()
+        guardar()
+        getVenta()
+        getRecetas()
+        getReceta()
+        revisarReceta()
+    }
+    class Control["recetaController · backend agrupado"] {
+        <<control>>
+        %% getRecetas() [controller]
+        getRecetas()
+        %% getRecetaById() [controller]
+        getRecetaById()
+        %% revisarReceta() [controller]
+        revisarReceta()
+        validateVentaId()
+        validateConsulta()
+        validateRecetaId()
+        validateSinFiltros()
+        validateRevision()
+        %% getRecetas() [service]
+        getRecetas()
+        %% getRecetaById() [service]
+        getRecetaById()
+        %% revisarReceta() [service]
+        revisarReceta()
+        findReferencia()
+        findAllByVenta()
+        findByIdDeVenta()
+        findParaReceta()
+        registrarRevision()
+        %% getVentaById() [controller]
+        getVentaById()
+        validateId()
+        validateSinFiltros()
+        %% getVentaById() [service]
+        getVentaById()
+        findById()
+        %% ejecutarCambio() [auditoria]
+        ejecutarCambio()
+        %% intentarRegistrar() [auditoria]
+        intentarRegistrar()
+        %% registrarCambio() [auditoria]
+        registrarCambio()
+    }
+    class Receta {
+        <<entity>>
+        id_receta
+        id_venta
+        numero_receta
+        fecha_receta
+        nombre_paciente
+        documento_paciente
+        nombre_medico
+        modalidad
+        observacion
+        resultado_revision
+        id_usuario_validador
+        fecha_validacion
+        fecha_registro
+    }
+    class Venta {
+        <<entity>>
+        id_venta
+        estado_operacion
+        id_usuario
+        id_usuario_anulador
+    }
+    class DetalleVenta {
+        <<entity>>
+        id_detalle_venta
+        id_venta
+        id_receta
+        id_existencia
+        cantidad
+    }
+    class ExistenciaMedicamento {
+        <<entity>>
+        id_existencia
+        id_medicamento
+    }
+    class Medicamento {
+        <<entity>>
+        id_medicamento
+        nombre_comercial
+    }
+    class Usuario {
+        <<entity>>
+        id_usuario
+        nombre_usuario
+    }
+    Regente --> Boundary : consulta receta fisica y registra decision
+    Boundary ..> Control : GET /api/ventas/#58;idVenta de apoyo
+    Boundary ..> Control : GET /api/ventas/#58;idVenta/recetas
+    Boundary ..> Control : GET /api/ventas/#58;idVenta/recetas/#58;idReceta
+    Boundary ..> Control : POST /api/ventas/#58;idVenta/recetas/#58;idReceta/revisar
+    Control --> Receta : consulta y registra revision una sola vez
+    Control --> Venta : consulta referencia y bloquea pendiente al revisar
+    Control --> DetalleVenta : incluye productos respaldados solo en apoyo
+    Control --> ExistenciaMedicamento : enlaza producto solo en apoyo
+    Control --> Medicamento : incluye nombre actual solo en apoyo
+    Control --> Usuario : incluye responsables de venta solo en apoyo
+    Receta -- Venta : venta
+    Receta -- Usuario : usuarioValidador
+    Receta -- DetalleVenta : detallesVenta
+    Venta -- DetalleVenta : detallesVenta
+    Venta -- Usuario : usuarioRegistrador y usuarioAnulador
+    DetalleVenta -- ExistenciaMedicamento : existencia
+    ExistenciaMedicamento -- Medicamento : medicamento
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Regente" actor
+```
+
+**Colaboración:** consultarRecetas de módulo obtiene en paralelo getVenta y getRecetas; RecetasPage presenta el resumen paginado, permite cambiar página/límite y enlaza al detalle. consultarDetalle obtiene getVenta/getReceta en paralelo; RecetaDetalle presenta datos personales y productos respaldados, inicializa la observación y habilita RecetaRevisionForm solo si venta y revisión están pendientes. revisar del formulario usa prepararRevision y abre ConfirmDialog; guardar del formulario llama a guardar de RecetaDetalle y este envía revisarReceta HTTP. El backend bloquea venta/receta, registra conjuntamente decisión, responsable de sesión, fecha y observación, relee y audita en la misma transacción.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| `RecetasPage`, `consultarRecetas()` de módulo y `cambiar()` local; getVenta/getRecetas en paralelo y callbacks de Pagination | `frontend/src/features/recetas/pages/RecetasPage.jsx` |
+| `RecetaDetalle`, `consultarDetalle()` de módulo, `actualizar()`, segundo `guardar()`; estado `form.resultadoRevision`, `form.observacion`, `resultado`, `blocked` | `frontend/src/features/recetas/pages/RecetaDetailPage.jsx` |
+| `RecetaRevisionForm`, `revisar()`, primer `guardar()`; estado `review`; conexión onConfirm/guardar y onSubmit/guardar de RecetaDetalle | `frontend/src/features/recetas/components/RecetaRevisionForm.jsx` |
+| `leerConsultaRecetas()`, `revisionPendiente()`, `prepararRevision()` | `frontend/src/features/recetas/utils/recetaForm.js` |
+| `getVenta()` de Boundary, HTTP de apoyo | `frontend/src/features/ventas/services/venta.service.js` |
+| `getRecetas()`, `getReceta()`, `revisarReceta()` de Boundary; peticiones mediante api con los endpoints indicados | `frontend/src/features/recetas/services/receta.service.js` |
+| `getRecetas() [controller]`, `getRecetaById() [controller]`, `revisarReceta() [controller]`; llaman a recetaValidator/recetaService mediante ejecutarConAuditoria | `backend/src/presentation/controllers/receta.controller.js` |
+| `validateVentaId()`, `validateConsulta()`, `validateRecetaId()`, primer `validateSinFiltros()`, `validateRevision()` | `backend/src/business/validators/receta.validator.js` |
+| `getRecetas() [service]`, `getRecetaById() [service]`, `revisarReceta() [service]`; consultas auditadas y revisión transaccional | `backend/src/business/services/receta.service.js` |
+| `findAllByVenta()`, `findByIdDeVenta()`, `registrarRevision()` | `backend/src/data/repositories/receta.repository.js` |
+| `findReferencia()`, `findParaReceta()`, `findById()`; las dos primeras leen estado/referencia y la última devuelve la ficha de apoyo | `backend/src/data/repositories/venta.repository.js` |
+| `getVentaById() [controller]` de ventaController | `backend/src/presentation/controllers/venta.controller.js` |
+| `validateId()`, segundo `validateSinFiltros()`: ventaValidator | `backend/src/business/validators/venta.validator.js` |
+| `getVentaById() [service]` de ventaService | `backend/src/business/services/venta.service.js` |
+| `ejecutarCambio()`, `intentarRegistrar()`, `registrarCambio()` | `backend/src/business/services/bitacora-auditoria.service.js` |
+
+**Entidades y relaciones verificadas:**
+
+| Elemento del diagrama | Archivo real y evidencia |
+|---|---|
+| Receta | `backend/src/data/models/receta.js`: `Receta.init()` define los trece campos seleccionados; `associate()` declara venta, usuarioValidador y detallesVenta. `atributosResumen`/`findByIdDeVenta()` de recetaRepository delimitan resumen/detalle; `registrarRevision()` actualiza resultado_revision/id_usuario_validador/fecha_validacion/observacion. archivo_receta no se consulta y se omite. |
+| Venta | `backend/src/data/models/venta.js`: `Venta.init()` define los cuatro campos seleccionados; `associate()` declara detallesVenta y ambos responsables. `findReferencia()` comprueba existencia para los GET; `findParaReceta()` bloquea y comprueba pendiente en la revisión; `findById()` aporta el contexto de CU29 sin modificarlo. |
+| DetalleVenta | `backend/src/data/models/detalle-venta.js`: `DetalleVenta.init()` define los cinco campos; `associate()` declara venta, receta y existencia. `ventaRepository.findById()` aporta los detalles; RecetaDetalle filtra por idReceta y muestra idDetalleVenta/cantidad, sin actualizar vínculos en CU32. |
+| ExistenciaMedicamento | `backend/src/data/models/existencia-medicamento.js`: `ExistenciaMedicamento.init()` define id_existencia/id_medicamento; `associate()` declara medicamento. El include existencia de `ventaRepository.findById()` enlaza el detalle con el producto presentado; no se lee stock para decidir la revisión. |
+| Medicamento | `backend/src/data/models/medicamento.js`: `Medicamento.init()` define id_medicamento/nombre_comercial. El include medicamento de `ventaRepository.findById()` y la presentación de RecetaDetalle respaldan esos campos; la revisión no consulta medicamentoRepository. |
+| Usuario | `backend/src/data/models/usuario.js`: `Usuario.init()` define id_usuario/nombre_usuario. `relacionesCabecera()` de ventaRepository transporta ambos responsables en la lectura de apoyo. La asociación Receta.usuarioValidador se respalda en receta.js; `registrarRevision()` persiste el ID del Regente autenticado, sin leer nombre ni datos de su cuenta. |
+
+**Caminos verificados:**
+
+| Camino | Condiciones y comportamiento |
+|---|---|
+| Selección/listado | `/recetas` reutiliza CU29 para elegir venta; no hay GET global de recetas. El GET anidado exige venta existente y pagina/limite positivos, limite máximo 100 y valores por defecto 1/25. Total y página se obtienen en una transacción REPEATABLE READ, orden por id_receta ascendente. Resumen sin paciente/médico/observación. |
+| Detalle autorizado | Valida ambos IDs, query vacío y pertenencia de receta a la venta; devuelve 404 si falta venta o receta de esa venta. El Regente ve formulario, revisión y datos del producto desde el GET de apoyo; no recibe archivo ni imagen. Las lecturas de venta/receta en paralelo son solicitudes distintas, no un snapshot único de toda la pantalla. |
+| Precondiciones de revisión | Venta PENDIENTE bloqueada y receta de esa venta bloqueada. resultado_revision, id_usuario_validador y fecha_validacion deben ser NULL; una revisión previa o estado inconsistente se rechaza. Solo APROBADA o RECHAZADA. No se exige que la receta ya respalde algún detalle. |
+| Responsable/fecha | El cliente envía resultadoRevision y observacion opcional, no validador ni fecha. El backend asigna idUsuario de sesión y fechaHoraComercial posterior a los bloqueos. Decisión, responsable y fecha se conservan conjuntamente. |
+| Observación | API: omitir conserva la anterior; NULL la elimina; un texto válido la sustituye. La interfaz inicializa con la observación consultada y prepararRevision siempre envía texto o NULL si se deja vacía. No es un historial separado de observaciones. |
+| Atomicidad y efectos | Revisión y éxito auditado se confirman juntos; falla cualquiera y se revierte la decisión. No cambia venta, detalles, recetas distintas ni inventario; aprobar permite que CU28 compruebe después los requisitos, no confirma automáticamente. |
+| Auditoría de lectura | Los GET de recetas utilizan ejecutarCambio e intentarRegistrar para la consulta sensible posterior, sin datos personales; no usan registrarCambio para persistir un cambio de receta. La revisión sí llama a registrarCambio dentro de la transacción. |
+
+**Aclaraciones:** RecetaDetailPage es el componente exportado que obtiene parámetros y renderiza RecetaDetalle; guardar/actualizar/estado pertenecen a este componente local, no a una clase JavaScript RecetaDetailPage. revisar de RecetaRevisionForm prepara la confirmación visual; revisarReceta del Service es la decisión persistente. Sus homónimos HTTP/Controller/Service se localizan en la correspondencia. Los dos validateSinFiltros pertenecen a Validators diferentes; no se duplica ficticiamente un método de recetaController.
+
+Los GET de apoyo de CU29 seleccionan más campos de los mostrados en el dibujo; se omiten importes, fechas y datos de catálogo sin participación en la revisión. Las entidades de productos son de solo lectura para mostrar los respaldados y no participan en el bloqueo/escritura de recetaService.revisarReceta. Usuario.nombre_usuario corresponde a los responsables de la venta transportados por ese apoyo, no al nombre del validador: este se presenta por ID y no existe un include usuarioValidador en recetaRepository. La relación a Usuario representa su asociación/ID responsable, no una consulta adicional. No se añaden Rol, Paciente, Medico, Archivo ni MovimientoInventario como entidades de este CU.
+
+`toResumenReceta()` y `toDetalleReceta()` de `backend/src/presentation/dtos/receta.dto.js` respaldan la separación entre listado y datos personales; `recetaController` aplica Cache-Control no-store en sus respuestas exitosas. RecetaDetalle verifica IDs, resultado, responsable y fecha recibidos antes de mostrar éxito. Una respuesta incierta o 404/409 requiere actualizar, sin reenviar automáticamente; 401/403 retira resultado y limpia el formulario de decisión. Una segunda revisión no está implementada como edición: se bloquea aunque se quiera repetir el mismo resultado. Los vínculos existentes no se sustituyen y la receta se conserva al confirmarse o anularse la venta.
+
+## 16. Cierre del bloque Recetas y cobertura acumulada
+
+| Caso de uso | Diagramas añadidos | Alcance |
+|---|---|---|
+| CU31 — Registrar receta | 1 | Formulario sin archivo, venta pendiente y vínculo opcional de detalles, sin aprobación automática. |
+| CU32 — Revisar receta | 1 | Consulta por venta y registro único de decisión, validador y fecha, sin inventario. |
+| **Total de Recetas** | **2** | **Dos CU separados, aunque reutilizan venta y funciones de formulario.** |
+| **Cobertura acumulada** | **40** | **39 CU: CU01–CU37, CU40 y CU42; CU08 mantiene dos diagramas.** |
+
+**Inventario acumulado por paquete documental:**
+
+| Sección / paquete | Casos representados | Cantidad de CU | Cantidad de diagramas |
+|---|---|---|---|
+| 1. Autenticación, Usuarios y Recuperación | CU01–CU09 | 9 | 10, por las variantes A/B de CU08. |
+| 3. Proveedores y Laboratorios | CU10–CU13 | 4 | 4 |
+| 5. Medicamentos, Principios Activos y Composición | CU14–CU20 | 7 | 7 |
+| 7. Compras | CU25–CU27 | 3 | 3 |
+| 9. Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37 y CU40 | 6 | 6 |
+| 11. Vencimientos, Retiros y Bitácora | CU33–CU36 y CU42 | 5 | 5 |
+| 13. Ventas | CU28–CU30 | 3 | 3 |
+| 15. Recetas | CU31–CU32 | 2 | 2 |
+| **Total representado** | **CU01–CU37, CU40 y CU42** | **39** | **40** |
+
+El catálogo oficial tiene 42 CU: los 39 representados más CU38 — Consultar reporte de ventas, CU39 — Consultar reporte de compras y CU41 — Consultar pérdidas, pendientes de implementación. Estos tres no tienen diagrama y no se contabilizan como casos cubiertos ni como implementaciones parciales completadas. La ampliación agrega cinco CU/cinco diagramas respecto de los 34 CU/35 diagramas previos; no cambia IDs, actores, variantes ni agrupaciones de los casos anteriores.
+
+**Fuentes de contraste:** CU31/CU32 de `docs/ai/casos-uso.md`, RF27/RF28/RF49 de `docs/ai/requerimientos.md`, RN58–RN63 de `docs/ai/reglas-negocio.md` y sección 4.11 de `docs/ai/contexto-maestro.md`. El registro y la revisión se contrastan con los archivos/símbolos de sus tablas; los permisos se comprueban tanto en el router React como en los routers Express. Las discrepancias de atomicidad conjunta y notas de estado antiguas se conservan informadas en el cierre de Ventas; no se corrigen otros documentos.
+
+**Pendientes y límites:** CU38/CU39/CU41 continúan sin implementación completa y no se agregan. No se verifica aplicación de migraciones en destino ni aceptación funcional/despliegue. Se conserva el análisis académico original y todos los casos anteriores; la ampliación no agrega entidades ficticias ni un CU de consulta de recetas separado de su objetivo de revisión.
+
+**Verificación del bloque:** las referencias identifican declaraciones, estado React real, campos de modelos, métodos propietarios y llamadas/asociaciones que respaldan los dos nuevos dibujos. La comprobación documental en Node confirma 39 CU distintos/40 diagramas, un Boundary/un Control por dibujo nuevo, correspondencia de las 62 apariciones de métodos y definición en sus modelos de las 57 apariciones de atributos Entity; verifica las 48 referencias a archivos de esta fase, los extremos declarados de las relaciones y los 17 selectores CSS de procedencia. Los atributos de formulario se contrastan con los inicializadores y propietarios de estado de las tablas, sin atribuirlos a los componentes que solo los reciben por props.
+
+Los 38 bloques Mermaid anteriores permanecen intactos por comparación SHA-256 con la línea base de esta entrega; también se conserva el hash del análisis académico original. `git diff --check` no informa errores de espacios y la única edición de esta fase es el documento autorizado. Mermaid tiene revisión estática, sin parser utilizable ni renderizado; se mantiene la limitación técnica explicada en el cierre de Ventas. No se ejecutan pruebas funcionales, navegador ni conexiones MySQL.
+
+**Revisión final de la ampliación Ventas/Recetas:**
+
+| Comprobación | Resultado y alcance |
+|---|---|
+| Inventario y ubicación | 39 CU distintos/40 diagramas en ocho paquetes; los cinco añadidos son CU28–CU30 en Ventas y CU31/CU32 en Recetas. IDs, nombres y actores coinciden con el catálogo y los permisos comprobados. CU08 conserva sus dos variantes; CU38/CU39/CU41 quedan explícitamente fuera de cobertura. |
+| Métodos y atributos | Comprobación en Node de las 140 apariciones de métodos de los cinco dibujos, con orden y propietario real identificados, y de las 187 apariciones de atributos Entity contra sus modelos. Revisión de las declaraciones de estado React y sus inicializadores: las propiedades de formulario se mantienen en su componente propietario, aunque otro las reciba como props. No se representan firmas completas, retornos, tipos ni visibilidad inexistentes. |
+| Relaciones | Las 44 apariciones de asociaciones entre entidades se contrastan con los modelos. Las consultas/escrituras y callbacks se verifican en Controllers, Services, Repositories y frontend; sus flechas agrupadas conservan el alcance HTTP o acceso mediante Repository explicado en cada paquete. No se confunden entidades consultadas solo en apoyo con entidades modificadas por el POST. |
+| Trazabilidad y navegación | Archivos y símbolos localizados por CU y correspondencias compartidas; 132 apariciones de rutas de archivos de software/documentación comprobadas en los bloques añadidos. Los cuatro enlaces internos nuevos resuelven a sus encabezados y la numeración de secciones conserva 0–16 sin huecos. |
+| Preservación | Las 34 entradas anteriores completas se comparan con la versión de Git sin diferencias; los 35 diagramas originales se conservan por SHA-256. Los 40 diagramas actuales tampoco cambian durante el cierre, y el hash del análisis académico original permanece intacto. Solo se edita este documento; se preserva el trabajo preexistente en otros archivos. |
+| BCE y Mermaid | Un Boundary/un Control en cada nuevo dibujo, actores correctos, distribución LR, blanco/negro y 31 selectores CSS de procedencia contrastados con el orden real de métodos. Directivas init comprobadas como JSON y extremos de relaciones declarados. Revisión estática únicamente: no se valida la gramática completa con mermaid.parse ni se afirma renderizado. |
+| Higiene y límites | `git diff --check` sin errores con la configuración vigente del repositorio; únicamente avisos de normalización LF/CRLF. Sin pruebas funcionales, acceso a MySQL, instalaciones, navegador, capturas, commit, push ni despliegue. |
+
+No se detectan discrepancias adicionales en esta revisión acotada. Permanecen las diferencias documentales y límites operativos señalados en los cierres anteriores: registro separado de venta/recetas frente a la formulación de atomicidad conjunta, notas antiguas de implementación y migración pendiente de comprobación en destino. Su resolución no se inventa ni se modifica en otros archivos.

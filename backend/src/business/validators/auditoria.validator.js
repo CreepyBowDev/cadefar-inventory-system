@@ -31,6 +31,10 @@ const PERFILES = {
         unidadPrincipioActivo: texto(30), cantidadReferencia: decimal, unidadReferencia: texto(30) },
     COMPRA: { estadoOperacion: z.enum(['CONFIRMADA', 'ANULADA']), total: decimal,
         idProveedorLaboratorio: id, cantidadDetalles: entero },
+    VENTA: { estadoOperacion: z.enum(['PENDIENTE', 'CONFIRMADA', 'ANULADA']), total: decimal,
+        cantidadDetalles: entero },
+    RECETA: { idVenta: id, resultadoRevision: z.enum(['APROBADA', 'RECHAZADA']).nullable(),
+        idUsuarioValidador: id.nullable() },
     EXISTENCIA: { codigoExistencia: texto(30), stockFisico: entero, costoUnitarioPromedio: decimal }
 };
 const CAMBIOS_SIN_VALOR = {
@@ -104,7 +108,8 @@ export const prepararEventoAuditoria = (entrada, fechaRegistro = new Date()) => 
     const camposPermitidos = [...Object.keys(campos ?? {}), ...(CAMBIOS_SIN_VALOR[definicion.perfil] ?? [])];
     const schemaMetadatos = opcionales({ ...(seguridad ? metadatosSeguridad : metadatosNegocio),
         ...(camposPermitidos.length ? { camposModificados: z.array(z.enum(camposPermitidos)).max(camposPermitidos.length) } : {}),
-        ...(['USUARIOS_CONSULTAR', 'USUARIO_CONSULTAR', 'BITACORA_CONSULTAR', 'BITACORA_EVENTO_CONSULTAR'].includes(data.tipoEvento)
+        ...(['USUARIOS_CONSULTAR', 'USUARIO_CONSULTAR', 'BITACORA_CONSULTAR', 'BITACORA_EVENTO_CONSULTAR',
+            'RECETAS_CONSULTAR', 'RECETA_CONSULTAR'].includes(data.tipoEvento)
             ? { cantidadResultados: entero } : {})
     });
     const metadatos = limpiar(schemaMetadatos, entrada.metadatos);
