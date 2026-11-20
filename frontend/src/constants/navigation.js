@@ -158,8 +158,15 @@ export const NAVIGATION_ITEMS = Object.freeze([
     label: 'Reportes',
     description: 'Consultas operativas y trazabilidad',
     icon: 'report',
-    roles: [],
-    available: false
+    path: '/reportes/ventas',
+    roles: [ROLES.ADMINISTRADOR, ROLES.REGENTE],
+    children: [
+      { key: 'reporte-ventas', label: 'Reporte de ventas', path: '/reportes/ventas', roles: [ROLES.ADMINISTRADOR] },
+      { key: 'reporte-compras', label: 'Reporte de compras', path: '/reportes/compras', roles: [ROLES.ADMINISTRADOR] },
+      { key: 'reporte-historial', label: 'Historial de inventario', path: '/inventario/movimientos', roles: [ROLES.ADMINISTRADOR, ROLES.REGENTE] },
+      { key: 'reporte-perdidas', label: 'Consulta de pérdidas', path: '/reportes/perdidas', roles: [ROLES.ADMINISTRADOR, ROLES.REGENTE] }
+    ],
+    available: true
   },
   {
     key: 'bitacora',
@@ -206,6 +213,9 @@ export const getActiveSidebarItem = (items, pathname, selectedKey) => {
 };
 
 export const getPageTitle = (pathname) => {
+  if (pathname === '/reportes/ventas') return 'Reporte de ventas';
+  if (pathname === '/reportes/compras') return 'Reporte de compras';
+  if (pathname === '/reportes/perdidas') return 'Consulta de pérdidas';
   if (pathname === '/recetas/registrar' || /^\/ventas\/[^/]+\/recetas\/nueva$/.test(pathname)) return 'Registrar receta';
   if (pathname === '/recetas') return 'Revisar recetas';
   if (/^\/ventas\/[^/]+\/recetas\/[^/]+$/.test(pathname)) return 'Detalle de receta';

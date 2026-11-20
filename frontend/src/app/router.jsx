@@ -28,6 +28,9 @@ import { RecetaFormPage } from '../features/recetas/pages/RecetaFormPage.jsx';
 import { RecetasPage } from '../features/recetas/pages/RecetasPage.jsx';
 import { RecetaDetailPage } from '../features/recetas/pages/RecetaDetailPage.jsx';
 import { BitacoraPage } from '../features/bitacora/pages/BitacoraPage.jsx';
+import { ReporteVentasPage } from '../features/reportes/pages/ReporteVentasPage.jsx';
+import { ReporteComprasPage } from '../features/reportes/pages/ReporteComprasPage.jsx';
+import { PerdidasPage } from '../features/reportes/pages/PerdidasPage.jsx';
 import { BitacoraDetailPage } from '../features/bitacora/pages/BitacoraDetailPage.jsx';
 import { AuthLayout } from '../layouts/AuthLayout.jsx';
 import { MainLayout } from '../layouts/MainLayout.jsx';
@@ -118,6 +121,7 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR, ROLES.REGENTE]} />,
             children: [
+              { path: '/reportes/perdidas', element: <PerdidasPage /> },
               {
                 path: '/proveedores',
                 element: <ProveedoresPage />
@@ -132,6 +136,8 @@ export const router = createBrowserRouter([
             element: <RoleRoute allowedRoles={[ROLES.ADMINISTRADOR]} />,
             children: [
               { path: '/bitacora', element: <BitacoraPage /> },
+              { path: '/reportes/ventas', element: <ReporteVentasPage /> },
+              { path: '/reportes/compras', element: <ReporteComprasPage /> },
               { path: '/bitacora/:idEvento', element: <BitacoraDetailPage /> },
               {
                 path: '/proveedores/nuevo',

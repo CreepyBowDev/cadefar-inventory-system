@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { ConsultaResultado } from '../components/ConsultaResultado.jsx';
 import { InventarioFilters } from '../components/InventarioFilters.jsx';
 import { InventarioNav } from '../components/InventarioNav.jsx';
@@ -8,7 +9,9 @@ import { validarFiltrosInventario } from '../utils/filtrosInventario.js';
 import '../styles/inventario.css';
 
 export const MovimientosPage = () => {
-  const { filtros, consulta, errorFiltros, onChange, onClear } = useConsultaAutomatica(getMovimientos, validarFiltrosInventario);
+  const location = useLocation();
+  const sidebarItemKey = location.state?.sidebarItemKey === 'reporte-historial' ? 'reporte-historial' : 'consultar-movimientos';
+  const { filtros, consulta, errorFiltros, onChange, onClear } = useConsultaAutomatica(getMovimientos, validarFiltrosInventario, undefined, { sidebarItemKey });
   return <div className="catalogo-page inventario-page">
     <header className="page-heading"><div><h2>Movimientos de inventario</h2><p>Consulta entradas, salidas y reversiones sin perder la operación original.</p></div></header>
     <InventarioNav />

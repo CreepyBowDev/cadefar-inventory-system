@@ -220,17 +220,27 @@ El sistema debe permitir consultar ventas por día, mes o período.
 
 Los reportes de ventas realizadas deben utilizar la fecha de confirmación y distinguir las operaciones pendientes y anuladas de las ventas confirmadas.
 
+Implementado para Administrador en `GET /api/reportes/ventas`. Separa confirmadas, pendientes, anuladas confirmadas y anuladas sin confirmar; solo las confirmadas integran `totalVentasRealizadas`. Las dos categorías sin confirmación se seleccionan por registro; las otras, por `fecha_venta`. Estado actual en el snapshot, no reconstrucción del estado al cierre del período (RN98).
+
 ## RF36. Consultar reportes de compras
 
 El sistema debe permitir consultar compras por día, mes o período.
+
+Implementado para Administrador en `GET /api/reportes/compras`, por `fecha_compra` de adquisición, no registro/anulación. Confirmadas y anuladas se presentan separadas, con totales históricos de cabecera; `totalComprasRealizadas` incluye solo confirmadas (RN99).
 
 ## RF37. Consultar historial de inventario
 
 El sistema debe permitir consultar los movimientos históricos del inventario.
 
+CU40 reutiliza `GET /api/inventario/movimientos` de CU24 para Administrador/Regente, conservando filtros, respuesta y permisos propios; no se duplica en Reportes.
+
 ## RF38. Consultar pérdidas
 
 El sistema debe permitir consultar pérdidas por vencimiento o daño, valorizadas según el costo aplicado en los movimientos.
+
+Implementado para Administrador/Regente en `GET /api/reportes/perdidas`: retiros brutos originales por fecha de movimiento, motivo opcional `VENCIMIENTO`/`DAÑO`, costo histórico y redondeo individual antes de sumar. Una referencia eventual de reversión se informa sin descontarla ni habilitar su registro operativo (RN91/RN101).
+
+Contrato común RF35/RF36/RF38: modalidad explícita excluyente `dia`, `mes` o `desde`+`hasta`, fechas civiles America/La_Paz y extremos inclusivos. Resumen completo filtrado y detalle paginado (25 por defecto, máximo 100), sin serie temporal; vacíos 200 con ceros. Validación estricta 400, sesión 401, rol 403 y fallo técnico 500 seguro. Cada lectura materializada intenta auditoría mínima independiente. Contrato exacto, campos y ejemplos: `fases.md` §7.2–7.8; implementación y evidencia parcial: `contexto-maestro.md` §39 y `fases.md` §7.15–7.16. Backend implementado no significa integración plenamente aceptada ni frontend entregado.
 
 ## RF39. Mantener trazabilidad
 
@@ -525,6 +535,8 @@ Mantener consultas de:
 - Cantidades retiradas por vencimiento.
 - Cantidades retiradas por daño.
 - Pérdidas valorizadas utilizando el costo registrado en cada movimiento.
+
+Los tres reportes devuelven período normalizado, resumen de todas las coincidencias, detalle y paginación. Importes son cadenas de dos decimales; costo aplicado, de seis; cantidad retirada agregada, cadena entera exacta. No se almacenan reportes ni pérdidas ni se excluyen históricos por actividad/saldo actuales. Campos públicos mínimos y nulos: `fases.md` §7.6; no incluyen datos clínicos ni de seguridad.
 
 ## RI13. Códigos de existencia
 

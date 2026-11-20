@@ -902,6 +902,18 @@ Consultar las ventas realizadas por día, mes o período.
 
 Se utiliza la fecha de confirmación y se distinguen las ventas confirmadas de las pendientes y anuladas. Las pendientes no se contabilizan como ventas realizadas.
 
+**Backend implementado:** `GET /api/reportes/ventas`, solo Administrador autenticado.
+
+**Flujo:**
+
+1. El Administrador indica día, mes o desde/hasta, y opcionalmente estado y página.
+2. El backend valida la query y consulta resumen y página en un mismo snapshot.
+3. Separa CONFIRMADA, PENDIENTE, ANULADA_CONFIRMADA y ANULADA_SIN_CONFIRMAR según estado actual y presencia de fecha_venta. Confirmadas/anuladas confirmadas usan fecha_venta; las otras, fecha_registro. No inventa fecha de confirmación.
+4. Devuelve conteo/importe histórico por categoría y totalVentasRealizadas solo de confirmadas, con detalle mínimo ordenado por fechaReferencia e ID descendentes. Categorías excluidas por filtro permanecen con ceros.
+5. Terminado el snapshot y materializada la respuesta, intenta un único evento REPORTE_VENTAS_CONSULTAR independiente.
+
+**Resultado y alternativas comunes a CU38/CU39/CU41:** `{ data: { periodo, resumen, detalle }, paginacion }`, resumen completo y detalle paginado 25/máximo 100. Vacío: 200 con ceros y lista vacía; página lejana: lista vacía sin reajustarla, manteniendo resumen/total. 400 por query inválida, 401 por sesión, 403 por rol y 500 genérico sin SQL/stack. Fallo exclusivo del auditor conserva lectura/error original. Modalidades excluyentes, formatos, campos exactos y ejemplos sintéticos: `fases.md` §7.2–7.8. Fechas civiles America/La_Paz con días inclusivos; no se ofrece serie temporal ni snapshot entre solicitudes. Una anulación posterior puede reclasificar un reporte histórico.
+
 ---
 
 ## CU39. Consultar reporte de compras
@@ -911,6 +923,15 @@ Administrador.
 
 **Objetivo:**  
 Consultar las compras realizadas por día, mes o período.
+
+**Backend implementado:** `GET /api/reportes/compras`, solo Administrador autenticado; el permiso de compras operativas del Regente no concede este reporte.
+
+**Flujo:**
+
+1. Indicar modalidad temporal explícita y opcionalmente estado CONFIRMADA/ANULADA y paginación.
+2. Consultar por fecha_compra de adquisición DATEONLY inclusiva, no registro/anulación, con resumen y página en el mismo snapshot.
+3. Contar cabeceras y sumar Compra.total histórico por estado; totalComprasRealizadas incluye solo confirmadas. Anuladas conservan importe informativo separado sin restarlo nuevamente. No recalcular detalles ni excluir proveedor inactivo.
+4. Devolver contrato común de CU38, con fechaReferencia = fechaCompra, orden por adquisición/ID descendentes y auditoría independiente REPORTE_COMPRAS_CONSULTAR tras materializar.
 
 ---
 
@@ -934,6 +955,8 @@ Consultar la trazabilidad histórica del inventario.
 - Motivo.
 - Operación de origen cuando corresponda.
 
+**Implementación reutilizada:** `GET /api/inventario/movimientos`, mismo flujo que CU24 para Administrador/Regente. Conserva filtros y respuesta propia `{ data: movimientos }`, incluida observacion; no adopta el DTO mínimo/paginación de los tres reportes ni crea otro endpoint.
+
 ---
 
 ## CU41. Consultar pérdidas
@@ -951,6 +974,18 @@ cantidad retirada × costo unitario aplicado
 ```
 
 Las pérdidas se obtienen de los movimientos registrados y no requieren una tabla independiente.
+
+**Backend implementado:** `GET /api/reportes/perdidas`, Administrador/Regente; Vendedor rechazado.
+
+**Flujo:**
+
+1. Indicar día, mes o desde/hasta y opcionalmente motivo VENCIMIENTO/DAÑO y paginación.
+2. Seleccionar originales SALIDA de esos motivos con id_movimiento_original NULL por fecha_movimiento civil inclusiva. No incluir ajustes, ventas ni compensaciones; no excluir agotados/vencidos/inactivos.
+3. Valorar cada retiro con cantidad y costo aplicado histórico (seis decimales, admitido cero), redondear individualmente a centavos y sumar esos importes sobre todas las coincidencias. Dos retiros de 1 × 0.005000 suman 0.02. No usar costo promedio actual.
+4. Devolver resumen por motivo y global, cantidades retiradas agregadas textuales y detalle mínimo paginado por fecha/ID descendentes. Es retiro bruto: idMovimientoReversion eventual se informa en el mismo snapshot sin descontarla, incluso fuera del período. No habilita un flujo operativo de reversión de retiros.
+5. Intentar REPORTE_PERDIDAS_CONSULTAR independiente tras materializar, también en vacío; solo cantidadResultados de la página como metadato específico, como en CU38/CU39.
+
+**Estado de verificación de CU38/CU39/CU41:** backend implementado; Fase 6 parcialmente aceptada en MySQL 8.0.46, no aceptación conjunta completa. DATETIME(0) impide comprobar fracciones persistidas; volumen extremo y demás límites se conservan en `fases.md` §7.15. Fase 7 cierra documentación, no estos pendientes ni frontend/despliegue.
 
 ---
 

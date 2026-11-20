@@ -2142,6 +2142,8 @@ Corrección posterior del listado de Inventario (11/10/2026): implementado en ba
 
 ## 33. Orden recomendado de desarrollo
 
+**Actualización de continuidad (19/11/2026):** los pendientes de Ventas/Recetas/Reportes mencionados en cierres anteriores son históricos. CU28–CU32 están implementados para formulario sin adjuntos (§4.11/§38); CU38/CU39/CU41 están implementados en backend y documentados, pero su integración MySQL sigue parcialmente aceptada (§39 y `fases.md` §7.15–7.16). No se entrega frontend de reportes ni habilitación operativa en este cierre.
+
 Después de completar Usuarios:
 
 1. Medicamentos.
@@ -2154,7 +2156,7 @@ Después de completar Usuarios:
 
 Este orden puede ajustarse si una dependencia funcional requiere adelantar una parte concreta.
 
-Bitácora es un módulo transversal implementado en backend para los procesos existentes, según la sección 38. La cobertura se ampliará cuando se implementen Ventas y Recetas. Frontend implementa acceso exclusivo del Administrador, listado, filtros explícitos, paginación con criterios en URL y detalle histórico; las cuatro entregas están completas con aceptación integrada local React/Express/MySQL aprobada en Fase 4. La puesta en funcionamiento en el entorno de destino requiere su propia habilitación.
+Bitácora es un módulo transversal implementado en backend para los procesos existentes, incluidos Ventas/Recetas y los tres reportes, según las secciones 38–39. Frontend de Bitácora implementa acceso exclusivo del Administrador, listado, filtros explícitos, paginación con criterios en URL y detalle histórico; sus cuatro entregas están completas con aceptación integrada local React/Express/MySQL aprobada en Fase 4. La puesta en funcionamiento en el entorno de destino requiere su propia habilitación.
 
 ---
 
@@ -2305,11 +2307,11 @@ El módulo fue solicitado por el docente de Sistemas de Información I para disp
 
 ### Funcionalidad existente y cobertura integrada
 
-La inspección del software confirma login/logout, control de bloqueo, usuarios, cambio propio y restablecimiento administrativo de contraseña; recuperación por correo en backend y frontend; proveedores/laboratorios, principios activos, medicamentos y composición; registro/anulación de compras; consultas de inventario, ajustes y retiros por vencimiento/daño. Estos procesos y el alcance backend de Ventas/Recetas descrito a continuación están integrados con Bitácora según la matriz actual de 55 endpoints. Que exista recuperación implementada no acredita envío real de correo ni otra fuente IP aprobada.
+La inspección del software confirma login/logout, control de bloqueo, usuarios, cambio propio y restablecimiento administrativo de contraseña; recuperación por correo en backend y frontend; proveedores/laboratorios, principios activos, medicamentos y composición; registro/anulación de compras; consultas de inventario, ajustes y retiros por vencimiento/daño. Estos procesos, Ventas/Recetas y los tres reportes de §39 están integrados con Bitácora según la matriz actual de 58 endpoints. Que exista recuperación implementada no acredita envío real de correo ni otra fuente IP aprobada.
 
 Los roles siguen siendo fijos: Administrador, Regente y Vendedor. Existe asignación/cambio de rol de una cuenta por el Administrador, no administración dinámica de roles. La bitácora no agrega actores, permisos dinámicos ni una tabla de sesiones.
 
-Ventas y Recetas integran CU28–CU32 completos en backend para formulario sin adjuntos: registro pendiente, recetas con vínculos, consulta, aprobación/rechazo, confirmación con RN58/FEFO y anulación. Los éxitos críticos comparten la transacción de negocio; la auditoría no copia datos del paciente, médico, observación ni referencias históricas de archivo. La verificación actual aprobó 346 pruebas, incluidas 115 de integración local; las 332 anteriores se conservan como evidencia histórica del diseño con bloqueos. La migración de nulabilidad debe aplicarse en el entorno de uso antes de habilitar esta versión. La evidencia y límites están en `bitacora-auditoria.md`. Los reportes CU38/CU39 y la consulta de pérdidas CU41 permanecen pendientes; no forman parte de esta entrega.
+Ventas y Recetas integran CU28–CU32 completos en backend para formulario sin adjuntos: registro pendiente, recetas con vínculos, consulta, aprobación/rechazo, confirmación con RN58/FEFO y anulación. Los éxitos críticos comparten la transacción de negocio; la auditoría no copia datos del paciente, médico, observación ni referencias históricas de archivo. La verificación de ese bloque aprobó 346 pruebas, incluidas 115 de integración local; las 332 anteriores se conservan como evidencia histórica del diseño con bloqueos. La migración de nulabilidad debe aplicarse en el entorno de uso antes de habilitar esta versión. La evidencia y límites están en `bitacora-auditoria.md`. CU38/CU39/CU41 están implementados posteriormente en backend con integración parcialmente aceptada, según §39; no pertenecen a aquella evidencia de Ventas/Recetas.
 
 ### Eventos de autenticación y seguridad
 
@@ -2375,6 +2377,7 @@ Los éxitos críticos comparten transacción de negocio; un fallo obligatorio re
 | Compras, ajustes y retiros | CU23, CU25, CU27, CU35–CU36 | RF49 | RN129–RN133 |
 | Integración de Ventas/Recetas | CU28, CU30–CU32 implementados y auditados para formulario sin adjuntos | RF49 | RN129–RN133 |
 | Consulta, filtros, páginas y detalle | CU42, API implementada | RF50–RF53 | RN117–RN121, RN125–RN128, RN131, RN133 |
+| Lecturas sensibles de reportes | CU38/CU39/CU41 implementados; integración parcial | RF35/RF36/RF38 y captura transversal | RN125, RN130–RN133 |
 
 RN116 regula toda la captura automática. RI16 define la información permitida y RNF18–RNF22 sus condiciones de integridad, privacidad, persistencia, rendimiento y fiabilidad. Las referencias detalladas están en `requerimientos.md` y CU42; RN07 y RN107–RN115 siguen siendo la fuente de las políticas de autenticación existentes.
 
@@ -2385,6 +2388,51 @@ Conservación mínima aprobada: cinco años, 60 meses calendario desde registro,
 Pendientes: aplicar la migración en el entorno de destino; verificar cadena de proxies Railway antes de capturar IP original; separar cuentas de migración/aplicación y comprobar privilegios efectivos; asignar responsabilidades de conservación, respaldo y recuperación con RPO/RTO; definir volumen representativo y objetivos medibles de rendimiento. Los hooks append-only y la API no protegen frente a una cuenta SQL con privilegios de modificación/DDL.
 
 La autorización de pruebas en MySQL local aislado no autoriza cambios en las bases existentes, Railway, despliegues, commits ni pushes. La evidencia de esa aceptación se registra en `bitacora-auditoria.md`.
+
+---
+
+## 39. Reportes y pérdidas — backend implementado, integración parcial (19/11/2026)
+
+CU38/CU39/CU41 están implementados y montados por capas `reporte.router.js` → `reporteController` → `reporteService` → `reporteRepository`, con `reporteValidator` para entrada. Fases 1–5 completadas dentro de su alcance; Fase 6 parcial y Fase 7 de documentación cerrada con esos límites. No se agregan modelos, tablas, migraciones, dependencias ni cambios a Services operativos. El contrato exacto, campos y ejemplos sintéticos aprobados se conservan en `fases.md` §7.2–7.8; aprobaciones y evidencia histórica no se reemplazan por este resumen.
+
+### Endpoints y contrato público
+
+| Endpoint | CU | Acceso |
+|---|---|---|
+| `GET /api/reportes/ventas` | CU38/RF35 | Administrador |
+| `GET /api/reportes/compras` | CU39/RF36 | Administrador |
+| `GET /api/reportes/perdidas` | CU41/RF38 | Administrador o Regente |
+
+Cookie HttpOnly, authMiddleware y requireRole; Vendedor no accede a estos reportes y el permiso operativo de compras del Regente no se extiende a CU39. CU40/RF37 reutiliza `GET /api/inventario/movimientos` de CU24 (Administrador/Regente), sin cambiar su respuesta propia ni duplicar endpoint.
+
+- Query estricta: exactamente `dia=YYYY-MM-DD`, `mes=YYYY-MM` o `desde=YYYY-MM-DD&hasta=YYYY-MM-DD`. Sin modalidad predeterminada, rangos abiertos/mezclados, desconocidos, vacíos, repetidos, arrays/objetos ni formatos alternativos. Fechas gregorianas reales de años 1000–9999, rango no invertido; se admiten futuros y no hay máximo artificial de días. Día normaliza extremos iguales; mes, primero/último día reales.
+- Fechas civiles America/La_Paz: DATEONLY entre días inclusivos; DATETIME entre 00:00:00 y 23:59:59.999999 inclusivos. Sin UTC, cambio de timezone global ni año 10000. Respuesta civil `YYYY-MM-DD HH:mm:ss` sin Z/offset, DATEONLY `YYYY-MM-DD`, fechas opcionales null. El orden usa el campo original, no texto truncado. DATETIME(0) impide acreditar fracciones persistidas; no se implementó precisión mayor.
+- Únicos filtros funcionales opcionales: `estadoOperacion` en ventas (CONFIRMADA/PENDIENTE/ANULADA) y compras (CONFIRMADA/ANULADA); `motivo` en pérdidas (VENCIMIENTO/DAÑO). No filtros cruzados ni dimensiones adicionales. `pagina`: entero positivo hasta 2147483647, default 1; `limite`: entero 1–100, default 25, ambos HTTP textuales sin ceros iniciales.
+- 200 `{ data: { periodo, resumen, detalle }, paginacion }`; `periodo` contiene modalidad DIA/MES/PERIODO, desde/hasta normalizados y zonaHoraria. `paginacion` contiene pagina/limite/total/totalPaginas. Resumen completo tras filtros, detalle paginado; no serie temporal. Orden fechaReferencia DESC, ID DESC. Vacío: ceros, detalle [], total/totalPaginas 0; página superior a última conserva resumen/total y no se reajusta.
+- Importes textuales a dos decimales, costos a seis; cantidadRetirada agregada es cadena entera exacta. IDs, cantidades individuales, conteos y paginación son enteros JSON; conteos no representables se rechazan de forma segura, no se redondean. Aritmética monetaria DECIMAL/BigInt sin Number/parseFloat ni límite de columna para sumas derivadas. Campos exactos del detalle: `fases.md` §7.6, sin DTO operativo completo ni datos clínicos, observaciones, claves, hashes o secretos. En pérdidas, códigos/nombre comercial son actuales del catálogo, no snapshots históricos.
+- 400 `{ message: "Datos inválidos", errors: issuesZod }`; 401 sesión, 403 rol y 500 `{ message: "Error interno del servidor" }` sin SQL/stack/credenciales. No 404/204 por vacío, 409 por estado ni 503 por fallo exclusivo del auditor tras materializar. El parser global conserva su comportamiento.
+
+### Indicadores y consistencia
+
+Ventas separa CONFIRMADA, PENDIENTE, ANULADA_CONFIRMADA (fecha_venta presente) y ANULADA_SIN_CONFIRMAR (fecha_venta null). Confirmadas/anuladas confirmadas usan fecha_venta como referencia y eje del período; pendientes/anuladas sin confirmar, fecha_registro. Filtro ANULADA abarca ambas clases. Resumen confirmadas/pendientes/anuladasConfirmadas/anuladasSinConfirmar con cantidad e importe histórico de Venta.total; totalVentasRealizadas es solo confirmadas.importe. No sumar importes no confirmados como ingresos ni restar anuladas. Estado actual en snapshot: una anulación posterior puede reclasificar un reporte histórico; no reconstruye cierre contable ni flujo negativo a fecha de anulación.
+
+Compras usa fecha_compra de adquisición, no registro/anulación; resumen confirmadas/anuladas con cantidad e importe de Compra.total histórico. totalComprasRealizadas es solo confirmadas.importe; anuladas se informan positivas por separado, no se descuentan otra vez. No recalcular detalles ni costos actuales.
+
+Pérdidas selecciona originales SALIDA de VENCIMIENTO/DAÑO con id_movimiento_original NULL por fecha_movimiento. Son retiros brutos: idMovimientoReversion o null informa una referencia eventual sin descontarla ni contar compensaciones, incluso fuera del período. No existe flujo operativo de reversión de retiros. Valor histórico = cantidad × costo_unitario_aplicado (admitido cero), redondeo individual a centavos al más cercano/empate arriba antes de sumar. Ejemplo sintético: dos retiros de 1 × 0.005000 → 0.01 + 0.01 = 0.02. SQL SUM de ROUND individual y representación BigInt equivalentes según RN91. Resumen vencimiento/dano con cantidadRetiros/cantidadRetirada/perdida, más cantidadRetiros/cantidadRetirada/perdidaTotal globales; paginacion.total cuenta originales. Las unidades de distintos productos no representan una conversión farmacéutica común.
+
+Categorías excluidas por filtro mantienen ceros. Ningún reporte excluye históricos por producto/proveedor inactivo o existencia agotada/vencida. Agregados sobre cabeceras/movimientos únicos, sin multiplicación hasMany ni SUM(DISTINCT importe); no cargar el histórico entero en memoria. Los dos SELECT de cada reporte comparten predicados y transaction REPEATABLE READ: agregado (del que sale el conteo) y detalle, incluida referencia de reversión. Sin FOR UPDATE ni escrituras de negocio. Snapshot por solicitud, no entre páginas/actualizaciones independientes.
+
+### Auditoría y evidencia, sin aceptación plena
+
+Éxitos, incluidos vacíos, intentan REPORTE_VENTAS_CONSULTAR, REPORTE_COMPRAS_CONSULTAR o REPORTE_PERDIDAS_CONSULTAR tras materializar y terminar el snapshot. Origen REPORTES.CONSULTAR_VENTAS/COMPRAS/PERDIDAS; solo cantidadResultados = detalle.length como metadato específico (0–100), contexto/responsable del servidor, sin filtros/query/URL crudos, importes/listas, snapshots ni registro Reporte ficticio. Rechazos/fallos transversales se capturan una vez. Auditoría persistida comprobada en Fase 6; fallo SQL exclusivo del auditor conservó 200/400 originales, con diagnóstico sanitizado y sin reintento/recursión. No promete escribir en almacenamiento caído ni recepción efectiva del cliente. Matriz actual en `bitacora-auditoria.md`.
+
+Evidencia histórica de Fase 6: Express/Sequelize/MySQL **8.0.46** reales en tres bases temporales autorizadas, eliminadas con ausencia verificada; última ejecución **11 aprobadas, 0 fallidas y 1 omitida**, contando contenedora (12 en total), 963 sentencias con la delimitación de `fases.md` §7.15. Regresiones focalizadas **157/157**, guardas **1/1**, sin MySQL; no sumarlas como aceptación del motor. Se comprobaron login/roles, agregados, estados, fechas civiles a segundos/años extremos, redondeo por fila, importes grandes, auditoría persistida y no mutación del negocio.
+
+Concurrencia real controlada: tras el agregado real y antes del detalle real, otra conexión confirmó cambios directos de fixtures: confirmada→anulada en ventas/compras, referencia de reversión en pérdidas. La solicitud conservó snapshot anterior y otra vio el cambio. No prueba carga, carreras espontáneas, todos los interleavings ni operaciones de VentaService/CompraService/reversión de retiros.
+
+Persisten todos los límites de `fases.md` §7.15: DATETIME(0) y una omisión de fracciones; cantidad agregada real > INT pero no > Number.MAX_SAFE_INTEGER (ese extremo solo simulado); sin volumen/plan/rendimiento; sesión expirada/revocada no reejercida con MySQL; fallo del auditor por rechazo SQL, no caída de red/COMMIT/servidor; sin privilegios mínimos operativos ni garantía de limpieza ante kill. No hay aceptación conjunta completa de Fase 6. Fase 7 es cierre documental sin nuevas conexiones/fixtures, no una nueva aceptación MySQL.
+
+**Pendientes separados:** cualquier decisión sobre precisión fraccionaria y repetición de integración necesita alcance/autorización nuevos. Frontend de reportes, su aceptación y planificación son posteriores; CU40 conserva la interfaz existente. Migraciones/habilitación en entorno de uso, cuentas/privilegios, respaldos y despliegue requieren pasos operativos independientes; no se ejecutaron ni se autorizan con este cierre. No se retoma transacciones.md ni se actualiza el análisis académico simplificado en esta entrega.
 
 ---
 

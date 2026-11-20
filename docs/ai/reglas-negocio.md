@@ -1006,6 +1006,8 @@ cantidadRetirada × costoUnitarioAplicado
 
 El costo aplicado corresponde al promedio vigente al retirar y queda conservado en el movimiento con seis decimales. Los cálculos intermedios mantienen precisión monetaria exacta; la pérdida se presenta a dos decimales, al más cercano con empate hacia arriba, según el criterio de RN40. No se agrega una columna de pérdida: el importe se deriva del movimiento. Las pérdidas por daño y vencimiento se distinguen por su motivo; los ajustes negativos no se incluyen en esas categorías.
 
+En CU41 el total suma las pérdidas individuales ya redondeadas, no redondea una sola suma exacta. Con `C_i` como costo en millonésimas y `Q_i` como cantidad entera, los centavos individuales son `dividirYRedondear(Q_i × C_i, 10000n)`; el agregado SQL usa `SUM(ROUND(cantidad × costo_unitario_aplicado, 2))` con aritmética DECIMAL exacta. Dos retiros de una unidad a 0.005000 producen 0.01 + 0.01 = 0.02, no 0.01. Costo cero suma unidades y aporta 0.00. No se usa el promedio actual ni Number monetario; las sumas derivadas no heredan el límite de una columna que no se persiste.
+
 ## RN92. Historial de pérdidas
 
 Las pérdidas no requieren una tabla independiente.
@@ -1044,6 +1046,10 @@ Los reportes se generan a partir de la información almacenada en las operacione
 
 No se requiere una tabla independiente denominada `Reporte`.
 
+CU38/CU39/CU41 exigen exactamente día, mes o período cerrado explícito, sin predeterminado ni máximo artificial de días; se admiten futuros. Fechas civiles reales 1000–9999 de America/La_Paz, ambos extremos inclusivos: DATEONLY entre días y DATETIME entre 00:00:00 y 23:59:59.999999. No convertir históricos a UTC ni cambiar zona global. El esquema actual DATETIME(0) no conserva fracciones; el filtro no demuestra que puedan persistirse (evidencia/limitación en `fases.md` §7.15).
+
+Resumen y conteo cubren todas las coincidencias, paginación solo el detalle. Mismos predicados y snapshot REPEATABLE READ por solicitud, sin FOR UPDATE ni escrituras de negocio; otra solicitud puede ver cambios. Agregar cabeceras/movimientos únicos sin multiplicación por relaciones ni SUM(DISTINCT importe), y sin excluir históricos por inactividad o saldo cero. No se generan series, ganancias ni cierres contables históricos. Auditoría mínima independiente tras materializar; su fallo exclusivo no destruye la lectura ni sustituye el error original.
+
 ## RN98. Consultas de ventas
 
 El sistema debe permitir consultar ventas por:
@@ -1054,6 +1060,8 @@ El sistema debe permitir consultar ventas por:
 
 Las consultas deben distinguir los estados `PENDIENTE`, `CONFIRMADA` y `ANULADA`. Los reportes de ventas realizadas utilizan `fecha_venta`, correspondiente a la confirmación, sin contabilizar las pendientes como ventas efectivas.
 
+CU38 divide el estado actual en cuatro categorías disjuntas: `CONFIRMADA` y `ANULADA_CONFIRMADA` (anulada con fecha_venta) filtran por confirmación; `PENDIENTE` y `ANULADA_SIN_CONFIRMAR` (fecha_venta NULL) por registro. El filtro ANULADA selecciona ambas clases. No inventar confirmaciones; conservar null. Cada categoría cuenta cabeceras y suma Venta.total histórico; totalVentasRealizadas es únicamente el importe de confirmadas, sin sumar/restar las demás. Una anulación posterior puede reclasificar una consulta histórica; no se imputa como flujo negativo a su fecha de anulación.
+
 ## RN99. Consultas de compras
 
 El sistema debe permitir consultar compras por:
@@ -1062,6 +1070,8 @@ El sistema debe permitir consultar compras por:
 - Mes.
 - Período.
 
+Para CU39, el eje es siempre fecha_compra de adquisición, inclusiva; no fecha_registro ni fecha_anulacion. Confirmadas/anuladas cuentan cabeceras y suman Compra.total histórico por separado; totalComprasRealizadas es solo el importe de confirmadas. Las anuladas mantienen importe informativo positivo, sin volver a descontarlo ni recalcular detalles/costos actuales. Categorías excluidas por filtro permanecen en cero, igual que en CU38.
+
 ## RN100. Historial de inventario
 
 El sistema debe permitir reconstruir la evolución del inventario mediante los movimientos registrados.
@@ -1069,6 +1079,10 @@ El sistema debe permitir reconstruir la evolución del inventario mediante los m
 ## RN101. Consulta de pérdidas
 
 Las pérdidas por vencimiento o daño deben poder consultarse por período utilizando los movimientos correspondientes.
+
+CU41 selecciona solo originales con direccion SALIDA, motivo VENCIMIENTO/DAÑO e id_movimiento_original NULL, por fecha_movimiento. Es retiro bruto, no pérdida neta: conserva el original aunque tenga reversión, informa idMovimientoReversion o null sin restarla ni contar la compensación como otra pérdida. Una referencia dentro/fuera del período no cambia el indicador ni la fecha original de imputación. El esquema admite esa referencia, pero no existe flujo operativo de reversión de retiros habilitado por este reporte. Se excluyen ajustes negativos, ventas y otros motivos; no se filtra por vencimiento/actividad/saldo actuales.
+
+Resumen completo por vencimiento y daño: conteo de retiros, suma exacta de cantidades y suma de pérdidas individuales de RN91; total global suma ambas categorías tras filtros. Motivos excluidos conservan ceros. Cantidades agregadas se transportan como cadenas enteras; sumar unidades de productos distintos no supone convertirlas a una unidad farmacéutica común. Detalle y referencia eventual de reversión pertenecen al mismo snapshot por solicitud. CU40 conserva su consulta compartida con CU24, no se convierte en este reporte ni cambia su respuesta.
 
 ---
 

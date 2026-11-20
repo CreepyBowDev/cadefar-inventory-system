@@ -1,0 +1,17 @@
+@import '../../../styles/catalogo.css';
+
+.reporte-filters { padding: 1.25rem; border-bottom: 1px solid var(--color-line); }
+.reporte-filters fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.reporte-filters__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.reporte-filters__actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+.reporte-operaciones-page .catalogo-table-wrap, .reporte-perdidas-page .catalogo-table-wrap { min-width: 0; max-width: 100%; contain: content; }
+.reporte-ventas-table, .reporte-compras-table, .reporte-perdidas-table { min-width: 80rem; }
+.reporte-operaciones-page .catalogo-table td, .reporte-perdidas-page .catalogo-table td { vertical-align: top; }
+.reporte-operaciones-page .reporte-number, .reporte-perdidas-page .reporte-number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.reporte-resumen h3 { margin: 0; padding: 0 1.25rem; font-size: 1rem; }
+.reporte-resumen dd { font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) { .reporte-filters__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) {
+  .reporte-filters__fields { grid-template-columns: 1fr; }
+  .reporte-filters__actions { flex-direction: column-reverse; }
+}

@@ -13,7 +13,8 @@ const serializar = (filtros) => {
 
 // Mismo patrón de Medicamentos: borrador inmediato, URL aplicada y temporizador.
 // useConsulta mantiene la lectura y los errores compartidos con otras pantallas.
-export const useConsultaAutomatica = (consultar, validar, transformar = sinTransformacion) => {
+// navigationState es opcional: CU40 conserva el paquete de origen al cambiar filtros.
+export const useConsultaAutomatica = (consultar, validar, transformar = sinTransformacion, navigationState) => {
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const query = params.toString();
@@ -53,7 +54,7 @@ export const useConsultaAutomatica = (consultar, validar, transformar = sinTrans
     setDraft({ origen: location.key, filtros: nextFilters, pendiente: false });
     if (!validar(nextValues) && nextQuery !== query) {
       internalQuery.current = `${location.pathname}?${nextQuery}`;
-      setParams(nextQuery, { replace: true });
+      setParams(nextQuery, { replace: true, state: navigationState });
     }
   };
   const cambiar = (nextFilters, inmediato) => {

@@ -182,7 +182,8 @@ test('Catálogo extensible: incluye registro/confirmación de Ventas y revisión
     assert.equal(CATALOGO_AUDITORIA.RECETA_REGISTRAR.transaccionExito, true);
     assert.ok(CATALOGO_AUDITORIA.RECETA_CONSULTAR);
     for (const tipo of Object.keys(CATALOGO_AUDITORIA)) {
-        if (!['VENTA_REGISTRAR_PENDIENTE', 'VENTA_CONFIRMAR', 'VENTA_ANULAR', 'RECETA_REGISTRAR', 'RECETA_REVISAR', 'RECETA_CONSULTAR'].includes(tipo)) {
+        if (!['VENTA_REGISTRAR_PENDIENTE', 'VENTA_CONFIRMAR', 'VENTA_ANULAR', 'RECETA_REGISTRAR', 'RECETA_REVISAR',
+            'RECETA_CONSULTAR', 'REPORTE_VENTAS_CONSULTAR', 'REPORTE_COMPRAS_CONSULTAR', 'REPORTE_PERDIDAS_CONSULTAR'].includes(tipo)) {
             assert.doesNotMatch(tipo, /^(VENTA|RECETA|REPORTE)_/);
         }
     }

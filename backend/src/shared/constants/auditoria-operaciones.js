@@ -12,6 +12,9 @@ const rutas = [
     ['POST', '/usuarios', 'USUARIOS.CREAR'], ['PATCH', '/usuarios/:id', 'USUARIOS.MODIFICAR'],
     ['PATCH', '/usuarios/:id/estado', 'USUARIOS.CAMBIAR_ESTADO'],
     ['GET', '/bitacora', 'BITACORA.CONSULTAR'],
+    ['GET', '/reportes/ventas', 'REPORTES.CONSULTAR_VENTAS'],
+    ['GET', '/reportes/compras', 'REPORTES.CONSULTAR_COMPRAS'],
+    ['GET', '/reportes/perdidas', 'REPORTES.CONSULTAR_PERDIDAS'],
     ['GET', '/bitacora/:id', 'BITACORA.CONSULTAR_DETALLE'],
     ...['proveedores-laboratorios', 'principios-activos', 'medicamentos'].flatMap((path, i) => {
         const modulo = ['PROVEEDORES_LABORATORIOS', 'PRINCIPIOS_ACTIVOS', 'MEDICAMENTOS'][i];

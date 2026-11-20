@@ -16,6 +16,7 @@ const rutas = [
     ['composicion-medicamento', 'composicionMedicamentoRouter', '/:idMedicamento/composicion'],
     ['compra', 'compraRouter', '/api/compras'], ['inventario', 'inventarioRouter', '/api/inventario'],
     ['venta', 'ventaRouter', '/api/ventas'],
+    ['reporte', 'reporteRouter', '/api/reportes'],
     ['receta', 'recetaRouter', '/:idVenta/recetas'],
     ['bitacora-auditoria', 'bitacoraAuditoriaRouter', '/api/bitacora']
 ];
@@ -38,14 +39,21 @@ const recorrer = (stack, prefijo = '') => {
 };
 recorrer(app.router.stack);
 
-test('Los 55 endpoints Express, clasificador y matriz documental tienen cobertura idéntica', async () => {
+test('Los 58 endpoints Express, clasificador y matriz documental coinciden', async () => {
     const esperados = contratos.map(e => clave(e.metodo, e.ruta));
-    assert.equal(actuales.length, 55); assert.equal(new Set(actuales).size, 55);
+    assert.equal(actuales.length, 58); assert.equal(new Set(actuales).size, 58);
     assert.deepEqual(actuales.sort(), esperados.sort());
-    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 24);
+    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 27);
     const documento = await readFile(new URL('../../docs/ai/bitacora-auditoria.md', import.meta.url), 'utf8');
     const matriz = [...documento.matchAll(/^\| (GET|POST|PATCH|DELETE) \| `([^`]+)` \|/gm)].map(([, metodo, ruta]) => clave(metodo, ruta));
     assert.deepEqual(matriz.sort(), esperados.sort());
+    const fases = await readFile(new URL('../../docs/ai/fases.md', import.meta.url), 'utf8');
+    assert.match(fases, /REPORTE_VENTAS_CONSULTAR/);
+    assert.match(fases, /GET \/api\/reportes\/ventas/);
+    assert.match(fases, /REPORTE_COMPRAS_CONSULTAR/);
+    assert.match(fases, /GET \/api\/reportes\/compras/);
+    assert.match(fases, /REPORTE_PERDIDAS_CONSULTAR/);
+    assert.match(fases, /GET \/api\/reportes\/perdidas/);
 });
 
 test('Fase 7: todos los endpoints clasifican caja/slash/HEAD sin conservar parámetros arbitrarios', () => {

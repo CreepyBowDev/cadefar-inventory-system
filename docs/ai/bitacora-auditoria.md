@@ -1,6 +1,6 @@
 # Bitácora — cobertura y aceptación del backend
 
-Fecha de revisión: 13/10/2026. Fuentes funcionales: sección 38 del contexto maestro, CU42, RF43–RF53, RI16, RNF18–RNF22 y RN116–RN133.
+Fecha de revisión: 19/11/2026. Fuentes funcionales: secciones 38–39 del contexto maestro, CU38–CU42, RF35–RF38/RF43–RF53, RI12/RI16, RNF18–RNF22 y RN91/RN97–RN101/RN116–RN133. Los cierres previos conservan su evidencia histórica.
 
 ## Estado por fase
 
@@ -15,7 +15,7 @@ Fecha de revisión: 13/10/2026. Fuentes funcionales: sección 38 del contexto ma
 | 6 | Compras, anulaciones, ajustes/conciliación y retiros | Implementada |
 | 7 | Cobertura integral, documentación y aceptación MySQL aislada | Verificada localmente; pendientes operativos al final |
 
-La revisión original comprendía 33 CU (CU01–CU27, CU33–CU37 y CU40) y 44 endpoints: 26 escrituras y 18 GET. CU42 agregó dos GET. Las fases backend de Ventas/Recetas incorporaron sus nueve endpoints y el cierre del formulario sin adjuntos completó CU28–CU32: 55 endpoints actuales (31 no GET y 24 GET), 39 CU completos en backend; CU38/CU39 y CU41 permanecen pendientes. Los catálogos funcionales mantienen 42 CU, 53 RF, 16 RI, 22 RNF y 133 RN. Compartir un endpoint entre CU no crea endpoints adicionales.
+La revisión original comprendía 33 CU (CU01–CU27, CU33–CU37 y CU40) y 44 endpoints: 26 escrituras y 18 GET. CU42 agregó dos GET. Ventas/Recetas añadió nueve endpoints y completó CU28–CU32 para formulario sin adjuntos (55 endpoints, 39 CU). Reportes añade tres GET: **58 endpoints actuales (31 no GET y 27 GET)**, con CU38/CU39/CU41 implementados y los 42 CU cubiertos en backend dentro de sus alcances aprobados. Esto no equivale a aceptación conjunta completa: la integración de reportes sigue parcial (§7.15 de `fases.md`). Los catálogos funcionales mantienen 42 CU, 53 RF, 16 RI, 22 RNF y 133 RN. Compartir un endpoint entre CU no crea endpoints adicionales.
 
 ## Matriz de endpoints
 
@@ -80,8 +80,15 @@ Todas las rutas llevan prefijo `/api`. Los nombres de parámetros reproducen las
 | POST | `/api/inventario/retiros/dano` | CU36 | INVENTARIO_RETIRAR_DANO | R/T | 6 |
 | GET | `/api/bitacora` | CU42 | BITACORA_CONSULTAR: lectura sensible | R/T | 4 |
 | GET | `/api/bitacora/:idEvento` | CU42 | BITACORA_EVENTO_CONSULTAR: lectura sensible | R/T | 4 |
+| GET | `/api/reportes/ventas` | CU38 | REPORTE_VENTAS_CONSULTAR: lectura sensible; Administrador; cantidadResultados de la página | R/T; origen REPORTES.CONSULTAR_VENTAS | 3 Reportes; cierre documental 7 |
+| GET | `/api/reportes/compras` | CU39 | REPORTE_COMPRAS_CONSULTAR: lectura sensible; Administrador; cantidadResultados de la página | R/T; origen REPORTES.CONSULTAR_COMPRAS | 4 Reportes; cierre documental 7 |
+| GET | `/api/reportes/perdidas` | CU41 | REPORTE_PERDIDAS_CONSULTAR: lectura sensible; Administrador/Regente; cantidadResultados de la página | R/T; origen REPORTES.CONSULTAR_PERDIDAS | 5 Reportes; cierre documental 7 |
 
 Las lecturas excluidas no crean éxitos porque son consultas operativas frecuentes y pueden ser automáticas. CU04/CU05 y CU42 sí permiten investigar acceso a información sensible. El evento de lectura no contiene la lista devuelta ni filtros completos. Una consulta CU42 se materializa antes de auditarse: su propio evento no pertenece al snapshot recién leído.
+
+CU38/CU39/CU41 también auditan éxitos como lecturas sensibles, incluso vacíos. CATALOGO_AUDITORIA los define en módulo REPORTES con acciones CONSULTAR_VENTAS/CONSULTAR_COMPRAS/CONSULTAR_PERDIDAS, perfil de snapshots null y transaccionExito=false; OPERACIONES_HTTP_AUDITORIA clasifica sus rutas y prepararEventoAuditoria permite cantidadResultados = detalle.length (0–100). No hay migración por estos tipos. Contexto estándar y responsable autenticado provienen del servidor; no se guardan filtros/query/URL crudos, importes, listas, IDs de cada fila, observaciones ni datos clínicos, snapshots o cabecera Reporte ficticia.
+
+Los reportes terminan el snapshot de lectura REPEATABLE READ y materializan antes de intentarRegistrar, en transacción independiente. Rechazos de sesión/rol/validación conservan tipos transversales y fallos técnicos ERROR_TECNICO sanitizado, con origen REPORTES de su ruta; captura única, no otra por cada capa. Fallo exclusivo del auditor conserva 200 o error original, con diagnóstico de persistencia no confirmada, sin reintento/recursión ni promesa de escribir en almacenamiento caído o de recepción efectiva por el cliente. CU40 conserva la exclusión de éxitos rutinarios y su contrato propio.
 
 ## Contrato y garantías de la primera versión
 
@@ -99,7 +106,7 @@ Las lecturas excluidas no crean éxitos porque son consultas operativas frecuent
 
 ## Evidencia de aceptación
 
-Las suites `backend/tests/auditoria.*.test.js` comprueban contrato/esquema, captura HTTP, seguridad, consultas, catálogo e inventario, privacidad, permisos, rollback, incertidumbre y fallos posteriores. La regresión final sin `*.integration.test.js` aprobó **492 pruebas, cero fallidas/canceladas/omitidas**. Utiliza transporte/estado simulados; no acredita por sí sola InnoDB ni persistencia real. `auditoria.cobertura.test.js` contrasta las 46 rutas Express con el clasificador y esta matriz; comprueba caja/slash/HEAD y SQL logging desactivado. Sintaxis y `git diff --check` aprobados.
+Las suites `backend/tests/auditoria.*.test.js` comprueban contrato/esquema, captura HTTP, seguridad, consultas, catálogo e inventario, privacidad, permisos, rollback, incertidumbre y fallos posteriores. La regresión histórica sin `*.integration.test.js` aprobó **492 pruebas, cero fallidas/canceladas/omitidas**. Utiliza transporte/estado simulados; no acredita por sí sola InnoDB ni persistencia real. En aquel cierre `auditoria.cobertura.test.js` contrastaba 46 rutas; actualmente contrasta íntegramente las **58 rutas Express**, clasificador y esta matriz, sin excepción documental de reportes, conservando caja/slash/HEAD y SQL logging desactivado. Las comprobaciones nuevas de Fase 7 se registran en `fases.md` §7.16; no se reejecutó la suite global histórica.
 
 La suite `backend/tests/auditoria.integration.test.js` se ejecutó con autorización expresa en **MySQL 8.0.46 local**. Resultado: **19 pruebas aprobadas, cero fallidas/omitidas**. Verificó DDL migrado, CHECK efectivos, JSON, UNIQUE concurrente, UTC milisegundos, rollback InnoDB de auditoría y negocio, recuperación de un evento en otro proceso, API CU42, snapshot REPEATABLE READ frente a INSERT concurrente, login/bloqueo, alta y consulta de usuarios, contraseña/recuperación, compra y rollback obligatorio, carreras de anulación/ajuste e identidades históricas.
 
@@ -120,7 +127,7 @@ Cada ejecución de integración crea otra base aleatoria local y la conserva inc
 
 ## Backend Ventas/Recetas — formulario sin adjuntos completado y verificado
 
-**Estado actual:** CU28–CU32 están completos en backend para el alcance aprobado. El registro crea receta y vínculos en la misma transacción que su auditoría; siempre inicia sin revisión. El Regente aprueba/rechaza sin archivo y el Vendedor confirma con recetas aprobadas de esa venta, manteniendo FEFO, stock y trazabilidad. Una receta puede respaldar varios medicamentos y los detalles que se dividan al confirmar. No se sustituyen vínculos existentes silenciosamente ni se permiten revisiones repetidas. Los roles y los 55 endpoints de la matriz no se amplían.
+**Estado del bloque Ventas/Recetas:** CU28–CU32 están completos en backend para el alcance aprobado. El registro crea receta y vínculos en la misma transacción que su auditoría; siempre inicia sin revisión. El Regente aprueba/rechaza sin archivo y el Vendedor confirma con recetas aprobadas de esa venta, manteniendo FEFO, stock y trazabilidad. Una receta puede respaldar varios medicamentos y los detalles que se dividan al confirmar. No se sustituyen vínculos existentes silenciosamente ni se permiten revisiones repetidas. Ese bloque conservó roles y 55 endpoints; los tres reportes posteriores elevan la matriz actual a 58 sin modificar esos permisos.
 
 **Resultado actual: 346 pruebas aprobadas, cero fallidas/canceladas/omitidas**, incluyendo las contenedoras de `node:test`:
 
@@ -170,7 +177,15 @@ No se requirieron correcciones adicionales de lógica en esta fase. La regresió
 
 **Alcance vigente:** formulario de recetas sin adjuntos implementado y verificado. No se requiere seleccionar infraestructura de archivos. Antes de operar con una base existente debe aplicarse la migración de nulabilidad; las referencias históricas se conservan sin exposición automática. CU28–CU32 no tienen funcionalidades pendientes dentro del alcance backend aprobado. Permanecen separados el frontend y la habilitación del entorno de uso.
 
-Registro de venta pendiente, registro/vinculación de recetas, aprobación/rechazo, confirmación y anulación integran los eventos de la matriz. Las consultas sensibles de recetas se auditan sin datos personales y conservan su respuesta ante fallo exclusivo del auditor; las consultas rutinarias de ventas excluyen éxitos y clasifican rechazos/fallos mediante `VENTAS.CONSULTAR`. CU30 conserva las reversiones únicas al costo original y promedio ponderado RN78. CU38/CU39 (reportes) y CU41 (pérdidas) permanecen pendientes. Las cuatro entregas frontend de Bitácora conservan su aceptación integrada local de Fase 4; ello no acredita frontend de Ventas/Recetas ni habilita el entorno operativo.
+Registro de venta pendiente, registro/vinculación de recetas, aprobación/rechazo, confirmación y anulación integran los eventos de la matriz. Las consultas sensibles de recetas se auditan sin datos personales y conservan su respuesta ante fallo exclusivo del auditor; las consultas rutinarias de ventas excluyen éxitos y clasifican rechazos/fallos mediante `VENTAS.CONSULTAR`. CU30 conserva las reversiones únicas al costo original y promedio ponderado RN78. CU38/CU39/CU41 están implementados y auditados, con integración parcial descrita debajo. Las cuatro entregas frontend de Bitácora conservan su aceptación integrada local de Fase 4; ello no acredita frontend de Ventas/Recetas/Reportes ni habilita el entorno operativo.
+
+### Reportes — evidencia real y límites del cierre documental
+
+Fase 6 de Reportes ejerció Express/Sequelize/MySQL 8.0.46 con autorización específica: tres bases temporales nuevas eliminadas, ausencia verificada. Última ejecución: 11 aprobadas, 0 fallidas y 1 omitida contando contenedora (12 pruebas), no aceptación conjunta completa. Se persistieron éxitos (incluido vacío), rechazos y fallo de consulta una vez con origen correcto y metadatos mínimos. Un rechazo SQL efectivo del auditor conservó 200/400 originales sin filas confirmadas; no fue caída espontánea de red/servidor/COMMIT. Regresiones 157/157 y guardas 1/1 son sin motor, no evidencia extra de persistencia.
+
+Concurrencia controlada real: agregado y detalle compartieron snapshot mientras una segunda conexión confirmó mutaciones directas de fixtures entre ambas lecturas (anulación en ventas/compras y referencia de reversión en pérdidas). La solicitud mantuvo datos anteriores y una nueva vio el cambio. No acredita flujos operativos de anulación/reversión de retiros, carga, todos los interleavings ni snapshot entre solicitudes.
+
+Una prueba de fracciones quedó omitida por DATETIME(0); cantidad agregada > INT fue real, > Number.MAX_SAFE_INTEGER solo simulada. Sin volumen/plan/rendimiento, sesión expirada/revocada reejercida en MySQL, privilegios mínimos ni pruebas de caída de red/COMMIT; limpieza no garantizada ante kill. Se preservan íntegros evidencia y demás límites de `fases.md` §7.15. Fase 7 solo sincroniza documentación/matriz y elimina la excepción documental exacta en cobertura, sin debilitar la comparación rutas/clasificador. No usa MySQL ni reutiliza autorizaciones. Frontend de reportes y habilitación operativa siguen separados y pendientes.
 
 Para el entorno de operación: aplicar migración con cuenta de migración y verificar esquema; separar cuenta de aplicación con SELECT/INSERT en Bitácora y sin UPDATE/DELETE/DDL sobre ella. La cuenta local revisada mediante SHOW GRANTS permite modificación/DDL: no se acredita protección SQL append-only con esa cuenta. No se crearon usuarios ni GRANT. Los hooks ORM pueden evitarse con SQL directo o hooks desactivados.
 

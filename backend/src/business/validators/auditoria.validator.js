@@ -109,7 +109,8 @@ export const prepararEventoAuditoria = (entrada, fechaRegistro = new Date()) => 
     const schemaMetadatos = opcionales({ ...(seguridad ? metadatosSeguridad : metadatosNegocio),
         ...(camposPermitidos.length ? { camposModificados: z.array(z.enum(camposPermitidos)).max(camposPermitidos.length) } : {}),
         ...(['USUARIOS_CONSULTAR', 'USUARIO_CONSULTAR', 'BITACORA_CONSULTAR', 'BITACORA_EVENTO_CONSULTAR',
-            'RECETAS_CONSULTAR', 'RECETA_CONSULTAR'].includes(data.tipoEvento)
+            'RECETAS_CONSULTAR', 'RECETA_CONSULTAR', 'REPORTE_VENTAS_CONSULTAR',
+            'REPORTE_COMPRAS_CONSULTAR', 'REPORTE_PERDIDAS_CONSULTAR'].includes(data.tipoEvento)
             ? { cantidadResultados: entero } : {})
     });
     const metadatos = limpiar(schemaMetadatos, entrada.metadatos);
