@@ -28,7 +28,7 @@ test.beforeEach(t => {
 function entorno(opciones = {}) {
     const env = { NODE_ENV: 'production', REPORTES_EXPORTACION_PERFIL: 'RAILWAY', REPORTES_EXPORTACION_REPLICAS: '1',
         RAILWAY_SERVICE_ID: 'servicio-sintetico', RAILWAY_DEPLOYMENT_ID: 'deploy-sintetico', RAILWAY_ENVIRONMENT_ID: 'entorno-sintetico', ...opciones.env };
-    const estado = { rss: 100 * 1024 * 1024, libre: 1024n * MiB, actual: 128n * MiB, max: 1024n * MiB, creados: [], borrados: [], modo: 0o700 };
+    const estado = { rss: 100 * 1024 * 1024, libre: 1024n * MiB, actual: 128n * MiB, max: 1024n * MiB, creados: [], borrados: [], diagnosticos: [], modo: 0o700 };
     const archivos = {
         realpath: async p => p,
         statfs: async () => ({ bavail: estado.libre, bsize: 1n }),
@@ -38,7 +38,8 @@ function entorno(opciones = {}) {
     };
     const proceso = { env, platform: opciones.platform || 'linux', getuid: () => 7, memoryUsage: () => ({ rss: estado.rss }) };
     const manager = crearEntornoRailway({ archivos, sistema: { tmpdir: () => '/tmp' }, proceso,
-        memoria: async () => opciones.sinCgroup ? null : { max: estado.max, actual: estado.actual } });
+        memoria: async () => opciones.sinCgroup ? null : { max: estado.max, actual: estado.actual },
+        diagnosticar: opciones.diagnosticar || (evento => estado.diagnosticos.push(evento)) });
     return { manager, estado, archivos, proceso };
 }
 
@@ -50,6 +51,82 @@ test('RAILWAY opt-in estricto: exige production, metadatos, Linux y una réplica
         assert.equal(await manager.disponibilidad(), false); assert.deepEqual(estado.creados, []);
         await manager.cerrar();
     }
+});
+
+test('Diagnósticos de configuración: códigos/campo estáticos, sin valores de entorno ni repetición', async () => {
+    const casos = [
+        [{ NODE_ENV: 'sintetico-no-publicar' }, 'NODE_ENV_INVALIDO'],
+        [{ REPORTES_EXPORTACION_PERFIL: 'sintetico-no-publicar' }, 'PERFIL_NO_ACTIVO'],
+        [{ REPORTES_EXPORTACION_REPLICAS: 'sintetico-no-publicar' }, 'REPLICAS_NO_ACREDITADAS'],
+        ...['RAILWAY_SERVICE_ID', 'RAILWAY_DEPLOYMENT_ID', 'RAILWAY_ENVIRONMENT_ID'].map(campo => [{ [campo]: 'sintetico-no-publicar\nvalor' }, 'METADATO_RAILWAY_INVALIDO', campo])
+    ];
+    for (const [env, causa, campo] of casos) {
+        const { manager, estado } = entorno({ env });
+        assert.equal(await manager.disponibilidad(), false); assert.equal(await manager.disponibilidad(), false);
+        assert.deepEqual(estado.diagnosticos, [{ codigo: 'EXPORTACION_RAILWAY_NO_DISPONIBLE', causa, etapa: 'CONFIGURACION', ...(campo ? { campo } : {}) }]);
+        assert.ok(!JSON.stringify(estado.diagnosticos).includes('sintetico-no-publicar'));
+        assert.deepEqual(estado.creados, []);
+    }
+    const { manager, estado } = entorno({ platform: 'win32' });
+    assert.equal(await manager.disponibilidad(), false);
+    assert.equal(estado.diagnosticos[0].causa, 'PLATAFORMA_NO_ADMITIDA');
+});
+
+test('Diagnósticos de recursos, temporal existente y permisos, sin debilitar rechazo ni reclamar carpetas', async () => {
+    for (const causa of ['CGROUP_NO_ACREDITADO', 'MEMORIA_INSUFICIENTE', 'DISCO_INSUFICIENTE', 'TEMPORAL_EXISTENTE', 'TEMPORAL_NO_PRIVADO']) {
+        const { manager, estado } = entorno({ sinCgroup: causa === 'CGROUP_NO_ACREDITADO', existe: causa === 'TEMPORAL_EXISTENTE' });
+        if (causa === 'MEMORIA_INSUFICIENTE') estado.actual = estado.max - 1n;
+        if (causa === 'DISCO_INSUFICIENTE') estado.libre = 0n;
+        if (causa === 'TEMPORAL_NO_PRIVADO') estado.modo = 0o755;
+        assert.equal(await manager.disponibilidad(), false);
+        assert.deepEqual(estado.diagnosticos, [{ codigo: 'EXPORTACION_RAILWAY_NO_DISPONIBLE', causa, etapa: 'INICIALIZACION' }]);
+        assert.deepEqual(estado.borrados, []);
+        await manager.disponibilidad(); assert.equal(estado.diagnosticos.length, 1);
+    }
+});
+
+test('Errores opacos de filesystem: solo etapa/causa, nunca message/code/stack/path/env crudos', async () => {
+    for (const [operacion, causa] of [['realpath', 'TEMPORAL_RESOLUCION_FALLIDA'], ['statfs', 'DISCO_NO_CONSULTABLE'], ['mkdir', 'TEMPORAL_CREACION_FALLIDA'], ['lstat', 'TEMPORAL_NO_CONSULTABLE']]) {
+        const { manager, archivos, estado } = entorno();
+        archivos[operacion] = async () => { throw Object.assign(new Error('sintetico-no-publicar\nSQL /privado/archivo'), { code: 'sintetico-no-publicar', path: '/privado/archivo' }); };
+        assert.equal(await manager.disponibilidad(), false);
+        assert.deepEqual(estado.diagnosticos, [{ codigo: 'EXPORTACION_RAILWAY_NO_DISPONIBLE', causa, etapa: 'INICIALIZACION' }]);
+    }
+    const { manager, estado } = entorno();
+    assert.equal((await manager.disponibilidad()).perfil, 'RAILWAY'); assert.deepEqual(estado.diagnosticos, []);
+    await manager.cerrar();
+});
+
+test('Diagnósticos del sondeo/cierre, acotados; logger que falla no cambia decisiones de seguridad', async t => {
+    let sondear;
+    t.mock.method(globalThis, 'setInterval', cb => { sondear = cb; return { unref() {} }; });
+    t.mock.method(globalThis, 'clearInterval', () => {});
+    const { manager, estado } = entorno({ residuo: true }); await manager.disponibilidad();
+    let abortos = 0; const vigilancia = manager.vigilar(() => abortos++);
+    estado.rss += 128 * 1024 * 1024 + 1;
+    await sondear(); await sondear();
+    assert.equal(abortos, 2);
+    assert.deepEqual(estado.diagnosticos, [{ codigo: 'EXPORTACION_RAILWAY_NO_DISPONIBLE', causa: 'INCREMENTO_RSS_EXCEDIDO', etapa: 'VIGILANCIA' }]);
+    vigilancia.liberar(); await assert.rejects(manager.cerrar());
+    assert.equal(estado.diagnosticos.at(-1).causa, 'TEMPORAL_CON_RESIDUOS');
+    const roto = entorno({ sinCgroup: true, diagnosticar: () => { throw new Error('logger sintético no disponible'); } });
+    assert.equal(await roto.manager.disponibilidad(), false); assert.deepEqual(roto.estado.creados, []);
+});
+
+test('Diagnósticos después de admitir: identifica cambio de raíz, disco no consultable y servidor cerrando', async () => {
+    for (const causa of ['TEMPORAL_IDENTIDAD_CAMBIADA', 'TEMPORAL_NO_PRIVADO', 'TEMPORAL_NO_CONSULTABLE', 'DISCO_NO_CONSULTABLE']) {
+        const { manager, archivos, estado } = entorno(); await manager.disponibilidad();
+        const original = archivos.lstat;
+        if (causa === 'TEMPORAL_IDENTIDAD_CAMBIADA') archivos.lstat = async () => ({ ...await original(), ino: 99 });
+        if (causa === 'TEMPORAL_NO_PRIVADO') estado.modo = 0o755;
+        if (causa === 'TEMPORAL_NO_CONSULTABLE') archivos.lstat = async () => { throw new Error('ruta sintética privada'); };
+        if (causa === 'DISCO_NO_CONSULTABLE') archivos.statfs = async () => { throw new Error('ruta sintética privada'); };
+        assert.equal(await manager.disponibilidad(), false);
+        assert.deepEqual(estado.diagnosticos, [{ codigo: 'EXPORTACION_RAILWAY_NO_DISPONIBLE', causa, etapa: 'DISPONIBILIDAD' }]);
+    }
+    const { manager, estado } = entorno(); await manager.disponibilidad(); await manager.cerrar();
+    assert.equal(await manager.disponibilidad(), false);
+    assert.deepEqual(estado.diagnosticos, [{ codigo: 'EXPORTACION_RAILWAY_NO_DISPONIBLE', causa: 'SERVIDOR_CERRANDO', etapa: 'INICIALIZACION' }]);
 });
 
 test('cgroup v2/v1: interpreta límite y consumo del contenedor, sin fallback a RAM del host', async () => {

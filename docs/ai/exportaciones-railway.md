@@ -94,3 +94,45 @@ Primera ejecución backend: 52/53; la expectativa de identidad de una transacci�
 Estado Git inicial limpio, sin cambios ajenos que sobrescribir. No modificación de entorno local, secretos, migrations, paquetes/lock, rutas, permisos, sidebar ni diseño. Los temporales de pruebas controladas se eliminan en finally; no creación/limpieza de recursos Railway o MySQL.
 
 `git diff --check` aprobado (solo avisos de normalización futura LF → CRLF). Cuatro archivos nuevos revisados individualmente con `git -c core.autocrlf=false diff --no-index --check -- NUL <archivo>`, sin diagnósticos de espacios. Sin archivos frontend nuevos sin seguimiento.
+
+## Diagnóstico sanitizado de disponibilidad — entrega posterior
+
+Ante «Formato no disponible», el control Railway emite en el **log del backend**:
+
+```text
+{ codigo: 'EXPORTACION_RAILWAY_NO_DISPONIBLE',
+  causa: 'CGROUP_NO_ACREDITADO', etapa: 'INICIALIZACION' }
+```
+
+Ejemplo ilustrativo, **no causa observada en el despliegue**. No se accedió a Railway/MySQL. Para identificar el rechazo real hay que desplegar este cambio mediante el procedimiento del operador, intentar una exportación y buscar el código anterior. No se añade endpoint de diagnóstico ni se expone información extra en HTTP: el cliente conserva 503 «Formato no disponible».
+
+| Causa | Significado |
+|---|---|
+| NODE_ENV_INVALIDO / PERFIL_NO_ACTIVO / REPLICAS_NO_ACREDITADAS / PLATAFORMA_NO_ADMITIDA | La configuración no satisface las guardas existentes. |
+| METADATO_RAILWAY_INVALIDO | Falta un metadato válido. `campo` identifica únicamente el nombre SERVICE_ID/DEPLOYMENT_ID/ENVIRONMENT_ID completo, nunca su valor. |
+| CGROUP_NO_ACREDITADO | Ningún layout v1/v2 proporciona límite/consumo finitos y válidos; puede ser inaccesible, ilimitado o no válido. No implica que falte RAM. |
+| MEMORIA_INSUFICIENTE / MEMORIA_NO_CONSULTABLE | Margen insuficiente o fallo de comprobación de memoria. |
+| DISCO_INSUFICIENTE / DISCO_NO_CONSULTABLE | Espacio libre insuficiente o statfs fallido. |
+| TEMPORAL_RESOLUCION_FALLIDA / REPOSITORIO_NO_RESUELTO / TEMPORAL_DENTRO_REPOSITORIO | No se acredita ubicación segura fuera del repositorio. |
+| TEMPORAL_EXISTENTE | mkdir exclusivo encontró raíz previa; no se reclama ni borra. |
+| TEMPORAL_CREACION_FALLIDA / TEMPORAL_NO_CONSULTABLE | Creación o inspección fallida, sin mostrar mensaje/path/code crudos del SO. |
+| TEMPORAL_NO_PRIVADO / TEMPORAL_IDENTIDAD_CAMBIADA | Fallan las verificaciones de propiedad/permisos/tipo o identidad. |
+| INCREMENTO_RSS_EXCEDIDO | El trabajo excede el incremento RSS permitido. |
+| SERVIDOR_CERRANDO / INSTANCIA_BLOQUEADA | Cierre o bloqueo de seguridad durante vigilancia. |
+| TEMPORAL_CON_RESIDUOS / TEMPORAL_LIMPIEZA_FALLIDA | No se pudo retirar la raíz propia al cerrar; no se barre recursivamente. |
+
+`etapa` es CONFIGURACION/INICIALIZACION/DISPONIBILIDAD/VIGILANCIA/CIERRE. Se registra **como máximo una vez por causa/etapa/campo por instancia**, también si se reintenta el mismo rechazo. Buscar en todo el log del despliegue activo, no solo la última petición. Un fallo permanente conserva su causa original; no la reemplaza en cada intento con un bloqueo genérico. No reiniciar repetidamente ni borrar temporales para obtener un log nuevo.
+
+La salida contiene solo constantes internas; no valores de variables, credenciales, IDs de Railway, cookies/JWT, nombres de usuario, filtros, reportes, rutas, stack, mensajes/códigos arbitrarios de excepciones o métricas crudas. Un logger que falla no altera la disponibilidad ni habilita el perfil. No se modifican umbrales, política de reintento/limpieza, respuesta HTTP, roles o configuración del servidor.
+
+Archivos modificados: `backend/src/shared/utils/reporte-railway.js`, `backend/tests/reporte.railway.test.js` y este registro. Estado Git inicial limpio. Pruebas focalizadas desde backend:
+
+```text
+node --test --test-concurrency=1 tests/reporte.railway.test.js tests/reporte.exportacion.test.js
+36 aprobadas antes de añadir cobertura de diagnósticos posteriores a admisión.
+node --test --test-concurrency=1 tests/reporte.railway.test.js tests/reporte.exportacion.test.js tests/reporte.conjunta.test.js
+Final: 60 aprobadas, 0 fallidas/canceladas/omitidas.
+git diff --check
+```
+
+Pruebas con guardas que prohíben conexiones MySQL, recursos Linux/cgroup simulados y regresión de los generadores/HTTP localhost controlados; incluye privacidad exacta del objeto registrado, deduplicación, errores con contenido sintético hostil, logger roto y rechazo conservado. No ejecución del arnés real, conexiones externas, lectura de .env para diagnóstico, instalaciones, frontend/build innecesarios, commit, push ni despliegue. Se mantienen los avisos PDF.js opcionales de la regresión, sin revisión visual.
