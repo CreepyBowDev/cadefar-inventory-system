@@ -1,11 +1,24 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
-import { join, relative, isAbsolute, sep } from 'node:path';
+import { join, relative, isAbsolute, sep, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
 const MiB = 1024n * 1024n;
-const repositorio = fileURLToPath(new URL('../../../../', import.meta.url));
+// El módulo está en backend/src/shared/utils. Tres niveles identifican el
+// paquete; un cuarto nivel solo es válido cuando existe el monorepo real.
+export async function resolverRaizCodigo(archivos = fs, modulo = import.meta.url) {
+    const backend = await archivos.realpath(fileURLToPath(new URL('../../../', modulo)));
+    const paquete = JSON.parse(await archivos.readFile(join(backend, 'package.json'), 'utf8'));
+    if (paquete.name !== 'backend' || paquete.type !== 'module' || dirname(backend) === backend) throw new Error('Raíz de backend no acreditada');
+    if (basename(backend) === 'backend') {
+        let frontend;
+        try { frontend = JSON.parse(await archivos.readFile(join(dirname(backend), 'frontend', 'package.json'), 'utf8')); }
+        catch (error) { if (error?.code !== 'ENOENT') throw error; }
+        if (frontend?.name === 'cadefar-frontend') return archivos.realpath(dirname(backend));
+    }
+    return backend;
+}
 const fuera = (padre, ruta) => {
     const r = relative(padre, ruta);
     return r && (isAbsolute(r) || r === '..' || r.startsWith(`..${sep}`));
@@ -30,7 +43,7 @@ export async function memoriaContenedor(archivos = fs) {
 
 // Factoría para pruebas sin Railway, cgroups ni conexiones reales.
 export function crearEntornoRailway({ archivos = fs, sistema = os, proceso = process,
-    memoria = () => memoriaContenedor(archivos), diagnosticar = evento => console.warn(evento) } = {}) {
+    memoria = () => memoriaContenedor(archivos), diagnosticar = evento => console.warn(evento), modulo = import.meta.url } = {}) {
     let raiz, identidad, inicializacion, cerrando = false, fallo = false;
     const emitidos = new Set();
     // Solo constantes internas. Nunca valores de env, Error/code/message,
@@ -89,7 +102,7 @@ export function crearEntornoRailway({ archivos = fs, sistema = os, proceso = pro
             inicializacion = (async () => {
                 const temporal = await archivos.realpath(sistema.tmpdir());
                 paso = 'REPOSITORIO_NO_RESUELTO';
-                const repo = await archivos.realpath(repositorio);
+                const repo = await resolverRaizCodigo(archivos, modulo);
                 if (!fuera(repo, temporal)) return rechazar('TEMPORAL_DENTRO_REPOSITORIO', 'INICIALIZACION');
                 paso = 'RECURSOS';
                 if (!await recursos(640n, 'INICIALIZACION')) return false;

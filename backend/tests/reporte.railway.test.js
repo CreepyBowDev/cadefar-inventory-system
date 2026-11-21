@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, parse, resolve } from 'node:path';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { PassThrough } from 'node:stream';
-import { crearEntornoRailway, memoriaContenedor, entornoExportacionRailway } from '../src/shared/utils/reporte-railway.js';
+import { crearEntornoRailway, memoriaContenedor, entornoExportacionRailway, resolverRaizCodigo } from '../src/shared/utils/reporte-railway.js';
 
 process.env.NODE_ENV = 'test';
 process.env.DB_NAME_TEST = 'railway_sin_conexion';
@@ -31,13 +32,14 @@ function entorno(opciones = {}) {
     const estado = { rss: 100 * 1024 * 1024, libre: 1024n * MiB, actual: 128n * MiB, max: 1024n * MiB, creados: [], borrados: [], diagnosticos: [], modo: 0o700 };
     const archivos = {
         realpath: async p => p,
+        readFile: async p => JSON.stringify({ name: p.includes('frontend') ? 'cadefar-frontend' : 'backend', type: 'module' }),
         statfs: async () => ({ bavail: estado.libre, bsize: 1n }),
         mkdir: async (p, opts) => { assert.equal(opts.mode, 0o700); estado.creados.push(p); if (opciones.existe) throw Object.assign(new Error(), { code: 'EEXIST' }); },
         lstat: async () => ({ isDirectory: () => true, isSymbolicLink: () => false, mode: estado.modo, uid: 7, dev: 1, ino: 2 }),
         rmdir: async p => { if (opciones.residuo) throw Object.assign(new Error(), { code: 'ENOTEMPTY' }); estado.borrados.push(p); }
     };
     const proceso = { env, platform: opciones.platform || 'linux', getuid: () => 7, memoryUsage: () => ({ rss: estado.rss }) };
-    const manager = crearEntornoRailway({ archivos, sistema: { tmpdir: () => '/tmp' }, proceso,
+    const manager = crearEntornoRailway({ archivos, sistema: { tmpdir: () => opciones.temporal || '/tmp' }, proceso, modulo: opciones.modulo,
         memoria: async () => opciones.sinCgroup ? null : { max: estado.max, actual: estado.actual },
         diagnosticar: opciones.diagnosticar || (evento => estado.diagnosticos.push(evento)) });
     return { manager, estado, archivos, proceso };
@@ -50,6 +52,74 @@ test('RAILWAY opt-in estricto: exige production, metadatos, Linux y una réplica
         const { manager, estado } = entorno(opciones);
         assert.equal(await manager.disponibilidad(), false); assert.deepEqual(estado.creados, []);
         await manager.cerrar();
+    }
+});
+
+test('Raíz de código: monorepo y backend independiente, sin confundir el padre del paquete con repositorio', async () => {
+    const root = parse(process.cwd()).root;
+    const monorepo = join(root, 'proyecto-sintetico');
+    for (const [backend, repo, conFrontend] of [
+        [join(monorepo, 'backend'), monorepo, true],
+        [join(root, 'app'), join(root, 'app'), false],
+        [join(root, 'backend'), join(root, 'backend'), false]
+    ]) {
+        const modulo = pathToFileURL(join(backend, 'src', 'shared', 'utils', 'reporte-railway.js')).href;
+        const lecturas = [];
+        const archivos = {
+            realpath: async p => resolve(p),
+            readFile: async p => {
+                lecturas.push(p);
+                if (p === join(backend, 'package.json')) return JSON.stringify({ name: 'backend', type: 'module' });
+                if (conFrontend && p === join(monorepo, 'frontend', 'package.json')) return JSON.stringify({ name: 'cadefar-frontend' });
+                throw Object.assign(new Error('Ausente sintético'), { code: 'ENOENT' });
+            }
+        };
+        assert.equal(await resolverRaizCodigo(archivos, modulo), repo);
+        assert.equal(lecturas[0], join(backend, 'package.json'));
+        // Reproduce exactamente el defecto anterior en un despliegue /app:
+        if (backend === join(root, 'app')) assert.equal(fileURLToPath(new URL('../../../../', modulo)), root);
+    }
+    assert.equal(await resolverRaizCodigo(), resolve(fileURLToPath(new URL('../../', import.meta.url))), 'Monorepo real leído sin conexiones ni escritura');
+});
+
+test('Admisión por estructura: permite temporal externo y rechaza código/frontend/public y symlink resuelto dentro', async () => {
+    const root = parse(process.cwd()).root;
+    for (const monorepo of [true, false]) {
+        const repo = join(root, 'app-sintetica');
+        const backend = monorepo ? join(repo, 'backend') : repo;
+        const modulo = pathToFileURL(join(backend, 'src', 'shared', 'utils', 'reporte-railway.js')).href;
+        const temporales = [repo, backend, join(backend, 'public'), join(backend, 'src', 'temporal'),
+            ...(monorepo ? [join(repo, 'frontend', 'public')] : [])];
+        for (const temporal of [...temporales, join(root, 'tmp-sintetico'), join(root, 'enlace-sintetico')]) {
+            const { manager, archivos, estado } = entorno({ modulo, temporal });
+            archivos.readFile = async p => {
+                if (p === join(backend, 'package.json')) return JSON.stringify({ name: 'backend', type: 'module' });
+                if (monorepo && p === join(repo, 'frontend', 'package.json')) return JSON.stringify({ name: 'cadefar-frontend' });
+                throw Object.assign(new Error(), { code: 'ENOENT' });
+            };
+            archivos.realpath = async p => p === join(root, 'enlace-sintetico') ? join(backend, 'public') : p;
+            if (temporal === join(root, 'tmp-sintetico')) {
+                assert.equal((await manager.disponibilidad()).perfil, 'RAILWAY');
+                assert.equal(estado.creados.length, 1); assert.deepEqual(estado.diagnosticos, []);
+                await manager.cerrar(); assert.equal(estado.borrados.length, 1);
+            } else {
+                assert.equal(await manager.disponibilidad(), false);
+                assert.equal(estado.diagnosticos[0].causa, 'TEMPORAL_DENTRO_REPOSITORIO');
+                assert.deepEqual(estado.creados, []); assert.deepEqual(estado.borrados, []);
+            }
+        }
+    }
+});
+
+test('Resolución de paquete fail-closed: manifest ausente/incorrecto/ilegible no usa cwd ni un padre supuesto', async () => {
+    const backend = join(parse(process.cwd()).root, 'paquete-sintetico');
+    const modulo = pathToFileURL(join(backend, 'src', 'shared', 'utils', 'reporte-railway.js')).href;
+    for (const contenido of [null, 'no-json', '{"name":"otro","type":"module"}', '{"name":"backend"}']) {
+        const { manager, archivos, estado } = entorno({ modulo });
+        archivos.readFile = async () => { if (contenido === null) throw Object.assign(new Error(), { code: 'ENOENT' }); return contenido; };
+        assert.equal(await manager.disponibilidad(), false);
+        assert.equal(estado.diagnosticos[0].causa, 'REPOSITORIO_NO_RESUELTO');
+        assert.deepEqual(estado.creados, []);
     }
 });
 

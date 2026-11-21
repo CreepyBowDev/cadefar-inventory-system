@@ -136,3 +136,22 @@ git diff --check
 ```
 
 Pruebas con guardas que prohíben conexiones MySQL, recursos Linux/cgroup simulados y regresión de los generadores/HTTP localhost controlados; incluye privacidad exacta del objeto registrado, deduplicación, errores con contenido sintético hostil, logger roto y rechazo conservado. No ejecución del arnés real, conexiones externas, lectura de .env para diagnóstico, instalaciones, frontend/build innecesarios, commit, push ni despliegue. Se mantienen los avisos PDF.js opcionales de la regresión, sin revisión visual.
+
+## Corrección de raíz de código para backend desplegado separado
+
+El usuario aportó el diagnóstico sanitizado `TEMPORAL_DENTRO_REPOSITORIO` en INICIALIZACION. Se comprobó un defecto concreto sin acceder al servidor: el cálculo fijo `../../../../` desde `src/shared/utils/reporte-railway.js` presupone un directorio backend dentro de un monorepo. En un paquete desplegado directamente en `/app`, ese cálculo devuelve `/`, y cualquier temporal como `/tmp` se considera contenido en el supuesto repositorio. La estructura exacta del contenedor del usuario no se inspeccionó; la reproducción acredita el defecto de ese layout, no una inspección remota.
+
+`resolverRaizCodigo(archivos?, modulo?)` parte ahora de **tres** niveles hasta la raíz del paquete y valida su `package.json` (`name=backend`, `type=module`). Si el paquete se llama estructuralmente `backend` y existe el manifiesto hermano de `frontend` con `name=cadefar-frontend`, protege la raíz del monorepo completo. Si ese hermano no existe, protege el paquete backend separado; nunca supone que su padre sea el repositorio ni usa cwd o una variable del cliente. Manifiesto backend ausente/incorrecto, permisos de lectura o JSON inválido conservan cierre seguro con REPOSITORIO_NO_RESUELTO. No se buscan manifiestos ascendiendo hasta `/`.
+
+Temporal y raíz siguen pasando por realpath, por lo que un enlace a una carpeta del código se rechaza. No se permiten temporales iguales a la raíz o contenidos en el código/public/frontend del monorepo acreditado. Privacidad/UID/mode/dev/inode, mkdir exclusivo, recursos, cuotas, cleanup y perfil production permanecen sin cambios. No se modifica el checker LOCAL ni otros módulos.
+
+Archivos de esta corrección: `backend/src/shared/utils/reporte-railway.js`, `backend/tests/reporte.railway.test.js` y este documento. Nuevas pruebas: raíz de monorepo, backend en `/app`, backend independiente llamado `backend` sin hermano frontend, admisión externa, rechazo de raíces/subcarpetas/public/frontend y symlink resuelto dentro, manifiestos ausentes/incorrectos/ilegibles y lectura de la estructura real del repositorio sin escribir. Layouts de despliegue y filesystem simulados localmente; no aceptación de Linux/Railway real.
+
+```text
+Desde backend:
+node --test --test-concurrency=1 tests/reporte.railway.test.js tests/reporte.exportacion.test.js tests/reporte.conjunta.test.js
+63 aprobadas, 0 fallidas/canceladas/omitidas.
+git diff --check
+```
+
+Primera ejecución 62/63: el mock realpath devolvía un separador final que el filesystem real elimina. Se corrigió exclusivamente su normalización, sin modificar guardas para satisfacer la expectativa. No escenarios omitidos ni suma de iteraciones. Avisos PDF.js opcionales heredados; sin revisión visual, frontend/build, dependencias, migraciones, conexiones Railway/MySQL, commit, push o despliegue. Estado Git inicial limpio. La corrección debe desplegarse por el operador para verificar si resuelve el rechazo reportado; pueden aparecer otras guardas no acreditadas todavía. No se deben borrar temporales ni desactivar comprobaciones.
