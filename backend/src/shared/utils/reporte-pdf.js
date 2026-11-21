@@ -5,6 +5,7 @@ import { COLUMNAS_REPORTE } from '../../business/services/reporte.plantillas.js'
 import { leerSpool, errorLimiteExportacion } from './reporte-archivos.js';
 import { planGrafica, validarTextoEstadistico, comprobarTablaEstadistica } from './reporte-grafica.js';
 import { pasadaPdfEstadistica } from './reporte-pdf-estadistica.js';
+import { TITULOS_REPORTE, etiquetaReporte, etiquetaRuta, explicarCodigo, notasFuente, leyendaCodigos } from './reporte-presentacion.js';
 
 export const MIME_PDF = 'application/pdf';
 export const FUENTE_PDF = fileURLToPath(new URL('../resources/fonts/NotoSans-Regular.ttf', import.meta.url));
@@ -12,17 +13,8 @@ export const LAYOUT_PDF = Object.freeze({ ancho: 841.89, alto: 595.28, margen: 1
 const { ancho, alto, margen, fuente: tamano, linea } = LAYOUT_PDF;
 const util = ancho - 2 * margen, fondo = alto - margen - 24;
 const grafemas = new Intl.Segmenter('es', { granularity: 'grapheme' });
-const labels = {
-    idVenta: 'ID venta', idCompra: 'ID compra', idMovimiento: 'ID movimiento', idExistencia: 'ID existencia',
-    idMedicamento: 'ID medicamento', idProveedorLaboratorio: 'ID proveedor/laboratorio', estadoOperacion: 'Estado', categoria: 'Categoría',
-    fechaReferencia: 'Fecha referencia', fechaRegistro: 'Fecha registro', fechaVenta: 'Fecha venta', fechaCompra: 'Fecha compra', fechaAnulacion: 'Fecha anulación',
-    total: 'Total', codigoExistencia: 'Código existencia', codigoMedicamento: 'Código medicamento', nombreComercial: 'Nombre comercial',
-    idUsuario: 'ID usuario', nombreUsuario: 'Nombre usuario', motivo: 'Motivo', direccion: 'Dirección', fechaMovimiento: 'Fecha movimiento',
-    cantidad: 'Cantidad', costoUnitarioAplicado: 'Costo unitario aplicado', perdida: 'Pérdida', idDetalleCompra: 'ID detalle compra',
-    idDetalleVenta: 'ID detalle venta', idMovimientoOriginal: 'ID movimiento original', idMovimientoReversion: 'ID movimiento reversión'
-};
 const primarias = {
-    VENTAS: [['idVenta'], ['estadoOperacion', 'categoria'], ['fechaReferencia'], ['total'], []],
+    VENTAS: [['idVenta'], ['estadoOperacion', 'categoria'], ['fechaReferencia'], ['total']],
     COMPRAS: [['idCompra'], ['estadoOperacion'], ['fechaReferencia'], ['total'], ['idProveedorLaboratorio']],
     PERDIDAS: [['idMovimiento'], ['fechaReferencia'], ['codigoExistencia'], ['motivo'], ['cantidad'], ['costoUnitarioAplicado', 'perdida']],
     MOVIMIENTOS: [['idMovimiento'], ['fechaMovimiento'], ['codigoExistencia'], ['direccion', 'motivo'], ['cantidad'], ['costoUnitarioAplicado']]
@@ -31,7 +23,7 @@ const aplanar = function* (objeto, prefijo = '') {
     for (const [k, v] of Object.entries(objeto ?? {})) {
         const clave = prefijo ? `${prefijo}.${k}` : k;
         if (v !== null && typeof v === 'object') yield* aplanar(v, clave);
-        else yield `${clave}: ${v}`;
+        else yield `${etiquetaRuta(clave)} — ${clave}: ${v}`;
     }
 };
 const documento = estadistica => new PDFDocument({ autoFirstPage: false, bufferPages: false, fontLayoutCache: false,
@@ -41,6 +33,8 @@ const documento = estadistica => new PDFDocument({ autoFirstPage: false, bufferP
 // Un único algoritmo para medir y dibujar. Solo retiene bandas del registro actual.
 // Sin el wrapper implícito de PDFKit (trim, elipsis o salto automático de página).
 const pasada = async ({ doc, archivos, fuente, filtros, metadata, generacion, filas, comprobar, dibujar, paginas, drenar }) => {
+    const labels = Object.fromEntries(COLUMNAS_REPORTE[fuente].map(c => [c,
+        c === 'fechaReferencia' ? 'Fecha de referencia' : c === 'cantidad' ? 'Unidades' : etiquetaReporte(c, fuente)]));
     const hash = createHash('sha256');
     let pagina = 0, y, registros = 0;
     const literal = v => {
@@ -82,8 +76,12 @@ const pasada = async ({ doc, archivos, fuente, filtros, metadata, generacion, fi
         if (pagina && dibujar) { doc.flushPages(); await drenar(); }
         if (++pagina > 500) throw errorLimiteExportacion();
         if (dibujar) doc.addPage();
-        texto(`CADEFAR | ${fuente} / TABULAR`, margen, margen, util);
-        texto('Detalle completo / campos etiquetados', margen, margen + linea, util);
+        doc.fontSize(12);
+        if (dibujar) doc.fillColor('#126782');
+        texto(`CADEFAR | ${TITULOS_REPORTE[fuente]}`, margen, margen, util);
+        doc.fontSize(tamano);
+        if (dibujar) doc.fillColor('#172b3a');
+        texto('Detalle completo / campos etiquetados', margen, margen + 18, util);
         texto(`Página ${pagina} de ${paginas ?? 500}`, margen, alto - margen - linea, util, false);
         y = margen + 3 * linea;
     };
@@ -95,21 +93,43 @@ const pasada = async ({ doc, archivos, fuente, filtros, metadata, generacion, fi
     };
     await nueva();
     const campos = fuente === 'MOVIMIENTOS' ? ['idMedicamento', 'idExistencia', 'direccion', 'motivo'] : fuente === 'PERDIDAS' ? ['motivo'] : ['estadoOperacion'];
-    for (const s of ['Período: ' + (filtros.periodo?.modalidad ?? 'Filtros abiertos CU40'),
+    for (const s of ['Criterios aplicados — detalle tabular completo, no solo la página de pantalla.',
+        'Período: ' + (filtros.periodo ? explicarCodigo(filtros.periodo.modalidad) : 'Filtros abiertos CU40'),
         'Desde: ' + (filtros.periodo?.desde ?? filtros.desde ?? 'sin límite inferior'),
         'Hasta: ' + (filtros.periodo?.hasta ?? filtros.hasta ?? 'sin límite superior'), 'Zona: America/La_Paz',
-        'Generación civil: ' + generacion, ...campos.map(c => `Filtro ${c}: ${filtros[c] ?? 'todos'}`),
+        'Generación civil: ' + generacion, ...campos.map(c => `Filtro ${etiquetaReporte(c)}: ${filtros[c] == null ? 'todos' : explicarCodigo(filtros[c])}`),
         `Cantidad de ${fuente === 'MOVIMIENTOS' ? 'movimientos' : 'filas'}: ${filas}`,
         'Estado actual del snapshot; catálogos actuales, no cierre histórico.',
         ...(fuente === 'PERDIDAS' ? ['Pérdidas brutas: originales; RN91 por movimiento; reversiones no descontadas.'] : []),
-        'Fechas civiles literales; dinero y costos exactos. Nulos: —.', 'Detalle']) await lineas(s);
+        'Fechas civiles literales; dinero y costos exactos. Nulos: —.', ...notasFuente(fuente),
+        'Categorías / códigos: ' + leyendaCodigos(fuente)]) await lineas(s);
+    const seccion = async titulo => {
+        if (y + 3 * linea > fondo) await nueva();
+        y += 4;
+        if (dibujar) doc.save().strokeColor('#126782').moveTo(margen, y).lineTo(ancho - margen, y).stroke().restore();
+        y += 5;
+        doc.fontSize(11);
+        if (dibujar) doc.fillColor('#126782');
+        texto(titulo, margen, y, util);
+        doc.fontSize(tamano);
+        if (dibujar) doc.fillColor('#172b3a');
+        y += 18;
+        y += 4;
+    };
+    if (fuente !== 'MOVIMIENTOS') {
+        await seccion('Resumen completo / totales exactos del período por categoría');
+        for (const s of aplanar(metadata.resumen)) await lineas(s);
+    }
+    await seccion('Detalle completo / todos los campos y referencias');
+    if (!filas) await lineas('Sin operaciones que coincidan con los criterios aplicados.');
     const principal = primarias[fuente], usadas = new Set(principal.flat());
     const secundarias = COLUMNAS_REPORTE[fuente].filter(c => !usadas.has(c));
     for await (const fila of leerSpool(archivos.rutas.spool, comprobar)) {
         if (++registros > 10000) throw errorLimiteExportacion();
         for (const c of COLUMNAS_REPORTE[fuente]) literal(fila[c]);
         const id = literal(fila[COLUMNAS_REPORTE[fuente][0]]);
-        const bandas = [{ celdas: principal, proporciones: principal.length === 5 ? [.10, .25, .25, .20, .20] : [.10, .20, .20, .20, .10, .20] }];
+        const bandas = [{ celdas: principal, proporciones: fuente === 'VENTAS' ? [.10, .30, .35, .25]
+            : fuente === 'COMPRAS' ? [.10, .18, .28, .22, .22] : [.10, .20, .20, .20, .10, .20] }];
         for (let i = 0; i < secundarias.length; i += 2) bandas.push({ celdas: secundarias.slice(i, i + 2).map(c => [c]), proporciones: [.5, .5] });
         if (y + 3 * linea > fondo) await nueva();
         await lineas(`Registro ID ${id}`);
@@ -125,6 +145,7 @@ const pasada = async ({ doc, archivos, fuente, filtros, metadata, generacion, fi
                     await nueva(); await lineas(`ID ${id} / continuación`);
                     await lineas('Continúa banda: ' + banda.celdas.flat().map(c => labels[c]).join(' / '));
                 }
+                if (dibujar && banda === bandas[0]) doc.save().fillColor('#edf4f6').rect(margen, y, util, linea).fill().restore();
                 let x = margen;
                 for (const celda of celdas) {
                     if (i < celda.lineas.length) texto(celda.lineas[i], x + 4, y, celda.width - 8);
@@ -137,11 +158,6 @@ const pasada = async ({ doc, archivos, fuente, filtros, metadata, generacion, fi
         y += 6;
     }
     if (registros !== filas) throw new Error('PDF incompleto');
-    if (fuente !== 'MOVIMIENTOS') {
-        await lineas('Resumen / totales exactos del snapshot por categoría');
-        for (const s of aplanar(metadata.resumen)) await lineas(s);
-        if (fuente !== 'PERDIDAS') await lineas('Solo confirmadas son realizadas; otras categorías informativas, no ingresos adicionales.');
-    }
     if (dibujar) { doc.flushPages(); await drenar(); }
     return { paginas: pagina, registros, layout: hash.digest('hex') };
 };

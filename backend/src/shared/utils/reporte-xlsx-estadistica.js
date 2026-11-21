@@ -5,6 +5,8 @@ import { pipeline, finished } from 'node:stream/promises';
 import { COLUMNAS_REPORTE } from '../../business/services/reporte.plantillas.js';
 import { leerSpool } from './reporte-archivos.js';
 import { planGrafica, validarTextoEstadistico, comprobarTablaEstadistica, generarPanel } from './reporte-grafica.js';
+import { TITULOS_REPORTE, etiquetaReporte, etiquetaRuta, explicarCodigo, notasFuente, leyendaCodigos, alcanceGrafica,
+    ESTILO_CABECERA_XLSX, alturaFilaXlsx } from './reporte-presentacion.js';
 
 // Archiver ya es dependencia de ExcelJS 4.4.0. Su escritor documental por defecto
 // usa JSZip.generateAsync(nodebuffer): NO usarlo para el archivo completo.
@@ -26,21 +28,35 @@ export const generarXlsxEstadistica = async (opciones, literal) => {
         comprobar();
         const fila = hoja.addRow(valores.map(literal));
         fila.eachCell(c => { c.numFmt = '@'; c.alignment = { wrapText: true, vertical: 'top' }; c.font = { name: 'Noto Sans', size: 11, bold: cabecera }; });
+        if (cabecera) fila.eachCell(c => { c.style = ESTILO_CABECERA_XLSX; });
         // Altura explícita conservadora para wrapping de texto de metadatos.
-        fila.height = 18 * Math.max(1, ...valores.map(v => Math.ceil(String(v ?? '').length / (hoja.name === 'Estadisticas' ? 22 : 80))));
+        fila.height = alturaFilaXlsx(hoja, valores);
         return fila;
     };
-    const resumen = libro.addWorksheet('Resumen'); resumen.columns = [{ width: 44 }, { width: 110 }];
-    for (const par of [['Identidad', 'CADEFAR'], ['Título', `${fuente} / ESTADISTICA`], ['Modalidad', filtros.periodo.modalidad],
+    const resumen = libro.addWorksheet('Resumen'); resumen.columns = [{ width: 44 }, { width: 48 }, { width: 64 }];
+    for (const par of [['Identidad', 'CADEFAR'], ['Título', `${TITULOS_REPORTE[fuente]} / estadísticas`], ['Modalidad', filtros.periodo.modalidad, explicarCodigo(filtros.periodo.modalidad)],
         ['Desde', filtros.periodo.desde], ['Hasta', filtros.periodo.hasta], ['Zona horaria', 'America/La_Paz'], ['Generación civil', generacion],
-        ['Filtro.' + (fuente === 'PERDIDAS' ? 'motivo' : 'estadoOperacion'), filtros[fuente === 'PERDIDAS' ? 'motivo' : 'estadoOperacion'] ?? 'todos'],
-        ['Granularidad', filtros.granularidad], ['Gráfica', filtros.grafico], ['Métrica', filtros.metrica], ['Intervalos', String(metadata.intervalos.length)],
+        ['Filtro.' + (fuente === 'PERDIDAS' ? 'motivo' : 'estadoOperacion'), filtros[fuente === 'PERDIDAS' ? 'motivo' : 'estadoOperacion'] ?? 'todos',
+            fuente === 'PERDIDAS' ? 'Motivo del retiro' : 'Estado de la operación'],
+        ['Granularidad', filtros.granularidad, explicarCodigo(filtros.granularidad)], ['Gráfica', filtros.grafico, explicarCodigo(filtros.grafico)],
+        ['Métrica', filtros.metrica, explicarCodigo(filtros.metrica)], ['Intervalos', String(metadata.intervalos.length)],
         ['Cantidad de filas', String(filas)], ['Nota', 'Estado actual del snapshot; catálogos actuales, no cierre histórico.'],
         ['Exactitud', 'Fechas civiles, IDs, dinero, costos y agregados: texto @. Sin fórmulas ni sumas automáticas.'],
         ...(fuente === 'PERDIDAS' ? [['Pérdidas', 'Retiros originales brutos; RN91 por movimiento; reversiones no descontadas.']]
-            : [['Categorías', 'Solo confirmadas son realizadas; otras categorías informativas no son ingresos adicionales.']]),
-        ...(metadata.sinDatos ? [['Datos', 'Sin operaciones']] : []), ...aplanar(metadata.resumen, 'resumen'), ...aplanar(metadata.distribuciones, 'distribuciones')]) agregar(resumen, par);
+            : [['Categorías', 'Solo confirmadas son realizadas; los demás importes son informativos, no total realizado.']]),
+        ...(metadata.sinDatos ? [['Datos', 'Sin operaciones']] : [])]) agregar(resumen, par);
+    for (const nota of notasFuente(fuente)) agregar(resumen, ['Interpretación', nota]);
+    agregar(resumen, ['Códigos', leyendaCodigos(fuente)]);
+    agregar(resumen, ['Alcance', 'Todas las categorías, métricas, intervalos y ceros. No solo el panel visible.']);
+    agregar(resumen, ['Campo contractual', 'Valor exacto', 'Resumen completo / significado'], true);
+    for (const par of aplanar(metadata.resumen, 'resumen')) agregar(resumen, [...par, etiquetaRuta(par[0])]);
+    agregar(resumen, ['Campo contractual', 'Valor exacto', 'Distribuciones / significado'], true);
+    for (const par of aplanar(metadata.distribuciones, 'distribuciones')) agregar(resumen, [...par, explicarCodigo(par[1]) === String(par[1]) ? etiquetaRuta(par[0]) : explicarCodigo(par[1])]);
     const columnas = COLUMNAS_REPORTE.ESTADISTICA;
+    agregar(resumen, ['Columna contractual', 'Significado', 'Tipo / representación'], true);
+    for (const c of columnas) agregar(resumen, [c, etiquetaReporte(c, fuente), 'Texto exacto @; sin conversión numérica ni de fecha']);
+    agregar(resumen, ['Métricas / unidades', 'Códigos y significado'], true);
+    for (const codigo of new Set(metadata.series.flatMap(s => [s.categoria, s.metrica, s.unidad]))) agregar(resumen, [codigo, explicarCodigo(codigo)]);
     const tabla = libro.addWorksheet('Estadisticas', { views: [{ state: 'frozen', ySplit: 1 }] });
     tabla.columns = columnas.map(c => ({ width: ['desde', 'hasta', 'intervalo'].includes(c) ? 14 : c === 'valor' ? 30 : 28 }));
     agregar(tabla, columnas, true); let n = 0;
@@ -48,18 +64,30 @@ export const generarXlsxEstadistica = async (opciones, literal) => {
     if (n !== filas) throw new Error('XLSX estadístico incompleto');
     tabla.autoFilter = `A1:H${n + 1}`;
     const grafica = libro.addWorksheet('Grafica'); grafica.columns = [{ width: 44 }, { width: 110 }];
-    agregar(grafica, ['CADEFAR', `${fuente} / ${filtros.grafico} / ${filtros.metrica}`]);
+    agregar(grafica, ['CADEFAR', `${TITULOS_REPORTE[fuente]} / ${explicarCodigo(filtros.grafico)} / ${explicarCodigo(filtros.metrica)}`], true);
     agregar(grafica, ['Escala relativa aproximada, referencia exacta S', plan.referencia]);
-    agregar(grafica, ['Unidad', plan.unidad]);
+    agregar(grafica, ['Unidad', explicarCodigo(plan.unidad)]);
     agregar(grafica, ['Resolución', plan.resolucion ? 'Valores positivos inferiores a resolución; no son cero. Consultar tabla exacta.' : 'Geometría aproximada; tabla exacta completa. Sin porcentajes.']);
     if (!plan.escala) agregar(grafica, ['Datos', 'Sin valor para graficar']);
-    for (const s of plan.series) agregar(grafica, ['Leyenda / total exacto del período: ' + s.categoria, s.total]);
+    agregar(grafica, ['Alcance', `Desde ${filtros.periodo.desde} hasta ${filtros.periodo.hasta}. Imagen no editable; todas las categorías.`]);
+    for (const s of plan.series) agregar(grafica, ['Leyenda / total exacto del período: ' + explicarCodigo(s.categoria), s.total]);
+    // Las imágenes se anclan después de la última fila real, no a una fila fija
+    // que pudiera solaparse con metadatos envueltos o una leyenda extensa.
+    let filaImagen = grafica.rowCount + 2;
     for (let panel = 0; panel < plan.paneles; panel++) {
         comprobar();
         const ruta = await generarPanel(opciones, plan, panel);
         const id = libro.addImage({ filename: ruta, extension: 'png' });
         if (id !== panel || libro.getImage(id)?.filename !== ruta) throw new Error('Imagen XLSX no incrustada');
-        grafica.addImage(id, { tl: { col: 0, row: 12 + panel * 43 }, ext: { width: 1200, height: 800 }, editAs: 'absolute' });
+        const alcance = grafica.getRow(filaImagen);
+        alcance.getCell(1).value = `Panel ${panel + 1} de ${plan.paneles}`;
+        alcance.getCell(2).value = alcanceGrafica(metadata, filtros, panel);
+        alcance.height = 32;
+        alcance.eachCell(c => { c.style = ESTILO_CABECERA_XLSX; });
+        grafica.addImage(id, { tl: { col: 0, row: filaImagen }, ext: { width: 1200, height: 800 }, editAs: 'absolute' });
+        // 800 píxeles = 600 puntos; reservar filas de altura explícita.
+        for (let i = 1; i <= 41; i++) grafica.getRow(filaImagen + i).height = 15;
+        filaImagen += 44;
     }
     if (grafica.getImages().length !== plan.paneles) throw new Error('Dibujo XLSX incompleto');
     await archivos.verificar('spool'); comprobar();

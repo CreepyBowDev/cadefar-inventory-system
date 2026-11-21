@@ -5,6 +5,7 @@ import { crc32, inflateSync } from 'node:zlib';
 import { decimalAEntero, dividirYRedondear, enteroADecimal } from './decimal.js';
 import { errorLimiteExportacion, leerSpool } from './reporte-archivos.js';
 import { filasEstadisticas } from '../../business/services/reporte.plantillas.js';
+import { TITULOS_REPORTE, explicarCodigo } from './reporte-presentacion.js';
 
 const fuente = fileURLToPath(new URL('../resources/fonts/NotoSans-Regular.ttf', import.meta.url));
 const colores = ['#126782', '#b65c00', '#7142a3', '#286b37'];
@@ -55,8 +56,8 @@ export const svgPanel = (data, filtros, plan, panel) => {
     if (panel < 0 || panel >= plan.paneles) throw new Error('Panel inválido');
     const partes = ['<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="white"/>'];
     const texto = (s, x, y, size = 20) => partes.push(`<text x="${x}" y="${y}" font-family="Noto Sans" font-size="${size}" fill="#172b3a">${xml(s)}</text>`);
-    texto(`CADEFAR | ${data.fuente} | ${filtros.grafico} | Panel ${panel + 1} de ${plan.paneles}`, 30, 30, 22);
-    texto(`${filtros.metrica} / ${plan.unidad}`, 30, 60);
+    texto(`CADEFAR | ${TITULOS_REPORTE[data.fuente]} | ${explicarCodigo(filtros.grafico)} | Panel ${panel + 1} de ${plan.paneles}`, 30, 30, 22);
+    texto(`${explicarCodigo(filtros.metrica)} / ${explicarCodigo(plan.unidad)}`, 30, 60);
     // Referencia exacta también se incluye como texto completo en PDF/XLSX.
     const referencia = `Escala relativa aproximada, referencia exacta S=${plan.referencia}`;
     const ref = referencia.length <= 210 ? referencia : 'Escala relativa aproximada; referencia exacta S completa en el texto adjunto del documento.';
@@ -95,7 +96,7 @@ export const svgPanel = (data, filtros, plan, panel) => {
     plan.series.forEach((s, j) => {
         partes.push(`<rect x="30" y="${640 + j * 28}" width="18" height="18" fill="${colores[j]}"/>`);
         const valor = filtros.grafico === 'SECTORES' ? `: ${plan.distribucion.categorias[j].valor}` : '';
-        texto(s.categoria + valor, 60, 656 + j * 28);
+        texto(explicarCodigo(s.categoria) + valor, 60, 656 + j * 28);
     });
     texto(plan.resolucion ? 'Valores positivos inferiores a resolución: consultar tabla exacta; no son cero.' : 'Geometría aproximada; datos exactos completos en tabla. Sin porcentajes.', 30, 785, 19);
     partes.push('</svg>'); return partes.join('');
