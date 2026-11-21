@@ -35,7 +35,7 @@ Cuotas conservadas: final 128 MiB, trabajo 512 MiB, CSV/XLSX tabular 1.000.000 f
 
 `reporte-plazo-sql.js` aplica exclusivamente a la transacción RR de una exportación Railway:
 
-1. Comprueba MySQL 8 y lee los valores de sesión anteriores en esa conexión.
+1. Comprueba MySQL 8 o la versión exacta MySQL 9.7.4 (revisión documentada al final) y lee los valores de sesión anteriores en esa conexión.
 2. Antes de **cada** SELECT de resumen/bloque/series, establece max_execution_time con presupuesto restante de extracción (máximo 60 s) y lock_wait_timeout con el resto redondeado a segundos. No otorga otros 60 s por bloque.
 3. Espera siempre la resolución/rechazo del SELECT; no Promise.race que libere SQL vivo. Errores MySQL 3024/1205 se presentan como timeout de generación seguro.
 4. Restaura ambos valores antes de finalizar/devolver la conexión. Si restaurar falla, fuerza descarte de la conexión, marca la transacción finalizada e impide nuevas exportaciones en esa instancia; nunca vuelve al pool una sesión de límites desconocidos.
@@ -60,7 +60,7 @@ El arnés `reportes-real.browser.test.mjs` se adapta a las nuevas cabeceras expu
 
 Los lectores/archivos/servidores localhost de las regresiones son pruebas controladas, no acceso a servicios desplegados. PDF.js conserva avisos por canvas/DOMMatrix/Path2D opcionales; texto/operadores no equivalen a rasterización o revisión visual. No instalar dependencias para ocultarlos.
 
-Pendiente, con autorización específica de entorno aislado: disponibilidad cgroup/disco reales, propietarios/permisos y residuos tras reinicio, pico de RAM de formatos y datos acotados/grandes, MySQL 8/SET SESSION/timeout real y restitución del pool, límites del edge/drenaje/solapamiento, cookies/CORS desde navegador entre dominios reales, las 21 variantes/lecturas y revisión visual de documentos. No probar con información operativa ni reutilizar autorizaciones anteriores. El defecto de retorno postlogin con query de Fase 7 no se corrige en esta tarea.
+Pendiente, con autorización específica de entorno aislado: disponibilidad cgroup/disco reales, propietarios/permisos y residuos tras reinicio, pico de RAM de formatos y datos acotados/grandes, MySQL 8 y 9.7.4/SET SESSION/timeout real y restitución del pool, límites del edge/drenaje/solapamiento, cookies/CORS desde navegador entre dominios reales, las 21 variantes/lecturas y revisión visual de documentos. No probar con información operativa ni reutilizar autorizaciones anteriores. El defecto de retorno postlogin con query de Fase 7 no se corrige en esta tarea.
 
 **Implementación no equivale a habilitación ni aceptación productiva.** No se realizó commit, push, despliegue o acceso Railway/MySQL; habilitar el opt-in en el servicio público es una acción posterior.
 
@@ -197,3 +197,32 @@ Cobertura: dialecto Sequelize real/driver simulado, tipos numéricos y textuales
 Tras desplegar esta entrega por decisión del operador, intentar una exportación pequeña y compartir **solo** el bloque EXPORTACION_RAILWAY_ERROR con etapa/causa. Hasta obtener esa evidencia no se declara corregido el error 500 del despliegue. No pruebas reales, commit, push o despliegue en esta tarea; no reutilización de autorizaciones anteriores. Avisos opcionales PDF.js de las regresiones conservados, sin instalar canvas ni certificar revisión visual.
 
 Resultado final del comando anterior, con la prueba de clasificación por etapas de archivos: **69 aprobadas, 0 fallidas/canceladas/omitidas**. `git diff --check` aprobado (solo avisos LF → CRLF). Los dos archivos nuevos comprobados individualmente mediante `git -c core.autocrlf=false diff --no-index --check -- NUL <archivo>`, sin diagnósticos. No se efectuó build frontend porque no cambia código cliente.
+
+## Soporte explícito de MySQL 9.7.4
+
+El operador aportó `CONTROL_SQL / MOTOR_NO_ADMITIDO` y el resultado `9.7.4` de VERSION(). La guarda anterior `/^8\./` rechazaba esa versión antes de extraer datos, independientemente de CSV/XLSX/PDF. En esta entrega se revisó exclusivamente documentación pública oficial; no se accedió a Railway ni a ningún motor MySQL.
+
+### Compatibilidad documental de los controles utilizados
+
+Fuentes consultadas del **MySQL 9.7 Reference Manual**:
+
+- [max_execution_time, §7.1.8](https://dev.mysql.com/doc/refman/9.7/en/server-system-variables.html#sysvar_max_execution_time): entero dinámico Global/Session, milisegundos, rango 0–4294967295; 0 deshabilita el timeout. El valor de sesión se aplica a SELECT de solo lectura sin hint explícito no nulo. No se aplica a SELECT en programas almacenados ni a funciones almacenadas con efectos de escritura.
+- [lock_wait_timeout, §7.1.8](https://dev.mysql.com/doc/refman/9.7/en/server-system-variables.html#sysvar_lock_wait_timeout): entero dinámico Global/Session, segundos, rango 1–31536000. Limita cada intento de adquirir un bloqueo de **metadatos**, no los bloqueos de filas InnoDB ni el tiempo total de la operación; varias esperas pueden exceder ese valor.
+- [MAX_EXECUTION_TIME, §10.9.3](https://dev.mysql.com/doc/refman/9.7/en/optimizer-hints.html#optimizer-hints-execution-time): conserva la sintaxis del SELECT de control con hint de 1000 ms y las restricciones de solo lectura. La extracción no usa programas almacenados ni funciones almacenadas con escrituras.
+- [Privilegios de variables, §7.1.9.1](https://dev.mysql.com/doc/refman/9.7/en/system-variable-privileges.html): SET SESSION normalmente no requiere privilegios especiales; las excepciones se indican en cada variable. Ninguna de estas dos descripciones impone una restricción adicional. No se cambian grants ni valores GLOBAL/PERSIST; un rechazo efectivo de permisos sigue abortando el trabajo.
+
+Los rangos/unidades documentados permiten conservar el presupuesto existente (1–60000 ms; espera redondeada 1–60 s), lectura de valores previos y restauración en la misma conexión. Esta revisión acredita compatibilidad del contrato de controles, **no certifica toda la aplicación, el driver ni la efectividad del servidor desplegado**. Se conservan las limitaciones de deadline descritas en §SQL y cierre; no se incorpora KILL ni una carrera que libere SQL pendiente.
+
+### Cambio y alcance
+
+En `backend/src/data/repositories/reporte-plazo-sql.js` la guarda conserva MySQL 8 y admite además **solo el string exacto `9.7.4`**. No admite todas las versiones 9, parches vecinos ni sufijos/variantes de 9.7.4 no revisados. MariaDB sigue rechazado, incluso si anuncia prefijo admitido. La validación previa de fila única/tipos/valores continúa sin defaults ni fallback. El resto del helper no cambia: límites antes de cada SELECT, presupuesto común, finally con restauración y eliminación del plazo, forceCleanup y marca rollback si restaurar falla. Snapshots RR, cierre de admisión ante sesión insegura, autenticación/roles, cuotas, temporales, generadores y contratos HTTP no se modifican.
+
+Pruebas en `backend/tests/reporte.diagnostico.test.js`: admisión 8.0.46/8.4.0/9.7.4; mismo objeto transaction sin retry/logging; presupuesto decreciente y redondeo; restauración exacta de valores previos; retiro del plazo; motores/versiones/variantes no admitidos sin extraer ni aplicar SET; valores inválidos en 9.7.4; agotamiento/fallo de extracción; fallos de control/SET/restauración tanto en 8 como en 9.7.4, con descarte y marca rollback conservados. En `backend/tests/reporte.railway.test.js` las 21 variantes del pipeline production usan ahora VERSION()=9.7.4 simulado y comprueban RR; se conservan generadores reales, auditoría, cleanup y timeout. Las pruebas SQL restantes siguen cubriendo MySQL 8. Guards de getConnection prohíben transporte real; no pruebas de integración, migraciones ni consultas al servicio desplegado.
+
+```text
+Desde backend:
+node --test --test-concurrency=1 tests/reporte.diagnostico.test.js tests/reporte.railway.test.js tests/reporte.exportacion.test.js tests/reporte.conjunta.test.js
+72 aprobadas, 0 fallidas/canceladas/omitidas.
+```
+
+Sin dependencias, frontend, cambios de versión/esquema de base, commit, push o despliegue. Avisos opcionales heredados de PDF.js (canvas/DOMMatrix/Path2D), sin revisión visual. Tras un despliegue posterior decidido por el operador, verificar una descarga pequeña de cada formato; esta entrega elimina el rechazo de versión demostrado, no promete que no existan otras guardas o fallos del entorno. Si falla, compartir solo etapa/causa del diagnóstico sanitizado.

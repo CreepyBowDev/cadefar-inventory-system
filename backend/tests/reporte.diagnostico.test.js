@@ -53,8 +53,79 @@ test('Versiones y tipos no acreditados: rechazo intacto, diagnóstico preciso si
     }
 });
 
+test('MySQL 8 y 9.7.4: mismo snapshot, presupuesto decreciente, restauración exacta y retiro del plazo', async t => {
+    for (const motor of ['8.0.46', '8.4.0', '9.7.4']) {
+        const tx = {}, sql = [];
+        let restante = 59000;
+        t.mock.method(db.sequelize, 'query', async (texto, opts) => {
+            assert.equal(opts.transaction, tx);
+            assert.equal(opts.logging, false);
+            assert.deepEqual(opts.retry, { max: 0 });
+            sql.push(texto);
+            return opts.type === db.Sequelize.QueryTypes.SELECT ? [{ motor, ejecucion: '17', espera: '25' }] : [[], {}];
+        });
+        assert.equal(await conPlazoSqlReporte(tx, () => restante, async () => {
+            await antesSelectReporte(tx);
+            restante = 1001; await antesSelectReporte(tx);
+            restante = 1; await antesSelectReporte(tx);
+            return 'materializado';
+        }), 'materializado');
+        assert.match(sql[0], /^SELECT \/\*\+ MAX_EXECUTION_TIME\(1000\) \*\//);
+        assert.deepEqual(sql.slice(1), [
+            'SET SESSION max_execution_time = 59000, lock_wait_timeout = 59',
+            'SET SESSION max_execution_time = 1001, lock_wait_timeout = 2',
+            'SET SESSION max_execution_time = 1, lock_wait_timeout = 1',
+            'SET SESSION max_execution_time = 17, lock_wait_timeout = 25'
+        ]);
+        await antesSelectReporte(tx);
+        assert.equal(sql.length, 5);
+    }
+});
+
+test('Allowlist acotada: otros motores, versiones 9 no revisadas y variantes de 9.7.4 no ejecutan datos ni SET', async t => {
+    for (const motor of ['5.7.44', '9.0.0', '9.7.3', '9.7.5', '9.7.40', '9.8.0', '10.0.0',
+        '10.11.6-MariaDB', '9.7.4-MariaDB', '9.7.4-TiDB', '9.7.4-commercial', '9.7.4-debug',
+        '9.7.4\n', ' 9.7.4', '9.7', '', null, 9.74]) {
+        let consultas = 0;
+        t.mock.method(db.sequelize, 'query', async () => {
+            consultas++;
+            return [{ motor, ejecucion: 0, espera: 30 }];
+        });
+        await assert.rejects(conPlazoSqlReporte({}, () => 1000, () => assert.fail('No extraer')), error => {
+            assert.deepEqual(evento(error), { codigo: 'EXPORTACION_RAILWAY_ERROR', etapa: 'CONTROL_SQL', causa: 'MOTOR_NO_ADMITIDO' });
+            return true;
+        });
+        assert.equal(consultas, 1);
+    }
+});
+
+test('MySQL 9.7.4: valores inválidos cierran control y fallo/agotamiento de extracción siempre restaura', async t => {
+    for (const [ejecucion, espera] of [[null, 30], [0, 'invalido'], ['01', 30], [-1, 30], [0, Number.MAX_SAFE_INTEGER + 1]]) {
+        let consultas = 0;
+        t.mock.method(db.sequelize, 'query', async () => { consultas++; return [{ motor: '9.7.4', ejecucion, espera }]; });
+        await assert.rejects(conPlazoSqlReporte({}, () => 1000, () => assert.fail('No extraer')), error => {
+            assert.equal(evento(error).causa, 'VALORES_SESION_INVALIDOS'); return true;
+        });
+        assert.equal(consultas, 1);
+    }
+    for (const presupuesto of [0, -1, NaN, 60001, 1000]) {
+        const sql = [], tx = {}, fallo = new Error('Extracción simulada');
+        t.mock.method(db.sequelize, 'query', async texto => {
+            sql.push(texto);
+            return texto.startsWith('SELECT') ? [{ motor: '9.7.4', ejecucion: 0, espera: 31536000 }] : [[], {}];
+        });
+        await assert.rejects(conPlazoSqlReporte(tx, () => presupuesto, async () => {
+            await antesSelectReporte(tx); throw fallo;
+        }), error => presupuesto === 1000 ? error === fallo : /agotado/.test(error.message));
+        assert.equal(sql.at(-1), 'SET SESSION max_execution_time = 0, lock_wait_timeout = 31536000');
+        assert.equal(sql.length, presupuesto === 1000 ? 3 : 2);
+        await antesSelectReporte(tx); // No deja el presupuesto en WeakMap.
+        assert.equal(sql.length, presupuesto === 1000 ? 3 : 2);
+    }
+});
+
 test('Fallo de control, SET o restauración: etapa precisa y clasificación allowlist sin SQL/stack/code arbitrarios', async t => {
-    for (const [paso, etapa, causa] of [
+    for (const motor of ['8.0.46', '9.7.4']) for (const [paso, etapa, causa] of [
         ['control', 'CONTROL_SQL', 'SQL_VARIABLE_NO_ADMITIDA'],
         ['set', 'LIMITES_SQL', 'SQL_PERMISO_DENEGADO'],
         ['restaurar', 'RESTAURACION_SQL', 'RESTAURACION_SESION_FALLIDA']
@@ -63,7 +134,7 @@ test('Fallo de control, SET o restauración: etapa precisa y clasificación allo
         const tx = { forceCleanup: async () => { descartada = true; } };
         const fallo = Object.assign(new Error('NO_PUBLICAR SQL /ruta contraseña'), { original: { errno: paso === 'control' ? 1193 : 1227 }, sql: 'NO_PUBLICAR', parameters: ['NO_PUBLICAR'] });
         t.mock.method(db.sequelize, 'query', async sql => {
-            if (sql.startsWith('SELECT')) { if (paso === 'control') throw fallo; return [{ motor: '8.0.46', ejecucion: 0, espera: 30 }]; }
+            if (sql.startsWith('SELECT')) { if (paso === 'control') throw fallo; return [{ motor, ejecucion: 0, espera: 30 }]; }
             if (paso === 'set' && sql.includes('= 1000,')) throw fallo;
             if (paso === 'restaurar' && sql.includes('= 0,')) throw fallo;
             return [[], {}];
@@ -72,6 +143,7 @@ test('Fallo de control, SET o restauración: etapa precisa y clasificación allo
             assert.deepEqual(evento(error), { codigo: 'EXPORTACION_RAILWAY_ERROR', etapa, causa }); return true;
         });
         assert.equal(descartada, paso === 'restaurar');
+        if (descartada) assert.equal(tx.finished, 'rollback');
     }
 });
 

@@ -338,17 +338,20 @@ test('Cierre del servidor espera exportaciones/HTTP incluso si limpieza falla, a
     finHttp(); await assert.rejects(cerrando, /incompleto/); assert.equal(eventos.at(-1), 'db');
 });
 
-test('Pipeline Railway production: 21 variantes reutilizan generadores/SQL acotado, sin MySQL', { timeout: 30000 }, async t => {
+test('Pipeline Railway production MySQL 9.7.4 simulado: 21 variantes reutilizan generadores/SQL acotado', { timeout: 30000 }, async t => {
     const raiz = await mkdtemp(join(process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, 'Temp', 'opencode') : os.tmpdir(), 'cadefar-railway-test-'));
     const anterior = process.env.NODE_ENV, perfil = process.env.REPORTES_EXPORTACION_PERFIL;
     process.env.NODE_ENV = 'production'; process.env.REPORTES_EXPORTACION_PERFIL = 'RAILWAY';
     let liberadas = 0, timeout = false; const events = [], sentencias = [];
     t.mock.method(entornoExportacionRailway, 'disponibilidad', async () => ({ perfil: 'RAILWAY', raizPrivada: raiz }));
     t.mock.method(entornoExportacionRailway, 'vigilar', () => ({ comprobar() {}, liberar() { liberadas++; } }));
-    t.mock.method(db.sequelize, 'transaction', async (opts, cb) => cb(new class Snapshot {}));
+    t.mock.method(db.sequelize, 'transaction', async (opts, cb) => {
+        assert.equal(opts.isolationLevel, db.Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ);
+        return cb(new class Snapshot {});
+    });
     t.mock.method(db.sequelize, 'query', async texto => {
         sentencias.push(texto);
-        if (texto.startsWith('SELECT /*+')) return [{ motor: '8.0.46', ejecucion: 0, espera: 30 }];
+        if (texto.startsWith('SELECT /*+')) return [{ motor: '9.7.4', ejecucion: 0, espera: 30 }];
         if (timeout && /^SELECT /.test(texto)) throw { original: { errno: 3024 } };
         return [];
     });

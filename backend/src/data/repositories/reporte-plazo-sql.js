@@ -30,7 +30,10 @@ export async function conPlazoSqlReporte(transaction, restante, leer) {
     }
     const [anterior] = rows;
     const ejecucion = numero(anterior?.ejecucion), espera = numero(anterior?.espera);
-    if (typeof anterior.motor !== 'string' || !/^8\./.test(anterior.motor) || /mariadb/i.test(anterior.motor)) {
+    // MySQL 8 conserva su admisión previa; 9.7.4 se admite explícitamente
+    // tras revisar los controles de sesión (docs/ai/exportaciones-railway.md).
+    // No admitir otras versiones 9.x ni variantes no revisadas por prefijo.
+    if (typeof anterior.motor !== 'string' || (!/^8\./.test(anterior.motor) && anterior.motor !== '9.7.4') || /mariadb/i.test(anterior.motor)) {
         throw marcarDiagnosticoReporte(new Error('Control SQL no acreditado'), 'CONTROL_SQL', 'MOTOR_NO_ADMITIDO');
     }
     if (ejecucion === null || espera === null) throw marcarDiagnosticoReporte(new Error('Control SQL no acreditado'), 'CONTROL_SQL', 'VALORES_SESION_INVALIDOS');
