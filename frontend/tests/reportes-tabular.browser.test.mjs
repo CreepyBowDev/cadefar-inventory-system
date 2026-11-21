@@ -219,7 +219,7 @@ test('Regresión conjunta Consulta/Estadísticas/TABULAR: cuatro páginas, recur
       }
       const n = await evaluate('__descargas.length');
       await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', text: '\r', windowsVirtualKeyCode: 13 }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }); await descarga(n + 1);
-      await contains('Nombre alternativo'); await contains('Solo demostración LOCAL');
+      await contains('Nombre alternativo'); await contains('El servidor determina la disponibilidad de exportación');
     });
     await t.test('Cabeceras inaccesibles simuladas y limpieza diferida tras navegación SPA', async () => {
       await navigate('/reportes/ventas?mes=2026-11'); await ready(); await select('PDF');

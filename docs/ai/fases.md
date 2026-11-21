@@ -8,6 +8,8 @@ Este documento sustituye por solicitud expresa el plan de ampliación backend. L
 
 El frontend previo tiene páginas de ventas, compras y pérdidas, filtros aplicados en URL, resúmenes, tablas, paginación y permisos; CU40 reutiliza Inventario. Las estadísticas JSON y 21 variantes de descarga están implementadas en backend, estas últimas exclusivamente para perfil LOCAL. Implementación, pruebas simuladas, integración local y aceptación productiva son estados distintos (§5.6).
 
+**Solicitud posterior al cierre de Fase 7:** implementado un perfil Railway opt-in separado, sin habilitación ni despliegue, con pruebas sin MySQL. No cambia la evidencia histórica de estas siete fases. Configuración, cambios de disponibilidad/CORS y límites vigentes de esa extensión: [`exportaciones-railway.md`](exportaciones-railway.md).
+
 ## 2. Objetivo y alcance
 
 Ampliar las páginas actuales con visualización estadística interactiva y generación de documentos desde los endpoints existentes, conservando consultas dinámicas y todos sus recorridos.

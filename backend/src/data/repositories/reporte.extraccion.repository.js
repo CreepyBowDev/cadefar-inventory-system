@@ -3,6 +3,7 @@ import { criteriosVentas, criteriosCompras, criteriosPerdidas, categoriaVenta,
     fechaReferenciaVenta } from './reporte.criterios.js';
 import { criteriosMovimientos } from './movimiento.criterios.js';
 import { consultarResumenVentas, consultarResumenCompras, consultarResumenPerdidas } from './reporte.repository.js';
+import { antesSelectReporte } from './reporte-plazo-sql.js';
 
 const { Venta, Compra, MovimientoInventario, ExistenciaMedicamento, Medicamento,
     Usuario, DetalleCompra, DetalleVenta, Sequelize } = db;
@@ -51,6 +52,7 @@ export class reporteExtraccionRepository {
         const s = seleccion(fuente, filtros);
         if (fuente !== 'MOVIMIENTOS') return { VENTAS: consultarResumenVentas,
             COMPRAS: consultarResumenCompras, PERDIDAS: consultarResumenPerdidas }[fuente](s.where, transaction, true);
+        await antesSelectReporte(transaction);
         return s.modelo.findAll({ attributes: [texto(fn('COUNT', s.id), 'cantidad')], where: s.where,
             include: s.includeConteo, transaction, raw: true });
     }
@@ -67,6 +69,7 @@ export class reporteExtraccionRepository {
             predicado = { [Op.and]: [s.where, { [Op.or]: [where(s.fecha, Op.lt, valor),
                 { [Op.and]: [where(s.fecha, Op.eq, valor), where(s.id, Op.lt, cursor.id)] }] }] };
         }
+        await antesSelectReporte(transaction);
         return s.modelo.findAll({ attributes: [...s.atributos, [clave, '_cursor_fecha'], texto(s.id, '_cursor_id')],
             where: predicado, include: s.include, transaction, raw: true, limit: limite,
             order: [[s.fecha, 'DESC'], [s.id, 'DESC']] });

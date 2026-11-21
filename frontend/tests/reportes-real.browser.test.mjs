@@ -321,10 +321,10 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
       assert.equal(r.headers['cache-control'], 'no-store'); assert.equal(r.headers['x-content-type-options'], 'nosniff');
       assert.match(r.headers['content-disposition'], /^attachment; filename="cadefar-(ventas|compras|perdidas|movimientos)-(tabular|estadistica)-\d{8}-\d{6}-[a-f0-9]{32}\.(csv|pdf|xlsx)"$/);
       const visible = await page.evaluate('window.__headersExportacion.at(-1)');
-      assert.equal(visible.disposition, null); assert.equal(visible.retry, null);
+      assert.equal(visible.disposition, r.headers['content-disposition']); assert.equal(visible.retry, null);
       assert.equal(visible.mime, r.headers['content-type']); assert.equal(visible.length, r.headers['content-length']);
-      assert.equal(await page.evaluate('window.__archivos.at(-1)'), `cadefar-${fuente}-${presentacion.toLowerCase()}.${formato.toLowerCase()}`);
-      await page.contains('Nombre alternativo');
+      assert.equal(await page.evaluate('window.__archivos.at(-1)'), r.headers['content-disposition'].match(/filename="([^"]+)"/)[1]);
+      await page.contains('Nombre del servidor');
       assert.equal(await page.evaluate('document.querySelectorAll("a[download]").length'), 0);
       // Lectores independientes ya instalados en backend; bytes sintéticos nunca
       // se fabrican. Solo datos de esta base, conservados en memoria del test.
@@ -413,7 +413,7 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
       assert.equal(movementFile.bytes.toString('utf8').split('\r\n').length, 3);
       assert.ok(!movementFile.bytes.includes(Buffer.from('observacion')));
     });
-    await t.test('Ocupado real entre sesiones, Retry-After oculto por CORS y cancelación sin activación', async () => {
+    await t.test('Ocupado real entre sesiones, Retry-After expuesto por CORS y cancelación sin activación', async () => {
       await estadistica(admin, 'ventas', 'desde=2026-10-01&hasta=2026-11-30');
       await regente.navigate('/inventario/movimientos'); await regente.ready('.inventario-page');
       const start = browser.requests.length;
@@ -429,7 +429,7 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
       await regente.contains('Generación de exportaciones ocupada');
       const busy = browser.requests.slice(start).find(r => r.session === regente.name && r.path.endsWith('/exportar'));
       assert.equal(busy.status, 503); assert.equal(busy.headers['retry-after'], '5');
-      assert.equal(await regente.evaluate('window.__headersExportacion.at(-1).retry'), null);
+      assert.equal(await regente.evaluate('window.__headersExportacion.at(-1).retry'), '5');
       assert.equal(await regente.evaluate('window.__archivos.length'), 0);
       await admin.clickText('Cancelar exportación'); await admin.contains('Solicitud cancelada');
       await esperar(async () => !(await readdir(join(profile, 'exportaciones'))).some(n => n.startsWith('cadefar-exportacion-')), 'cleanup tras cancelación real');

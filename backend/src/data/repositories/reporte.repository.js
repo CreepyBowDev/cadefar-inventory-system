@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 import { criteriosVentas, criteriosCompras, criteriosPerdidas, categoriaVenta as categoria,
     fechaReferenciaVenta as fechaReferencia, perdidaIndividual } from './reporte.criterios.js';
+import { antesSelectReporte } from './reporte-plazo-sql.js';
 
 const { Venta, Compra, MovimientoInventario, ExistenciaMedicamento, Medicamento, Sequelize } = db;
 const { fn, col, cast } = Sequelize;
@@ -15,8 +16,10 @@ export class reporteRepository {
         const medidas = [[cast(fn('COUNT', col('id_movimiento')), 'CHAR'), 'cantidad_retiros'],
             [cast(fn('SUM', col('cantidad')), 'CHAR'), 'cantidad_retirada'],
             [cast(fn('SUM', perdidaIndividual), 'CHAR'), 'perdida']];
+        await antesSelectReporte(transaction);
         const grupos = await MovimientoInventario.findAll({ where, transaction, raw: true,
             attributes: ['motivo', ...medidas], group: ['motivo'] });
+        await antesSelectReporte(transaction);
         const temporales = await MovimientoInventario.findAll({ where, transaction, raw: true,
             attributes: ['motivo', [temporal, 'etiqueta'], ...medidas],
             group: ['motivo', temporal], order: [[temporal, 'ASC']] });
@@ -92,16 +95,25 @@ export class reporteRepository {
 
 // Agregados compartidos por GET y extracción completa; no página ni auditoría.
 const contarResumen = (campo, textual) => textual ? cast(fn('COUNT', col(campo)), 'CHAR') : fn('COUNT', col(campo));
-export const consultarResumenVentas = (where, transaction, textual = false) => Venta.findAll({ where, transaction, raw: true,
-    attributes: [[categoria, 'categoria'], [contarResumen('id_venta', textual), 'cantidad'],
-        [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: [categoria] });
-export const consultarResumenCompras = (where, transaction, textual = false) => Compra.findAll({ where, transaction, raw: true,
-    attributes: ['estado_operacion', [contarResumen('id_compra', textual), 'cantidad'],
-        [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: ['estado_operacion'] });
-export const consultarResumenPerdidas = (where, transaction, textual = false) => MovimientoInventario.findAll({ where, transaction, raw: true,
-    attributes: ['motivo', [contarResumen('id_movimiento', textual), 'cantidad_retiros'],
-        [cast(fn('SUM', col('cantidad')), 'CHAR'), 'cantidad_retirada'],
-        [cast(fn('SUM', perdidaIndividual), 'CHAR'), 'perdida']], group: ['motivo'] });
+export const consultarResumenVentas = async (where, transaction, textual = false) => {
+    await antesSelectReporte(transaction);
+    return Venta.findAll({ where, transaction, raw: true,
+        attributes: [[categoria, 'categoria'], [contarResumen('id_venta', textual), 'cantidad'],
+            [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: [categoria] });
+};
+export const consultarResumenCompras = async (where, transaction, textual = false) => {
+    await antesSelectReporte(transaction);
+    return Compra.findAll({ where, transaction, raw: true,
+        attributes: ['estado_operacion', [contarResumen('id_compra', textual), 'cantidad'],
+            [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: ['estado_operacion'] });
+};
+export const consultarResumenPerdidas = async (where, transaction, textual = false) => {
+    await antesSelectReporte(transaction);
+    return MovimientoInventario.findAll({ where, transaction, raw: true,
+        attributes: ['motivo', [contarResumen('id_movimiento', textual), 'cantidad_retiros'],
+            [cast(fn('SUM', col('cantidad')), 'CHAR'), 'cantidad_retirada'],
+            [cast(fn('SUM', perdidaIndividual), 'CHAR'), 'perdida']], group: ['motivo'] });
+};
 
 // Solo dos agregados de cabeceras: ninguna lectura de detalle ni join hasMany.
 const agregarEstadisticas = async (modelo, where, categoria, fecha, id, campoCategoria, granularidad, transaction) => {
@@ -110,8 +122,10 @@ const agregarEstadisticas = async (modelo, where, categoria, fecha, id, campoCat
     const temporal = fn('DATE_FORMAT', fecha, formato);
     const medidas = [[cast(fn('COUNT', col(id)), 'CHAR'), 'cantidad'],
         [cast(fn('SUM', col('total')), 'CHAR'), 'importe']];
+    await antesSelectReporte(transaction);
     const grupos = await modelo.findAll({ where, transaction, raw: true,
         attributes: [[categoria, campoCategoria], ...medidas], group: [categoria] });
+    await antesSelectReporte(transaction);
     const temporales = await modelo.findAll({ where, transaction, raw: true,
         attributes: [[categoria, campoCategoria], [temporal, 'etiqueta'], ...medidas],
         group: [categoria, temporal], order: [[temporal, 'ASC']] });

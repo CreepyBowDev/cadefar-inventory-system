@@ -20,7 +20,8 @@ export const app = express();
 app.use(auditoriaContextoMiddleware);
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true
+    credentials: true,
+    exposedHeaders: ['Content-Disposition', 'Retry-After']
 }));
 
 app.use(express.json());

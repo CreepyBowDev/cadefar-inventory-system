@@ -49,13 +49,16 @@ const exportar = async (fuente, req, res, next) => {
         });
         let enviados = 0;
         lectura.on('data', chunk => { enviados += chunk.length; });
-        await pipeline(lectura, res, { signal: cancelacion.signal });
+        // Incluye cierre del servidor y presión de recursos del Service además
+        // de desconexión/timeout HTTP; sigue activa hasta terminar la entrega.
+        await pipeline(lectura, res, { signal: artefacto.signal || cancelacion.signal });
         clearTimeout(timer);
         if (!res.writableFinished || enviados !== artefacto.bytes) throw new Error('Entrega incompleta');
         await artefacto.finalizar();
     } catch (error) {
         clearTimeout(timer);
-        if (cancelacion.signal.aborted) error = cancelacion.signal.reason;
+        if (artefacto?.signal?.aborted) error = artefacto.signal.reason;
+        else if (cancelacion.signal.aborted) error = cancelacion.signal.reason;
         if (artefacto) await artefacto.finalizar(error);
         if (res.destroyed) return;
         if (res.headersSent) return res.destroy();

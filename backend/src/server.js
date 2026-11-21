@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { app } from './app.js';
 import db from './data/models/index.js';
+import { reporteExportacionService } from './business/services/reporte.exportacion.service.js';
 
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
@@ -21,7 +22,12 @@ export const iniciarServidor = async () => {
             process.removeListener('SIGTERM', onSignal);
             process.removeListener('SIGINT', onSignal);
             try {
-                await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+                // Cerrar admisión y abortar generación/entrega antes de cerrar DB.
+                // Se espera SQL/limpieza; no liberar conexiones con SELECT vivo.
+                const exportaciones = reporteExportacionService.cerrar();
+                const http = new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+                const resultados = await Promise.allSettled([exportaciones, http]);
+                if (resultados.some(r => r.status === 'rejected')) throw new Error('Cierre de exportaciones incompleto');
             } finally { await db.sequelize.close(); }
         })();
         return closing;
