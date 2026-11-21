@@ -13,6 +13,7 @@ import { anotarErrorAuditoria, obtenerErrorAuditoria, marcarErrorAuditoriaGestio
 import { bitacoraAuditoriaService } from './bitacora-auditoria.service.js';
 import { entornoExportacionRailway } from '../../shared/utils/reporte-railway.js';
 import { conPlazoSqlReporte } from '../../data/repositories/reporte-plazo-sql.js';
+import { diagnosticarErrorReporte } from '../../shared/utils/reporte-diagnostico.js';
 
 export const tiempoExportacionAgotado = () => anotarErrorAuditoria(new AppError(
     'Se agotó el tiempo de generación; reduzca los filtros o reintente', 503), { causa: 'TIEMPO_AGOTADO' });
@@ -45,6 +46,7 @@ export const reporteExportacionService = {
         const controller = new AbortController();
         signal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
         let terminal = false, reservado = false, archivos, etapa = 'EXTRACCION', cantidadFilas, limpieza, vigilancia, terminar;
+        let pasoDiagnostico = 'TEMPORALES', railway = false;
         const inicio = performance.now();
         const generacionCivil = obtenerFechaOperacion().fechaHoraComercial;
         const generacion = generacionCivil.replaceAll('-', '').replace(' ', '-').replaceAll(':', '');
@@ -54,6 +56,7 @@ export const reporteExportacionService = {
             terminal = true;
             const causa = error ? obtenerErrorAuditoria(error)?.causa ?? (error.statusCode === 413 ? 'LIMITE_EXPORTACION'
                 : error.statusCode === 503 ? 'RECURSO_NO_DISPONIBLE' : 'ERROR_INTERNO') : undefined;
+            if (railway && error && causa === 'ERROR_INTERNO') diagnosticarErrorReporte(error, etapa === 'ENTREGA' ? 'ENTREGA' : pasoDiagnostico);
             if (error) marcarErrorAuditoriaGestionado(error);
             const rechazado = ['LIMITE_EXPORTACION', 'RECURSO_NO_DISPONIBLE'].includes(causa);
             try {
@@ -95,6 +98,7 @@ export const reporteExportacionService = {
                 limpiezaPendiente || cerrando) throw noDisponible();
             const disponibilidad = await this.comprobarDisponibilidad({ direccionRemota });
             if (!disponibilidad || !disponibilidad.raizPrivada || cerrando) throw noDisponible();
+            railway = disponibilidad.perfil === 'RAILWAY';
             if (ocupado) throw new AppError('Generación de exportaciones ocupada; reintente más tarde', 503);
             ocupado = true; reservado = true;
             trabajos.set(controller, new Promise(resolve => { terminar = resolve; }));
@@ -107,10 +111,12 @@ export const reporteExportacionService = {
             // Incluir la apertura: no iniciar SELECT si obtener/abrir el snapshot
             // ya consumió el plazo. No interrumpir ni liberar SQL pendiente.
             const apertura = performance.now();
+            pasoDiagnostico = 'APERTURA_SNAPSHOT';
             await db.sequelize.transaction({ isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ }, async transaction => {
                 const comprobarExtraccion = () => { comprobar(); if (performance.now() - apertura > 60000) throw tiempoExportacionAgotado(); };
                 comprobarExtraccion();
                 const extraer = async () => {
+                    pasoDiagnostico = 'EXTRACCION';
                     // Esperar SIEMPRE SQL antes de rollback/liberación. LOCAL
                     // conserva plazo cooperativo; Railway añade límites MySQL.
                     if (filtros.presentacion === 'ESTADISTICA') {
@@ -162,10 +168,12 @@ export const reporteExportacionService = {
                 if (disponibilidad.perfil === 'RAILWAY') {
                     await conPlazoSqlReporte(transaction, () => { comprobarExtraccion(); return Math.max(1, Math.floor(60000 - (performance.now() - apertura))); }, extraer);
                 } else await extraer();
+                pasoDiagnostico = 'CIERRE_SNAPSHOT';
             });
             comprobar();
             // Snapshot terminado antes de abrir/renderizar el artefacto.
             etapa = 'GENERACION';
+            pasoDiagnostico = 'GENERACION';
             const extension = filtros.formato.toLowerCase();
             if (filtros.formato === 'PDF') {
                 await generarPdf({ archivos, fuente, filtros, metadata, filas, comprobar, generacion: generacionCivil });
@@ -183,6 +191,7 @@ export const reporteExportacionService = {
                 if (renderizadas !== filas) throw new Error('Artefacto incompleto');
                 await csv.cerrar();
             }
+            pasoDiagnostico = 'VERIFICACION_ARCHIVO';
             const bytes = await archivos.verificar(extension);
             comprobar();
             cantidadFilas = filas;

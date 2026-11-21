@@ -155,3 +155,45 @@ git diff --check
 ```
 
 Primera ejecución 62/63: el mock realpath devolvía un separador final que el filesystem real elimina. Se corrigió exclusivamente su normalización, sin modificar guardas para satisfacer la expectativa. No escenarios omitidos ni suma de iteraciones. Avisos PDF.js opcionales heredados; sin revisión visual, frontend/build, dependencias, migraciones, conexiones Railway/MySQL, commit, push o despliegue. Estado Git inicial limpio. La corrección debe desplegarse por el operador para verificar si resuelve el rechazo reportado; pueden aparecer otras guardas no acreditadas todavía. No se deben borrar temporales ni desactivar comprobaciones.
+
+## Investigación posterior de 500 común a CSV/XLSX/PDF
+
+El usuario informa 500 genéricos en todos los formatos tras superar la guarda de disponibilidad. **No se conoce todavía la causa del servidor desplegado**, no se accedió a Railway/MySQL ni se supone una versión de motor. Se revisaron configuración, resultado Sequelize y control de sesión antes de los renderizadores. No se amplía la allowlist de MySQL 8 ni se elimina MAX_EXECUTION_TIME/lock_wait_timeout para intentar hacerlo pasar.
+
+Prueba sin transporte real con `dialect.Query.run` de Sequelize instalado y callback de driver simulado: `QueryTypes.SELECT` devuelve `[{ motor, ejecucion, espera }]`, **no** `[filas, metadata]`. La desestructuración original era correcta. Se añaden comprobaciones explícitas de cardinalidad/forma antes de leer campos, sin reinterpretar una respuesta malformada ni defaults para valores no válidos. Es defensa del contrato y mejor diagnóstico, no una causa confirmada de Railway.
+
+`reporte-diagnostico.js` conserva etiquetas internas de error en WeakMap y deduplicación por objeto en WeakSet: no se adjuntan propiedades técnicas serializables a HTTP o auditoría. En fallos internos de un trabajo cuyo perfil admitido es RAILWAY, emite únicamente:
+
+```text
+{ codigo: 'EXPORTACION_RAILWAY_ERROR',
+  etapa: 'CONTROL_SQL', causa: 'MOTOR_NO_ADMITIDO' }
+```
+
+Ejemplo ilustrativo, no un resultado del despliegue. La etapa puede ser TEMPORALES, APERTURA_SNAPSHOT, CONTROL_SQL, LIMITES_SQL, RESTAURACION_SQL, EXTRACCION, CIERRE_SNAPSHOT, GENERACION, VERIFICACION_ARCHIVO o ENTREGA. Las etapas internas son independientes de la etapa contractual de auditoría, que no cambia. El mismo error no se registra dos veces; dos solicitudes fallidas diferentes pueden emitir sus propios eventos.
+
+| Causas de control SQL | Interpretación |
+|---|---|
+| RESPUESTA_CONTROL_SQL_INVALIDA | SELECT no devolvió exactamente una fila con forma válida. |
+| MOTOR_NO_ADMITIDO | Versión no satisface la guarda existente MySQL 8; no se publica el string recibido. |
+| VALORES_SESION_INVALIDOS | Límites anteriores no son enteros seguros/canónicos válidos. |
+| CONSULTA_CONTROL_SQL_FALLIDA | Falló el SELECT de comprobación, sin diagnóstico SQL más específico allowlisted. |
+| CONFIGURACION_LIMITES_FALLIDA | Falló SET SESSION antes del SELECT de datos. |
+| RESTAURACION_SESION_FALLIDA | Falló restaurar; se conserva descarte de sesión y cierre de admisión. |
+
+Clasificación acotada de errores originales: SQL_VARIABLE_NO_ADMITIDA (1193), SQL_PERMISO_DENEGADO (1044/1045/1142/1227), SQL_SINTAXIS_RECHAZADA (1064), SQL_CONEXION_PERDIDA (2006/2013), SQL_CONSULTA_FALLIDA para otros errores de driver; ARCHIVO_SIN_ESPACIO/ARCHIVO_PERMISO_DENEGADO/ARCHIVO_NO_ENCONTRADO para códigos de SO conocidos. Si no hay clasificación segura: FALLO_NO_CLASIFICADO. No se imprimen números errno ni mensajes/códigos arbitrarios, SQL, parámetros, valores de filas, versiones, rutas, URLs, stack, datos personales, variables o secretos.
+
+El log no cambia el Error original/HTTP seguro, permisos, transacción/snapshot, auditoría, limpieza, cancelación ni disponibilidad. 400/401/403/413/503 y cancelaciones esperadas no se convierten en diagnósticos 500. Un logger roto no impide cleanup ni reemplaza el fallo original. Los avisos de disponibilidad 503 siguen con su código anterior y no se confunden con estos diagnósticos.
+
+Archivos: `backend/src/shared/utils/reporte-diagnostico.js` y `backend/tests/reporte.diagnostico.test.js` nuevos; etiquetas en `reporte-plazo-sql.js`, emisión por etapas en `reporte.exportacion.service.js`, más este registro. Sin frontend, contratos normativos, rutas, configuración, dependencias ni migraciones modificados. Estado Git inicial limpio.
+
+```text
+Desde backend:
+node --test --test-concurrency=1 tests/reporte.diagnostico.test.js tests/reporte.railway.test.js tests/reporte.exportacion.test.js tests/reporte.conjunta.test.js
+git diff --check
+```
+
+Cobertura: dialecto Sequelize real/driver simulado, tipos numéricos y textuales, motores no acreditados, forma de filas inválida, control/SET/restauración fallidos, transporte/generación/verificación/temporales por clasificación, privacidad exacta y deduplicación, y 12 fallos de pipeline (cuatro etapas × tres formatos) con SQL simulado y limpieza propia. Regresión de los generadores actuales y límites, sin conexiones. Una primera ejecución 67/68 falló en el test por invocar formatResults sin establecer sql interno; se reemplazó por Query.run con driver simulado que sigue el ciclo real. No se cambió Sequelize ni código funcional para satisfacer ese arnés. Siguiente ejecución 68/68 antes de añadir la prueba de etapas de archivos. No se suman iteraciones.
+
+Tras desplegar esta entrega por decisión del operador, intentar una exportación pequeña y compartir **solo** el bloque EXPORTACION_RAILWAY_ERROR con etapa/causa. Hasta obtener esa evidencia no se declara corregido el error 500 del despliegue. No pruebas reales, commit, push o despliegue en esta tarea; no reutilización de autorizaciones anteriores. Avisos opcionales PDF.js de las regresiones conservados, sin instalar canvas ni certificar revisión visual.
+
+Resultado final del comando anterior, con la prueba de clasificación por etapas de archivos: **69 aprobadas, 0 fallidas/canceladas/omitidas**. `git diff --check` aprobado (solo avisos LF → CRLF). Los dos archivos nuevos comprobados individualmente mediante `git -c core.autocrlf=false diff --no-index --check -- NUL <archivo>`, sin diagnósticos. No se efectuó build frontend porque no cambia código cliente.
