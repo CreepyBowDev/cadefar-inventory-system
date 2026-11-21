@@ -14,6 +14,9 @@ export async function crearEntornoReportes(t) {
     dotenv.config({ quiet: true });
     assert.ok(['localhost', '127.0.0.1'].includes(process.env.DB_HOST), 'Destino configurado no local');
     assert.ok(!process.env.DB_PORT || process.env.DB_PORT === '3306', 'Puerto no autorizado');
+    assert.ok(process.env.DB_USER && typeof process.env.PASSWORD_DB === 'string', 'Falta configuración MySQL local');
+    assert.notEqual(process.env.NODE_ENV, 'production', 'No ejecutar integración desde producción');
+    assert.ok(!Object.keys(process.env).some(k => /RAILWAY|DATABASE_URL|MYSQL_URL/.test(k)), 'Configuración remota incompatible');
     const database = `cadefar_reportes_f6_${randomBytes(8).toString('hex')}`;
     assert.match(database, /^cadefar_reportes_f6_[a-f0-9]{16}$/);
     assert.ok(![process.env.DB_NAME, process.env.DB_NAME_TEST, process.env.DB_NAME_PRODUCTION]
@@ -44,6 +47,8 @@ export async function crearEntornoReportes(t) {
         t.diagnostic(`Destino 127.0.0.1:3306; motor ${motor.version}; ${motor.comentario}`);
         assert.doesNotMatch(motor.version, /mariadb/i);
         assert.match(motor.comentario, /mysql/i);
+        const [[config]] = await admin.query('SELECT @@transaction_isolation AS aislamiento, @@sql_mode AS modo, @@time_zone AS zona, @@character_set_server AS charset, @@collation_server AS collation');
+        t.diagnostic(`Configuración motor: ${JSON.stringify(config)}`);
         // Sin IF NOT EXISTS: nunca migrar ni limpiar una base preexistente.
         await admin.query(`CREATE DATABASE \`${database}\``);
         creada = true;

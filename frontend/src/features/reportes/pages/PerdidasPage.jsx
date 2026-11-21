@@ -1,14 +1,20 @@
+import { useEffect, useState } from 'react';
 import { CatalogoState } from '../../../components/CatalogoState.jsx';
 import { FeedbackMessage } from '../../../components/FeedbackMessage.jsx';
 import { Pagination } from '../../../components/Pagination.jsx';
 import { ReporteFilters } from '../components/ReporteFilters.jsx';
+import { ExportacionTabular } from '../components/ExportacionTabular.jsx';
+import { ReporteFuenteEstadisticas } from '../components/ReporteFuenteEstadisticas.jsx';
 import { PerdidasResumen, PerdidasTable } from '../components/PerdidasResultado.jsx';
 import { useReporteConsulta } from '../hooks/useReporteConsulta.js';
 import { getReportePerdidas } from '../services/reporte.service.js';
 import '../styles/reportes.css';
 
 export const PerdidasPage = () => {
-  const { query, aplicada, consulta, borrador, errorLocal, cambiarBorrador, cambiarConsulta, buscar, limpiar } = useReporteConsulta('perdidas', getReportePerdidas);
+  const { query, aplicada, consulta, borrador, errorLocal, cambiarBorrador, cambiarConsulta, buscar, limpiar, restringir, cambiarVista } = useReporteConsulta('perdidas', getReportePerdidas, true);
+  const [seleccionEstadisticas, setSeleccionEstadisticas] = useState(false);
+  useEffect(() => { setSeleccionEstadisticas(false); }, [query]);
+  const estadisticas = seleccionEstadisticas || aplicada.ui?.vista === 'ESTADISTICAS';
   const restringida = consulta.status === 401 || consulta.status === 403;
   const paginacion = consulta.paginacion;
   const fueraDeRango = paginacion && paginacion.pagina > Math.max(1, paginacion.totalPaginas);
@@ -18,8 +24,11 @@ export const PerdidasPage = () => {
     <section className="catalogo-panel" aria-label="Consulta de pérdidas">
       <ReporteFilters tipo="perdidas" borrador={borrador} onChange={cambiarBorrador} disabled={consulta.loading || restringida} onSearch={buscar} onClear={limpiar} />
       <FeedbackMessage message={errorLocal || aplicada.error} />
-      <div className="catalogo-toolbar"><div><h3>Resultados</h3><p role="status" aria-live="polite">{consulta.loading ? 'Consultando pérdidas…' : aplicada.error || consulta.error ? 'Consulta no disponible' : !aplicada.habilitada ? 'Sin período aplicado' : `${resultado?.detalle.length || 0} de ${paginacion?.total ?? 0} retiros`}</p></div><button className="button button--secondary" type="button" onClick={consulta.retry} disabled={!aplicada.habilitada || consulta.loading || restringida}>Actualizar</button></div>
+      <fieldset className="reporte-vista"><legend>Vista del reporte de pérdidas</legend><label><input type="radio" name="reporte-vista" value="CONSULTA" checked={!estadisticas} onChange={() => { setSeleccionEstadisticas(false); cambiarVista('CONSULTA'); }} />Consulta</label><label><input type="radio" name="reporte-vista" value="ESTADISTICAS" checked={estadisticas} onChange={() => setSeleccionEstadisticas(true)} />Estadísticas</label></fieldset>
+      {!estadisticas && <div className="catalogo-toolbar"><div><h3>Resultados</h3><p role="status" aria-live="polite">{consulta.loading ? 'Consultando pérdidas…' : aplicada.error || consulta.error ? 'Consulta no disponible' : !aplicada.habilitada ? 'Sin período aplicado' : `${resultado?.detalle.length || 0} de ${paginacion?.total ?? 0} retiros`}</p></div><button className="button button--secondary" type="button" onClick={consulta.retry} disabled={!aplicada.habilitada || consulta.loading || restringida}>Actualizar</button></div>}
       <p className="catalogo-note">Solo salidas originales por VENCIMIENTO/DAÑO, sin ajustes negativos, ventas ni compensaciones. La referencia de reversión se informa sin descontarla ni habilitar su registro. Para volver desde el historial usa Atrás del navegador.</p>
+      <ReporteFuenteEstadisticas tipo="perdidas" activa={estadisticas} aplicada={aplicada} restringida={restringida} onRestringida={restringir} onAplicar={cambiarVista} />
+      {!estadisticas && <><ExportacionTabular fuente="perdidas" restringida={restringida} onRestringida={restringir} />
       <div aria-busy={consulta.loading}>
         {aplicada.error ? <CatalogoState icon="report" title="Revisa los filtros" message="Corrige la URL o selecciona nuevos criterios y pulsa Buscar. Limpiar retira todos los filtros." />
           : !aplicada.habilitada ? <CatalogoState icon="report" title="Selecciona un período" message="Elige Día, Mes o Período y pulsa Buscar. No se consulta sin una selección temporal." />
@@ -31,7 +40,7 @@ export const PerdidasPage = () => {
                     : resultado.detalle.length ? <PerdidasTable detalle={resultado.detalle} query={query} /> : <CatalogoState icon="report" title="Sin coincidencias" message="No hay retiros para el período y motivo aplicados. Cambia los filtros y pulsa Buscar." />}
                 </>}
       </div>
-      {aplicada.habilitada && <Pagination id="reporte" nombre="Retiros" filtros={aplicada.filtros} paginacion={paginacion} disabled={consulta.loading || restringida || !!consulta.error} onPage={pagina => cambiarConsulta({ ...aplicada.filtros, pagina: String(pagina) })} onLimit={limite => cambiarConsulta({ ...aplicada.filtros, limite, pagina: '1' })} />}
+      {aplicada.habilitada && <Pagination id="reporte" nombre="Retiros" filtros={aplicada.filtros} paginacion={paginacion} disabled={consulta.loading || restringida || !!consulta.error} onPage={pagina => cambiarConsulta({ ...aplicada.filtros, pagina: String(pagina) })} onLimit={limite => cambiarConsulta({ ...aplicada.filtros, limite, pagina: '1' })} />}</>}
     </section>
   </div>;
 };

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import bcrypt from 'bcrypt';
 import { crearEntornoReportes } from './helpers/reportes-mysql.js';
 
-test('Fase 6: Reportes Express/Sequelize/MySQL aislados', { timeout: 180000 }, async t => {
+test('Fase 10: Reportes Express/Sequelize/MySQL aislados', { timeout: 300000 }, async t => {
     const entorno = await crearEntornoReportes(t);
     const { db } = entorno;
     let server;
@@ -226,6 +226,9 @@ test('Fase 6: Reportes Express/Sequelize/MySQL aislados', { timeout: 180000 }, a
             assert.ok(logs.some(e => e?.categoria === 'AUDITORIA_PERSISTENCIA_NO_CONFIRMADA'));
             assert.doesNotMatch(JSON.stringify(logs), /INVALIDO_FIXTURE|password|SELECT |INSERT /);
         });
+        const { verificarFase10 } = await import('./helpers/reportes-fase10.js');
+        await verificarFase10(t, { db, base, server, cookies, usuarios, request, snapshot, sqlReal,
+            venta, compra, movimiento, existencia, v, c, auditor, logs });
         await t.test('Snapshot RR real ante anulación y reversión confirmadas entre agregado y detalle', async () => {
             for (const [model, path] of [[db.Venta, 'ventas'], [db.Compra, 'compras'], [db.MovimientoInventario, 'perdidas']]) {
                 // Para CU41 usar un original sin referencia previa.

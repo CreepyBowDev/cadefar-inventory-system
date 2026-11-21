@@ -1,8 +1,9 @@
 import db from '../models/index.js';
+import { criteriosMovimientos } from './movimiento.criterios.js';
 
 const { MovimientoInventario, ExistenciaMedicamento, Medicamento, Usuario,
     DetalleCompra, DetalleVenta, Compra, Venta, Sequelize } = db;
-const { Op, fn, col, where } = Sequelize;
+const { Op, fn, col } = Sequelize;
 
 export class movimientoInventarioRepository {
     static async findParaAnularVenta({ idsDetallesVenta, transaction }) {
@@ -69,20 +70,7 @@ export class movimientoInventarioRepository {
     }
 
     static async findAll({ idMedicamento, idExistencia, desde, hasta, direccion, motivo } = {}) {
-        const filtros = {};
-        if (idExistencia !== undefined) filtros.id_existencia = idExistencia;
-        if (direccion !== undefined) filtros.direccion = direccion;
-        if (motivo !== undefined) filtros.motivo = motivo;
-
-        // Comparar texto civil con el DATETIME guardado, sin convertirlo a UTC.
-        // Los días desde/hasta son inclusivos según la fecha almacenada. La
-        // convención histórica de esas horas aún requiere verificación en MySQL.
-        const fechas = [];
-        if (desde !== undefined) fechas.push(where(col('MovimientoInventario.fecha_movimiento'),
-            Op.gte, `${desde} 00:00:00`));
-        if (hasta !== undefined) fechas.push(where(col('MovimientoInventario.fecha_movimiento'),
-            Op.lte, `${hasta} 23:59:59.999999`));
-        if (fechas.length) filtros[Op.and] = fechas;
+        const filtros = criteriosMovimientos({ idExistencia, desde, hasta, direccion, motivo });
 
         return MovimientoInventario.findAll({
             attributes: ['id_movimiento', 'id_usuario', 'id_existencia', 'id_detalle_compra',

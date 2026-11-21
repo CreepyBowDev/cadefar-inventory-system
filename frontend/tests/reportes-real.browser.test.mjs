@@ -1,4 +1,4 @@
-// Fase 6: integración real focalizada. Opt-in externo, esquema nuevo y fixtures
+// Fase 7 frontend: integración real focalizada. Opt-in externo, esquema nuevo y fixtures
 // directos; nunca formularios operativos, respuestas fabricadas ni secretos en logs.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -6,14 +6,14 @@ import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, rm } from 'node:fs/promises';
 import { join, extname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { crearEntornoReportes } from '../../backend/tests/helpers/reportes-mysql.js';
 import { abrirNavegadorReal, esperar } from './helpers/navegadorReal.mjs';
 import { cantidad, costoDecimal, fechaCivil, horaCivil } from '../src/utils/presentacion.js';
 
-test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeout: 180000 }, async t => {
+test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeout: 360000 }, async t => {
   // Debe proceder del comando de esta sesión, antes de cargar cualquier .env.
   assert.equal(process.env.REPORTES_MYSQL_ACCEPTANCE, 'CREAR_MIGRAR_FIXTURES_ELIMINAR_LOCAL');
   assert.notEqual(process.env.NODE_ENV, 'production');
@@ -22,6 +22,11 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
   assert.notEqual(process.env.NODE_ENV, 'production');
   const entorno = await crearEntornoReportes(t);
   const { db } = entorno;
+  // El helper migra/importa el modelo sobre TEST aislado. Se conserva exactamente
+  // esa instancia; development habilita el perfil LOCAL, nunca otra base.
+  assert.equal(db.sequelize.config.database, entorno.database);
+  assert.equal(db.sequelize.config.host, '127.0.0.1');
+  process.env.NODE_ENV = 'development';
   let server, frontend, profile, browser;
   const sql = [], unexpected = [];
   try {
@@ -38,6 +43,11 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
       presentacion: '500 mg', unidad_inventario: 'tableta', condicion_venta: 'LIBRE', via_administracion: 'Oral', tipo_liberacion: 'Inmediata', estado: false });
     const ex = await db.ExistenciaMedicamento.create({ id_medicamento: med.id_medicamento, codigo_existencia: 'UIF6-001',
       fecha_vencimiento: '2020-01-31', precision_vencimiento: 'MES', cantidad_fisica: 1, costo_unitario_promedio: '99.000000' });
+    const med2 = await db.Medicamento.create({ id_proveedor_laboratorio: proveedor.id_proveedor_laboratorio,
+      codigo_medicamento: 'UIF7', nombre_comercial: 'Producto sintético heterogéneo', forma_farmaceutica: 'Solución',
+      presentacion: '100 ml', unidad_inventario: 'frasco', condicion_venta: 'LIBRE', via_administracion: 'Oral', tipo_liberacion: 'Inmediata', estado: false });
+    const ex2 = await db.ExistenciaMedicamento.create({ id_medicamento: med2.id_medicamento, codigo_existencia: 'UIF7-001',
+      fecha_vencimiento: '2020-01-31', precision_vencimiento: 'DIA', cantidad_fisica: 0, costo_unitario_promedio: '0.000000' });
     const ventas = [];
     for (const [i, estado] of ['CONFIRMADA', 'PENDIENTE', 'ANULADA', 'ANULADA'].entries()) ventas.push(await db.Venta.create({
       id_usuario: users[2].id_usuario, estado_operacion: estado, total: '12345678.91', clave_operacion: `ui-f6-v-${i}`,
@@ -55,7 +65,7 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
       fecha_movimiento: civil(fecha), observacion: 'Trazabilidad sintética F6', ...extra });
     await movement('COMPRA', '2026-10-01 12:00:00', { direccion: 'ENTRADA', cantidad: 5, id_detalle_compra: dc.id_detalle_compra });
     const retiros = [await movement('VENCIMIENTO', '2026-11-10 00:00:00'), await movement('VENCIMIENTO', '2026-11-10 23:59:59'),
-      await movement('DAÑO', '2026-11-10 12:00:00', { cantidad: 3, costo_unitario_aplicado: '0.000000' })];
+      await movement('DAÑO', '2026-11-10 12:00:00', { id_existencia: ex2.id_existencia, cantidad: 3, costo_unitario_aplicado: '0.000000' })];
     const reversal = await movement('VENCIMIENTO', '2026-12-10 12:00:00', { direccion: 'ENTRADA', id_movimiento_original: retiros[0].id_movimiento });
     const snapshot = async () => JSON.stringify(await Promise.all(Object.values(db).filter(m => m?.tableName && m !== db.BitacoraAuditoria)
       .map(m => m.findAll({ raw: true, order: [[m.primaryKeyAttribute, 'ASC']] }))));
@@ -64,6 +74,8 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
 
     const tempRoot = join(process.env.LOCALAPPDATA, 'Temp', 'opencode');
     profile = await mkdtemp(join(tempRoot, 'cadefar-reportes-real-'));
+    await mkdir(join(profile, 'exportaciones'));
+    process.env.TEMP = process.env.TMP = join(profile, 'exportaciones');
     frontend = createServer(async (req, res) => {
       const path = new URL(req.url, 'http://127.0.0.1').pathname;
       if (path.startsWith('/api/')) { res.writeHead(500); res.end(); return; }
@@ -79,8 +91,8 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
     const { app } = await import('../../backend/src/app.js');
     server = createServer((req, res) => {
       const path = new URL(req.url, origin).pathname;
-      const allowed = req.method === 'OPTIONS' || req.method === 'POST' && path === '/api/auth/login'
-        || req.method === 'GET' && (/^\/api\/(auth\/me|reportes\/(ventas|compras|perdidas)|inventario\/movimientos)$/.test(path) || /^\/api\/(ventas|compras)\/\d+$/.test(path));
+      const allowed = req.method === 'OPTIONS' || req.method === 'POST' && /^\/api\/auth\/(login|logout)$/.test(path)
+        || req.method === 'GET' && (/^\/api\/(auth\/me|reportes\/(ventas|compras|perdidas)(\/(estadisticas|exportar))?|inventario\/movimientos(\/exportar)?)$/.test(path) || /^\/api\/(ventas|compras)\/\d+$/.test(path));
       if (!allowed) { unexpected.push(`${req.method} ${path}`); res.writeHead(405); res.end('{}'); return; }
       app(req, res);
     });
@@ -93,7 +105,33 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
       child.once('exit', code => code === 0 ? resolve() : reject(new Error('Falló el build aislado')));
     });
     t.diagnostic('Frontend y Express en puertos efímeros loopback; build/perfil temporales; API real sin mocks.');
-    browser = await abrirNavegadorReal({ profile: join(profile, 'chrome'), origin, apiUrl });
+    assert.notEqual(new URL(origin).origin, new URL(apiUrl).origin);
+    browser = await abrirNavegadorReal({ profile: join(profile, 'chrome'), origin, apiUrl, captureReports: true });
+    const instrumentar = page => page.initScript(`(() => {
+      window.__archivos = []; window.__headersExportacion = []; window.__urls = 0; window.__ultimoBytes = null;
+      const create = URL.createObjectURL.bind(URL);
+      URL.createObjectURL = blob => { window.__urls++; return create(blob); };
+      const click = HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click = function() {
+        if (this.download && this.href.startsWith('blob:')) { window.__archivos.push(this.download); return; }
+        return click.call(this);
+      };
+      const open = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        if (String(url).includes('/exportar?')) {
+          window.__ultimoBytes = null;
+          this.addEventListener('load', async () => {
+            window.__headersExportacion.push({ status: this.status,
+              disposition: this.getResponseHeader('Content-Disposition'), retry: this.getResponseHeader('Retry-After'),
+              mime: this.getResponseHeader('Content-Type'), length: this.getResponseHeader('Content-Length') });
+            // Instrumentación solo del test y archivos pequeños: CDP decodifica
+            // text/csv quitando BOM; el Blob real sí conserva esos bytes.
+            if (this.status === 200 && this.response instanceof Blob) window.__ultimoBytes = Array.from(new Uint8Array(await this.response.arrayBuffer()));
+          });
+        }
+        return open.call(this, method, url, ...rest);
+      };
+    })()`);
     const pages = [];
     const ready = (page, tipo) => page.ready(`.reporte-${tipo}-page`);
     const latest = async (page, start, tipo) => esperar(() => browser.requests.slice(start).find(r => r.session === page.name && r.path === `/api/reportes/${tipo}` && r.response), 'respuesta real de reporte');
@@ -130,6 +168,7 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
     await t.test('Login real de tres roles, HttpOnly y recuperación de sesión sin almacenamiento JWT', async () => {
       for (let i = 0; i < 3; i++) {
         const page = await browser.openSession(`rol-${i + 1}`); pages.push(page);
+        await instrumentar(page);
         await page.navigate('/login'); await page.wait('!!document.getElementById("nombreUsuario")');
         await page.field('#nombreUsuario', users[i].nombre_usuario); await page.field('#password', password);
         await page.click('.login-form button[type=submit]'); await page.wait('location.pathname === "/dashboard"');
@@ -240,7 +279,7 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
         if (tipo === 'perdidas') {
           await admin.contains('Trazabilidad sintética F6');
           await admin.contains('reportes_ui_2');
-          assert.ok(await admin.evaluate('document.querySelectorAll(".inventario-table--movimientos tbody tr").length === 5'));
+           assert.ok(await admin.evaluate('document.querySelectorAll(".inventario-table--movimientos tbody tr").length === 4'));
           assert.ok(browser.requests.some(r => r.session === admin.name && r.path === '/api/inventario/movimientos' && r.status === 200));
         }
         await admin.evaluate('history.back()'); await ready(admin, tipo);
@@ -248,7 +287,224 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
       }
       const body = await query(regente, 'perdidas', 'dia=2026-11-10'); assert.deepEqual(body.data.resumen, expected.perdidas); await checkRendered(regente, 'perdidas', body);
     });
-    await t.test('Consultas sin escrituras de negocio; auditoría persistida separada y registros sanitizados', async () => {
+    const estadistica = async (page, tipo, params = 'dia=2026-11-10', granularidad = 'DIA') => {
+      const start = browser.requests.length;
+      await page.navigate(`/reportes/${tipo}?${params}&vista=ESTADISTICAS&uiGranularidad=${granularidad}`);
+      await page.wait('!!document.querySelector(".reporte-estadisticas")');
+      const r = await esperar(() => browser.requests.slice(start).find(r => r.session === page.name && r.path === `/api/reportes/${tipo}/estadisticas` && r.response), 'estadística real');
+      assert.equal(r.status, 200);
+      assert.deepEqual(r.query, Object.fromEntries(new URLSearchParams(`${params}&granularidad=${granularidad}`)));
+      assert.equal(r.queryEntries.length, Object.keys(r.query).length, 'Sin parámetros repetidos');
+      const data = r.response.data;
+      const selector = '[aria-label="Valores exactos de todos los intervalos del panel"] tbody tr';
+      const exactos = await page.evaluate(`[...document.querySelectorAll(${JSON.stringify(selector)})].map(r=>[...r.cells].map(c=>c.textContent))`);
+      const nombres = { CONFIRMADA: 'Confirmada', PENDIENTE: 'Pendiente', ANULADA_CONFIRMADA: 'Anulada confirmada', ANULADA_SIN_CONFIRMAR: 'Anulada sin confirmar', ANULADA: 'Anulada', VENCIMIENTO: 'Vencimiento', 'DAÑO': 'Daño' };
+      assert.deepEqual(exactos, data.intervalos.slice(0, 60).flatMap((p, i) => data.series.map(s => [p.etiqueta, p.desde, p.hasta, p.parcial ? 'Sí' : 'No', nombres[s.categoria], s.metrica, s.unidad, s.valores[i], s.total])));
+      return data;
+    };
+    const exportar = async (page, fuente, presentacion, formato, filtros) => {
+      const start = browser.requests.length;
+      const previo = await page.evaluate('window.__archivos.length');
+      await page.select('.reporte-exportacion select', formato);
+      await page.evaluate('document.querySelector(".reporte-exportacion__acciones button").click(); document.querySelector(".reporte-exportacion__acciones button").click()');
+      await page.wait(`window.__archivos.length === ${previo + 1}`);
+      await page.contains('Archivo recibido; descarga iniciada');
+      const r = await esperar(() => browser.requests.slice(start).find(r => r.session === page.name && r.path.endsWith('/exportar') && r.bytes), 'bytes binarios reales');
+      await page.wait('window.__ultimoBytes !== null');
+      r.bytes = Buffer.from(await page.evaluate('window.__ultimoBytes'));
+      assert.equal(browser.requests.slice(start).filter(r => r.session === page.name && r.path.endsWith('/exportar')).length, 1);
+      assert.equal(r.status, 200);
+      assert.equal(r.queryEntries.length, Object.keys(r.query).length, 'Sin parámetros repetidos');
+      assert.deepEqual(r.query, { ...filtros, presentacion, formato, ...(presentacion === 'ESTADISTICA' ? { granularidad: 'DIA', ...(formato === 'CSV' ? {} : { grafico: 'BARRAS', metrica: fuente === 'perdidas' ? 'CANTIDAD_RETIROS' : 'CANTIDAD' }) } : {}) });
+      assert.equal(r.headers['content-type'], { CSV: 'text/csv; charset=utf-8', PDF: 'application/pdf', XLSX: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }[formato]);
+      assert.equal(Number(r.headers['content-length']), r.bytes.length);
+      assert.equal(r.headers['cache-control'], 'no-store'); assert.equal(r.headers['x-content-type-options'], 'nosniff');
+      assert.match(r.headers['content-disposition'], /^attachment; filename="cadefar-(ventas|compras|perdidas|movimientos)-(tabular|estadistica)-\d{8}-\d{6}-[a-f0-9]{32}\.(csv|pdf|xlsx)"$/);
+      const visible = await page.evaluate('window.__headersExportacion.at(-1)');
+      assert.equal(visible.disposition, null); assert.equal(visible.retry, null);
+      assert.equal(visible.mime, r.headers['content-type']); assert.equal(visible.length, r.headers['content-length']);
+      assert.equal(await page.evaluate('window.__archivos.at(-1)'), `cadefar-${fuente}-${presentacion.toLowerCase()}.${formato.toLowerCase()}`);
+      await page.contains('Nombre alternativo');
+      assert.equal(await page.evaluate('document.querySelectorAll("a[download]").length'), 0);
+      // Lectores independientes ya instalados en backend; bytes sintéticos nunca
+      // se fabrican. Solo datos de esta base, conservados en memoria del test.
+      if (formato === 'CSV') {
+        assert.equal(r.bytes.subarray(0, 3).toString('hex'), 'efbbbf');
+        assert.ok(r.bytes.toString('utf8').endsWith('\r\n'));
+        assert.ok(r.bytes.includes(Buffer.from('";"')));
+        if (fuente === 'perdidas' && presentacion === 'ESTADISTICA') assert.ok(r.bytes.includes(Buffer.from('"0.02"')));
+      } else if (formato === 'XLSX') {
+        assert.equal(r.bytes.subarray(0, 2).toString(), 'PK');
+        const ExcelJS = requireBackend('exceljs'); const book = new ExcelJS.Workbook();
+        await book.xlsx.load(r.bytes);
+        assert.deepEqual(book.worksheets.map(s => s.name), presentacion === 'ESTADISTICA' ? ['Resumen', 'Estadisticas', 'Grafica'] : ['Resumen', 'Detalle']);
+        if (presentacion === 'ESTADISTICA') assert.ok(book.getWorksheet('Grafica').getImages().length > 0);
+        const cells = book.worksheets.flatMap(s => { const values = []; s.eachRow(row => row.eachCell(c => values.push(c.value))); return values; });
+        if (fuente === 'perdidas') assert.ok(cells.includes(presentacion === 'ESTADISTICA' ? '0.02' : '0.005000'));
+        if (fuente === 'ventas' || fuente === 'compras') assert.ok(cells.includes('12345678.91'));
+      } else {
+        assert.equal(r.bytes.subarray(0, 5).toString(), '%PDF-');
+        const { getDocument, OPS } = await import(pathToFileURL(requireBackend.resolve('pdfjs-dist/legacy/build/pdf.mjs')).href);
+        const task = getDocument({ data: new Uint8Array(r.bytes), useSystemFonts: false, isEvalSupported: false, disableFontFace: true });
+        const doc = await task.promise; let text = '', images = 0;
+        try {
+          for (let n = 1; n <= doc.numPages; n++) {
+            const p = await doc.getPage(n); text += (await p.getTextContent()).items.map(i => i.str).join(' ');
+            images += (await p.getOperatorList()).fnArray.filter(op => op === OPS.paintImageXObject).length;
+          }
+          assert.ok(text.includes('CADEFAR'));
+          if (presentacion === 'ESTADISTICA') assert.ok(images > 0);
+          if (fuente === 'perdidas' && presentacion === 'ESTADISTICA') assert.ok(text.includes('0.02'));
+        } finally { await doc.cleanup(); await task.destroy(); }
+      }
+      await esperar(async () => !(await readdir(join(profile, 'exportaciones'))).some(n => n.startsWith('cadefar-exportacion-')), 'limpieza de exportación propia');
+      return r;
+    };
+    for (const tipo of ['ventas', 'compras', 'perdidas']) await t.test(`${tipo}: estadísticas reales DIA/MES/ANIO, ceros, filtros y tabla exacta`, async () => {
+      const data = await estadistica(admin, tipo);
+      assert.deepEqual(data.resumen, expected[tipo]);
+      assert.equal(data.series.length, { ventas: 8, compras: 4, perdidas: 6 }[tipo]);
+      assert.deepEqual(data.filtros, { [tipo === 'perdidas' ? 'motivo' : 'estadoOperacion']: null });
+      for (const g of ['MES', 'ANIO']) {
+        const grouped = await estadistica(admin, tipo, 'desde=2026-11-10&hasta=2026-11-11', g);
+        assert.deepEqual(grouped.resumen, expected[tipo]); assert.equal(grouped.intervalos[0].parcial, true);
+      }
+      const filtered = await estadistica(admin, tipo, `dia=2026-11-10&${tipo === 'perdidas' ? 'motivo=DA%C3%91O' : 'estadoOperacion=ANULADA'}`);
+      assert.ok(filtered.series.some(s => s.valores.every(v => ['0', '0.00'].includes(v))));
+      if (tipo === 'perdidas') { assert.equal(filtered.sinDatos, false); assert.equal(filtered.resumen.perdidaTotal, '0.00'); await admin.contains('unidades'); }
+      const empty = await estadistica(admin, tipo, 'dia=2099-01-01');
+      assert.equal(empty.sinDatos, true); await admin.contains('Sin operaciones');
+    });
+    for (const fuente of ['ventas', 'compras', 'perdidas', 'movimientos']) await t.test(`${fuente}: matriz LOCAL pequeña desde UI, binarios y CORS real`, async () => {
+      for (const presentacion of fuente === 'movimientos' ? ['TABULAR'] : ['TABULAR', 'ESTADISTICA']) {
+        const page = fuente === 'perdidas' || fuente === 'movimientos' ? regente : admin;
+        if (fuente === 'movimientos') {
+          await page.navigate('/inventario/movimientos'); await page.ready('.inventario-page');
+          assert.equal(await page.evaluate('!!document.querySelector(".reporte-estadisticas")'), false);
+        } else if (presentacion === 'ESTADISTICA') await estadistica(page, fuente);
+        else await query(page, fuente, 'dia=2026-11-10&pagina=100&limite=1');
+        for (const formato of ['CSV', 'XLSX', 'PDF']) await exportar(page, fuente, presentacion, formato, fuente === 'movimientos' ? {} : { dia: '2026-11-10' });
+      }
+    });
+    await t.test('1200 intervalos reales en UI, último panel accesible; límite 1201 no se repara', async () => {
+      const data = await estadistica(admin, 'compras', 'desde=2023-01-01&hasta=2026-04-14');
+      assert.equal(data.intervalos.length, 1200);
+      await admin.select('.reporte-estadisticas select[id$="-panel"]', '19');
+      await admin.contains('2026-04-14');
+      const selector = '[aria-label="Valores exactos de todos los intervalos del panel"] tbody tr';
+      const cells = await admin.evaluate(`[...document.querySelectorAll(${JSON.stringify(selector)})].map(r=>[...r.cells].map(c=>c.textContent))`);
+      assert.equal(cells.length, 240);
+      assert.equal(cells.at(-1)[0], '2026-04-14');
+      assert.equal(cells.at(-1)[7], data.series.at(-1).valores[1199]);
+      assert.equal((await admin.request('GET', '/reportes/compras/estadisticas?desde=2023-01-01&hasta=2026-04-15&granularidad=DIA')).status, 400);
+    });
+    await t.test('Filtros propios aplicados, borrador no exportado, vacío válido y CU40 abierto por Administrador', async () => {
+      await query(admin, 'perdidas', 'dia=2026-11-10&motivo=DA%C3%91O');
+      await admin.field('#reporte-dia', '2026-11-11');
+      const filtered = await exportar(admin, 'perdidas', 'TABULAR', 'CSV', { dia: '2026-11-10', motivo: 'DAÑO' });
+      assert.ok(filtered.bytes.includes(Buffer.from('"0.000000"')));
+      assert.ok(!filtered.bytes.includes(Buffer.from('"0.005000"')));
+      await query(admin, 'ventas', 'dia=2099-01-01');
+      const empty = await exportar(admin, 'ventas', 'TABULAR', 'CSV', { dia: '2099-01-01' });
+      assert.equal(empty.bytes.toString('utf8').split('\r\n').length, 2);
+      const filtros = { idExistencia: String(ex2.id_existencia), desde: '2026-11-10', direccion: 'SALIDA' };
+      await admin.navigate(`/inventario/movimientos?${new URLSearchParams(filtros)}`); await admin.ready('.inventario-page');
+      const movementFile = await exportar(admin, 'movimientos', 'TABULAR', 'CSV', filtros);
+      assert.equal(movementFile.bytes.toString('utf8').split('\r\n').length, 3);
+      assert.ok(!movementFile.bytes.includes(Buffer.from('observacion')));
+    });
+    await t.test('Ocupado real entre sesiones, Retry-After oculto por CORS y cancelación sin activación', async () => {
+      await estadistica(admin, 'ventas', 'desde=2026-10-01&hasta=2026-11-30');
+      await regente.navigate('/inventario/movimientos'); await regente.ready('.inventario-page');
+      const start = browser.requests.length;
+      await admin.select('.reporte-exportacion select', 'XLSX');
+      // Se observa la llegada HTTP real; no se retiene SQL, no se reemplaza el
+      // generador/cupo ni se fabrican respuestas para forzar un 503.
+      let recibida = false;
+      const llegada = req => { if ((req.originalUrl || req.url).startsWith('/api/reportes/ventas/exportar?')) recibida = true; };
+      server.on('request', llegada);
+      try { await admin.click('.reporte-exportacion__acciones button'); await esperar(() => recibida, 'llegada de exportación real'); }
+      finally { server.off('request', llegada); }
+      await regente.select('.reporte-exportacion select', 'CSV'); await regente.click('.reporte-exportacion__acciones button');
+      await regente.contains('Generación de exportaciones ocupada');
+      const busy = browser.requests.slice(start).find(r => r.session === regente.name && r.path.endsWith('/exportar'));
+      assert.equal(busy.status, 503); assert.equal(busy.headers['retry-after'], '5');
+      assert.equal(await regente.evaluate('window.__headersExportacion.at(-1).retry'), null);
+      assert.equal(await regente.evaluate('window.__archivos.length'), 0);
+      await admin.clickText('Cancelar exportación'); await admin.contains('Solicitud cancelada');
+      await esperar(async () => !(await readdir(join(profile, 'exportaciones'))).some(n => n.startsWith('cadefar-exportacion-')), 'cleanup tras cancelación real');
+      assert.equal(await admin.evaluate('window.__archivos.length'), 0);
+      assert.equal(await admin.evaluate('window.__urls'), 0);
+      assert.equal(browser.requests.slice(start).filter(r => r.session === admin.name && r.path.endsWith('/exportar')).length, 1);
+      assert.equal(browser.requests.slice(start).filter(r => r.session === regente.name && r.path.endsWith('/exportar')).length, 1);
+    });
+    await t.test('Estadísticas/exportación rechazan sesión y roles reales; CU40 solo TABULAR', async () => {
+      const guest = await browser.openSession('ampliacion-sin-sesion'); await guest.navigate('/login');
+      for (const fuente of ['ventas', 'compras', 'perdidas', 'movimientos']) {
+        const path = fuente === 'movimientos' ? '/inventario/movimientos' : `/reportes/${fuente}`;
+        const q = fuente === 'movimientos' ? '' : 'dia=2026-11-10&';
+        for (const page of [guest, vendedor, ...(fuente === 'ventas' || fuente === 'compras' ? [regente] : [])]) {
+          assert.equal((await page.request('GET', `${path}/exportar?${q}presentacion=TABULAR&formato=CSV`)).status, page === guest ? 401 : 403);
+          if (fuente !== 'movimientos') assert.equal((await page.request('GET', `${path}/estadisticas?dia=2026-11-10&granularidad=DIA`)).status, page === guest ? 401 : 403);
+        }
+      }
+      assert.equal((await admin.request('GET', '/inventario/movimientos/exportar?presentacion=ESTADISTICA&formato=CSV&granularidad=DIA')).status, 400);
+      assert.equal((await admin.request('GET', '/reportes/ventas/estadisticas?desde=2020-01-01&hasta=2026-11-10&granularidad=DIA')).status, 400);
+      assert.equal((await admin.request('GET', '/reportes/ventas/exportar?dia=2026-11-10&presentacion=TABULAR&formato=CSV&pagina=1')).status, 400);
+    });
+    await t.test('503 real de perfil test no es defecto frontend; consulta independiente conservada', async () => {
+      await query(admin, 'ventas', 'dia=2026-11-10');
+      process.env.NODE_ENV = 'test';
+      try {
+        await admin.select('.reporte-exportacion select', 'CSV'); await admin.click('.reporte-exportacion__acciones button');
+        await admin.contains('Formato no disponible');
+        assert.equal(await admin.evaluate('window.__archivos.length'), 0);
+        await checkRendered(admin, 'ventas', { data: { resumen: expected.ventas, detalle: (await admin.request('GET', '/reportes/ventas?dia=2026-11-10')).body.data.detalle } });
+      } finally { process.env.NODE_ENV = 'development'; }
+    });
+    await t.test('Snapshots por petición: cambio sintético entre JSON y archivo, sin recalcular en React', async () => {
+      await query(admin, 'ventas', 'dia=2026-11-10');
+      try {
+        await db.Venta.update({ total: '12345678.93' }, { where: { id_venta: ventas[0].id_venta }, logging: false });
+        const r = await exportar(admin, 'ventas', 'TABULAR', 'CSV', { dia: '2026-11-10' });
+        assert.ok(r.bytes.includes(Buffer.from('"12345678.93"')));
+        const visible = await admin.evaluate('[...document.querySelectorAll(".reporte-resumen dd")].map(e=>e.textContent).join(" ")');
+        assert.ok(visible.includes(costoDecimal('12345678.91'))); assert.ok(!visible.includes(costoDecimal('12345678.93')));
+      } finally {
+        await db.Venta.update({ total: '12345678.91' }, { where: { id_venta: ventas[0].id_venta }, logging: false });
+      }
+      t.diagnostic('Dos UPDATE sintéticos autorizados (cambio/restauración), fuera del registro de escrituras HTTP; snapshot inicial restaurado.');
+    });
+    await t.test('Retorno postlogin a enlace profundo/query: límite heredado reproducido', async () => {
+      const page = await browser.openSession('postlogin-profundo'); await instrumentar(page);
+      await page.navigate('/reportes/perdidas?dia=2026-11-10&vista=ESTADISTICAS&uiGranularidad=DIA');
+      await page.wait('location.pathname === "/login" && !!document.getElementById("nombreUsuario")');
+      await page.field('#nombreUsuario', users[1].nombre_usuario); await page.field('#password', password);
+      await page.click('.login-form button[type=submit]');
+      await page.wait('location.pathname !== "/login"'); await page.settle();
+      const result = await page.evaluate('({path:location.pathname, query:location.search})');
+      // Se registra el defecto existente, no se transforma el recorrido en dashboard
+      // para presentarlo como retorno correcto ni se amplía autenticación/rutas.
+      assert.equal(result.query, '');
+      assert.ok(['/reportes/perdidas', '/dashboard'].includes(result.path));
+      t.diagnostic('Pendiente funcional reproducido: login no conserva query profunda; LoginForm solo utiliza from.pathname y LoginPage también redirige a dashboard. Sin corrección fuera del módulo de reportes.');
+    });
+    await t.test('Auditoría terminal de archivos única, metadatos mínimos y temporales propios vacíos', async () => {
+      await esperar(async () => !(await readdir(join(profile, 'exportaciones'))).some(n => n.startsWith('cadefar-exportacion-')), 'temporales de exportación vacíos');
+      for (const tipo of ['REPORTE_VENTAS_EXPORTAR', 'REPORTE_COMPRAS_EXPORTAR', 'REPORTE_PERDIDAS_EXPORTAR', 'INVENTARIO_MOVIMIENTOS_EXPORTAR']) {
+        const events = await db.BitacoraAuditoria.findAll({ where: { tipo_evento: tipo }, raw: true });
+        assert.ok(events.some(e => e.resultado === 'EXITO'));
+        for (const e of events) {
+          assert.equal(await db.BitacoraAuditoria.count({ where: { correlacion: e.correlacion } }), 1);
+          assert.equal(e.antes, null); assert.equal(e.despues, null);
+          if (e.resultado === 'EXITO') assert.equal(e.metadatos.estadoEntrega, 'FINALIZADA_SERVIDOR');
+          assert.ok(!/12345678|0\.005000|UIF6|\.csv|\.pdf|\.xlsx/.test(JSON.stringify(e.metadatos)));
+        }
+      }
+      assert.ok(await db.BitacoraAuditoria.count({ where: { tipo_evento: 'REPORTE_VENTAS_EXPORTAR', resultado: 'FALLO', causa: 'CANCELACION_CLIENTE' } }), 'Cancelación terminal real persistida');
+      assert.equal(db.sequelize.config.database, entorno.database);
+    });
+     await t.test('Consultas sin escrituras de negocio; auditoría persistida separada y registros sanitizados', async () => {
       assert.equal(await snapshot(), initial);
       const writes = sql.filter(s => /\b(INSERT INTO|UPDATE `|DELETE FROM|REPLACE INTO)\b/i.test(s));
       assert.ok(writes.length > 0);
@@ -260,7 +516,7 @@ test('CU38–CU41: React/Axios/cookie/Express/MySQL local autorizados', { timeou
         t.diagnostic(`Auditoría REPORTE_${tipo}_CONSULTAR: ${events.length} eventos persistidos.`);
       }
       assert.deepEqual(unexpected, []); assert.deepEqual(browser.errors, []);
-      assert.ok(browser.requests.every(r => r.method === 'GET' || ['POST', 'OPTIONS'].includes(r.method) && r.path === '/api/auth/login'));
+       assert.ok(browser.requests.every(r => ['GET', 'OPTIONS'].includes(r.method) || r.method === 'POST' && r.path === '/api/auth/login'));
       t.diagnostic(`${browser.requests.length} peticiones API observadas; ${writes.length} INSERT de auditoría; snapshot de negocio idéntico.`);
     });
   } finally {

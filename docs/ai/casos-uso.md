@@ -912,7 +912,11 @@ Se utiliza la fecha de confirmación y se distinguen las ventas confirmadas de l
 4. Devuelve conteo/importe histórico por categoría y totalVentasRealizadas solo de confirmadas, con detalle mínimo ordenado por fechaReferencia e ID descendentes. Categorías excluidas por filtro permanecen con ceros.
 5. Terminado el snapshot y materializada la respuesta, intenta un único evento REPORTE_VENTAS_CONSULTAR independiente.
 
-**Resultado y alternativas comunes a CU38/CU39/CU41:** `{ data: { periodo, resumen, detalle }, paginacion }`, resumen completo y detalle paginado 25/máximo 100. Vacío: 200 con ceros y lista vacía; página lejana: lista vacía sin reajustarla, manteniendo resumen/total. 400 por query inválida, 401 por sesión, 403 por rol y 500 genérico sin SQL/stack. Fallo exclusivo del auditor conserva lectura/error original. Modalidades excluyentes, formatos, campos exactos y ejemplos sintéticos: `fases.md` §7.2–7.8. Fechas civiles America/La_Paz con días inclusivos; no se ofrece serie temporal ni snapshot entre solicitudes. Una anulación posterior puede reclasificar un reporte histórico.
+**Resultado y alternativas comunes a CU38/CU39/CU41:** `{ data: { periodo, resumen, detalle }, paginacion }`, resumen completo y detalle paginado 25/máximo 100. Vacío: 200 con ceros y lista vacía; página lejana: lista vacía sin reajustarla, manteniendo resumen/total. 400 por query inválida, 401 por sesión, 403 por rol y 500 genérico sin SQL/stack. Fallo exclusivo del auditor conserva lectura/error original. Modalidades excluyentes, campos exactos y ejemplos sintéticos: `contratos-reportes-react.md` §2–4 (sustituye referencia al antiguo plan §7.2–7.8). Fechas civiles America/La_Paz con días inclusivos; el GET ordinario no incluye serie temporal ni existe snapshot entre solicitudes. Una anulación posterior puede reclasificar un reporte histórico.
+
+**Ampliación común autorizada, sin reconstruir los CU (20/11/2026):** para las tres fuentes, el actor permitido puede solicitar `/estadisticas` con período/filtro propios y granularidad obligatoria, o `/exportar` eligiendo TABULAR/ESTADISTICA y CSV/XLSX/PDF. Estadísticas JSON devuelven `{ data: { fuente, periodo, filtros, granularidad, sinDatos, resumen, intervalos, series, distribuciones } }` sin paginación; ceros y conciliación exacta en snapshot propio. Exportación TABULAR incluye todo el detalle seleccionado; ESTADISTICA todas las métricas, no detalle operativo adicional. PDF/XLSX estadísticos exigen gráfico/métrica compatibles e incrustan PNG más tabla exacta; CSV rechaza esos selectores. No se exporta solo página visible ni se truncan datos para encajar límites.
+
+Descarga **solo LOCAL**, 200 con archivo terminado/MIME/attachment/longitud incluso vacío; 400 incompatibilidades, 413 límite, 503 ocupado/no disponible/tiempo agotado, 500 técnico seguro. Tras headers no segundo JSON; transporte fallido no es éxito. Sesión/roles se validan antes de generar. Un evento terminal de exportación, EXITO solo tras finish/bytes completos; no recepción del usuario. Contrato técnico, límites y consumo con cookie/credenciales sin guardar JWT: `contratos-reportes-react.md` §1–7. La interfaz se implementará por separado.
 
 ---
 
@@ -955,7 +959,9 @@ Consultar la trazabilidad histórica del inventario.
 - Motivo.
 - Operación de origen cuando corresponda.
 
-**Implementación reutilizada:** `GET /api/inventario/movimientos`, mismo flujo que CU24 para Administrador/Regente. Conserva filtros y respuesta propia `{ data: movimientos }`, incluida observacion; no adopta el DTO mínimo/paginación de los tres reportes ni crea otro endpoint.
+**Implementación reutilizada:** `GET /api/inventario/movimientos`, mismo flujo que CU24 para Administrador/Regente. Conserva filtros y respuesta propia `{ data: movimientos }`, incluida observacion; no adopta el DTO mínimo/paginación de los tres reportes ni crea otro listado JSON.
+
+**Exportación ampliada LOCAL:** `GET /api/inventario/movimientos/exportar`, mismos actores/filtros abiertos existentes, formato CSV/XLSX/PDF y `presentacion=TABULAR` obligatorios. No exige período, no admite ESTADISTICA ni paginación/gráfico/métrica. Extrae todas las coincidencias bajo snapshot propio, proyección plana de referencias/usuario sin observacion, saldos reconstruidos ni resumen monetario; cuenta movimientos. Vacío/errores/transporte/auditoría según contrato común de descarga, sin cambiar GET de CU24/CU40 (`contratos-reportes-react.md` §2/5–7).
 
 ---
 
@@ -985,7 +991,7 @@ Las pérdidas se obtienen de los movimientos registrados y no requieren una tabl
 4. Devolver resumen por motivo y global, cantidades retiradas agregadas textuales y detalle mínimo paginado por fecha/ID descendentes. Es retiro bruto: idMovimientoReversion eventual se informa en el mismo snapshot sin descontarla, incluso fuera del período. No habilita un flujo operativo de reversión de retiros.
 5. Intentar REPORTE_PERDIDAS_CONSULTAR independiente tras materializar, también en vacío; solo cantidadResultados de la página como metadato específico, como en CU38/CU39.
 
-**Estado de verificación de CU38/CU39/CU41:** backend implementado; Fase 6 parcialmente aceptada en MySQL 8.0.46, no aceptación conjunta completa. DATETIME(0) impide comprobar fracciones persistidas; volumen extremo y demás límites se conservan en `fases.md` §7.15. Fase 7 cierra documentación, no estos pendientes ni frontend/despliegue.
+**Estado de verificación de CU38/CU39/CU41 y exportación CU40:** consultas y ampliación implementadas; evidencia MySQL 8.0.46 delimitada en `fases.md` §10.20, con Fase 10 PARCIAL, no aceptación backend conjunta completa. Las 21 descargas acotadas sí se probaron con motor; multibloque MySQL solo CSV, XLSX/PDF multibloque simulados. DATETIME(0) impide fracciones persistidas; fallos tardíos de transporte/conexión/COMMIT no reproducidos íntegramente con motor. Matriz de evidencia en `contratos-reportes-react.md` §9. Fase 11 completa documentación, no revisión visual, gates productivos ni frontend/despliegue; Fase 9 sigue PARCIAL y Fases 5–8 conservan sus límites. La antigua Fase 6 parcial/Fase 7 documental pertenecían al plan sustituido y no son las fases de la ampliación actual.
 
 ---
 

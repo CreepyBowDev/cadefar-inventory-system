@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { inventarioController } from '../controllers/inventario.controller.js';
+import { reporteExportacionController } from '../controllers/reporte-exportacion.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import { requireRole } from '../middlewares/role.middleware.js';
 import { ROLES } from '../../shared/constants/roles.js';
 
 export const inventarioRouter = Router();
 inventarioRouter.use(authMiddleware);
+inventarioRouter.head('/movimientos/exportar', requireRole(ROLES.ADMINISTRADOR, ROLES.REGENTE),
+    (req, res) => res.set('Allow', 'GET').status(405).end());
+inventarioRouter.get('/movimientos/exportar', requireRole(ROLES.ADMINISTRADOR, ROLES.REGENTE), reporteExportacionController.movimientos);
 
 inventarioRouter.post('/ajustes', requireRole(ROLES.REGENTE), inventarioController.registrarAjuste);
 inventarioRouter.post('/retiros/vencimiento', requireRole(ROLES.REGENTE), inventarioController.registrarRetiroVencimiento);

@@ -60,7 +60,7 @@ const filtrosInventarioSchema = z.object({
     codigoMedicamento: texto(20).optional(),
     nombreComercial: texto(150).optional()
 }).strict();
-const filtrosMovimientosSchema = z.object({
+export const filtrosMovimientosSchema = z.object({
     idMedicamento: idSchema.optional(),
     idExistencia: idSchema.optional(),
     desde: fechaSchema.optional(),

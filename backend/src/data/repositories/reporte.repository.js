@@ -1,30 +1,44 @@
 import db from '../models/index.js';
-import { MOTIVOS_MOVIMIENTO } from '../../shared/constants/motivos-movimiento.js';
+import { criteriosVentas, criteriosCompras, criteriosPerdidas, categoriaVenta as categoria,
+    fechaReferenciaVenta as fechaReferencia, perdidaIndividual } from './reporte.criterios.js';
 
 const { Venta, Compra, MovimientoInventario, ExistenciaMedicamento, Medicamento, Sequelize } = db;
-const { Op, fn, col, literal, cast } = Sequelize;
-const categoria = literal(`CASE WHEN estado_operacion = 'ANULADA' THEN
-    CASE WHEN fecha_venta IS NULL THEN 'ANULADA_SIN_CONFIRMAR' ELSE 'ANULADA_CONFIRMADA' END
-    ELSE estado_operacion END`);
-const fechaReferencia = literal(`CASE WHEN estado_operacion = 'PENDIENTE'
-    OR (estado_operacion = 'ANULADA' AND fecha_venta IS NULL)
-    THEN fecha_registro ELSE fecha_venta END`);
+const { fn, col, cast } = Sequelize;
 
 export class reporteRepository {
+    static async estadisticasPerdidas(filtros, { transaction }) {
+        const where = criteriosPerdidas(filtros);
+        const formato = { DIA: '%Y-%m-%d', MES: '%Y-%m', ANIO: '%Y' }[filtros.granularidad];
+        if (!formato) throw new RangeError('Granularidad inválida');
+        const temporal = fn('DATE_FORMAT', col('fecha_movimiento'), formato);
+        // Movimientos originales únicos, sin joins. RN91 compartida con el reporte vigente.
+        const medidas = [[cast(fn('COUNT', col('id_movimiento')), 'CHAR'), 'cantidad_retiros'],
+            [cast(fn('SUM', col('cantidad')), 'CHAR'), 'cantidad_retirada'],
+            [cast(fn('SUM', perdidaIndividual), 'CHAR'), 'perdida']];
+        const grupos = await MovimientoInventario.findAll({ where, transaction, raw: true,
+            attributes: ['motivo', ...medidas], group: ['motivo'] });
+        const temporales = await MovimientoInventario.findAll({ where, transaction, raw: true,
+            attributes: ['motivo', [temporal, 'etiqueta'], ...medidas],
+            group: ['motivo', temporal], order: [[temporal, 'ASC']] });
+        return { grupos, temporales };
+    }
+
+    static async estadisticasVentas(filtros, { transaction }) {
+        return agregarEstadisticas(Venta, criteriosVentas(filtros), categoria, fechaReferencia,
+            'id_venta', 'categoria', filtros.granularidad, transaction);
+    }
+
+    static async estadisticasCompras(filtros, { transaction }) {
+        return agregarEstadisticas(Compra, criteriosCompras(filtros), col('estado_operacion'),
+            col('fecha_compra'), 'id_compra', 'estado_operacion', filtros.granularidad, transaction);
+    }
+
     static async consultarPerdidas({ desdeFechaHora, hastaFechaHora, motivo, pagina, limite }, { transaction }) {
-        const where = { direccion: 'SALIDA', motivo: motivo ?? { [Op.in]: [MOTIVOS_MOVIMIENTO.VENCIMIENTO, MOTIVOS_MOVIMIENTO.DANO] },
-            id_movimiento_original: null, fecha_movimiento: {
-                [Op.gte]: fn('STR_TO_DATE', desdeFechaHora, '%Y-%m-%d %H:%i:%s'),
-                [Op.lte]: fn('STR_TO_DATE', hastaFechaHora, '%Y-%m-%d %H:%i:%s.%f')
-            } };
+        const where = criteriosPerdidas({ desdeFechaHora, hastaFechaHora, motivo });
         // INTEGER × DECIMAL permanece exacto. ROUND de un valor exacto no negativo
         // equivale a dividirYRedondear(Q * costoEnMillonesimas, 10000n).
         // Redondear ANTES de SUM; no estrechar el resultado al tamaño de una columna.
-        const perdidaIndividual = literal('ROUND(CAST(`MovimientoInventario`.`cantidad` AS DECIMAL(10,0)) * `MovimientoInventario`.`costo_unitario_aplicado`, 2)');
-        const grupos = await MovimientoInventario.findAll({ where, transaction, raw: true,
-            attributes: ['motivo', [fn('COUNT', col('id_movimiento')), 'cantidad_retiros'],
-                [cast(fn('SUM', col('cantidad')), 'CHAR'), 'cantidad_retirada'],
-                [cast(fn('SUM', perdidaIndividual), 'CHAR'), 'perdida']], group: ['motivo'] });
+        const grupos = await consultarResumenPerdidas(where, transaction);
         // Solo belongsTo/hasOne únicos; el agregado anterior no contiene joins.
         const rows = await MovimientoInventario.findAll({ where, transaction, raw: true,
             attributes: ['id_movimiento', 'id_existencia', 'id_usuario', 'motivo', 'cantidad',
@@ -44,13 +58,10 @@ export class reporteRepository {
     }
 
     static async consultarCompras({ periodo, estadoOperacion, pagina, limite }, { transaction }) {
-        const where = { fecha_compra: { [Op.gte]: periodo.desde, [Op.lte]: periodo.hasta } };
-        if (estadoOperacion !== undefined) where.estado_operacion = estadoOperacion;
+        const where = criteriosCompras({ periodo, estadoOperacion });
         // Cabeceras históricas, sin joins ni restricciones por actividad del proveedor.
         // El conteo completo sale de los mismos grupos que el resumen, no de la página.
-        const grupos = await Compra.findAll({ where, transaction, raw: true,
-            attributes: ['estado_operacion', [fn('COUNT', col('id_compra')), 'cantidad'],
-                [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: ['estado_operacion'] });
+        const grupos = await consultarResumenCompras(where, transaction);
         const rows = await Compra.findAll({ where, transaction, raw: true,
             attributes: ['id_compra', 'id_proveedor_laboratorio', 'estado_operacion',
                 [fn('DATE_FORMAT', col('fecha_compra'), '%Y-%m-%d'), 'fecha_compra'],
@@ -63,22 +74,10 @@ export class reporteRepository {
     }
 
     static async consultarVentas({ desdeFechaHora, hastaFechaHora, estadoOperacion, pagina, limite }, { transaction }) {
-        const rango = () => ({
-            [Op.gte]: fn('STR_TO_DATE', desdeFechaHora, '%Y-%m-%d %H:%i:%s'),
-            [Op.lte]: fn('STR_TO_DATE', hastaFechaHora, '%Y-%m-%d %H:%i:%s.%f')
-        });
-        const where = { [Op.or]: [
-            { estado_operacion: 'CONFIRMADA', fecha_venta: rango() },
-            { estado_operacion: 'PENDIENTE', fecha_registro: rango() },
-            { estado_operacion: 'ANULADA', fecha_venta: { [Op.ne]: null, ...rango() } },
-            { estado_operacion: 'ANULADA', fecha_venta: null, fecha_registro: rango() }
-        ] };
-        if (estadoOperacion !== undefined) where.estado_operacion = estadoOperacion;
+        const where = criteriosVentas({ desdeFechaHora, hastaFechaHora, estadoOperacion });
         // Solo cabeceras: COUNT y SUM no dependen de detalles, recetas o catálogo.
         // CAST preserva el transporte textual de DECIMAL, incluso en sumas grandes.
-        const grupos = await Venta.findAll({ where, transaction, raw: true,
-            attributes: [[categoria, 'categoria'], [fn('COUNT', col('id_venta')), 'cantidad'],
-                [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: [categoria] });
+        const grupos = await consultarResumenVentas(where, transaction);
         const rows = await Venta.findAll({ where, transaction, raw: true,
             attributes: ['id_venta', 'estado_operacion', [categoria, 'categoria'],
                 [fn('DATE_FORMAT', fechaReferencia, '%Y-%m-%d %H:%i:%s'), 'fecha_referencia'],
@@ -90,3 +89,31 @@ export class reporteRepository {
         return { grupos, rows };
     }
 }
+
+// Agregados compartidos por GET y extracción completa; no página ni auditoría.
+const contarResumen = (campo, textual) => textual ? cast(fn('COUNT', col(campo)), 'CHAR') : fn('COUNT', col(campo));
+export const consultarResumenVentas = (where, transaction, textual = false) => Venta.findAll({ where, transaction, raw: true,
+    attributes: [[categoria, 'categoria'], [contarResumen('id_venta', textual), 'cantidad'],
+        [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: [categoria] });
+export const consultarResumenCompras = (where, transaction, textual = false) => Compra.findAll({ where, transaction, raw: true,
+    attributes: ['estado_operacion', [contarResumen('id_compra', textual), 'cantidad'],
+        [cast(fn('SUM', col('total')), 'CHAR'), 'importe']], group: ['estado_operacion'] });
+export const consultarResumenPerdidas = (where, transaction, textual = false) => MovimientoInventario.findAll({ where, transaction, raw: true,
+    attributes: ['motivo', [contarResumen('id_movimiento', textual), 'cantidad_retiros'],
+        [cast(fn('SUM', col('cantidad')), 'CHAR'), 'cantidad_retirada'],
+        [cast(fn('SUM', perdidaIndividual), 'CHAR'), 'perdida']], group: ['motivo'] });
+
+// Solo dos agregados de cabeceras: ninguna lectura de detalle ni join hasMany.
+const agregarEstadisticas = async (modelo, where, categoria, fecha, id, campoCategoria, granularidad, transaction) => {
+    const formato = { DIA: '%Y-%m-%d', MES: '%Y-%m', ANIO: '%Y' }[granularidad];
+    if (!formato) throw new RangeError('Granularidad inválida');
+    const temporal = fn('DATE_FORMAT', fecha, formato);
+    const medidas = [[cast(fn('COUNT', col(id)), 'CHAR'), 'cantidad'],
+        [cast(fn('SUM', col('total')), 'CHAR'), 'importe']];
+    const grupos = await modelo.findAll({ where, transaction, raw: true,
+        attributes: [[categoria, campoCategoria], ...medidas], group: [categoria] });
+    const temporales = await modelo.findAll({ where, transaction, raw: true,
+        attributes: [[categoria, campoCategoria], [temporal, 'etiqueta'], ...medidas],
+        group: [categoria, temporal], order: [[temporal, 'ASC']] });
+    return { grupos, temporales };
+};

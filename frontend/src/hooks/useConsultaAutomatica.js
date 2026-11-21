@@ -75,6 +75,7 @@ export const useConsultaAutomatica = (consultar, validar, transformar = sinTrans
   };
   return {
     filtros,
+    pendiente,
     query: appliedQuery,
     errorFiltros,
     onChange: (campo, valor, inmediato = false) => cambiar({ ...latestFilters.current, [campo]: valor }, inmediato),

@@ -1,3 +1,5 @@
+import { exigirCamposTextuales, fechaCivilValida as fechaValida, leerParametrosUnicos } from '../../../utils/parametrosHttp.js';
+
 const CAMPOS_TEMPORALES = ['dia', 'mes', 'desde', 'hasta'];
 const CAMPOS_COMUNES = [...CAMPOS_TEMPORALES, 'pagina', 'limite'];
 const OPCIONES = {
@@ -6,14 +8,6 @@ const OPCIONES = {
   perdidas: { campo: 'motivo', valores: ['VENCIMIENTO', 'DAÑO'] }
 };
 
-// Calendario gregoriano civil: no interpretar estos valores como instantes UTC.
-const fechaValida = valor => {
-  if (!/^[1-9]\d{3}-\d{2}-\d{2}$/.test(valor)) return false;
-  const [anio, mes, dia] = valor.split('-').map(Number);
-  const bisiesto = anio % 4 === 0 && (anio % 100 !== 0 || anio % 400 === 0);
-  const dias = [31, bisiesto ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  return mes >= 1 && mes <= 12 && dia >= 1 && dia <= dias[mes - 1];
-};
 const enteroValido = (valor, maximo) => /^[1-9]\d{0,9}$/.test(valor) && Number(valor) <= maximo;
 const invalida = error => ({ estado: 'invalida', habilitada: false, filtros: null, error });
 
@@ -74,4 +68,85 @@ export const serializarConsultaReporte = (filtros, tipo) => {
     if (Object.hasOwn(consulta.filtros, campo)) params.set(campo, consulta.filtros[campo]);
   }
   return params.toString();
+};
+
+const GRANULARIDADES = ['DIA', 'MES', 'ANIO'];
+const exigirOpcion = (valor, opciones, campo) => {
+  if (!opciones.includes(valor)) throw new Error(`Selecciona un valor válido para ${campo}.`);
+};
+
+// Solo cuenta intervalos naturales intersectados; no materializa series ni usa Date.
+const validarIntervalos = params => {
+  exigirOpcion(params.granularidad, GRANULARIDADES, 'granularidad');
+  const desde = params.dia || (params.mes ? `${params.mes}-01` : params.desde);
+  const hasta = params.dia || (params.mes ? `${params.mes}-01` : params.hasta);
+  const partes = valor => valor.split('-').map(Number);
+  const [a, m, d] = partes(desde);
+  const [b, n, e] = partes(hasta);
+  // Días anteriores al año/mes/día: la aritmética entera es exacta en 1000..9999.
+  const ordinal = (anio, mes, dia) => {
+    const anterior = anio - 1;
+    const bisiesto = anio % 4 === 0 && (anio % 100 !== 0 || anio % 400 === 0);
+    const acumulados = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    return 365 * anterior + Math.floor(anterior / 4) - Math.floor(anterior / 100)
+      + Math.floor(anterior / 400) + acumulados[mes - 1] + (bisiesto && mes > 2 ? 1 : 0) + dia;
+  };
+  const diasMes = params.mes
+    ? [31, fechaValida(`${params.mes.slice(0, 4)}-02-29`) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
+    : null;
+  const cantidad = params.granularidad === 'ANIO' ? b - a + 1
+    : params.granularidad === 'MES' ? (b - a) * 12 + n - m + 1
+      : diasMes ?? ordinal(b, n, e) - ordinal(a, m, d) + 1;
+  if (cantidad > 1200) throw new Error('La consulta supera 1200 intervalos; elija otra granularidad o un período menor.');
+};
+
+const prepararOperacion = (entrada, tipo, exportacion) => {
+  if (!Object.hasOwn(OPCIONES, tipo)) throw new Error('Selecciona un reporte válido.');
+  const params = leerParametrosUnicos(entrada);
+  const propios = [...CAMPOS_TEMPORALES, OPCIONES[tipo].campo];
+  const adicionales = exportacion ? ['formato', 'presentacion', 'granularidad', 'grafico', 'metrica'] : ['granularidad'];
+  exigirCamposTextuales(params, [...propios, ...adicionales]);
+  const filtros = Object.fromEntries(Object.entries(params).filter(([campo]) => propios.includes(campo)));
+  const error = validarFiltrosReporte(filtros, tipo);
+  if (error) throw new Error(error);
+  if (!exportacion) validarIntervalos(params);
+  else {
+    exigirOpcion(params.formato, ['PDF', 'XLSX', 'CSV'], 'formato');
+    exigirOpcion(params.presentacion, ['TABULAR', 'ESTADISTICA'], 'presentacion');
+    const tiene = campo => Object.hasOwn(params, campo);
+    if (params.presentacion === 'TABULAR') {
+      if (['granularidad', 'grafico', 'metrica'].some(tiene)) throw new Error('TABULAR no admite granularidad, gráfico ni métrica.');
+    } else {
+      validarIntervalos(params);
+      if (params.formato === 'CSV') {
+        if (tiene('grafico') || tiene('metrica')) throw new Error('CSV no admite gráfico ni métrica.');
+      } else {
+        exigirOpcion(params.grafico, ['BARRAS', 'LINEAS', 'SECTORES'], 'grafico');
+        exigirOpcion(params.metrica, tipo === 'perdidas' ? ['CANTIDAD_RETIROS', 'PERDIDA'] : ['CANTIDAD', 'IMPORTE'], 'metrica');
+      }
+    }
+  }
+  return new URLSearchParams(params).toString();
+};
+
+export const serializarEstadisticasReporte = (params, tipo) => prepararOperacion(params, tipo, false);
+export const serializarExportacionReporte = (params, tipo) => prepararOperacion(params, tipo, true);
+
+// Lector opt-in para fases visuales: no cambia leerConsultaReporte ni el hook actual.
+// vista/uiGranularidad son UI; filtros mantiene paginación, filtrosAplicados nunca.
+export const leerConsultaReporteAmpliada = (query, tipo) => {
+  try {
+    if (typeof query !== 'string' && !(query instanceof URLSearchParams)) throw new Error('La consulta debe ser una URL.');
+    const params = leerParametrosUnicos(query);
+    const { vista = 'CONSULTA', uiGranularidad, ...http } = params;
+    exigirOpcion(vista, ['CONSULTA', 'ESTADISTICAS'], 'vista');
+    if (vista === 'ESTADISTICAS') exigirOpcion(uiGranularidad, GRANULARIDADES, 'uiGranularidad');
+    else if (uiGranularidad !== undefined) throw new Error('uiGranularidad solo corresponde a la vista ESTADISTICAS.');
+    const consulta = leerConsultaReporte(new URLSearchParams(http), tipo);
+    if (consulta.estado === 'invalida') return consulta;
+    const { pagina, limite, ...filtrosAplicados } = consulta.filtros;
+    return { ...consulta, ui: { vista, ...(uiGranularidad ? { uiGranularidad } : {}) }, filtrosAplicados };
+  } catch (error) {
+    return invalida(error.message);
+  }
 };

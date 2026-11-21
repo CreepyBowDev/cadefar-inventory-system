@@ -1,5 +1,7 @@
 import { api } from '../../../api/api.js';
 import { getMedicamento } from '../../medicamentos/services/medicamento.service.js';
+import { recibirArchivo } from '../../../utils/descargaBinaria.js';
+import { serializarExportacionMovimientos } from '../utils/consultaExportacionMovimientos.js';
 
 const filtrosStock = ['idMedicamento', 'codigoMedicamento', 'nombreComercial'];
 const filtrosHistorial = ['idMedicamento', 'idExistencia', 'desde', 'hasta', 'direccion', 'motivo'];
@@ -18,6 +20,13 @@ export const getStockBajo = (filtros = {}) => consultar('/stock-bajo', filtros, 
 export const getProximosAVencer = (filtros = {}) => consultar('/proximos-a-vencer', filtros, filtrosStock);
 export const getVencidos = (filtros = {}) => consultar('/vencidos', filtros, filtrosStock);
 export const getMovimientos = (filtros = {}) => consultar('/movimientos', filtros, filtrosHistorial);
+
+export const exportarMovimientos = (filtros, { signal } = {}) => {
+  const params = new URLSearchParams(serializarExportacionMovimientos(filtros));
+  return recibirArchivo('/inventario/movimientos/exportar', params, {
+    fuente: 'movimientos', presentacion: params.get('presentacion'), formato: params.get('formato'), signal
+  });
+};
 
 export const registrarAjuste = async (data) => {
   const response = await api.post('/inventario/ajustes', data);

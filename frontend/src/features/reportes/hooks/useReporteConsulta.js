@@ -1,34 +1,47 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useConsulta } from '../../../hooks/useConsulta.js';
-import { leerConsultaReporte, serializarConsultaReporte, validarFiltrosReporte } from '../utils/consultaReporte.js';
+import { leerConsultaReporte, leerConsultaReporteAmpliada, serializarConsultaReporte, validarFiltrosReporte } from '../utils/consultaReporte.js';
 
 const crearBorrador = filtros => ({ ...filtros, modalidad: filtros?.dia ? 'dia' : filtros?.mes ? 'mes' : filtros?.desde ? 'periodo' : '' });
 
 // Solo interacción URL/borrador de Reportes; no define resultados ni reglas de negocio.
-export const useReporteConsulta = (tipo, consultar) => {
+export const useReporteConsulta = (tipo, consultar, ampliada = false) => {
   const sidebarItemKey = `reporte-${tipo}`;
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const query = params.toString();
-  const aplicada = leerConsultaReporte(query, tipo);
+  const leer = ampliada ? leerConsultaReporteAmpliada : leerConsultaReporte;
+  const aplicada = leer(query, tipo);
   const clave = aplicada.habilitada ? serializarConsultaReporte(aplicada.filtros, tipo) : query;
-  const consulta = useConsulta(consultar, clave, aplicada.filtros, aplicada.habilitada);
+  const lectura = useConsulta(consultar, clave, aplicada.filtros, aplicada.habilitada);
+  const [restriccion, setRestriccion] = useState(null);
+  const contextoRestriccion = ampliada ? clave : location.key;
+  const restringir = status => { lectura.invalidate(); setRestriccion({ key: contextoRestriccion, status }); };
+  const consulta = restriccion?.key === contextoRestriccion ? {
+    ...lectura, data: undefined, paginacion: undefined, loading: false,
+    status: restriccion.status, error: restriccion.status === 401 ? 'Tu sesión ya no es válida. Inicia sesión nuevamente.' : 'No tienes autorización para consultar esta información.'
+  } : lectura;
   const [borrador, setBorrador] = useState(() => crearBorrador(aplicada.filtros));
   const [errorLocal, setErrorLocal] = useState('');
   const interna = useRef(null);
   useEffect(() => {
-    if (interna.current !== query) { setBorrador(crearBorrador(leerConsultaReporte(query, tipo).filtros)); setErrorLocal(''); }
+    if (interna.current !== query) { setBorrador(crearBorrador(leer(query, tipo).filtros)); setErrorLocal(''); }
     interna.current = null;
-  }, [location.key, query, tipo]);
+  }, [location.key, query, tipo, leer]);
   const cambiarConsulta = nuevos => {
-    const siguiente = serializarConsultaReporte(nuevos, tipo);
+    const http = serializarConsultaReporte(nuevos, tipo);
+    const params = new URLSearchParams(http);
+    if (ampliada && aplicada.ui?.vista === 'ESTADISTICAS') {
+      params.set('vista', 'ESTADISTICAS'); params.set('uiGranularidad', aplicada.ui.uiGranularidad);
+    }
+    const siguiente = params.toString();
     if (siguiente === query) consulta.retry();
     else {
       interna.current = siguiente; consulta.invalidate();
       // Canonizar defaults/orden puede cambiar la URL sin cambiar la clave del
       // efecto. Buscar los mismos criterios debe iniciar una consulta igualmente.
-      if (siguiente === clave) consulta.retry();
+      if (http === clave) consulta.retry();
       setParams(siguiente, { state: { sidebarItemKey } });
     }
   };
@@ -46,5 +59,13 @@ export const useReporteConsulta = (tipo, consultar) => {
     interna.current = ''; setParams('', { state: { sidebarItemKey } });
   };
   const cambiarBorrador = nuevo => { setBorrador(nuevo); setErrorLocal(''); };
-  return { query, aplicada, consulta, borrador, errorLocal, cambiarBorrador, cambiarConsulta, buscar, limpiar };
+  const cambiarVista = (vista, granularidad) => {
+    if (aplicada.estado === 'invalida') return;
+    const params = new URLSearchParams(query);
+    params.delete('vista'); params.delete('uiGranularidad');
+    if (vista === 'ESTADISTICAS') { params.set('vista', vista); params.set('uiGranularidad', granularidad); }
+    const siguiente = leerConsultaReporteAmpliada(params, tipo);
+    if (siguiente.estado !== 'invalida') { interna.current = params.toString(); setParams(params, { state: { sidebarItemKey } }); }
+  };
+  return { query, aplicada, consulta, borrador, errorLocal, cambiarBorrador, cambiarConsulta, buscar, limpiar, restringir, cambiarVista };
 };

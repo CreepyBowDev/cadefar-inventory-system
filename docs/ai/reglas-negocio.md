@@ -1046,9 +1046,13 @@ Los reportes se generan a partir de la información almacenada en las operacione
 
 No se requiere una tabla independiente denominada `Reporte`.
 
-CU38/CU39/CU41 exigen exactamente día, mes o período cerrado explícito, sin predeterminado ni máximo artificial de días; se admiten futuros. Fechas civiles reales 1000–9999 de America/La_Paz, ambos extremos inclusivos: DATEONLY entre días y DATETIME entre 00:00:00 y 23:59:59.999999. No convertir históricos a UTC ni cambiar zona global. El esquema actual DATETIME(0) no conserva fracciones; el filtro no demuestra que puedan persistirse (evidencia/limitación en `fases.md` §7.15).
+CU38/CU39/CU41 exigen exactamente día, mes o período cerrado explícito, sin predeterminado ni máximo artificial de días; se admiten futuros. Fechas civiles reales 1000–9999 de America/La_Paz, ambos extremos inclusivos: DATEONLY entre días y DATETIME entre 00:00:00 y 23:59:59.999999. No convertir históricos a UTC ni cambiar zona global. El esquema actual DATETIME(0) no conserva fracciones; el filtro no demuestra que puedan persistirse (evidencia/limitación vigente en `fases.md` §10.20; la referencia anterior §7.15 era del plan sustituido).
 
-Resumen y conteo cubren todas las coincidencias, paginación solo el detalle. Mismos predicados y snapshot REPEATABLE READ por solicitud, sin FOR UPDATE ni escrituras de negocio; otra solicitud puede ver cambios. Agregar cabeceras/movimientos únicos sin multiplicación por relaciones ni SUM(DISTINCT importe), y sin excluir históricos por inactividad o saldo cero. No se generan series, ganancias ni cierres contables históricos. Auditoría mínima independiente tras materializar; su fallo exclusivo no destruye la lectura ni sustituye el error original.
+Resumen y conteo cubren todas las coincidencias, paginación solo el detalle. Mismos predicados y snapshot REPEATABLE READ por solicitud, sin FOR UPDATE ni escrituras de negocio; otra solicitud puede ver cambios. Agregar cabeceras/movimientos únicos sin multiplicación por relaciones ni SUM(DISTINCT importe), y sin excluir históricos por inactividad o saldo cero. El GET ordinario no incluye series; la ampliación autorizada de 20/11/2026 sí las ofrece en estadísticas separadas y exportaciones, sin ganancias ni cierres contables históricos. Auditoría mínima independiente tras materializar; su fallo exclusivo no destruye la lectura ni sustituye el error original.
+
+La ampliación conserva categorías, fechas y totales de RN98/RN99/RN101. Granularidad DIA/MES/ANIO explícita, hasta 1200 intervalos naturales intersectados, ascendentes y parciales donde corresponda; ceros por intervalo/categoría, incluso excluidas por filtro. Series y distribuciones de valores absolutos exactos concilian con resumen en el mismo snapshot. Conteos de resumen son enteros JSON seguros; cantidades agregadas y valores/total de series son strings exactos, dinero a dos decimales. Distribución de importes de todas las categorías no equivale a ventas/compras realizadas (solo confirmadas). Sin porcentajes, promedios, comparativas interperíodo ni pronósticos. No mezclar unidades ni atribuir equivalencia farmacéutica a cantidades heterogéneas.
+
+TABULAR exporta todas las coincidencias mediante keyset y spool conciliado, no la página visible; ESTADISTICA todas las métricas/ceros sin detalle operativo duplicado. No truncar, muestrear ni dividir archivos automáticamente ante límites. CSV conserva bytes exactos y protección de fórmulas, no tipado de Excel; XLSX conserva decimales/IDs/fechas como texto explícito; PNG incrustada en PDF/XLSX aproxima solo geometría, manteniendo tabla exacta. Formatos, errores y límites técnicos LOCAL en `contratos-reportes-react.md` §5–7. Exportación registra un terminal único: EXITO solo tras finish y bytes completos, no recepción/guardado por el usuario; fallo exclusivo del auditor no invalida artefacto correcto ni promete persistencia. No se habilita producción ni se acepta revisión visual/MySQL completa por documentarlo.
 
 ## RN98. Consultas de ventas
 
@@ -1075,6 +1079,8 @@ Para CU39, el eje es siempre fecha_compra de adquisición, inclusiva; no fecha_r
 ## RN100. Historial de inventario
 
 El sistema debe permitir reconstruir la evolución del inventario mediante los movimientos registrados.
+
+CU40 reutiliza GET de CU24, sin segundo listado/estadística. Su exportación LOCAL es exclusivamente TABULAR CSV/XLSX/PDF, con filtros existentes y snapshot RR del pipeline de descarga; no añade transacción al GET original, saldos reconstruidos ni resumen monetario. Proyección plana sin observacion, conservando referencias opcionales y usuario según `contratos-reportes-react.md` §5.
 
 ## RN101. Consulta de pérdidas
 

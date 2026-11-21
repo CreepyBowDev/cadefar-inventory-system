@@ -232,7 +232,7 @@ Implementado para Administrador en `GET /api/reportes/compras`, por `fecha_compr
 
 El sistema debe permitir consultar los movimientos históricos del inventario.
 
-CU40 reutiliza `GET /api/inventario/movimientos` de CU24 para Administrador/Regente, conservando filtros, respuesta y permisos propios; no se duplica en Reportes.
+CU40 reutiliza `GET /api/inventario/movimientos` de CU24 para Administrador/Regente, conservando filtros, respuesta y permisos propios; no se duplica en Reportes. La ampliación añade `/api/inventario/movimientos/exportar` exclusivamente TABULAR en CSV/XLSX/PDF LOCAL, sin estadísticas, saldos reconstruidos ni resumen monetario; la proyección exportada no incluye observacion y no modifica el GET.
 
 ## RF38. Consultar pérdidas
 
@@ -240,7 +240,11 @@ El sistema debe permitir consultar pérdidas por vencimiento o daño, valorizada
 
 Implementado para Administrador/Regente en `GET /api/reportes/perdidas`: retiros brutos originales por fecha de movimiento, motivo opcional `VENCIMIENTO`/`DAÑO`, costo histórico y redondeo individual antes de sumar. Una referencia eventual de reversión se informa sin descontarla ni habilitar su registro operativo (RN91/RN101).
 
-Contrato común RF35/RF36/RF38: modalidad explícita excluyente `dia`, `mes` o `desde`+`hasta`, fechas civiles America/La_Paz y extremos inclusivos. Resumen completo filtrado y detalle paginado (25 por defecto, máximo 100), sin serie temporal; vacíos 200 con ceros. Validación estricta 400, sesión 401, rol 403 y fallo técnico 500 seguro. Cada lectura materializada intenta auditoría mínima independiente. Contrato exacto, campos y ejemplos: `fases.md` §7.2–7.8; implementación y evidencia parcial: `contexto-maestro.md` §39 y `fases.md` §7.15–7.16. Backend implementado no significa integración plenamente aceptada ni frontend entregado.
+Contrato común RF35/RF36/RF38 del GET ordinario: modalidad explícita excluyente `dia`, `mes` o `desde`+`hasta`, fechas civiles America/La_Paz y extremos inclusivos. Resumen completo filtrado y detalle paginado (25 por defecto, máximo 100), sin serie temporal dentro de ese DTO; vacíos 200 con ceros. Validación estricta 400, sesión 401, rol 403 y fallo técnico 500 seguro. Cada lectura materializada intenta auditoría mínima independiente.
+
+**Ampliación autorizada e implementada (20/11/2026):** cada una de las tres fuentes dispone de `/estadisticas` JSON con granularidad explícita DIA/MES/ANIO, indicadores, intervalos, series y distribuciones conciliados, y `/exportar` TABULAR/ESTADISTICA en CSV/XLSX/PDF. Permisos/filtros y RN91/RN98–RN101 se conservan; no nuevos CU/RN ni tabla Reporte. Estadísticas máximo 1200 intervalos con ceros; no porcentajes, ganancias ni pronósticos. TABULAR exporta todas las coincidencias sin paginación, ESTADISTICA todas las métricas, sin detalle operativo adicional. PDF/XLSX estadísticos incluyen PNG y tabla exacta; CSV solo datos, no imagen. Exportaciones disponibles solo bajo perfil LOCAL, no producción.
+
+Contrato vigente para React, campos, ejemplos, errores, precisión y matriz de evidencia: `contratos-reportes-react.md`; acuerdos `fases.md` §10.2–10.8 y cierres §10.19–10.21. Las antiguas referencias §7.2–7.8/§7.15–7.16 pertenecían al plan sustituido, no a la numeración vigente. Fases 9 y 10 PARCIALES; documentación Fase 11 no implica aceptación backend conjunta, revisión visual, frontend ni producción.
 
 ## RF39. Mantener trazabilidad
 
@@ -536,7 +540,7 @@ Mantener consultas de:
 - Cantidades retiradas por daño.
 - Pérdidas valorizadas utilizando el costo registrado en cada movimiento.
 
-Los tres reportes devuelven período normalizado, resumen de todas las coincidencias, detalle y paginación. Importes son cadenas de dos decimales; costo aplicado, de seis; cantidad retirada agregada, cadena entera exacta. No se almacenan reportes ni pérdidas ni se excluyen históricos por actividad/saldo actuales. Campos públicos mínimos y nulos: `fases.md` §7.6; no incluyen datos clínicos ni de seguridad.
+Los tres GET ordinarios devuelven período normalizado, resumen de todas las coincidencias, detalle y paginación. Importes son cadenas de dos decimales; costo aplicado, de seis; cantidad retirada agregada, cadena entera exacta. No se almacenan reportes ni pérdidas ni se excluyen históricos por actividad/saldo actuales. Campos públicos mínimos y nulos: `contratos-reportes-react.md` §3–4; no incluyen datos clínicos ni de seguridad. La ampliación separa estadísticas JSON y archivos completos: XLSX con celdas textuales exactas, CSV sin garantía de tipado del importador y PDF/PNG con datos exactos adjuntos; no convertir magnitudes monetarias a Number ni fechas civiles a UTC. Consistencia por petición, no entre consultas/descargas independientes. Límites y aceptación parcial en la matriz de §9 de esa guía.
 
 ## RI13. Códigos de existencia
 

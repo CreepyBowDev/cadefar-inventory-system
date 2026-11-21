@@ -39,11 +39,14 @@ const recorrer = (stack, prefijo = '') => {
 };
 recorrer(app.router.stack);
 
-test('Los 58 endpoints Express, clasificador y matriz documental coinciden', async () => {
+test('Los 65 endpoints y siete rechazos HEAD explícitos coinciden con clasificador y matriz', async () => {
     const esperados = contratos.map(e => clave(e.metodo, e.ruta));
-    assert.equal(actuales.length, 58); assert.equal(new Set(actuales).size, 58);
-    assert.deepEqual(actuales.sort(), esperados.sort());
-    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 27);
+    const rechazosHead = ['HEAD /api/reportes/ventas/estadisticas', 'HEAD /api/reportes/compras/estadisticas',
+        'HEAD /api/reportes/perdidas/estadisticas', 'HEAD /api/reportes/ventas/exportar',
+        'HEAD /api/reportes/compras/exportar', 'HEAD /api/reportes/perdidas/exportar', 'HEAD /api/inventario/movimientos/exportar'];
+    assert.equal(actuales.length, 72); assert.equal(new Set(actuales).size, 72);
+    assert.deepEqual(actuales.sort(), [...esperados, ...rechazosHead].sort());
+    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 34);
     const documento = await readFile(new URL('../../docs/ai/bitacora-auditoria.md', import.meta.url), 'utf8');
     const matriz = [...documento.matchAll(/^\| (GET|POST|PATCH|DELETE) \| `([^`]+)` \|/gm)].map(([, metodo, ruta]) => clave(metodo, ruta));
     assert.deepEqual(matriz.sort(), esperados.sort());

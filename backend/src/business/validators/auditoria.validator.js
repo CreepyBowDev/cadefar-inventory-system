@@ -106,12 +106,23 @@ export const prepararEventoAuditoria = (entrada, fechaRegistro = new Date()) => 
     const antes = snapshot ? limpiar(snapshot, entrada.antes) : null;
     const despues = snapshot ? limpiar(snapshot, entrada.despues) : null;
     const camposPermitidos = [...Object.keys(campos ?? {}), ...(CAMBIOS_SIN_VALOR[definicion.perfil] ?? [])];
-    const schemaMetadatos = opcionales({ ...(seguridad ? metadatosSeguridad : metadatosNegocio),
+    const estadisticaReporte = ['REPORTE_VENTAS_ESTADISTICAS', 'REPORTE_COMPRAS_ESTADISTICAS',
+        'REPORTE_PERDIDAS_ESTADISTICAS'].includes(data.tipoEvento);
+    const exportacion = ['REPORTE_VENTAS_EXPORTAR', 'REPORTE_COMPRAS_EXPORTAR', 'REPORTE_PERDIDAS_EXPORTAR',
+        'INVENTARIO_MOVIMIENTOS_EXPORTAR'].includes(data.tipoEvento);
+    const schemaMetadatos = opcionales({ ...(estadisticaReporte || exportacion ? {} : seguridad ? metadatosSeguridad : metadatosNegocio),
         ...(camposPermitidos.length ? { camposModificados: z.array(z.enum(camposPermitidos)).max(camposPermitidos.length) } : {}),
         ...(['USUARIOS_CONSULTAR', 'USUARIO_CONSULTAR', 'BITACORA_CONSULTAR', 'BITACORA_EVENTO_CONSULTAR',
             'RECETAS_CONSULTAR', 'RECETA_CONSULTAR', 'REPORTE_VENTAS_CONSULTAR',
             'REPORTE_COMPRAS_CONSULTAR', 'REPORTE_PERDIDAS_CONSULTAR'].includes(data.tipoEvento)
-            ? { cantidadResultados: entero } : {})
+            ? { cantidadResultados: entero } : {}),
+        ...(estadisticaReporte || exportacion
+            ? { granularidad: z.enum(['DIA', 'MES', 'ANIO']), cantidadIntervalos: z.number().int().min(1).max(1200) } : {}),
+        ...(exportacion ? { formato: z.enum(['CSV', 'PDF', 'XLSX']), presentacion: z.enum(['TABULAR', 'ESTADISTICA']),
+            grafico: z.enum(['BARRAS', 'LINEAS', 'SECTORES']), metrica: z.enum(['CANTIDAD', 'IMPORTE', 'CANTIDAD_RETIROS', 'PERDIDA']),
+            cantidadFilas: z.string().regex(/^(?:0|[1-9]\d{0,6})$/).refine(v => BigInt(v) <= 1000000n),
+            etapaExportacion: z.enum(['EXTRACCION', 'GENERACION', 'ENTREGA']),
+            estadoEntrega: z.enum(['NO_INICIADA', 'FINALIZADA_SERVIDOR', 'ABORTADA', 'FALLIDA']) } : {})
     });
     const metadatos = limpiar(schemaMetadatos, entrada.metadatos);
     const referencias = entrada.referencias == null ? null :

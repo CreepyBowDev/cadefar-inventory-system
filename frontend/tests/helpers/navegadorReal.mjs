@@ -18,7 +18,7 @@ export const esperar = async (predicate, description, timeout = 20000) => {
 // CDP controla sesiones independientes. Las peticiones llegan al Express real.
 // La única intercepción disponible descarta una respuesta POST ya confirmada;
 // no fabrica DTOs, cookies, estados HTTP ni datos de la API.
-export const abrirNavegadorReal = async ({ profile, origin, apiUrl }) => {
+export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureReports = false }) => {
   const executable = process.env.CADEFAR_TEST_BROWSER || [
     'C:/Program Files/Google/Chrome/Application/chrome.exe',
     'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
@@ -55,6 +55,10 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl }) => {
       if (method === 'Runtime.exceptionThrown') errors.push({ session: session.name, exception: params.exceptionDetails.text });
       if (method === 'Network.requestWillBeSent' && params.request.url.startsWith(`${apiUrl}/`)) {
         const request = { session: session.name, id: params.requestId, method: params.request.method, path: new URL(params.request.url).pathname };
+        if (captureReports && /^\/api\/(reportes\/|inventario\/movimientos)/.test(request.path)) {
+          request.queryEntries = [...new URL(params.request.url).searchParams];
+          request.query = Object.fromEntries(request.queryEntries);
+        }
         if (request.path.startsWith('/api/bitacora')) request.query = Object.fromEntries(new URL(params.request.url).searchParams);
         // Nunca retener contraseñas de login ni headers/cookies en el registro.
         if (params.request.postData && !request.path.startsWith('/api/auth')) request.body = JSON.parse(params.request.postData);
@@ -62,12 +66,16 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl }) => {
       }
       if (method === 'Network.responseReceived') {
         const request = session.network.get(params.requestId);
-        if (request) request.status = params.response.status;
+        if (request) {
+          request.status = params.response.status;
+          if (captureReports && request.path.endsWith('/exportar')) request.headers = Object.fromEntries(Object.entries(params.response.headers).filter(([key]) => /^(content-type|content-length|content-disposition|retry-after|cache-control|x-content-type-options)$/i.test(key)).map(([key, value]) => [key.toLowerCase(), value]));
+        }
       }
       if (method === 'Network.loadingFinished') {
         const request = session.network.get(params.requestId);
         if (request) void send('Network.getResponseBody', { requestId: params.requestId }, message.sessionId).then(({ body, base64Encoded }) => {
-          request.response = JSON.parse(base64Encoded ? Buffer.from(body, 'base64').toString('utf8') : body);
+          if (captureReports && request.path.endsWith('/exportar') && request.status === 200) request.bytes = Buffer.from(body, base64Encoded ? 'base64' : 'utf8');
+          else request.response = JSON.parse(base64Encoded ? Buffer.from(body, 'base64').toString('utf8') : body);
         }).catch(() => { request.bodyUnavailable = true; });
       }
       if (method === 'Fetch.requestPaused') void (async () => {
@@ -99,6 +107,7 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl }) => {
       const settle = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
       return {
         name, browserContextId, evaluate, wait, settle,
+        initScript: source => send('Page.addScriptToEvaluateOnNewDocument', { source }, sessionId),
         navigate: async (path) => {
           await evaluate('window.__navigating = true');
           await send('Page.navigate', { url: `${origin}${path}` }, sessionId);
