@@ -11,11 +11,13 @@ const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
 const { usuarioRepository: ur } = await import('../src/data/repositories/usuario.repository.js');
 const { compraRepository: cr } = await import('../src/data/repositories/compra.repository.js');
+const { pagoCompraRepository } = await import('../src/data/repositories/pago-compra.repository.js');
 const { medicamentoRepository: mr } = await import('../src/data/repositories/medicamento.repository.js');
 const { existenciaMedicamentoRepository: er } = await import('../src/data/repositories/existencia-medicamento.repository.js');
 const { movimientoInventarioRepository: vr } = await import('../src/data/repositories/movimiento-inventario.repository.js');
 
 test('Fase 6: compras, anulaciones, ajustes, conciliaciones y retiros auditados sin MySQL', async t => {
+    t.mock.method(pagoCompraRepository, 'findComprometido', async () => null);
     const privado = 'observacion_personal_no_auditar';
     const movimiento = (id, extra = {}) => ({ id_movimiento: id, id_existencia: 8, id_usuario: 1,
         id_detalle_compra: null, id_detalle_venta: null, id_movimiento_original: null,

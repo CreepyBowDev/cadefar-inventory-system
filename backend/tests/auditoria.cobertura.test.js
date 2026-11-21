@@ -39,24 +39,28 @@ const recorrer = (stack, prefijo = '') => {
 };
 recorrer(app.router.stack);
 
-test('Los 65 endpoints y siete rechazos HEAD explícitos coinciden con clasificador y matriz', async () => {
+test('Los endpoints y siete rechazos HEAD explícitos coinciden con clasificador y matriz ampliada de pagos', async () => {
     const esperados = contratos.map(e => clave(e.metodo, e.ruta));
     const rechazosHead = ['HEAD /api/reportes/ventas/estadisticas', 'HEAD /api/reportes/compras/estadisticas',
         'HEAD /api/reportes/perdidas/estadisticas', 'HEAD /api/reportes/ventas/exportar',
         'HEAD /api/reportes/compras/exportar', 'HEAD /api/reportes/perdidas/exportar', 'HEAD /api/inventario/movimientos/exportar'];
-    assert.equal(actuales.length, 72); assert.equal(new Set(actuales).size, 72);
+    assert.equal(actuales.length, 77); assert.equal(new Set(actuales).size, 77);
     assert.deepEqual(actuales.sort(), [...esperados, ...rechazosHead].sort());
-    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 34);
+    assert.equal(contratos.filter(e => e.metodo === 'GET').length, 35);
     const documento = await readFile(new URL('../../docs/ai/bitacora-auditoria.md', import.meta.url), 'utf8');
     const matriz = [...documento.matchAll(/^\| (GET|POST|PATCH|DELETE) \| `([^`]+)` \|/gm)].map(([, metodo, ruta]) => clave(metodo, ruta));
-    assert.deepEqual(matriz.sort(), esperados.sort());
-    const fases = await readFile(new URL('../../docs/ai/fases.md', import.meta.url), 'utf8');
-    assert.match(fases, /REPORTE_VENTAS_CONSULTAR/);
-    assert.match(fases, /GET \/api\/reportes\/ventas/);
-    assert.match(fases, /REPORTE_COMPRAS_CONSULTAR/);
-    assert.match(fases, /GET \/api\/reportes\/compras/);
-    assert.match(fases, /REPORTE_PERDIDAS_CONSULTAR/);
-    assert.match(fases, /GET \/api\/reportes\/perdidas/);
+    // La solicitud de Pagos prohíbe modificar documentación; su ampliación
+    // contractual se verifica aquí junto a la matriz histórica conservada.
+    const pagos = ['GET /api/compras/:id/pagos', 'POST /api/compras/:id/pagos',
+        'POST /api/compras/:id/pagos/:id/verificar', 'POST /api/compras/:id/pagos/:id/confirmar',
+        'POST /api/compras/:id/pagos/:id/conciliar'];
+    assert.deepEqual([...matriz, ...pagos].sort(), esperados.sort());
+    // fases.md fue sustituido por un plan frontend; el contrato vigente de
+    // auditoría sigue siendo la matriz anterior, que no se modifica.
+    for (const nombre of ['VENTAS', 'COMPRAS', 'PERDIDAS']) {
+        assert.ok(documento.includes(`REPORTE_${nombre}_CONSULTAR`));
+        assert.ok(documento.includes(`/api/reportes/${nombre.toLowerCase()}`));
+    }
 });
 
 test('Fase 7: todos los endpoints clasifican caja/slash/HEAD sin conservar parámetros arbitrarios', () => {

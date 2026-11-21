@@ -48,6 +48,23 @@
 .compra-anular-form legend { margin-bottom: 1rem; font-size: .95rem; font-weight: 650; }
 .compra-anular-form textarea { width: 100%; padding: .8rem; font: inherit; color: var(--color-ink); border: 1px solid var(--color-line-strong); border-radius: .4rem; resize: vertical; }
 .compra-anular-review dd { white-space: pre-wrap; }
+.pago-form fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
+.pago-form legend { margin-bottom: 1rem; font-size: .95rem; font-weight: 650; }
+.pago-metodos, .pago-form__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+.pago-metodo { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid var(--color-line); border-radius: .4rem; cursor: pointer; }
+.pago-metodo--selected { border-color: var(--color-accent); background: var(--color-accent-pale); }
+.pago-metodo small { display: block; margin-top: .5rem; color: var(--color-muted); }
+.pago-autorizacion { display: flex; gap: .75rem; align-items: flex-start; font-size: .85rem; line-height: 1.6; }
+.pago-form input[type='checkbox'], .pago-form input[type='radio'] { width: auto; flex-shrink: 0; margin-top: .3rem; accent-color: var(--color-accent); }
+.pago-actions { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 1.25rem; }
+.pago-table { min-width: 55rem; }
+.pago-table .pago-actions { padding: 0; }
+.pago-table td { vertical-align: top; }
+.pago-resumen dd { font-variant-numeric: tabular-nums; }
+.pago-resultado { margin: 1.25rem; padding: 1rem; background: var(--color-accent-pale); border-radius: .4rem; }
+.pago-estado--rechazado { color: var(--color-danger); background: #fff0ed; border-color: #ecc4bf; }
+.pago-estado--pendiente, .pago-estado--procesando, .pago-estado--parcial { color: #775312; background: #fff9eb; border-color: #e9d6a5; }
+@media (max-width: 620px) { .pago-metodos, .pago-form__fields { grid-template-columns: 1fr; } .pago-actions .button { width: 100%; } }
 @media (max-width: 1000px) { .compra-linea__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .compra-filters__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .compra-filters__clave { grid-column: span 1; } }
 @media (max-width: 620px) {

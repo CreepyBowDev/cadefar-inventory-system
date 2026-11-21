@@ -1,10 +1,32 @@
 # Dependencias
 node_modules/
 
+# Cachés de pnpm y herramientas
+.pnpm-store/
+.pnpm-cache/
+.pnpm-state/
+.vite/
+*.tsbuildinfo
+
+# Resultados generados y perfiles temporales de pruebas
+.pagos-tests/
+dist/
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+*.log
+
 # Variables de entorno
 .env
 .env.*
 !.env.example
+
+# Claves y certificados locales
+*.key
+*.pem
+*.p12
+*.pfx
 
 Programming.txt
 Contexto-completo.txt

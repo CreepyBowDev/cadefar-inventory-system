@@ -9,7 +9,8 @@ export const ACCIONES_BITACORA = Object.freeze({
   CONSULTAR: 'Consultar', AGREGAR: 'Agregar', RETIRAR: 'Retirar', REGISTRAR: 'Registrar', ANULAR: 'Anular',
   AJUSTAR: 'Ajustar', CONCILIAR: 'Conciliar', RETIRAR_VENCIMIENTO: 'Retirar por vencimiento',
   RETIRAR_DANO: 'Retirar por daño', CONSULTAR_DETALLE: 'Consultar detalle',
-  REGISTRAR_PENDIENTE: 'Registrar pendiente', CONFIRMAR: 'Confirmar', REVISAR: 'Revisar'
+  REGISTRAR_PENDIENTE: 'Registrar pendiente', CONFIRMAR: 'Confirmar', REVISAR: 'Revisar',
+  INICIAR: 'Iniciar pago', VERIFICAR: 'Verificar pago'
 });
 export const RESULTADOS_BITACORA = Object.freeze({ EXITO: 'Éxito', RECHAZADO: 'Rechazado', FALLO: 'Fallo' });
 export const LIMITES_BITACORA = [25, 50, 100];

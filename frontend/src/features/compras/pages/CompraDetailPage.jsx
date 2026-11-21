@@ -12,6 +12,7 @@ import { CompraError } from '../components/CompraError.jsx';
 import { CompraEstado } from '../components/CompraEstado.jsx';
 import { CompraDetallesTable } from '../components/CompraDetallesTable.jsx';
 import { CompraAnularForm } from '../components/CompraAnularForm.jsx';
+import { CompraPagos } from '../components/CompraPagos.jsx';
 import { getCompra, anularCompra } from '../services/compra.service.js';
 import '../styles/compras.css';
 
@@ -76,6 +77,7 @@ const CompraDetalle = ({ idCompra }) => {
       <p className="catalogo-note">Cantidades, costos e importes corresponden a la compra registrada. Los datos y estados del catálogo son los actuales. Las fechas históricas se conservan sin conversión horaria.</p>
       {compra.detalles.length ? <CompraDetallesTable detalles={compra.detalles} /> : <CatalogoState title="Sin detalles registrados" message="La consulta no contiene detalles para esta compra." />}
     </section>}
+    {compra && usuario.idRol === ROLES.ADMINISTRADOR && <CompraPagos key={compra.estadoOperacion} compra={compra} bloqueado={submitting} />}
     {compra?.estadoOperacion === 'CONFIRMADA' && usuario.idRol === ROLES.ADMINISTRADOR && <CompraAnularForm compra={compra} motivo={motivo} onChange={setMotivo} onSubmit={guardar} submitting={submitting} error={error} status={status} requiereConsulta={requiereConsulta} />}
   </div>;
 };

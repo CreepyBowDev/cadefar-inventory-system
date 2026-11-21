@@ -8,12 +8,14 @@ process.env.DB_NAME_TEST = 'anulacion_compra_sin_conexion';
 const { default: db } = await import('../src/data/models/index.js');
 const { compraService } = await import('../src/business/services/compra.service.js');
 const { compraRepository } = await import('../src/data/repositories/compra.repository.js');
+const { pagoCompraRepository } = await import('../src/data/repositories/pago-compra.repository.js');
 const { existenciaMedicamentoRepository } = await import('../src/data/repositories/existencia-medicamento.repository.js');
 const { movimientoInventarioRepository } = await import('../src/data/repositories/movimiento-inventario.repository.js');
 const { simularAuditoriaNegocio } = await import('./helpers/auditoria-transversal.js');
 
 test('CU27: motivos, referencias e integridad con B1/A, sin MySQL', async t => {
     simularAuditoriaNegocio(t);
+    t.mock.method(pagoCompraRepository, 'findComprometido', async () => null);
     t.mock.method(db.sequelize.connectionManager, 'getConnection', () => {
         throw new Error('Esta suite no permite conexiones MySQL');
     });

@@ -1,0 +1,7 @@
+import { Modal } from '../../../components/Modal.jsx';
+import { horaCivil } from '../../../utils/presentacion.js';
+import { nombreMetodoPago, importePago, enlacePagoSeguro } from '../utils/pagoCompra.js';
+
+export const PagoComprobante = ({ compra, pago, onClose }) => <Modal open={Boolean(pago)} title="Comprobante del pago verificado" description="Registro de CADEFAR respaldado por la consulta al proveedor de pagos. No sustituye una factura fiscal." manageFocus onClose={onClose}>
+  {pago && <><dl className="compra-review"><div><dt>Compra / Pago</dt><dd>#{compra.idCompra} / #{pago.idPago}</dd></div><div><dt>Laboratorio</dt><dd>{compra.proveedorLaboratorio?.nombre}</dd></div><div><dt>Importe aplicado</dt><dd>{importePago(pago.importe, pago.moneda)}</dd></div><div><dt>Importe enviado</dt><dd>{importePago(pago.importePasarela, pago.monedaPasarela)}</dd></div><div><dt>Método / Estado</dt><dd>{nombreMetodoPago(pago.metodo)} · Confirmado</dd></div><div><dt>Fecha de confirmación en CADEFAR</dt><dd>{horaCivil(pago.fechaConfirmacion)}</dd></div><div><dt>Referencia externa</dt><dd>{pago.referenciaExterna}</dd></div><div><dt>Administrador responsable</dt><dd>{pago.administrador?.nombreUsuario || `#${pago.idUsuario}`}</dd></div>{pago.referenciaCotizacion && <div><dt>Acuerdo de moneda</dt><dd>{pago.referenciaCotizacion}</dd></div>}</dl>{enlacePagoSeguro(pago.urlComprobante, pago.metodo, true) && <a className="button button--secondary" href={pago.urlComprobante} target="_blank" rel="noopener noreferrer">Comprobante del proveedor de pagos</a>}</>}
+</Modal>;

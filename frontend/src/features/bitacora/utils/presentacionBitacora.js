@@ -50,6 +50,7 @@ export const TIPOS_EVENTO_BITACORA = Object.freeze({
   COMPOSICION_AGREGAR: 'Componente agregado', COMPOSICION_MODIFICAR: 'Componente modificado',
   COMPOSICION_RETIRAR: 'Componente retirado',
   COMPRA_REGISTRAR: 'Registro de compra', COMPRA_ANULAR: 'Anulación de compra',
+  PAGO_COMPRA_INICIAR: 'Inicio de pago al laboratorio', PAGO_COMPRA_VERIFICAR: 'Verificación de pago al laboratorio',
   VENTA_REGISTRAR_PENDIENTE: 'Registro de venta pendiente', VENTA_CONFIRMAR: 'Confirmación de venta', VENTA_ANULAR: 'Anulación de venta',
   RECETAS_CONSULTAR: 'Consulta de recetas', RECETA_CONSULTAR: 'Consulta de receta',
   RECETA_REGISTRAR: 'Registro de receta', RECETA_REVISAR: 'Revisión de receta',
@@ -62,11 +63,13 @@ export const MODULOS_BITACORA = Object.freeze({
   AUTENTICACION: 'Autenticación', SEGURIDAD: 'Seguridad', USUARIOS: 'Usuarios',
   PROVEEDORES_LABORATORIOS: 'Proveedores / Laboratorios', PRINCIPIOS_ACTIVOS: 'Principios activos',
   MEDICAMENTOS: 'Medicamentos', COMPOSICION: 'Composición', COMPRAS: 'Compras',
+  PAGOS_COMPRAS: 'Pagos a laboratorios',
   INVENTARIO: 'Inventario', BITACORA: 'Bitácora', VENTAS: 'Ventas', RECETAS: 'Recetas'
 });
 export const REGISTROS_BITACORA = Object.freeze({
   USUARIO: 'Usuario', PROVEEDOR_LABORATORIO: 'Proveedor / Laboratorio', PRINCIPIO_ACTIVO: 'Principio activo',
   MEDICAMENTO: 'Medicamento', COMPOSICION: 'Componente', COMPRA: 'Compra', DETALLE_COMPRA: 'Detalle de compra',
+  PAGO_COMPRA: 'Pago al laboratorio',
   VENTA: 'Venta', DETALLE_VENTA: 'Detalle de venta', RECETA: 'Receta',
   EXISTENCIA: 'Existencia', MOVIMIENTO: 'Movimiento', BITACORA: 'Evento de Bitácora'
 });

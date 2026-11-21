@@ -1,5 +1,6 @@
 import db from '../../data/models/index.js';
 import { compraRepository } from '../../data/repositories/compra.repository.js';
+import { pagoCompraRepository } from '../../data/repositories/pago-compra.repository.js';
 import { medicamentoRepository } from '../../data/repositories/medicamento.repository.js';
 import { existenciaMedicamentoRepository } from '../../data/repositories/existencia-medicamento.repository.js';
 import { movimientoInventarioRepository } from '../../data/repositories/movimiento-inventario.repository.js';
@@ -246,6 +247,9 @@ export class compraService {
                 if (!registro) throw anotarErrorAuditoria(new AppError('Compra no encontrada', 404), { causa: 'NO_ENCONTRADO' });
                 const compra = toPlain(registro);
                 if (compra.estado_operacion === 'ANULADA') throw anotarErrorAuditoria(new AppError('La compra ya está anulada', 409), { causa: 'CONFLICTO' });
+                if (await pagoCompraRepository.findComprometido({ idCompra, transaction })) {
+                    throw anotarErrorAuditoria(new AppError('No se puede anular una compra con pagos confirmados o pendientes de verificación. Se requiere conciliación financiera.', 409), { causa: 'CONFLICTO' });
+                }
                 if (compra.estado_operacion !== 'CONFIRMADA' || compra.fecha_anulacion !== null ||
                     compra.motivo_anulacion !== null || compra.id_usuario_anulador !== null) throw inconsistenciaAnulacion();
                 const detalles = (await compraRepository.findDetallesParaAnular({ idCompra, transaction })).map(toPlain);
