@@ -5,11 +5,11 @@ const etiquetas = { CONFIRMADA: 'Confirmada', ANULADA: 'Anulada' };
 const modalidades = { DIA: 'Día', MES: 'Mes', PERIODO: 'Período' };
 
 export const ReporteComprasResumen = ({ periodo, resumen, estadoOperacion }) => <section aria-label="Resumen de compras" className="reporte-resumen">
-  <p className="catalogo-note">Período aplicado ({modalidades[periodo.modalidad]}): {fechaCivil(periodo.desde)} al {fechaCivil(periodo.hasta)}. Zona horaria: {periodo.zonaHoraria}. Estado aplicado: {etiquetas[estadoOperacion] || 'Todos los estados'}.</p>
+  <div className="reporte-contexto"><h3>Criterios aplicados</h3><p><span>Período aplicado ({modalidades[periodo.modalidad]}): {fechaCivil(periodo.desde)} al {fechaCivil(periodo.hasta)}.</span>{' '}<span>Zona horaria: {periodo.zonaHoraria}.</span>{' '}<span>Estado aplicado: {etiquetas[estadoOperacion] || 'Todos los estados'}.</span></p></div>
   <h3>Resumen de todas las coincidencias</h3>
   <dl className="catalogo-detail">
+    <div className="reporte-resumen__principal"><dt>Total de compras realizadas (solo confirmadas)</dt><dd><strong>{costoDecimal(resumen.totalComprasRealizadas)}</strong></dd></div>
     {[['confirmadas', 'Confirmadas'], ['anuladas', 'Anuladas']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{cantidad(resumen[key].cantidad)} compras · Importe: <strong>{costoDecimal(resumen[key].importe)}</strong></dd></div>)}
-    <div><dt>Total de compras realizadas (solo confirmadas)</dt><dd><strong>{costoDecimal(resumen.totalComprasRealizadas)}</strong></dd></div>
   </dl>
   <p className="catalogo-note">Las anuladas conservan su importe informativo positivo y no se descuentan nuevamente. Una anulación posterior puede reclasificar este reporte; no representa un cierre histórico. El resumen proviene del servidor, no de la página de detalle.</p>
 </section>;

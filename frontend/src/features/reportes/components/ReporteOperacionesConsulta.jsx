@@ -23,13 +23,13 @@ export const ReporteOperacionesConsulta = ({ tipo, consultar, titulo, descripcio
   return <div className={`catalogo-page reporte-operaciones-page reporte-${tipo}-page`}>
     <header className="page-heading"><div><h2>{titulo}</h2><p>{descripcion}</p></div></header>
     <section className="catalogo-panel" aria-label={`Consulta del reporte de ${tipo}`}>
+      {ampliada && <fieldset className="reporte-vista"><legend>Vista del reporte de {tipo}</legend><label><input type="radio" name="reporte-vista" value="CONSULTA" checked={!estadisticas} onChange={() => { setSeleccionEstadisticas(false); cambiarVista('CONSULTA'); }} />Consulta</label><label><input type="radio" name="reporte-vista" value="ESTADISTICAS" checked={estadisticas} onChange={() => setSeleccionEstadisticas(true)} />Estadísticas</label></fieldset>}
       <ReporteFilters tipo={tipo} borrador={borrador} onChange={cambiarBorrador} disabled={consulta.loading || restringida} onSearch={buscar} onClear={limpiar} />
       <FeedbackMessage message={errorLocal || aplicada.error} />
-      {ampliada && <fieldset className="reporte-vista"><legend>Vista del reporte de {tipo}</legend><label><input type="radio" name="reporte-vista" value="CONSULTA" checked={!estadisticas} onChange={() => { setSeleccionEstadisticas(false); cambiarVista('CONSULTA'); }} />Consulta</label><label><input type="radio" name="reporte-vista" value="ESTADISTICAS" checked={estadisticas} onChange={() => setSeleccionEstadisticas(true)} />Estadísticas</label></fieldset>}
       {!estadisticas && <div className="catalogo-toolbar"><div><h3>Resultados</h3><p role="status" aria-live="polite">{consulta.loading ? 'Consultando reporte…' : aplicada.error || consulta.error ? 'Consulta no disponible' : !aplicada.habilitada ? 'Sin período aplicado' : `${resultado?.detalle.length || 0} de ${paginacion?.total ?? 0} ${tipo}`}</p></div><button className="button button--secondary" type="button" onClick={consulta.retry} disabled={!aplicada.habilitada || consulta.loading || restringida}>Actualizar</button></div>}
       <p className="catalogo-note">{nota} Para volver desde una ficha usa Atrás del navegador.</p>
       {ampliada && <ReporteFuenteEstadisticas tipo={tipo} activa={estadisticas} aplicada={aplicada} restringida={restringida} onRestringida={restringir} onAplicar={cambiarVista} />}
-      {!estadisticas && <><ExportacionTabular fuente={tipo} restringida={restringida} onRestringida={restringir} />
+      {!estadisticas && <>
       <div aria-busy={consulta.loading}>
         {aplicada.error ? <CatalogoState icon="report" title="Revisa los filtros" message="Corrige la URL o selecciona nuevos criterios y pulsa Buscar. Limpiar retira todos los filtros." />
           : !aplicada.habilitada ? <CatalogoState icon="report" title="Selecciona un período" message="Elige Día, Mes o Período y pulsa Buscar. No se consulta sin una selección temporal." />
@@ -41,7 +41,8 @@ export const ReporteOperacionesConsulta = ({ tipo, consultar, titulo, descripcio
                     : resultado.detalle.length ? <Table detalle={resultado.detalle} query={query} /> : <CatalogoState icon="report" title="Sin coincidencias" message={`No hay ${tipo} para el período y estado aplicados. Cambia los filtros y pulsa Buscar.`} />}
                 </>}
       </div>
-      {aplicada.habilitada && <Pagination id="reporte" nombre={nombre} filtros={aplicada.filtros} paginacion={paginacion} disabled={consulta.loading || restringida || !!consulta.error} onPage={pagina => cambiarConsulta({ ...aplicada.filtros, pagina: String(pagina) })} onLimit={limite => cambiarConsulta({ ...aplicada.filtros, limite, pagina: '1' })} />}</>}
+      {aplicada.habilitada && <Pagination id="reporte" nombre={nombre} filtros={aplicada.filtros} paginacion={paginacion} disabled={consulta.loading || restringida || !!consulta.error} onPage={pagina => cambiarConsulta({ ...aplicada.filtros, pagina: String(pagina) })} onLimit={limite => cambiarConsulta({ ...aplicada.filtros, limite, pagina: '1' })} />}
+      <ExportacionTabular fuente={tipo} restringida={restringida} onRestringida={restringir} /></>}
     </section>
   </div>;
 };

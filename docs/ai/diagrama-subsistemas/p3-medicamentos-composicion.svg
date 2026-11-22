@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3700" height="1500" viewBox="0 0 3700 1500" role="img" aria-labelledby="title description">
+  <title id="title">P3. PAQUETE DE MEDICAMENTOS Y COMPOSICIÓN</title>
+  <desc id="description">CU14–CU20. Seis interfaces, cuatro controladores HTTP y ocho tablas físicas en tres filas. Catorce dependencias principales independientes. Incluye proveedor, principios, composición, comprobación de historial, autenticación y auditoría automática. Las dependencias compartidas secundarias se detallan en subsistemas.md; no se representa una llamada entre controladores.</desc>
+  <defs>
+    <marker id="dependency-arrow" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 1 1 L 10 5 L 1 9" fill="none" stroke="#303030" stroke-width="1.5"/></marker>
+    <g id="component" fill="#e2efda" stroke="#548235" stroke-width="1.2"><rect x="4" y="0" width="17" height="22"/><rect x="0" y="4" width="9" height="5"/><rect x="0" y="13" width="9" height="5"/></g>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #000; }
+      .box { fill: #e2efda; stroke: #548235; stroke-width: 1.3; }
+      .stereotype { font-size: 17px; text-anchor: middle; }
+      .filename { font-size: 16px; text-anchor: middle; }
+      .name { font-size: 18px; text-anchor: middle; }
+      .http { fill: none; stroke: #303030; stroke-width: 1.5; }
+      .dependency { fill: none; stroke: #303030; stroke-width: 1.5; stroke-dasharray: 7 5; }
+    </style>
+  </defs>
+  <rect width="3700" height="1500" fill="#fff"/>
+  <text x="30" y="40" font-size="25" font-weight="bold">P3. PAQUETE DE MEDICAMENTOS Y COMPOSICIÓN</text>
+  <rect x="30" y="110" width="3640" height="1230" fill="#fff" stroke="#548235" stroke-width="1.3"/>
+  <rect x="30" y="75" width="430" height="35" fill="#a9d18e" stroke="#548235" stroke-width="1.3"/>
+  <text x="245" y="98" font-size="19" text-anchor="middle">MEDICAMENTOS Y COMPOSICIÓN</text>
+  <g id="interfaces">
+    <g id="medicines-page"><rect class="box" x="50" y="180" width="300" height="80"/><use href="#component" x="317" y="190"/><text class="stereotype" x="200" y="207">«Interface»</text><text class="filename" x="200" y="238">MedicamentosPage.jsx</text></g>
+    <g id="medicine-form"><rect class="box" x="450" y="180" width="300" height="80"/><use href="#component" x="717" y="190"/><text class="stereotype" x="600" y="207">«Interface»</text><text class="filename" x="600" y="238">MedicamentoFormPage.jsx</text></g>
+    <g id="medicine-detail"><rect class="box" x="850" y="180" width="300" height="80"/><use href="#component" x="1117" y="190"/><text class="stereotype" x="1000" y="207">«Interface»</text><text class="filename" x="1000" y="238">MedicamentoDetailPage.jsx</text></g>
+    <g id="composition-page"><rect class="box" x="1430" y="180" width="340" height="80"/><use href="#component" x="1737" y="190"/><text class="stereotype" x="1600" y="207">«Interface»</text><text class="filename" x="1600" y="238">MedicamentoComposicionPage.jsx</text></g>
+    <g id="ingredients-page"><rect class="box" x="2180" y="180" width="320" height="80"/><use href="#component" x="2467" y="190"/><text class="stereotype" x="2340" y="207">«Interface»</text><text class="filename" x="2340" y="238">PrincipiosActivosPage.jsx</text></g>
+    <g id="ingredient-form"><rect class="box" x="2580" y="180" width="320" height="80"/><use href="#component" x="2867" y="190"/><text class="stereotype" x="2740" y="207">«Interface»</text><text class="filename" x="2740" y="238">PrincipioActivoFormPage.jsx</text></g>
+  </g>
+  <g id="http-connections" class="http">
+    <path id="list-to-medicine" d="M 200 260 V 300 H 420 V 344"/>
+    <path id="form-to-medicine" d="M 600 260 V 344"/>
+    <path id="detail-to-medicine" d="M 1000 260 V 300 H 780 V 344"/>
+    <path id="composition-to-composition" d="M 1600 260 V 344"/>
+    <path id="list-to-ingredient" d="M 2340 260 V 344"/>
+    <path id="form-to-ingredient" d="M 2740 260 V 300 H 2520 V 344"/>
+    <path id="form-to-provider" d="M 620 180 V 140 H 3100 V 344"/>
+    <circle cx="420" cy="350" r="6" fill="#fff"/><circle cx="600" cy="350" r="6" fill="#fff"/><circle cx="780" cy="350" r="6" fill="#fff"/><circle cx="1600" cy="350" r="6" fill="#fff"/><circle cx="2340" cy="350" r="6" fill="#fff"/><circle cx="2520" cy="350" r="6" fill="#fff"/><circle cx="3100" cy="350" r="6" fill="#fff"/>
+    <path d="M 420 356 V 370 M 600 356 V 370 M 780 356 V 370 M 1600 356 V 370 M 2340 356 V 370 M 2520 356 V 370 M 3100 356 V 370"/>
+  </g>
+  <g id="controllers">
+    <g id="medicine-controller"><rect class="box" x="300" y="370" width="640" height="80"/><use href="#component" x="907" y="380"/><text class="stereotype" x="620" y="397">«Class»</text><text class="name" x="620" y="428">medicamento.controller.js</text></g>
+    <g id="composition-controller"><rect class="box" x="1420" y="370" width="480" height="80"/><use href="#component" x="1867" y="380"/><text class="stereotype" x="1660" y="397">«Class»</text><text class="name" x="1660" y="428">composicion-medicamento.controller.js</text></g>
+    <g id="ingredient-controller"><rect class="box" x="2250" y="370" width="360" height="80"/><use href="#component" x="2577" y="380"/><text class="stereotype" x="2430" y="397">«Class»</text><text class="name" x="2430" y="428">principio-activo.controller.js</text></g>
+    <g id="provider-controller"><rect class="box" x="2890" y="370" width="440" height="80"/><use href="#component" x="3297" y="380"/><text class="stereotype" x="3110" y="397">«Class»</text><text class="name" x="3110" y="428">proveedor-laboratorio.controller.js</text></g>
+  </g>
+  <!-- Abanico superior: medicamentos. Carriles exteriores e inferiores: dependencias compartidas. -->
+  <g id="persistence-connections" class="dependency" marker-end="url(#dependency-arrow)">
+    <path id="medicine-to-user" d="M 400 450 V 830 H 200 V 900"/>
+    <path id="medicine-to-provider" d="M 460 450 V 800 H 600 V 900"/>
+    <path id="medicine-to-ingredient" d="M 520 450 V 770 H 1000 V 900"/>
+    <path id="medicine-to-composition" d="M 580 450 V 740 H 1400 V 900"/>
+    <path id="medicine-to-medicine" d="M 640 450 V 710 H 1800 V 900"/>
+    <path id="medicine-to-existence" d="M 700 450 V 680 H 2200 V 900"/>
+    <path id="medicine-to-movement" d="M 760 450 V 650 H 2600 V 900"/>
+    <path id="medicine-to-audit" d="M 820 450 V 620 H 3000 V 900"/>
+    <path id="composition-to-movement" d="M 1480 450 V 590 H 3380 V 1060 H 2600 V 980"/>
+    <path id="composition-to-existence" d="M 1580 450 V 568 H 3420 V 1100 H 2200 V 980"/>
+    <path id="composition-to-medicine" d="M 1680 450 V 546 H 3460 V 1140 H 1800 V 980"/>
+    <path id="composition-to-composition-table" d="M 1780 450 V 524 H 3500 V 1180 H 1400 V 980"/>
+    <path id="ingredient-to-ingredient" d="M 2430 450 V 502 H 3540 V 1220 H 1000 V 980"/>
+    <path id="provider-to-provider" d="M 3110 450 V 480 H 3580 V 1260 H 600 V 980"/>
+  </g>
+  <g id="tables">
+    <g id="user-table"><rect class="box" x="50" y="900" width="300" height="80"/><use href="#component" x="317" y="910"/><text class="stereotype" x="200" y="927">«Table»</text><text class="name" x="200" y="958">usuario</text></g>
+    <g id="provider-table"><rect class="box" x="450" y="900" width="300" height="80"/><use href="#component" x="717" y="910"/><text class="stereotype" x="600" y="927">«Table»</text><text class="name" x="600" y="958">proveedor_laboratorio</text></g>
+    <g id="ingredient-table"><rect class="box" x="850" y="900" width="300" height="80"/><use href="#component" x="1117" y="910"/><text class="stereotype" x="1000" y="927">«Table»</text><text class="name" x="1000" y="958">principio_activo</text></g>
+    <g id="composition-table"><rect class="box" x="1250" y="900" width="300" height="80"/><use href="#component" x="1517" y="910"/><text class="stereotype" x="1400" y="927">«Table»</text><text class="name" x="1400" y="958">composicion_medicamento</text></g>
+    <g id="medicine-table"><rect class="box" x="1650" y="900" width="300" height="80"/><use href="#component" x="1917" y="910"/><text class="stereotype" x="1800" y="927">«Table»</text><text class="name" x="1800" y="958">medicamento</text></g>
+    <g id="existence-table"><rect class="box" x="2050" y="900" width="300" height="80"/><use href="#component" x="2317" y="910"/><text class="stereotype" x="2200" y="927">«Table»</text><text class="name" x="2200" y="958">existencia_medicamento</text></g>
+    <g id="movement-table"><rect class="box" x="2450" y="900" width="300" height="80"/><use href="#component" x="2717" y="910"/><text class="stereotype" x="2600" y="927">«Table»</text><text class="name" x="2600" y="958">movimiento_inventario</text></g>
+    <g id="audit-table"><rect class="box" x="2850" y="900" width="300" height="80"/><use href="#component" x="3117" y="910"/><text class="stereotype" x="3000" y="927">«Table»</text><text class="name" x="3000" y="958">bitacora_auditoria</text></g>
+  </g>
+  <text x="70" y="1310" font-size="16">Historial: consulta de existencias y movimientos, sin modificar saldos. Dependencias secundarias compartidas y selectores: véase la matriz de P3 en subsistemas.md.</text>
+  <path class="http" d="M 45 1390 H 110"/><circle cx="117" cy="1390" r="6" fill="#fff" stroke="#303030" stroke-width="1.5"/>
+  <text x="135" y="1396" font-size="17">Comunicación HTTP mediante servicios frontend y Axios</text>
+  <path class="dependency" d="M 860 1390 H 930" marker-end="url(#dependency-arrow)"/>
+  <text x="950" y="1396" font-size="17">Persistencia indirecta: Controller → Service → Repository → Sequelize → MySQL</text>
+  <text x="45" y="1440" font-size="16">CU14–CU20 · 6 interfaces · 4 controladores · 8 tablas · 7 relaciones HTTP y 14 dependencias principales; sin omitir controladores ni tablas participantes.</text>
+</svg>

@@ -15,6 +15,10 @@ docs/ai/casos-uso.md
 
 ---
 
+# Estado vigente de estas instrucciones — 21/11/2026
+
+Los ejemplos conceptuales siguientes no sustituyen el contrato actual del código y `docs/ai/`. Ventas/Recetas, Reportes y Bitácora ya están implementados. El alta de venta y detalles es una transacción; cada receta y sus vínculos se registra después en otra (RN57). Las descargas admiten LOCAL o Railway opt-in con guardas, sin que esta documentación acredite disponibilidad del despliegue. Consultar `contexto-maestro.md`, `contratos-reportes-react.md` y `exportaciones-railway.md` para estado y límites.
+
 # 1. Stack del backend
 
 El backend utiliza:
@@ -106,9 +110,9 @@ backend/
 │   │   ├── utils/
 │   │   └── constants/
 │   │
-│   └── app.js
+│   ├── app.js
+│   └── server.js             # Entrada real: src/server.js
 │
-├── server.js
 ├── .env
 ├── .sequelizerc
 ├── package.json
@@ -564,7 +568,7 @@ Entrada de creación esperada:
 {
   "idRol": 3,
   "nombreUsuario": "vendedor01",
-  "password": "12345678"
+  "password": "EjemploSoloDocs1!"
 }
 ```
 
@@ -677,12 +681,13 @@ JWT_SECRET
 
 o la variable equivalente ya utilizada por el proyecto.
 
-Payload mínimo:
+Payload obligatorio actual:
 
 ```js
 {
   idUsuario,
-  idRol
+  idRol,
+  versionCredenciales
 }
 ```
 
@@ -702,7 +707,7 @@ Configuración conceptual:
 {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   maxAge: 8 * 60 * 60 * 1000
 }
 ```
@@ -793,13 +798,7 @@ Logout elimina la cookie con:
 res.clearCookie(...)
 ```
 
-En la versión actual no existe:
-
-- blacklist de tokens;
-- tabla de sesiones;
-- revocación inmediata del JWT.
-
-No agregar estas estructuras sin un nuevo requisito.
+Logout no revoca por sí solo una copia externa del JWT: elimina la cookie. No existe blacklist ni tabla de sesiones. CU08/CU09 sí incrementan `version_credenciales` de forma transaccional y revocan credenciales anteriores; `authMiddleware` comprueba cuenta activa y coincidencia de versión. El cambio propio renueva su cookie. No eliminar este control ni agregar tablas de sesiones sin un nuevo requisito.
 
 ---
 

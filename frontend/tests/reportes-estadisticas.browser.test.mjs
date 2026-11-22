@@ -1,10 +1,11 @@
 // React/Router/Axios reales; patrón CDP de reportes-ventas.browser.test.mjs.
-// API exclusivamente simulada, sin capturas, backend, MySQL ni descargas reales.
+// API exclusivamente simulada, sin backend, MySQL ni descargas reales.
+// Capturas sintéticas opt-in fuera del repositorio con CADEFAR_REPORTES_SCREENSHOTS.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { estadisticasVentas } from './fixtures/estadisticasVentas.mjs';
@@ -90,6 +91,14 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: estadístic
     const metricaSelect = '.reporte-estadisticas .reporte-exportacion__acciones .form-field:nth-child(2) select';
     const panelSelect = '.reporte-estadisticas > .form-field select';
     const tardia = async old => { try { await fulfill(old.id, 200, old.body); } catch (e) { assert.match(e.message, /Invalid InterceptionId/); } };
+    const captura = async (nombre, selector = '.catalogo-panel') => {
+      if (!process.env.CADEFAR_REPORTES_SCREENSHOTS) return;
+      const directory = process.env.CADEFAR_REPORTES_SCREENSHOTS;
+      await mkdir(directory, { recursive: true }); await evaluate('window.scrollTo(0,0)'); await settle();
+      const clip = await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:0,y:r.top+scrollY,width:innerWidth,height:Math.min(1200,r.height),scale:1};})()`);
+      const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip });
+      await writeFile(join(directory, `${tipo}-${nombre}.png`), Buffer.from(data, 'base64'));
+    };
 
     await t.test('Entrada Consulta y selección estadística sin granularidad nunca consultan preventivamente', async () => {
       await navigate(`/reportes/${tipo}`); await contains('Selecciona un período'); assert.equal(count(), 0);
@@ -208,14 +217,24 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: estadístic
       assert.match(foco.esperado, /2199-01-01 al 2199-12-31/);
       await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter' }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter' });
       await wait('document.querySelector(".reporte-estadisticas__valor").textContent.includes("2199-01-01 al 2199-12-31")');
-      assert.match(await evaluate('document.querySelector(".reporte-estadisticas__valor").textContent'), perdidas ? /2199-01-01 al 2199-12-31.*CANTIDAD_RETIROS: 2/ : /2199-01-01 al 2199-12-31.*CANTIDAD: 1/);
+       assert.match(await evaluate('document.querySelector(".reporte-estadisticas__valor").textContent'), perdidas ? /2199-01-01 al 2199-12-31.*CANTIDAD_RETIROS: 2/ : /2199-01-01 al 2199-12-31.*CANTIDAD: 1/);
+       for (const g of ['BARRAS', 'LINEAS', 'SECTORES']) for (const extremo of ['0', '19']) {
+         await select(chartSelect, g); await select(panelSelect, extremo);
+         assert.equal(await evaluate(`document.querySelector(${JSON.stringify(panelSelect)}).value`), extremo);
+         assert.equal(await evaluate('document.querySelectorAll("[aria-label^=Valores] tbody tr").length'), nSeries * 60);
+         if (g === 'SECTORES') await contains('el panel seleccionado solo cambia la tabla exacta');
+         await evaluate('[...document.querySelectorAll(".reporte-estadisticas__leyenda input")].forEach(el=>el.click())'); await settle();
+         await contains('Todas las categorías están ocultas');
+         await evaluate('[...document.querySelectorAll(".reporte-estadisticas__leyenda input")].forEach(el=>el.click())'); await settle();
+       }
+       assert.equal(count(), before);
       await navigate(route('desde=1000-01-01&hasta=2200-12-31&vista=ESTADISTICAS&uiGranularidad=ANIO')); await contains('La consulta supera 1200 intervalos');
       assert.equal(count(), before); assert.equal(await evaluate('document.getElementById("reporte-granularidad").value'), 'ANIO');
     });
     await t.test('sinDatos vs importe cero; sin sectores ficticios; categorías excluidas conservan ceros', async () => {
       planned = { cero: true }; await navigate(route(aplicada)); await ready(); await select(chartSelect, 'SECTORES'); await select(metricaSelect, importe); await contains('Sin valor para graficar');
-      assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas svg").length'), 0);
-      planned = { vacio: true }; await navigate(route(aplicada)); await ready(); await contains('Sin operaciones'); assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas svg").length'), 0);
+       assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas__viewport svg").length'), 0);
+       planned = { vacio: true }; await navigate(route(aplicada)); await ready(); await contains('Sin operaciones'); assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas__viewport svg").length'), 0);
       await navigate(route(aplicada + (perdidas ? '&motivo=DA%C3%91O' : '&estadoOperacion=ANULADA'))); await ready();
       assert.ok(await evaluate(`[...document.querySelectorAll("[aria-label^=Valores] tbody tr")].filter(r=>r.cells[4].textContent===${JSON.stringify(perdidas ? 'Vencimiento' : 'Confirmada')}).every(r=>["0","0.00"].includes(r.cells[7].textContent))`));
     });
@@ -265,6 +284,110 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: estadístic
       await evaluate('document.querySelector(".reporte-estadisticas svg [role=button]").focus()');
       assert.ok(await evaluate('getComputedStyle(document.activeElement).outlineStyle!=="none"'));
       assert.ok(await evaluate('[...document.querySelectorAll(".reporte-estadisticas .catalogo-table-wrap")].every(el=>el.tabIndex===0 && el.getAttribute("aria-label"))'));
+    });
+    await t.test('Composición estadística: desplegables, leyenda y continuidad a 1366/768/375px y reflow 200%', async () => {
+      await navigate(route(aplicada)); await ready(); await select(metricaSelect, importe);
+      await evaluate('void(window.__grafica=document.querySelector(".reporte-estadisticas"))');
+      await evaluate('void(window.__filas=[...document.querySelectorAll(".reporte-estadisticas tbody tr")])');
+      const before = count();
+       // Reflow 200% de 1366px: 683 CSS px y DPR 2, no pinch zoom.
+       for (const width of [1366, 768, 683, 375]) {
+         await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: width === 683 ? 2 : 1, mobile: width === 375 }); await settle();
+        assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
+        assert.ok(await evaluate('(()=>{const s=document.querySelector(".reporte-estadisticas"),e=document.querySelector(".reporte-exportacion"),b=s.closest("[aria-busy]");return !!(b.compareDocumentPosition(e)&Node.DOCUMENT_POSITION_FOLLOWING)&&!b.contains(e)&&e===e.parentElement.lastElementChild;})()'));
+        assert.ok(await evaluate('[...document.querySelectorAll(".reporte-estadisticas__leyenda label")].every(l=>l.querySelector("svg[aria-hidden=true]")&&/^[1-4]\\. /u.test(l.textContent))'));
+        for (const grafico of ['BARRAS', 'LINEAS', 'SECTORES']) {
+          await select(chartSelect, grafico);
+          assert.ok(await evaluate('!!document.querySelector(".reporte-estadisticas__viewport").getAttribute("aria-describedby")'));
+          assert.ok(await evaluate('document.querySelector(".reporte-estadisticas__viewport").nextElementSibling.matches(".reporte-estadisticas__valor")'));
+          await evaluate('document.querySelector(".reporte-estadisticas__viewport [role=button]").scrollIntoView({block:"center",inline:"center"})');
+          const xy = await evaluate('(()=>{const p=document.querySelector(".reporte-estadisticas__viewport [role=button]"),r=p.querySelector("rect,circle,path").getBoundingClientRect();return {x:r.x+r.width*(p.closest("svg").classList.contains("reporte-estadisticas__sectores") ? 0.65 : 0.5),y:r.y+r.height/2};})()');
+          await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...xy, radiusX: 1, radiusY: 1, force: 1, id: 0 }] });
+          await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await settle();
+          assert.ok(await evaluate('document.querySelector(".reporte-estadisticas__valor").textContent.includes(document.querySelector(".reporte-estadisticas__viewport [role=button]").getAttribute("aria-label"))'));
+          await evaluate('document.querySelector(".reporte-estadisticas__viewport [role=button]").focus()');
+          const valor = await evaluate('document.querySelector(".reporte-estadisticas__valor").textContent');
+          for (let i = 0; i < 2; i++) {
+            await evaluate(`document.querySelectorAll(".reporte-estadisticas__exactos summary")[${i}].focus()`);
+            for (const key of ['Enter', ' ']) {
+              await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key === 'Enter' ? 'Enter' : 'Space', text: key === 'Enter' ? '\r' : ' ', windowsVirtualKeyCode: key === 'Enter' ? 13 : 32 });
+              await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key === 'Enter' ? 'Enter' : 'Space', windowsVirtualKeyCode: key === 'Enter' ? 13 : 32 }); await settle();
+              assert.equal(await evaluate(`document.querySelectorAll(".reporte-estadisticas__exactos")[${i}].open`), key === 'Enter');
+              assert.notEqual(await evaluate('getComputedStyle(document.activeElement).outlineStyle'), 'none');
+              if (key === 'Enter') {
+                await evaluate(`document.querySelectorAll(".reporte-estadisticas__exactos .catalogo-table-wrap")[${i}].focus()`);
+                await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 });
+                await evaluate('new Promise(r=>setTimeout(r,150))');
+                if (width === 375) assert.ok(await evaluate('document.activeElement.scrollLeft>0&&document.documentElement.scrollWidth<=innerWidth+1'));
+                await evaluate(`document.querySelectorAll(".reporte-estadisticas__exactos summary")[${i}].focus()`);
+              }
+            }
+          }
+          assert.equal(await evaluate('document.querySelector(".reporte-estadisticas__valor").textContent'), valor);
+          assert.ok(await evaluate('__grafica===document.querySelector(".reporte-estadisticas")&&__filas.every((r,i)=>r===document.querySelectorAll(".reporte-estadisticas tbody tr")[i])'));
+          const tabla = await evaluate('document.querySelector("[aria-label^=Valores]").textContent');
+          await evaluate('[...document.querySelectorAll(".reporte-estadisticas__leyenda input")].forEach(el=>el.click())'); await settle();
+           await contains('Todas las categorías están ocultas');
+           if (tipo === 'ventas' && width === 768 && grafico === 'BARRAS') await captura('ocultas-768', '.reporte-estadisticas');
+          assert.equal(await evaluate('document.querySelector("[aria-label^=Valores]").textContent'), tabla);
+          assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas__viewport [role=button]").length'), 0);
+          await evaluate('[...document.querySelectorAll(".reporte-estadisticas__leyenda input")].forEach(el=>el.click())'); await settle();
+           if (process.env.CADEFAR_REPORTES_SCREENSHOTS && grafico === { ventas: 'BARRAS', compras: 'LINEAS', perdidas: 'SECTORES' }[tipo]) {
+            const directory = process.env.CADEFAR_REPORTES_SCREENSHOTS;
+            await mkdir(directory, { recursive: true });
+            await evaluate('window.scrollTo(0,0)'); await settle();
+            const { cssContentSize } = await send('Page.getLayoutMetrics');
+            const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: 0, y: 0, width, height: cssContentSize.height, scale: 1 } });
+            await writeFile(join(directory, `${tipo}-${grafico}-${width}.png`), Buffer.from(data, 'base64'));
+             if (width === 768 || width === 683) {
+              await evaluate('document.querySelectorAll(".reporte-estadisticas__exactos").forEach(d=>d.open=true)'); await settle();
+              await evaluate('document.querySelectorAll(".reporte-estadisticas__exactos .catalogo-table-wrap").forEach(el=>el.scrollLeft=0)');
+              const clip = await evaluate('(()=>{const r=document.querySelector(".reporte-estadisticas__exactos").getBoundingClientRect();return {x:0,y:r.top+scrollY,width:innerWidth,height:Math.min(1500,document.documentElement.scrollHeight-r.top-scrollY),scale:1};})()');
+              const captura = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip });
+              await writeFile(join(directory, `${tipo}-exactos-${width}.png`), Buffer.from(captura.data, 'base64'));
+              await evaluate('document.querySelectorAll(".reporte-estadisticas__exactos").forEach(d=>d.open=false)');
+            }
+          }
+        }
+      }
+      assert.equal(count(), before);
+    });
+    await t.test('Barras/líneas/sectores: cero y sinDatos conservan tablas exactas y avisos visibles', async () => {
+      for (const opciones of [{ cero: true }, { vacio: true }]) {
+        planned = opciones; await navigate(route(aplicada)); await ready(); await select(metricaSelect, importe);
+        const before = count();
+        for (const g of ['BARRAS', 'LINEAS', 'SECTORES']) {
+          await select(chartSelect, g); await contains(opciones.vacio ? 'Sin operaciones' : 'Sin valor para graficar');
+          assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas__viewport svg").length'), 0);
+          assert.ok(await evaluate('document.querySelector(".reporte-estadisticas__precision").getBoundingClientRect().height>0&&!document.querySelector(".reporte-estadisticas__precision").closest("details")'));
+          assert.ok(await evaluate('document.querySelectorAll(".reporte-estadisticas__exactos tbody tr").length>0'));
+          if (g === 'SECTORES' && tipo === (opciones.vacio ? 'perdidas' : 'compras')) await captura(opciones.vacio ? 'vacio-375' : 'cero-375', '.reporte-estadisticas');
+        }
+        assert.equal(count(), before);
+      }
+    });
+    await t.test('Estados inicial/carga/error a 768px: exportación fuera del resultado, sin overflow', async () => {
+      await send('Emulation.setDeviceMetricsOverride', { width: 768, height: 900, deviceScaleFactor: 1, mobile: false });
+      await navigate(`/reportes/${tipo}`); await click('input[value=ESTADISTICAS]'); await contains('Selecciona período y granularidad');
+      if (tipo === 'ventas') await captura('inicial-768');
+      planned = { hold: true }; await navigate(route(aplicada)); await esperar(() => held); await contains('Cargando estadísticas');
+      assert.ok(await evaluate('document.querySelector(".catalogo-panel > div[aria-busy=true]")&&!document.querySelector(".catalogo-panel > div[aria-busy=true]").contains(document.querySelector(".reporte-exportacion"))'));
+      if (tipo === 'ventas') await captura('carga-768');
+      const old = held; held = null; await fulfill(old.id, 500, { message: 'Error interno del servidor' }); await contains('No fue posible consultar estadísticas');
+      if (tipo === 'ventas') await captura('error-768');
+      assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
+      assert.ok(await evaluate('!!document.querySelector(".reporte-exportacion select")'));
+    });
+    if (tipo === 'ventas') await t.test('Contraste sRGB de tokens efectivos de Reportes: texto, series, controles y foco', async () => {
+      const relaciones = await evaluate(`(()=>{
+        const css=getComputedStyle(document.querySelector('.main-layout'));
+        const luminancia=hex=>{let h=hex.trim().slice(1);if(h.length===3)h=[...h].map(c=>c+c).join('');const c=h.match(/../g).map(v=>parseInt(v,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return .2126*c[0]+.7152*c[1]+.0722*c[2];};
+        const contraste=(a,b)=>{const l=[a,b].map(n=>luminancia(css.getPropertyValue('--color-'+n))).sort((a,b)=>b-a);return (l[0]+.05)/(l[1]+.05);};
+        return ['surface','surface-subtle'].flatMap(fondo=>['ink','muted','focus','control-border'].map(color=>({color,fondo,ratio:contraste(color,fondo)})));
+      })()`);
+      for (const { color, fondo, ratio } of relaciones) assert.ok(ratio >= (['ink', 'muted'].includes(color) ? 4.5 : 3), `${color}/${fondo}: ${ratio}`);
+      t.diagnostic(JSON.stringify(relaciones.map(r=>({...r,ratio:Number(r.ratio.toFixed(2))}))));
     });
     assert.deepEqual(unexpected, []); assert.deepEqual(errors, []);
   } finally {

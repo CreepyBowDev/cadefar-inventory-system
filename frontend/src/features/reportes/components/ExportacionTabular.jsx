@@ -33,10 +33,7 @@ export const ExportacionTabular = ({ fuente, pendiente = false, restringida = fa
   return <section className="reporte-exportacion" aria-label={estadistica ? 'Exportación estadística' : 'Exportación tabular'}>
     <fieldset aria-busy={estado.ocupada || undefined}>
       <legend>{estadistica ? 'Exportar estadísticas' : 'Exportar tabla'} de {fuente}</legend>
-      <p className="catalogo-note">Presentación: {presentacion}. {estadistica ? 'Todas las métricas, series, categorías y ceros del período aplicado, aunque ocultes categorías o muestres un solo panel.' : 'Todas las coincidencias de los filtros aplicados, no solo la página visible.'} Cada archivo usa una consulta independiente y puede diferir del resultado anterior.</p>
-      {estadistica && <p className="catalogo-note">CSV contiene datos, no imagen. PDF/XLSX incluyen gráfica y tabla exacta completa; XLSX incluye una imagen, no un gráfico nativo editable. PDF/XLSX usan la selección de Gráfica y Métrica de esta vista (inicialmente barras y cantidad); puedes cambiarla antes de descargar. Máximo 1200 intervalos, 8 series y 9600 filas; no se recortan archivos para encajar límites.</p>}
-      <p className="catalogo-note">El servidor determina la disponibilidad de exportación según el entorno y los recursos disponibles. El archivo puede consumir hasta 128 MiB en el navegador.</p>
-      <p className="catalogo-note">Criterios aplicados: {error ? 'no válidos para exportar' : criterios.length ? criterios.map(([campo, valor]) => `${etiquetas[campo]}: ${valor}`).join('; ') : 'todos los movimientos, sin límites temporales'}. {fuente === 'movimientos' && params && 'Los límites temporales omitidos quedan abiertos.'}</p>
+      <p className="catalogo-note reporte-exportacion__criterios"><strong>Criterios aplicados:</strong> {error ? 'no válidos para exportar' : criterios.length ? criterios.map(([campo, valor]) => `${etiquetas[campo]}: ${valor}`).join('; ') : 'todos los movimientos, sin límites temporales'}. {fuente === 'movimientos' && params && 'Los límites temporales omitidos quedan abiertos.'}</p>
       <div className="reporte-exportacion__acciones">
         <div className="form-field"><label htmlFor={id}>Formato de exportación</label><select id={id} value={formato} onChange={event => setFormato(event.target.value)} disabled={!!estado.ocupada || bloqueada}><option value="">Selecciona un formato</option>{['PDF', 'XLSX', 'CSV'].map(valor => <option key={valor} value={valor}>{valor}</option>)}</select></div>
         <button type="button" className="button button--secondary" disabled={!formato || !!error || pendiente || bloqueada || !!estado.ocupada} onClick={() => iniciar(params)}>Exportar {formato || (estadistica ? 'estadísticas' : 'tabla')}</button>
@@ -47,6 +44,12 @@ export const ExportacionTabular = ({ fuente, pendiente = false, restringida = fa
       <FeedbackMessage message={estado.message} tone={estado.error ? 'error' : 'success'} />
       {estado.status === 400 && <p>Revisa los filtros aplicados{estadistica && ' y la granularidad (máximo 1200 intervalos)'} y vuelve a intentarlo manualmente.</p>}
       {estado.status === 401 && <a className="button button--secondary" href="/login">Ir al inicio de sesión</a>}
+      <div className="reporte-exportacion__alcance">
+        <p className="catalogo-note">Presentación: {presentacion}. {estadistica ? 'Todas las métricas, series, categorías y ceros del período aplicado, aunque ocultes categorías o muestres un solo panel.' : 'Todas las coincidencias de los filtros aplicados, no solo la página visible.'} Cada archivo usa una consulta independiente y puede diferir del resultado anterior.</p>
+        {estadistica && <p className="catalogo-note">CSV contiene datos, no imagen. PDF/XLSX incluyen gráfica y tabla exacta completa. Máximo 1200 intervalos, 8 series y 9600 filas; no se recortan archivos para encajar límites.</p>}
+        <p className="catalogo-note">El servidor determina la disponibilidad de exportación según el entorno y los recursos disponibles. El archivo puede consumir hasta 128 MiB en el navegador.</p>
+      </div>
+      {estadistica && <details className="reporte-exportacion__ayuda"><summary>Detalles del archivo</summary><p className="catalogo-note">XLSX incluye una imagen, no un gráfico nativo editable. PDF/XLSX usan la selección de Gráfica y Métrica de esta vista (inicialmente barras y cantidad); puedes cambiarla antes de descargar.</p></details>}
     </fieldset>
   </section>;
 };

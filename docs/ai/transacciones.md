@@ -6,9 +6,11 @@ Este documento representa en SQL para MySQL las transacciones explícitas del ba
 
 Fuentes funcionales: `contexto-maestro.md`, `requerimientos.md`, `reglas-negocio.md`, `casos-uso.md` y `bitacora-auditoria.md`. Para auditoría se aplican RF43–RF53, RI16 y RN116–RN133, especialmente RN130/RN132.
 
+**Alcance histórico aclarado el 21/11/2026:** el inventario T01–T25 y sus traducciones reflejan el corte original de este documento; no son un conteo completo del backend vigente. Ventas, Recetas, consultas/estadísticas y exportaciones de Reportes ya incorporan otras aperturas, aunque sus equivalencias SQL no estén desarrolladas aquí. Los pendientes de traducción son documentales, no funcionalidades ausentes. El estado actual se resume en `contexto-maestro.md`; no se cambian ni ejecutan los procedimientos documentales o las fases históricas en esta sincronización.
+
 ## 1. Alcance y organización por fases
 
-Se localizaron **25 puntos de apertura de transacciones** en `backend/src/`. La unidad del inventario es el punto que abre la transacción, no cada llamada, petición, rama condicional o sentencia SQL.
+En el corte original se localizaron **25 puntos de apertura de transacciones** en `backend/src/`, antes de las ampliaciones de Ventas/Recetas/Reportes. La unidad del inventario es el punto que abre la transacción, no cada llamada, petición, rama condicional o sentencia SQL. No se presenta esa cifra como conteo actual completo.
 
 El inventario incluye escrituras y la lectura consistente de página/total de Bitácora. Los auxiliares compartidos se cuentan una sola vez y se identifican sus variantes. Las consultas ordinarias y los INSERT de auditoría que reciben una transacción existente no son nuevas aperturas.
 

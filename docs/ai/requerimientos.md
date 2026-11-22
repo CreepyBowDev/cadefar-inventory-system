@@ -150,11 +150,11 @@ La operación corresponde al Administrador, registra un motivo obligatorio y apl
 
 El sistema debe permitir registrar ventas con sus detalles, cantidades, precios y existencias utilizadas.
 
-El Vendedor debe poder guardar la venta en estado `PENDIENTE` junto con sus recetas para su revisión por el Regente, sin descontar ni reservar stock ni generar movimientos. El Vendedor podrá confirmarla cuando se cumplan las condiciones de venta y todas las recetas requeridas estén aprobadas.
+El Vendedor guarda la venta en estado `PENDIENTE` con sus detalles y luego el Regente o Vendedor registra y vincula sus recetas mediante CU31 para la revisión del Regente, sin descontar ni reservar stock ni generar movimientos. El alta de venta no recibe recetas y cada registro de receta es una operación transaccional independiente, conforme a RN57. El Vendedor podrá confirmarla cuando se cumplan las condiciones de venta y todas las recetas requeridas estén aprobadas.
 
 Cada detalle pendiente debe mantener una referencia obligatoria a una existencia real provisional, conforme al modelo vigente, sin garantizar disponibilidad. La confirmación debe volver a validar disponibilidad, vencimientos, recetas conforme a RN58 y FEFO, finalizar la asignación de existencias en los detalles y registrar la fecha de venta y sus efectos sobre inventario de forma atómica.
 
-**Estado backend:** RF23–RF28/CU28–CU32 están implementados y verificados localmente bajo la decisión de formulario sin adjuntos. Se registran recetas y vínculos atómicamente, el Regente aprueba/rechaza y el Vendedor confirma conforme a RN58: `LIBRE` no requiere receta, `RECETA_MEDICA` requiere una receta aprobada y cualquier valor desconocido bloquea la confirmación. No se normalizan valores históricos o sintéticos. La migración `20261101120000-allow-null-receta-archivo.js` debe aplicarse para habilitar el formulario sin archivo en bases existentes. La evidencia actual y los límites operativos están en `bitacora-auditoria.md`; no incluyen frontend ni despliegue.
+**Estado vigente (21/11/2026):** RF23–RF28/CU28–CU32 están implementados en backend y frontend bajo la decisión de formulario sin adjuntos. Se registran recetas y vínculos atómicamente, el Regente aprueba/rechaza y el Vendedor confirma conforme a RN58: `LIBRE` no requiere receta, `RECETA_MEDICA` requiere una receta aprobada y cualquier valor desconocido bloquea la confirmación. No se normalizan valores históricos o sintéticos. La migración `20261101120000-allow-null-receta-archivo.js` debe aplicarse para habilitar el formulario sin archivo en bases existentes. La evidencia backend local y los límites operativos están en `bitacora-auditoria.md`; aquella evidencia no acredita por sí sola frontend ni despliegue. La existencia de las páginas y servicios React se contrasta en el contexto maestro, sin nueva aceptación integrada en esta actualización documental.
 
 ## RF24. Seleccionar existencias para venta
 
@@ -232,7 +232,7 @@ Implementado para Administrador en `GET /api/reportes/compras`, por `fecha_compr
 
 El sistema debe permitir consultar los movimientos históricos del inventario.
 
-CU40 reutiliza `GET /api/inventario/movimientos` de CU24 para Administrador/Regente, conservando filtros, respuesta y permisos propios; no se duplica en Reportes. La ampliación añade `/api/inventario/movimientos/exportar` exclusivamente TABULAR en CSV/XLSX/PDF LOCAL, sin estadísticas, saldos reconstruidos ni resumen monetario; la proyección exportada no incluye observacion y no modifica el GET.
+CU40 reutiliza `GET /api/inventario/movimientos` de CU24 para Administrador/Regente, conservando filtros, respuesta y permisos propios; no se duplica en Reportes. La ampliación añade `/api/inventario/movimientos/exportar` exclusivamente TABULAR en CSV/XLSX/PDF bajo un perfil admitido por el servidor, sin estadísticas, saldos reconstruidos ni resumen monetario; la proyección exportada no incluye observacion y no modifica el GET.
 
 ## RF38. Consultar pérdidas
 
@@ -242,9 +242,9 @@ Implementado para Administrador/Regente en `GET /api/reportes/perdidas`: retiros
 
 Contrato común RF35/RF36/RF38 del GET ordinario: modalidad explícita excluyente `dia`, `mes` o `desde`+`hasta`, fechas civiles America/La_Paz y extremos inclusivos. Resumen completo filtrado y detalle paginado (25 por defecto, máximo 100), sin serie temporal dentro de ese DTO; vacíos 200 con ceros. Validación estricta 400, sesión 401, rol 403 y fallo técnico 500 seguro. Cada lectura materializada intenta auditoría mínima independiente.
 
-**Ampliación autorizada e implementada (20/11/2026):** cada una de las tres fuentes dispone de `/estadisticas` JSON con granularidad explícita DIA/MES/ANIO, indicadores, intervalos, series y distribuciones conciliados, y `/exportar` TABULAR/ESTADISTICA en CSV/XLSX/PDF. Permisos/filtros y RN91/RN98–RN101 se conservan; no nuevos CU/RN ni tabla Reporte. Estadísticas máximo 1200 intervalos con ceros; no porcentajes, ganancias ni pronósticos. TABULAR exporta todas las coincidencias sin paginación, ESTADISTICA todas las métricas, sin detalle operativo adicional. PDF/XLSX estadísticos incluyen PNG y tabla exacta; CSV solo datos, no imagen. Exportaciones disponibles solo bajo perfil LOCAL, no producción.
+**Ampliación implementada:** cada una de las tres fuentes dispone de `/estadisticas` JSON con granularidad explícita DIA/MES/ANIO, indicadores, intervalos, series y distribuciones conciliados, y `/exportar` TABULAR/ESTADISTICA en CSV/XLSX/PDF. Permisos/filtros y RN91/RN98–RN101 se conservan; no nuevos CU/RN ni tabla Reporte. Estadísticas máximo 1200 intervalos con ceros; no porcentajes, ganancias ni pronósticos. TABULAR exporta todas las coincidencias sin paginación, ESTADISTICA todas las métricas, sin detalle operativo adicional. PDF/XLSX estadísticos incluyen PNG y tabla exacta; CSV solo datos, no imagen. El servidor admite perfil LOCAL o Railway opt-in con guardas de configuración y recursos; no se acredita disponibilidad del despliegue por la existencia del código.
 
-Contrato vigente para React, campos, ejemplos, errores, precisión y matriz de evidencia: `contratos-reportes-react.md`; acuerdos `fases.md` §10.2–10.8 y cierres §10.19–10.21. Las antiguas referencias §7.2–7.8/§7.15–7.16 pertenecían al plan sustituido, no a la numeración vigente. Fases 9 y 10 PARCIALES; documentación Fase 11 no implica aceptación backend conjunta, revisión visual, frontend ni producción.
+Contrato vigente, campos, ejemplos, errores, precisión y matriz de evidencia histórica: `contratos-reportes-react.md`. La extensión de disponibilidad está en `exportaciones-railway.md`. Frontend implementado con consultas, estadísticas, gráficas y descargas; el seguimiento visual actual es `fases.md`, cuyas fases no corresponden al antiguo plan backend. La aceptación backend histórica sigue delimitada por la matriz de §9 de contratos; no implica aceptación productiva ni nueva ejecución de pruebas.
 
 ## RF39. Mantener trazabilidad
 
@@ -272,7 +272,7 @@ La recuperación de CU09 es independiente del cambio propio y del restablecimien
 
 ### Bitácora de auditoría — backend implementado
 
-RF43–RF53 incorporan el módulo solicitado para Sistemas de Información I. Su captura automática y API CU42 están implementadas en backend, conforme a RN116, con información de RI16 y sin alterar las políticas vigentes. La puesta en funcionamiento requiere la migración en destino. La evidencia de aceptación se mantiene en `bitacora-auditoria.md`; Ventas/Recetas permanecen pendientes. Frontend incorpora acceso, listado, filtros explícitos, paginación 25/50/100 con criterios en URL y detalle histórico; las cuatro entregas están completas con aceptación integrada local React/Express/MySQL aprobada en Fase 4.
+RF43–RF53 incorporan el módulo solicitado para Sistemas de Información I. Su captura automática y API CU42 están implementadas en backend, conforme a RN116, con información de RI16 y sin alterar las políticas vigentes. La puesta en funcionamiento requiere la migración en destino. La evidencia de aceptación se mantiene en `bitacora-auditoria.md`; Ventas/Recetas y Reportes ya integran sus eventos correspondientes. Frontend incorpora acceso, listado, filtros explícitos, paginación 25/50/100 con criterios en URL y detalle histórico; las cuatro entregas están completas con aceptación integrada local React/Express/MySQL aprobada en Fase 4.
 
 ## RF43. Auditar inicios de sesión
 
@@ -316,7 +316,7 @@ El sistema debe registrar solicitudes de registro y anulación de compras, ajust
 
 Una conciliación de CU23 sin diferencia debe identificarse como operación completada sin cambios de inventario, sin generar movimiento ni historial detallado de conteos. Este evento pertenece exclusivamente a Bitácora; conserva referencia a la existencia y resultado, sin snapshots, conteo ni observación. RF19/RI09 describen la ausencia de historial detallado de conteos, no la ausencia de este evento.
 
-El registro de existencias y sus modificaciones derivadas de compras, anulaciones, ajustes y retiros se auditan dentro de sus operaciones de origen; no se presupone una edición independiente de existencias. Se prevé integrar las futuras operaciones de registro/confirmación y anulación de ventas, y registro/revisión de recetas cuando se implementen CU28, CU30, CU31 y CU32. Relaciones actuales: CU23, CU25, CU27, CU35 y CU36; RN129–RN133, sin reemplazar RN43, RN80 ni RN103/RN104.
+El registro de existencias y sus modificaciones derivadas de compras, anulaciones, ajustes y retiros se auditan dentro de sus operaciones de origen; no se presupone una edición independiente de existencias. El registro/confirmación y la anulación de ventas, así como el registro/revisión de recetas, también están integrados con Bitácora. Relaciones actuales: CU23, CU25, CU27, CU28, CU30–CU32, CU35 y CU36; RN129–RN133, sin reemplazar RN43, RN57, RN80 ni RN103/RN104.
 
 ## RF50. Consultar historial de auditoría
 

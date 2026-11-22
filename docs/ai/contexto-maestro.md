@@ -12,6 +12,20 @@
 
 ---
 
+## Estado vigente contrastado con el código — 21/11/2026
+
+Esta síntesis distingue el software existente de la evidencia de cada entrega. Los cierres fechados de las secciones siguientes son antecedentes; sus expresiones «pendiente», «sin frontend» o «solo LOCAL» no sustituyen este estado ni amplían su aceptación.
+
+- **Backend y frontend implementados:** autenticación/recuperación, usuarios, proveedores/laboratorios, principios activos, medicamentos/composición, inventario/vencimientos/ajustes/retiros, compras, ventas, recetas, reportes y bitácora. El catálogo funcional conserva 42 CU; la cobertura implementada no equivale a aceptación integral en producción.
+- **Ventas y recetas:** `POST /api/ventas` recibe `claveOperacion` y `detalles`; registra venta pendiente y detalles sin recetas ni movimientos. Después, `POST /api/ventas/:idVenta/recetas` registra cada formulario y sus vínculos en otra transacción. La revisión del Regente y la confirmación del Vendedor son operaciones posteriores. RN57 describe esta separación; no existe alta atómica de venta y recetas entre peticiones.
+- **Interfaz Ventas/Recetas:** `/ventas` y su detalle para los tres roles, `/ventas/nueva` solo Vendedor; registro de receta para Regente/Vendedor; consulta sensible y revisión de recetas solo Regente. La anulación se ofrece al Administrador. Fuentes: `frontend/src/app/router.jsx` y features `ventas`/`recetas`; permisos definitivos en los routers backend.
+- **Reportes:** `/reportes/ventas` y `/reportes/compras` solo Administrador; `/reportes/perdidas` Administrador/Regente. Incluyen consultas paginadas, estadísticas DIA/MES/ANIO, gráficas y descargas CSV/XLSX/PDF. CU40 conserva su pantalla de Movimientos con exportación TABULAR. Contrato vigente y evidencia backend histórica: `contratos-reportes-react.md`; seguimiento de mejora visual: `fases.md` (Fases 1–3 completas, Fase 4 parcial por zoom nativo 200% pendiente según su cierre).
+- **Disponibilidad de descargas:** perfil LOCAL o Railway opt-in con guardas; `exportaciones-railway.md` documenta configuración, diagnósticos y límites. `app.js` ya expone Content-Disposition/Retry-After por CORS. No se verifica aquí habilitación, recursos ni funcionamiento del servidor desplegado.
+- **Seguridad:** JWT obligatorio con `idUsuario`, `idRol` y `versionCredenciales`; se contrasta cuenta activa y versión en servidor. Cookie HttpOnly, Secure y SameSite=None en producción, SameSite=Lax fuera de producción. CU08/CU09 invalidan credenciales previas; logout elimina la cookie, sin blacklist ni tabla de sesiones.
+- **Modelo persistente:** 16 modelos Sequelize: los 13 principales de §6/§8, más `RecuperacionPassword`, `LimiteRecuperacionIp` y `BitacoraAuditoria`. Estos últimos son persistencia de recuperación/auditoría, no tablas Inventario/Alerta/Reporte.
+
+La sincronización documental no ejecutó pruebas, migraciones ni conexiones MySQL/Railway. Las cifras y aprobaciones anteriores mantienen su fecha, entorno y alcance; no acreditan nuevas pruebas de frontend o aceptación productiva. Las referencias a §10.2–10.21 o §7.15 de planes antiguos se interpretan como históricas: el contenido contractual y la matriz conservada están en `contratos-reportes-react.md` §1–9 y `bitacora-auditoria.md`, no en esas secciones del seguimiento visual actual.
+
 ## 1. Identificación general
 
 **Nombre del proyecto:**  
@@ -355,7 +369,7 @@ Reportes principales:
 
 La venta utiliza los estados `PENDIENTE`, `CONFIRMADA` y `ANULADA`.
 
-El Vendedor puede guardar una venta pendiente con sus detalles y recetas para que el Regente las revise. La receta conserva `id_venta` obligatorio; no se registra como una receta independiente de la venta.
+El Vendedor guarda una venta pendiente con sus detalles; posteriormente el Regente o Vendedor registra y vincula las recetas para su revisión. Cada registro de receta es una transacción separada del alta de venta (RN57). La receta conserva `id_venta` obligatorio; no se registra como una receta independiente de la venta.
 
 - Una venta nueva queda pendiente por defecto.
 - Guardar una venta pendiente no descuenta ni reserva stock y no genera movimientos de inventario.
@@ -370,7 +384,7 @@ El Vendedor puede guardar una venta pendiente con sus detalles y recetas para qu
 
 Los reportes de ventas realizadas utilizan la fecha de confirmación y distinguen las operaciones confirmadas de las pendientes y anuladas.
 
-CU28–CU32 están implementados y verificados en backend bajo el alcance de formulario sin adjuntos. Se registran ventas pendientes sin inventario, se registran recetas y sus vínculos atómicamente, el Regente aprueba/rechaza y el Vendedor confirma con RN58 y FEFO. Consulta y anulación conservan historial, fechas, recetas y movimientos. Las 346 pruebas focalizadas incluyen 115 de integración MySQL local y aceptación con login real del flujo completo; la evidencia está en `bitacora-auditoria.md`. No incluyen implementación frontend ni despliegue. En bases existentes debe aplicarse la migración `20261101120000-allow-null-receta-archivo.js` antes de utilizar el nuevo registro de recetas.
+CU28–CU32 están implementados en backend y frontend bajo el alcance de formulario sin adjuntos. Se registran ventas pendientes sin inventario, se registran recetas y sus vínculos atómicamente en operaciones posteriores, el Regente aprueba/rechaza y el Vendedor confirma con RN58 y FEFO. Consulta y anulación conservan historial, fechas, recetas y movimientos. La evidencia histórica backend de 346 pruebas focalizadas incluye 115 de integración MySQL local y aceptación con login real del flujo completo; se conserva en `bitacora-auditoria.md`. Esa evidencia no acredita por sí sola frontend ni despliegue; la existencia de la interfaz está contrastada en la síntesis vigente inicial. En bases existentes debe aplicarse la migración `20261101120000-allow-null-receta-archivo.js` antes de utilizar el nuevo registro de recetas.
 
 El catálogo actual admite `condicionVenta` como texto de hasta 40 caracteres. La correspondencia aprobada en RN58 utiliza los valores canónicos `LIBRE` (no requiere receta) y `RECETA_MEDICA` (requiere una receta de la misma venta aprobada por el Regente). Cualquier valor desconocido o no reconocido bloquea la confirmación con un error controlado, sin efectos sobre inventario. No se modifican ni normalizan automáticamente datos históricos y los valores sintéticos de pruebas no se convierten en valores válidos. La aprobación corresponde a la revisión de la receta física y sus datos por el Regente; no depende de adjuntar o verificar un archivo digital. Se retiraron los bloqueos heredados de almacenamiento, conservando las validaciones de pertenencia, estado y aprobación y el bloqueo de revisiones repetidas.
 
@@ -477,7 +491,7 @@ Antes de implementar una funcionalidad nueva que afecte comportamiento del siste
 
 ## 6. Entidades principales
 
-Actualmente se manejan las siguientes entidades:
+Entidades principales del dominio (la recuperación y auditoría se enumeran después):
 
 - Rol
 - Usuario
@@ -492,6 +506,8 @@ Actualmente se manejan las siguientes entidades:
 - DetalleVenta
 - Receta
 - MovimientoInventario
+
+Persistencia adicional implementada: `RecuperacionPassword`, `LimiteRecuperacionIp` y `BitacoraAuditoria`. El inventario completo actual contiene 16 modelos Sequelize; los listados históricos de 13/15 modelos no incluyen todas estas ampliaciones.
 
 ### Entidades que no existen actualmente
 
@@ -611,6 +627,8 @@ Tablas principales:
 12. detalle_venta
 13. movimiento_inventario
 ```
+
+Además existen `recuperacion_password`, `limite_recuperacion_ip` y `bitacora_auditoria`, creadas mediante migraciones posteriores. El orden siguiente describe las trece tablas originales; para instalar la versión vigente deben aplicarse todas las migraciones del repositorio, no solo ese listado.
 
 Orden de migraciones recomendado:
 
@@ -2142,7 +2160,7 @@ Corrección posterior del listado de Inventario (11/10/2026): implementado en ba
 
 ## 33. Orden recomendado de desarrollo
 
-**Actualización de continuidad (20/11/2026):** los pendientes de Ventas/Recetas/Reportes mencionados en cierres anteriores son históricos. CU28–CU32 están implementados para formulario sin adjuntos (§4.11/§38); CU38/CU39/CU41 y la ampliación de estadísticas/exportaciones están implementados y documentados, pero su integración MySQL sigue parcialmente aceptada (§39 y `fases.md` §10.20–10.21). No se entrega frontend nuevo de reportes ni habilitación operativa en este cierre documental.
+**Actualización de continuidad (21/11/2026):** los pendientes de Ventas/Recetas/Reportes mencionados en cierres anteriores son históricos. CU28–CU32 están implementados para formulario sin adjuntos (§4.11/§38); CU38/CU39/CU41 y la ampliación de estadísticas/exportaciones están implementados en backend y frontend. La evidencia MySQL backend conserva su aceptación parcial (§39 y `contratos-reportes-react.md` §9). El seguimiento visual actual es `fases.md`; sus secciones no sustituyen el antiguo plan backend. Esta sincronización no acredita habilitación operativa.
 
 Después de completar Usuarios:
 
@@ -2391,9 +2409,9 @@ La autorización de pruebas en MySQL local aislado no autoriza cambios en las ba
 
 ---
 
-## 39. Reportes y pérdidas — ampliación LOCAL documentada, integración parcial (20/11/2026)
+## 39. Reportes y pérdidas — contratos vigentes y evidencia histórica
 
-CU38/CU39/CU41 están implementados y montados por capas `reporte.router.js` → `reporteController` → `reporteService` → `reporteRepository`, con `reporteValidator` para entrada. El cierre original (19/11) completó sus Fases 1–5, dejó Fase 6 MySQL parcial y cerró Fase 7 documental sin modelos/tablas/migraciones/dependencias nuevas ni cambios operativos. Esa numeración y las antiguas referencias `fases.md` §7.2–7.8/§7.15–7.16 corresponden al plan sustituido, no al actual. Su evidencia se conserva debajo; contrato vigente consolidado en `contratos-reportes-react.md`, acuerdos del plan actual §10.2–10.8 y evidencia nueva §10.19–10.20. La ampliación posterior sí utiliza dependencias de formatos/fuente local, sin cambiar el modelo ni los Services operativos.
+CU38/CU39/CU41 están implementados en backend y frontend. Backend: `reporte.router.js` → `reporteController` → `reporteService` → `reporteRepository`, con `reporteValidator` para entrada. Contrato vigente y evidencia backend conservada: `contratos-reportes-react.md`; extensión Railway: `exportaciones-railway.md`. Las fases mencionadas en los cierres del 19–20/11 pertenecen a planes sustituidos, no al seguimiento visual actual `fases.md`. La ampliación utiliza dependencias de formatos/fuente local, sin tabla Reporte ni cambios al modelo operativo. Los apartados de evidencia siguientes conservan su alcance histórico, sin nuevas ejecuciones.
 
 ### Endpoints y contrato público
 
@@ -2432,7 +2450,7 @@ Concurrencia real controlada: tras el agregado real y antes del detalle real, ot
 
 Límites de aquel cierre: DATETIME(0) y una omisión de fracciones; cantidad agregada real > INT pero no > Number.MAX_SAFE_INTEGER (ese extremo solo simulado); sin volumen/plan/rendimiento; sesión expirada/revocada entonces no reejercida con MySQL; fallo del auditor por rechazo SQL, no caída de red/COMMIT/servidor; sin privilegios mínimos operativos ni garantía de limpieza ante kill. La Fase 7 original fue documental, sin nueva aceptación MySQL. La Fase 10 actual sí ejercitó expiración/revocación reales; no considerar ese pendiente histórico como vigente ni dar por resueltos los demás límites por extensión.
 
-### Ampliación y entrega documental Fase 11 — estado vigente
+### Ampliación y entrega documental Fase 11 — cierre histórico del 20/11/2026
 
 - Tres `/api/reportes/{ventas|compras|perdidas}/estadisticas` JSON montados: mismos permisos/filtros, granularidad obligatoria DIA/MES/ANIO, hasta 1200 intervalos naturales intersectados con ceros/parciales, categorías/unidades explícitas, series/distribuciones y resumen conciliados. El GET paginado anterior permanece sin series; la antigua exclusión de series ya no rige para las rutas nuevas autorizadas. No porcentajes, márgenes, ganancias ni pronósticos.
 - Tres `/api/reportes/{fuente}/exportar`: TABULAR/ESTADISTICA × CSV/XLSX/PDF; CU40 `/api/inventario/movimientos/exportar` solo TABULAR. Son 21 combinaciones **LOCAL**, sin producción. Desarrollo + socket loopback + preflight real básico, no flag de bypass. TABULAR completo mediante keyset ≤1000 filas/bloque y spool conciliado, RR común con agregado/relaciones; terminar lectura antes de render. Estadística exporta todas las métricas sin detalle operativo adicional. CU40 conserva GET/DTO/filtros originales, sin nuevo snapshot en ese GET, sin saldos/resumen monetario ni observacion en archivo.
@@ -2444,7 +2462,7 @@ Límites de aquel cierre: DATETIME(0) y una omisión de fracciones; cantidad agr
 
 Guía entregada: `contratos-reportes-react.md` (rutas, permisos, parámetros/incompatibilidades, JSON/tipos, ejemplos, archivos/MIME/cabeceras/errores, consumo cookie, exactitud, snapshot, cuotas, auditoría, licencias y matriz implementado/sin motor/con motor/pendiente). No frontend nuevo, suites ni conexiones MySQL en Fase 11; futuras pruebas con motor requieren autorización nueva.
 
-**Pendientes separados:** cualquier decisión sobre precisión fraccionaria y repetición de integración necesita alcance/autorización nuevos. Frontend de reportes, su aceptación y planificación son posteriores; CU40 conserva la interfaz existente. Migraciones/habilitación en entorno de uso, cuentas/privilegios, respaldos y despliegue requieren pasos operativos independientes; no se ejecutaron ni se autorizan con este cierre. No se retoma transacciones.md ni se actualiza el análisis académico simplificado en esta entrega.
+**Actualización posterior (21/11/2026):** el frontend de reportes ya está implementado, incluida la ampliación de estadísticas/gráficas/descargas; CU40 reutiliza su pantalla existente. La mejora visual y su evidencia propia se mantienen en `fases.md`. El perfil Railway opt-in y la exposición CORS de Content-Disposition/Retry-After ya están implementados; sus guardas, correcciones y límites están en `exportaciones-railway.md`. Por tanto, las notas «solo LOCAL», «sin frontend» y «CORS no expone» del cierre anterior son antecedentes, no restricciones vigentes del software. Las cifras de pruebas de aquel cierre no se trasladan a Railway ni acreditan nueva aceptación integrada. Precisión fraccionaria, migraciones/habilitación en destino, cuentas/privilegios, respaldos y despliegue conservan requisitos operativos independientes.
 
 ---
 

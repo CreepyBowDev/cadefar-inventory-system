@@ -1,10 +1,10 @@
 // CU38/CU39/CU41 y regresión CU40: React/Router/Axios con API interceptada por CDP.
-// Se conserva el nombre del arnés de Fase 2; sin backend/MySQL ni capturas.
+// Sin backend/MySQL. Capturas sintéticas opt-in: CADEFAR_REPORTES_SCREENSHOTS.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -230,14 +230,14 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: Reportes y 
         assert.deepEqual(cells.slice(1, 7), ['70', 'Confirmada', '01/11/2026', '01/11/2026', '02/12/2026 23:59:59', '—']);
         await contains('03/01/2027 00:00:00');
         assert.equal(await evaluate(`document.querySelector('${tabla}').textContent.includes('-900')`), false);
-        assert.equal((await evaluate('[...document.querySelectorAll(".reporte-resumen dd strong")].map(el=>el.textContent)')).at(-1), '900.719.925.474.099.312.345,02');
+        assert.equal(await evaluate('document.querySelector(".reporte-resumen__principal dd strong").textContent'), '900.719.925.474.099.312.345,02');
       }
       if (perdidas) {
         assert.deepEqual(await evaluate('[...document.querySelectorAll("#reporte-motivo option")].map(el=>el.value)'), ['', 'VENCIMIENTO', 'DAÑO']);
         const cells = await evaluate(`[...document.querySelector('${tabla} tbody tr').cells].map(el=>el.textContent)`);
         assert.deepEqual(cells.slice(5, 11), ['01/11/2026 23:15:00', '31/10/2026 23:59:59', '1', '0,000000', '0,00', '#90']);
         assert.equal(await evaluate(`[...document.querySelectorAll('${tabla} tbody tr')].filter(r=>r.cells[9].textContent==='0,01').length`), 2);
-        assert.equal(await evaluate('document.querySelectorAll(".reporte-resumen dd strong")[2].textContent'), '0,02');
+        assert.equal(await evaluate('document.querySelector(".reporte-resumen__principal dd strong").textContent'), '0,02');
         await contains('Producto histórico inactivo'); await contains('Producto histórico de existencia agotada');
         assert.equal(await evaluate('document.querySelector(".reporte-perdidas-page").textContent.includes("pérdidas netas")'), false);
         assert.equal(await evaluate(`document.querySelectorAll('${tabla} button').length`), 0);
@@ -280,24 +280,24 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: Reportes y 
       await field('reporte-desde', '2026-11-01'); await select(perdidas ? 'reporte-motivo' : 'reporte-estado', perdidas ? 'DAÑO' : 'ANULADA'); await click('.reporte-filters button[type=submit]'); await ready();
       assert.deepEqual(reportRequests().at(-1).query, { desde: '2026-11-01', hasta: '2026-11-01', pagina: '1', limite: '10', [perdidas ? 'motivo' : 'estadoOperacion']: perdidas ? 'DAÑO' : 'ANULADA' });
       assert.equal(await evaluate(`document.querySelectorAll('${tabla} tbody tr').length`), compras ? 1 : 2);
-      const values = await evaluate('[...document.querySelectorAll(".reporte-resumen dd")].map(el=>el.textContent)');
+      const values = await evaluate('[...document.querySelectorAll(".reporte-resumen .catalogo-detail > div:not(.reporte-resumen__principal) dd")].map(el=>el.textContent)');
       if (perdidas) {
         assert.ok(reportRequests().at(-1).search.includes('motivo=DA%C3%91O'));
         assert.ok(values[0].includes('0 retiros · Cantidad retirada: 0 · Pérdida: 0,00'));
         assert.ok(values[1].includes('20 retiros · Cantidad retirada: 2 · Pérdida: 0,02'));
         await select('reporte-motivo', 'VENCIMIENTO'); await click('.reporte-filters button[type=submit]'); await ready();
-        const summary = await evaluate('[...document.querySelectorAll(".reporte-resumen dd")].map(el=>el.textContent)');
+        const summary = await evaluate('[...document.querySelectorAll(".reporte-resumen .catalogo-detail > div:not(.reporte-resumen__principal) dd")].map(el=>el.textContent)');
         assert.ok(summary[1].includes('0 retiros · Cantidad retirada: 0 · Pérdida: 0,00'));
-        assert.ok(summary[2].endsWith('Pérdida total: 0,00'));
+        assert.ok(await evaluate('document.querySelector(".reporte-resumen__principal dd").textContent.endsWith("Pérdida total: 0,00")'));
         await select('reporte-motivo', '');
-      } else { assert.ok(values[0].includes(`0 ${tipo}`)); assert.ok(values[1].includes(compras ? '10 compras' : '0 ventas')); assert.equal(values.at(-1), '0,00'); }
+      } else { assert.ok(values[0].includes(`0 ${tipo}`)); assert.ok(values[1].includes(compras ? '10 compras' : '0 ventas')); assert.equal(await evaluate('document.querySelector(".reporte-resumen__principal dd").textContent'), '0,00'); }
       if (compras) {
         assert.ok(values[1].includes('900.719.925.474.099.312.345,02'));
         await select('reporte-estado', 'CONFIRMADA'); await click('.reporte-filters button[type=submit]'); await ready();
         assert.equal(reportRequests().at(-1).query.estadoOperacion, 'CONFIRMADA');
         assert.equal(await evaluate(`document.querySelectorAll('${tabla} tbody tr').length`), 2);
-        const summary = await evaluate('[...document.querySelectorAll(".reporte-resumen dd")].map(el=>el.textContent)');
-        assert.ok(summary[1].includes('0 compras')); assert.equal(summary.at(-1), '900.719.925.474.099.312.345,02');
+        const summary = await evaluate('[...document.querySelectorAll(".reporte-resumen .catalogo-detail > div:not(.reporte-resumen__principal) dd")].map(el=>el.textContent)');
+        assert.ok(summary[1].includes('0 compras')); assert.equal(await evaluate('document.querySelector(".reporte-resumen__principal dd").textContent'), '900.719.925.474.099.312.345,02');
       }
       await select('reporte-modalidad', 'mes'); await field('reporte-mes', '2026-11'); await click('.reporte-filters button[type=submit]'); await ready();
       assert.equal(reportRequests().at(-1).query.desde, undefined); assert.equal(reportRequests().at(-1).query.dia, undefined);
@@ -326,7 +326,7 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: Reportes y 
       await contains('31/12/9999 al 31/12/9999');
       assert.ok(await evaluate(`document.querySelector('${tabla}').textContent.includes('900.719.925.474.099.312.345,123456')`));
       assert.ok(await evaluate(`document.querySelector('${tabla}').textContent.includes('900.719.925.474.099.312.345,01')`));
-      assert.equal(await evaluate('document.querySelectorAll(".reporte-resumen dd strong")[2].textContent'), '900.719.925.474.099.312.345,02');
+      assert.equal(await evaluate('document.querySelector(".reporte-resumen__principal dd strong").textContent'), '900.719.925.474.099.312.345,02');
     });
     await t.test('400/401/403/500/red retiran datos, sin reintentos ni SQL visible', async () => {
       for (const failure of [
@@ -475,15 +475,34 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: Reportes y 
       assert.deepEqual(await active(), [perdidas ? 'Consulta de pérdidas' : compras ? 'Reporte de compras' : 'Reporte de ventas']);
       await contains('Selecciona un período');
     });
-    await t.test('Labels, tabla accesible, teclado, escritorio/375px y navegación móvil CU40', async () => {
+    await t.test('Labels, tabla accesible, teclado, 1366/768/375px, reflow 200% y navegación móvil CU40', async () => {
+      if (perdidas) {
+        const body = respuestaPerdidas(new URLSearchParams('mes=2026-11&limite=7'));
+        body.data.detalle[0] = { ...body.data.detalle[0], nombreComercial: 'Producto histórico sintético de denominación comercial muy extensa ' + 'ReferenciaSinEspacios'.repeat(8) };
+        planned = { status: 200, body };
+      }
       rol = 1; await navigate('/reportes/ventas?mes=2026-11&limite=7'); await ready();
-      for (const width of [1366, 375]) {
-        await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width === 375 }); await settle();
+      // 683 CSS px / DPR 2: reflow equivalente a escritorio 1366px al 200%.
+      // No es zoom óptico/pinch ni una comprobación de navegador físico.
+      for (const width of [1366, 768, 683, 375]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: width === 683 ? 2 : 1, mobile: width === 375 }); await settle();
         assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'));
+        assert.ok(await evaluate('!!(document.querySelector(".reporte-vista").compareDocumentPosition(document.querySelector(".reporte-filters")) & Node.DOCUMENT_POSITION_FOLLOWING)'));
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".reporte-filters__actions button")].map(el=>el.textContent)'), ['Buscar', 'Limpiar']);
+        assert.ok(await evaluate('document.querySelector(".reporte-filters__actions button[type=submit]").getBoundingClientRect().top <= document.querySelector(".reporte-filters__actions button[type=button]").getBoundingClientRect().top'));
+        assert.ok(await evaluate('document.querySelector(".reporte-resumen .catalogo-detail").firstElementChild.matches(".reporte-resumen__principal")'));
+        assert.ok(await evaluate('!!(document.querySelector(".consulta-pagination").compareDocumentPosition(document.querySelector(".reporte-exportacion")) & Node.DOCUMENT_POSITION_FOLLOWING)'));
         assert.ok(await evaluate('[...document.querySelectorAll(".reporte-filters input, .reporte-filters select, .consulta-pagination select")].every(el=>el.labels.length>0)'));
         assert.ok(await evaluate('!!document.querySelector("table caption") && [...document.querySelectorAll("table th")].every(el=>el.scope === "col")'));
         assert.ok(await evaluate('document.querySelector(".catalogo-table-wrap").tabIndex === 0 && !!document.querySelector(".catalogo-table-wrap").getAttribute("aria-label")'));
         assert.ok(await evaluate('document.querySelector(".reporte-filters fieldset legend").textContent.length > 0 && !!document.querySelector(".catalogo-toolbar [role=status][aria-live=polite]")'));
+        if (process.env.CADEFAR_REPORTES_SCREENSHOTS) {
+          const directory = process.env.CADEFAR_REPORTES_SCREENSHOTS;
+          await mkdir(directory, { recursive: true });
+          const { cssContentSize } = await send('Page.getLayoutMetrics');
+          const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: 0, y: 0, width, height: cssContentSize.height, scale: 1 } });
+          await writeFile(join(directory, `${tipo}-${width}.png`), Buffer.from(data, 'base64'));
+        }
         if (width === 375) {
           await evaluate('document.querySelector(".catalogo-table-wrap").focus()');
           await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', windowsVirtualKeyCode: 39 });
@@ -494,6 +513,10 @@ for (const tipo of ['ventas', 'compras', 'perdidas']) test(`${tipo}: Reportes y 
       await evaluate('document.getElementById("reporte-modalidad").focus()');
       await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', windowsVirtualKeyCode: 9 }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', windowsVirtualKeyCode: 9 });
       assert.equal(await evaluate('document.activeElement.id'), 'reporte-mes');
+      await evaluate('document.querySelector(".reporte-filters button[type=submit]").focus()');
+      await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', windowsVirtualKeyCode: 9 }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', windowsVirtualKeyCode: 9 });
+      assert.equal(await evaluate('document.activeElement.textContent'), 'Limpiar');
+      assert.notEqual(await evaluate('getComputedStyle(document.activeElement).outlineStyle'), 'none');
       await click('.app-header__menu-button'); await wait('!!document.querySelector(".app-sidebar[role=dialog]")');
       assert.equal(await evaluate('document.activeElement === document.querySelector(".app-sidebar__close")'), true);
       await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', windowsVirtualKeyCode: 9, modifiers: 8 });

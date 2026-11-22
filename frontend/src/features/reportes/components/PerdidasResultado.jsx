@@ -5,11 +5,11 @@ const motivos = { VENCIMIENTO: 'Vencimiento', DAÑO: 'Daño' };
 const modalidades = { DIA: 'Día', MES: 'Mes', PERIODO: 'Período' };
 
 export const PerdidasResumen = ({ periodo, resumen, motivo }) => <section aria-label="Resumen de pérdidas" className="reporte-resumen">
-  <p className="catalogo-note">Período aplicado ({modalidades[periodo.modalidad]}): {fechaCivil(periodo.desde)} al {fechaCivil(periodo.hasta)}. Zona horaria: {periodo.zonaHoraria}. Motivo aplicado: {motivos[motivo] || 'Todos los motivos'}.</p>
+  <div className="reporte-contexto"><h3>Criterios aplicados</h3><p><span>Período aplicado ({modalidades[periodo.modalidad]}): {fechaCivil(periodo.desde)} al {fechaCivil(periodo.hasta)}.</span>{' '}<span>Zona horaria: {periodo.zonaHoraria}.</span>{' '}<span>Motivo aplicado: {motivos[motivo] || 'Todos los motivos'}.</span></p></div>
   <h3>Resumen de todas las coincidencias</h3>
   <dl className="catalogo-detail">
+    <div className="reporte-resumen__principal"><dt>Total global de retiros brutos</dt><dd>{cantidad(resumen.cantidadRetiros)} retiros · Cantidad retirada: {cantidad(resumen.cantidadRetirada)} · Pérdida total: <strong>{costoDecimal(resumen.perdidaTotal)}</strong></dd></div>
     {[['vencimiento', 'Vencimiento'], ['dano', 'Daño']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{cantidad(resumen[key].cantidadRetiros)} retiros · Cantidad retirada: {cantidad(resumen[key].cantidadRetirada)} · Pérdida: <strong>{costoDecimal(resumen[key].perdida)}</strong></dd></div>)}
-    <div><dt>Total global de retiros brutos</dt><dd>{cantidad(resumen.cantidadRetiros)} retiros · Cantidad retirada: {cantidad(resumen.cantidadRetirada)} · Pérdida total: <strong>{costoDecimal(resumen.perdidaTotal)}</strong></dd></div>
   </dl>
   <p className="catalogo-note">El resumen completo proviene del servidor, no de esta página de detalle. Las cantidades agregadas de distintos productos no representan una unidad farmacéutica común. Los códigos y nombres corresponden al catálogo actual; los costos e importes son históricos. Se conservan históricos de productos inactivos y existencias agotadas.</p>
 </section>;

@@ -6,9 +6,9 @@ Sistema de Información Web para la Administración de Inventario, Ventas y Cont
 
 **Fuente principal:** [Análisis académico completo](analisis-clases-academico.md), conservado sin modificaciones. Este documento es una versión independiente contrastada con el código actual, no una propuesta de reorganización del software.
 
-**Estado actual — ampliación de Ventas y Recetas:** 40 diagramas cubren 39 casos de uso: CU01–CU37, CU40 y CU42; CU08 conserva las variantes A y B. Los 35 diagramas de Fases 1–6 se conservan sin cambios; Fase 7 incorpora CU28–CU30 y Fase 8 incorpora CU31/CU32 contrastados con el software. Las verificaciones de cada cierre corresponden a su entrega; la cobertura acumulada vigente figura en la sección 16. CU38/CU39/CU41 permanecen pendientes de implementación.
+**Cobertura documental — actualización 21/11/2026:** 43 diagramas cubren los 42 casos de uso CU01–CU42; CU08 conserva las variantes A y B. Fase 7 incorpora CU28–CU30, Fase 8 incorpora CU31/CU32 y Fase 9 incorpora CU38/CU39/CU41 con estadísticas y exportaciones. CU40 se amplía en su ubicación existente de Inventario, sin otro historial ni diagrama duplicado en Reportes. Las verificaciones de cada cierre corresponden a su entrega; la cobertura vigente figura en la sección 18. Contrato vigente: `contratos-reportes-react.md`; esta actualización no vuelve a validar todos los métodos ni renderiza los diagramas históricos.
 
-**Navegación de la ampliación:** [Ventas — CU28–CU30](#13-fase-7--ventas) · [Cierre de Ventas](#14-cierre-del-bloque-ventas-y-cobertura-acumulada) · [Recetas — CU31/CU32](#15-fase-8--recetas) · [Cobertura acumulada y cierre de Recetas](#16-cierre-del-bloque-recetas-y-cobertura-acumulada). Las fases numeran bloques documentales, no el orden numérico global de los CU: se conserva su organización previa y se añaden Ventas/Recetas sin desplazar los paquetes existentes.
+**Navegación de la ampliación:** [Ventas — CU28–CU30](#13-fase-7--ventas) · [Cierre de Ventas](#14-cierre-del-bloque-ventas-y-cobertura-acumulada) · [Recetas — CU31/CU32](#15-fase-8--recetas) · [Cierre de Recetas](#16-cierre-del-bloque-recetas-y-cobertura-acumulada) · [Reportes — CU38/CU39/CU41](#17-fase-9--reportes-y-consultas) · [Cobertura vigente](#18-cierre-del-bloque-reportes-y-cobertura-acumulada). Las fases numeran bloques documentales, no el orden numérico global de los CU: se conserva su organización previa sin desplazar los paquetes existentes. CU40 permanece en la sección 9.
 
 ## 0. Notación, alcance y lectura
 
@@ -3281,10 +3281,10 @@ No llama a getInventario del Service: ese recorrido exige existencias y excluir�
 
 ### CU40 — Consultar historial de inventario
 
-**Actores:** Administrador o Regente autenticado. **Endpoint y vista:** `GET /api/inventario/movimientos` y `/inventario/movimientos`, compartidos con CU24. Se conserva un diagrama propio para el objetivo oficial de trazabilidad.
+**Actores:** Administrador o Regente autenticado. **Endpoints:** `GET /api/inventario/movimientos`, compartido con CU24, y `GET /api/inventario/movimientos/exportar`. **Vista:** `/inventario/movimientos`. Se amplía el diagrama existente para el objetivo oficial de trazabilidad, sin crear otro historial en Reportes.
 
 ```mermaid
-%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(3) p::after{content:\" [service]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(3) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(5) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(10) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
 %%{init: {"state":{"useMaxWidth":false}}}%%
 classDiagram
     direction LR
@@ -3301,8 +3301,13 @@ classDiagram
         -filtros.direccion
         -filtros.motivo
         -consulta.data
+        -formato
         +validarFiltrosInventario()
         +getMovimientos()
+        +prepararTabular()
+        +iniciar()
+        +cancelar()
+        +exportarMovimientos()
     }
     class Control["inventarioController · backend agrupado"] {
         <<control>>
@@ -3312,6 +3317,14 @@ classDiagram
         %% getMovimientos() [service]
         +getMovimientos()
         +findAll()
+        %% movimientos() [controller]
+        +movimientos()
+        +validateExportacionMovimientos()
+        +preparar()
+        +resumen()
+        +bloque()
+        %% intentarRegistrar() [auditoria]
+        +intentarRegistrar()
     }
     class MovimientoInventario {
         <<entity>>
@@ -3359,6 +3372,7 @@ classDiagram
     Administrador --> Boundary : consulta entradas salidas y reversiones
     Regente --> Boundary : consulta entradas salidas y reversiones
     Boundary ..> Control : GET /api/inventario/movimientos
+    Boundary ..> Control : GET /api/inventario/movimientos/exportar
     Control --> MovimientoInventario : consulta hechos y reversión
     Control --> ExistenciaMedicamento : incluye identificación y filtra producto
     Control --> Medicamento : incluye identidad actual
@@ -3376,7 +3390,7 @@ classDiagram
     cssClass "Administrador,Regente" actor
 ```
 
-**Colaboración:** reutiliza exactamente el recorrido implementado de CU24: filtros/hooks → HTTP getMovimientos → Controller/Validator → Service → movimientoInventarioRepository.findAll. Se mantienen los mismos participantes, atributos, métodos, relaciones y permisos; no hay otra petición por llamarse historial ni un método ficticio getHistorial.
+**Colaboración:** la lectura reutiliza exactamente CU24: filtros/hooks → HTTP getMovimientos → Controller/Validator → Service → movimientoInventarioRepository.findAll. ExportacionTabular prepara los filtros aplicados mediante prepararTabular; iniciar del hook solicita exportarMovimientos HTTP. reporteExportacionController.movimientos valida y delega en preparar del Service compartido; resumen/bloque del Repository de extracción leen todas las coincidencias en un snapshot propio. No existe un método getHistorial ni una segunda implementación de la consulta.
 
 **Correspondencia principal:**
 
@@ -3396,6 +3410,22 @@ classDiagram
 
 Los accesos desde existencias, compras y resultados de ajustes/retiros preparan filtros de producto/existencia. No existe otra página/Service de Reportes ni se ejecutan reportes de pérdidas/ventas. Cabeceras Compra/Venta y Receta no se cargan. Filtros, intervalo inclusivo, orden, errores y respuesta 200 `{ data }` con lista vacía válida son los de CU24; sin escrituras ni cálculos críticos en React.
 
+**Ampliación de exportación — Fase 9:** formato CSV/XLSX/PDF y presentacion=TABULAR obligatorios. Se conservan filtros opcionales idMedicamento/idExistencia/desde/hasta/direccion/motivo; los extremos temporales pueden quedar abiertos y motivo sigue siendo texto, no enum. No admite día/mes, paginación, estadísticas, granularidad ni selectores gráficos. La descarga cuenta movimientos y proyecta referencias/usuario sin observacion, estado actual del medicamento, saldos reconstruidos ni resumen monetario. El GET conserva observacion y su DTO anidado, sin adquirir paginación ni snapshot nuevos. Las entidades y asociaciones del dibujo se conservan: descarga consulta los mismos modelos, no las cabeceras Compra/Venta por obtener sus IDs desde detalles.
+
+| Funciones o atributos añadidos | Archivo real |
+|---|---|
+| `formato`; componente ExportacionTabular utilizado por MovimientosPage | `frontend/src/features/reportes/components/ExportacionTabular.jsx`; `frontend/src/features/inventario/pages/MovimientosPage.jsx` |
+| `prepararTabular()` | `frontend/src/features/reportes/utils/exportacionTabular.js` |
+| `iniciar()`, `cancelar()` | `frontend/src/features/reportes/hooks/useExportacionTabular.js` |
+| `exportarMovimientos()` de Boundary: HTTP | `frontend/src/features/inventario/services/inventario.service.js` |
+| `movimientos() [controller]` | `backend/src/presentation/controllers/reporte-exportacion.controller.js` |
+| `validateExportacionMovimientos()` | `backend/src/business/validators/reporte.validator.js` |
+| `preparar()` | `backend/src/business/services/reporte.exportacion.service.js`: reporteExportacionService, objeto de funciones, no clase. |
+| `resumen()`, `bloque()` | `backend/src/data/repositories/reporte.extraccion.repository.js` |
+| `intentarRegistrar() [auditoria]` | Correspondencia común; terminal INVENTARIO_MOVIMIENTOS_EXPORTAR. |
+
+`COLUMNAS_REPORTE.MOVIMIENTOS` y `proyectarFila()` de `backend/src/business/services/reporte.plantillas.js` delimitan el archivo plano, incluidos nombreUsuario y referencias opcionales nulas. Los formatos, recepción binaria, perfiles LOCAL/Railway opt-in, errores y auditoría terminal se explican en las condiciones compartidas de la sección 17; no acreditan disponibilidad desplegada. Esta ampliación modifica solo CU40, no el diagrama de consulta CU24 ni su implementación compartida.
+
 ## 10. Cierre de Fase 5 y diferencias verificadas
 
 | Caso de uso | Diagramas | Alcance |
@@ -3414,7 +3444,7 @@ Los accesos desde existencias, compras y resultados de ajustes/retiros preparan 
 1. Un Boundary/un Control agrupan handlers, HTTP, Validators, Service, Repository y auxiliares funcionales esenciales; los hooks se resumen en el texto. toPublicInventario/toPublicExistencias se conservan por sus sumas y vendibilidad, sin expandir el formato/serialización internos. Los métodos usan `()` y los esquemas no se muestran como atributos de Control.
 2. CU21 exige existencias; CU37 conserva disponibilidad amplia y productos activos sin existencias. CU22 utiliza MAX SQL sin Repository de movimientos; CU23 usa lectura actual bloqueante del marcador. No se confunden proyecciones/precondiciones con columnas ni lectura de disponibilidad con historial.
 3. CU23 se alinea con RN129 y el código actual: la conciliación sin diferencia sí audita resultado sin cambios y existencia, sin snapshots, conteo, observación ni movimiento. Los ajustes efectivos confirman saldo/promedio/movimiento y auditoría juntos; no se agrega historial de conteos.
-4. CU24/CU40 conservan diagramas idénticos por implementación compartida, con objetivos oficiales separados. Se mantienen seis entidades reales, sus atributos sin tipos y las 18 asociaciones, incluidas referencias opcionales y reversión reflexiva; no se agregan cabeceras o entidades por mostrar FK.
+4. Al cierre de Fase 5, CU24/CU40 conservaban diagramas idénticos por implementación compartida, con objetivos oficiales separados. Se mantienen seis entidades reales, sus atributos sin tipos y las 18 asociaciones, incluidas referencias opcionales y reversión reflexiva; no se agregan cabeceras o entidades por mostrar FK. La ampliación posterior de Fase 9 incorpora la descarga únicamente al dibujo existente de CU40.
 
 **Fuentes de contraste:** CU21–CU24/CU37/CU40 del análisis completo; contexto-maestro, requerimientos RF15/RF17–RF19/RF29/RF34/RF37/RF39, reglas RN18/RN26–RN32/RN64–RN74/RN81–RN84/RN93/RN96/RN100/RN102–RN104/RN129 y casos-uso relacionados. Archivos de correspondencias; atributos/asociaciones reutilizados de los modelos aprobados. Endpoints/permisos con `backend/src/presentation/routes/inventario.router.js` y `frontend/src/app/router.jsx`; presentación/enlaces con InventarioTable, ExistenciasTable, MovimientosTable y AjusteResultado en `frontend/src/features/inventario/components/`. Hooks/configuración visual reutilizados de las fases anteriores.
 
@@ -4403,7 +4433,7 @@ classDiagram
 
 **Aclaraciones:** borrador es estado real de VentaFilters; sus propiedades representan criterios visuales y no columnas nuevas. No se elevan query/filtros/venta/consulta locales ni campos de DTO a atributos propios de VentasPage. Los hooks de lectura y los callbacks anónimos de paginación se resumen; no se inventan métodos de cargar/aplicar filtros.
 
-La ficha no consulta MovimientoInventario ni expone stock/promedio actuales. Receta solo aporta referencias y resultado, nunca paciente, médico ni archivo. La consulta de recetas completas del Regente corresponde a CU32, no a una facultad general de los tres roles en CU29. Las fechas de registro, confirmación y anulación son distintas; una pendiente no tiene fecha efectiva de venta. Los importes se muestran como fueron registrados. Los enlaces de registrar/confirmar/anular/revisar no ejecutan esas operaciones por consultar la ficha. Disponer de filtros por período no convierte CU29 en el reporte pendiente CU38.
+La ficha no consulta MovimientoInventario ni expone stock/promedio actuales. Receta solo aporta referencias y resultado, nunca paciente, médico ni archivo. La consulta de recetas completas del Regente corresponde a CU32, no a una facultad general de los tres roles en CU29. Las fechas de registro, confirmación y anulación son distintas; una pendiente no tiene fecha efectiva de venta. Los importes se muestran como fueron registrados. Los enlaces de registrar/confirmar/anular/revisar no ejecutan esas operaciones por consultar la ficha. Disponer de filtros por período no convierte CU29 en el reporte CU38, representado en la sección 17.
 
 ### CU30 — Anular venta
 
@@ -4609,7 +4639,7 @@ Resultado 200 tras commit. anular de VentaDetalle verifica ID, estado, fecha, re
 1. Se incorpora la implementación actual, incluidos archivos nuevos todavía no versionados. Su existencia no se confunde con despliegue, migración aplicada o aceptación manual. La migración de nulabilidad de recetas `backend/src/data/database/migrations/20261101120000-allow-null-receta-archivo.js` sigue siendo un requisito operativo separado para el registro sin adjuntos.
 2. CU28 no crea recetas junto con la cabecera: el contrato actual registra pendiente/detalles en una operación y recetas/vínculos en otra. La formulación de atomicidad conjunta de RN57 y algunas descripciones del catálogo no coincide literalmente con este recorrido; se documenta la implementación sin corregir otros archivos ni inventar una operación integral.
 3. `docs/ai/contexto-maestro.md`, `docs/ai/casos-uso.md` y `docs/ai/requerimientos.md` conservan notas de frontend pendiente/no acreditado e integración futura con auditoría. El software inspeccionado ya implementa los flujos anteriores; esta revisión documental no ejecuta sus pruebas ni sustituye evidencia de aceptación.
-4. Al cerrar Ventas, CU31/CU32 quedaron para el siguiente bloque; sus diagramas se incorporan posteriormente en la sección 15. CU38/CU39/CU41 siguen previstos, no implementados como casos completos; los listados filtrados y la pérdida de un retiro no se renombran como reportes. La sección final del contexto maestro confirma esta exclusión.
+4. Al cerrar Ventas, CU31/CU32 quedaron para el siguiente bloque; sus diagramas se incorporan posteriormente en la sección 15. CU38/CU39/CU41 estaban fuera de aquella entrega documental; su implementación actual se representa en la sección 17. Los listados operativos filtrados y la pérdida de un retiro no se renombran como reportes.
 
 **Fuentes de contraste:** CU28–CU30 de `docs/ai/casos-uso.md`, RF23–RF26/RF49 de `docs/ai/requerimientos.md`, RN48–RN62/RN71–RN74/RN77–RN79 de `docs/ai/reglas-negocio.md` y secciones 4.11/38 de `docs/ai/contexto-maestro.md`. Elementos, atributos y conexiones se respaldan en las tablas de cada CU; la auditoría transversal conserva el alcance simplificado de los bloques anteriores.
 
@@ -5022,17 +5052,17 @@ Los GET de apoyo de CU29 seleccionan más campos de los mostrados en el dibujo; 
 | 15. Recetas | CU31–CU32 | 2 | 2 |
 | **Total representado** | **CU01–CU37, CU40 y CU42** | **39** | **40** |
 
-El catálogo oficial tiene 42 CU: los 39 representados más CU38 — Consultar reporte de ventas, CU39 — Consultar reporte de compras y CU41 — Consultar pérdidas, pendientes de implementación. Estos tres no tienen diagrama y no se contabilizan como casos cubiertos ni como implementaciones parciales completadas. La ampliación agrega cinco CU/cinco diagramas respecto de los 34 CU/35 diagramas previos; no cambia IDs, actores, variantes ni agrupaciones de los casos anteriores.
+Al cierre de Recetas, el catálogo oficial tenía 42 CU: los 39 representados más CU38 — Consultar reporte de ventas, CU39 — Consultar reporte de compras y CU41 — Consultar pérdidas, implementados pero fuera de aquella entrega documental. La ampliación de Ventas/Recetas agregó cinco CU/cinco diagramas respecto de los 34 CU/35 diagramas previos. La sección 17 incorpora después los tres reportes y la sección 18 contiene la cobertura vigente; no cambian IDs, actores ni variantes anteriores.
 
 **Fuentes de contraste:** CU31/CU32 de `docs/ai/casos-uso.md`, RF27/RF28/RF49 de `docs/ai/requerimientos.md`, RN58–RN63 de `docs/ai/reglas-negocio.md` y sección 4.11 de `docs/ai/contexto-maestro.md`. El registro y la revisión se contrastan con los archivos/símbolos de sus tablas; los permisos se comprueban tanto en el router React como en los routers Express. Las discrepancias de atomicidad conjunta y notas de estado antiguas se conservan informadas en el cierre de Ventas; no se corrigen otros documentos.
 
-**Pendientes y límites:** CU38/CU39/CU41 continúan sin implementación completa y no se agregan. No se verifica aplicación de migraciones en destino ni aceptación funcional/despliegue. Se conserva el análisis académico original y todos los casos anteriores; la ampliación no agrega entidades ficticias ni un CU de consulta de recetas separado de su objetivo de revisión.
+**Pendientes y límites de aquella entrega:** CU38/CU39/CU41 no se agregaron al bloque Recetas; su representación actual está en Fase 9. No se verifica aplicación de migraciones en destino ni aceptación funcional/despliegue. Se conserva el análisis académico original y todos los casos anteriores; la ampliación no agrega entidades ficticias ni un CU de consulta de recetas separado de su objetivo de revisión.
 
 **Verificación del bloque:** las referencias identifican declaraciones, estado React real, campos de modelos, métodos propietarios y llamadas/asociaciones que respaldan los dos nuevos dibujos. La comprobación documental en Node confirma 39 CU distintos/40 diagramas, un Boundary/un Control por dibujo nuevo, correspondencia de las 62 apariciones de métodos y definición en sus modelos de las 57 apariciones de atributos Entity; verifica las 48 referencias a archivos de esta fase, los extremos declarados de las relaciones y los 17 selectores CSS de procedencia. Los atributos de formulario se contrastan con los inicializadores y propietarios de estado de las tablas, sin atribuirlos a los componentes que solo los reciben por props.
 
 Los 38 bloques Mermaid anteriores permanecen intactos por comparación SHA-256 con la línea base de esta entrega; también se conserva el hash del análisis académico original. `git diff --check` no informa errores de espacios y la única edición de esta fase es el documento autorizado. Mermaid tiene revisión estática, sin parser utilizable ni renderizado; se mantiene la limitación técnica explicada en el cierre de Ventas. No se ejecutan pruebas funcionales, navegador ni conexiones MySQL.
 
-**Revisión final de la ampliación Ventas/Recetas:**
+**Revisión final de la ampliación Ventas/Recetas (antecedente previo a Reportes):**
 
 | Comprobación | Resultado y alcance |
 |---|---|
@@ -5045,3 +5075,420 @@ Los 38 bloques Mermaid anteriores permanecen intactos por comparación SHA-256 c
 | Higiene y límites | `git diff --check` sin errores con la configuración vigente del repositorio; únicamente avisos de normalización LF/CRLF. Sin pruebas funcionales, acceso a MySQL, instalaciones, navegador, capturas, commit, push ni despliegue. |
 
 No se detectan discrepancias adicionales en esta revisión acotada. Permanecen las diferencias documentales y límites operativos señalados en los cierres anteriores: registro separado de venta/recetas frente a la formulación de atomicidad conjunta, notas antiguas de implementación y migración pendiente de comprobación en destino. Su resolución no se inventa ni se modifica en otros archivos.
+
+## 17. Fase 9 — Reportes y consultas
+
+### Condiciones compartidas
+
+| Caso de uso | Actores autorizados | Alcance incorporado |
+|---|---|---|
+| CU38 — Consultar reporte de ventas | Administrador. | Consulta paginada, estadísticas y exportación. |
+| CU39 — Consultar reporte de compras | Administrador. | Consulta paginada, estadísticas y exportación. |
+| CU40 — Consultar historial de inventario | Administrador o Regente. | Exportación TABULAR en el diagrama existente de la sección 9. |
+| CU41 — Consultar pérdidas | Administrador o Regente. | Consulta paginada, estadísticas y exportación. |
+
+**Recorrido y permisos:** `frontend/src/app/router.jsx`, símbolo router, monta `/reportes/ventas`, `/reportes/compras` y `/reportes/perdidas` con RoleRoute según la tabla. CU40 conserva `/inventario/movimientos`. `backend/src/app.js` monta reporteRouter en `/api/reportes` e inventarioRouter en `/api/inventario`. `backend/src/presentation/routes/reporte.router.js` e `inventario.router.js` aplican authMiddleware/requireRole antes de consultar o generar archivos. Vendedor no accede; el permiso operativo de compras del Regente no concede CU39. No se amplían aquí los detalles de autenticación.
+
+**Notación y alcance BCE:** se conserva la convención de Fases 7/8: un Boundary y un Control agrupados, métodos reales con `()` sin parámetros/retornos, atributos sin tipos ni modificadores de visibilidad. Boundary reúne funciones React, hooks y HTTP; Control reúne Controller, Validator, Service, Repository y funciones de módulo, no una clase literal nueva. Los homónimos se distinguen mediante las etiquetas CSS existentes y la correspondencia inferior. El dibujo ampliado de CU40 mantiene la notación de su bloque original.
+
+**Entidades y resultados:** no hay entidades Reporte, Estadistica, Grafica, Exportacion, Perdida, Alerta o Inventario. Solo se dibujan los modelos persistentes pertinentes. periodo/resumen/detalle/paginacion y fuente/filtros/granularidad/sinDatos/intervalos/series/distribuciones son estructuras calculadas de respuesta, no tablas ni atributos nuevos de las entidades. categoria y fechaReferencia también son proyecciones. Las asociaciones entre entidades de CU41 ya existen en los modelos; no se introducen herencia, composición ni entidades por cada FK.
+
+**Consulta ordinaria:** CU38/CU39/CU41 exigen exactamente día, mes o desde/hasta cerrado, sin modalidad predeterminada. Fechas civiles America/La_Paz inclusivas, años 1000–9999 y futuros admitidos; no se convierten históricos a UTC. El filtro propio opcional es estadoOperacion en ventas/compras o motivo en pérdidas. Query estricta; detalle paginado, 1/25 por defecto y límite máximo 100. Resumen y conteo abarcan todas las coincidencias y comparten snapshot REPEATABLE READ con la página, sin bloqueo de escritura ni modificación de negocio. Orden por fecha de referencia e ID descendentes. Otra solicitud puede observar cambios. Vacío devuelve 200 con ceros/lista vacía; página lejana conserva resumen/total y no se reajusta. Entrada inválida 400, sesión/rol 401/403 y fallo técnico 500 seguro.
+
+**Interfaz:** ReporteFilters recibe borrador del hook useReporteConsulta; Buscar valida y aplica criterios en URL, Limpiar retira el período y paginar conserva lo aplicado. Los controles no inventan handlers de página: buscar/cambiarConsulta/cambiarVista pertenecen al hook. ReporteOperacionesConsulta coordina ventas/compras; PerdidasPage coordina pérdidas. Los efectos y callbacks anónimos se resumen. ReporteFuenteEstadisticas mantiene granularidad y seleccionLocal; ExportacionTabular mantiene formato. Los atributos de Boundary identifican ese estado real compartido, no campos propios de una clase de página ni todos los valores de la respuesta.
+
+**Estadísticas y gráficas:** las tres rutas `/estadisticas` conservan período/filtro y exigen granularidad DIA/MES/ANIO. Backend agrega y concilia resumen, series y distribuciones en el mismo snapshot; construye hasta 1200 intervalos naturales ascendentes, con parciales en los extremos y ceros incluso en categorías excluidas. No incluye detalle operativo ni paginación. Importes y valores de series/distribuciones son cadenas exactas; costos históricos conservan seis decimales. No hay porcentajes, ganancias, promedios ni pronósticos. ReporteEstadisticas presenta barras/líneas por panel de hasta 60 intervalos y sectores del período completo, con tablas exactas; ocultar categorías no cambia totales. React aproxima solo geometría, no calcula indicadores de negocio. Cambiar gráfica/métrica no solicita otro cálculo JSON; aplicar otra granularidad sí cambia la consulta. El GET ordinario continúa sin series.
+
+**Exportaciones compartidas:** cada `/exportar` de Reportes admite TABULAR/ESTADISTICA en CSV/XLSX/PDF; son variantes de los CU existentes. TABULAR extrae todas las coincidencias, no la página visible, mediante resumen/bloque con bloques de hasta 1000 filas y archivo temporal conciliado. ESTADISTICA exporta todas las métricas/categorías/intervalos/ceros, no solo la gráfica o panel visible ni un detalle operativo adicional. PDF/XLSX estadísticos requieren grafico/metrica compatibles e incluyen PNG generada en backend más tabla exacta; XLSX no contiene un gráfico nativo editable. CSV contiene datos sin imagen y rechaza esos selectores. La lectura termina antes de generar el documento; cada descarga tiene snapshot propio, no comparte el de la pantalla. No se recortan resultados para encajar límites.
+
+Disponibilidad comprobada por el servidor: perfil LOCAL o Railway opt-in con guardas de entorno/recursos; su implementación no acredita despliegue ni habilitación productiva. Archivo completo verificado, MIME/attachment/longitud y 200 incluso sin coincidencias; 400 por incompatibilidad, 413 por límite, 503 por ocupado/no disponible/plazo y 500 técnico seguro. Después de enviar cabeceras no se intenta un segundo JSON. recibirArchivo valida el binario antes de activarDescarga; cancelar o cambiar contexto invalida la recepción, sin prometer detener SQL ni deshacer auditoría. No hay reintento automático ni garantía de guardado/apertura por el usuario.
+
+**Auditoría simplificada:** intentarRegistrar registra la lectura/estadística después de materializar y cerrar el snapshot. Exportación emite un terminal único; EXITO solo después de entrega terminada en servidor y bytes completos, no al crear el archivo. Fallo exclusivo del auditor no sustituye la respuesta o archivo correctos. Se resumen temporales, limpieza, cuotas y controles de recursos sin clases técnicas adicionales; `contratos-reportes-react.md` y `exportaciones-railway.md` conservan los límites operativos.
+
+**Correspondencia compartida de esta fase:**
+
+| Funciones o participantes | Archivo real y respaldo |
+|---|---|
+| `buscar()`, `cambiarConsulta()`, `cambiarVista()`; estado `borrador` | `frontend/src/features/reportes/hooks/useReporteConsulta.js`; invoca useConsulta y serializadores, sin calcular resúmenes. |
+| `leerConsultaReporteAmpliada()`, `validarFiltrosReporte()`, serializadores de consulta/estadística/exportación | `frontend/src/features/reportes/utils/consultaReporte.js`; separa parámetros UI de HTTP. |
+| `granularidad`, `seleccionLocal`; selección del servicio estadístico por fuente | `frontend/src/features/reportes/components/ReporteFuenteEstadisticas.jsx`; lectura mediante `frontend/src/features/reportes/hooks/useReporteEstadisticas.js`. |
+| `ReporteEstadisticas`; selección gráfica y tablas | `frontend/src/features/reportes/components/ReporteEstadisticas.jsx`; geometría mediante escalaSeries/proporcionVisual de `frontend/src/features/reportes/utils/escalaEstadistica.js`. |
+| `formato`; ExportacionTabular selecciona el servicio HTTP | `frontend/src/features/reportes/components/ExportacionTabular.jsx`. |
+| `prepararTabular()`, `prepararEstadistica()` | `frontend/src/features/reportes/utils/exportacionTabular.js`; usa criterios aplicados, retira paginación legítima y no exporta borradores. |
+| `iniciar()`, `cancelar()` | `frontend/src/features/reportes/hooks/useExportacionTabular.js`; evita duplicados y respuestas de contextos anteriores. |
+| `recibirArchivo()`, `activarDescarga()` | `frontend/src/utils/descargaBinaria.js` y `frontend/src/utils/activarDescarga.js`; recepción validada y activación del navegador separadas. |
+| `materializarEstadisticas()`, `construirIntervalos()`, `comprobarLimiteIntervalos()` | `backend/src/business/services/reporte.estadisticas.js`; valores exactos/ceros y conciliación. |
+| `preparar()`, `comprobarDisponibilidad()` | `backend/src/business/services/reporte.exportacion.service.js`: objeto reporteExportacionService; coordina lectura/generación/entrega terminal, no es una clase. |
+| `resumen()`, `bloque()` | `backend/src/data/repositories/reporte.extraccion.repository.js`: reporteExtraccionRepository; fuente explícita y snapshot recibido. |
+| `COLUMNAS_REPORTE`, `proyectarFila()`, `filasEstadisticas()`, `crearConciliacion()` | `backend/src/business/services/reporte.plantillas.js`; proyecciones completas y comprobación de filas/totales. |
+| `generarPdf()`, `generarXlsx()`, `registroCsv()` | `backend/src/shared/utils/reporte-pdf.js`, `reporte-xlsx.js` y `reporte-csv.js`; llamados por preparar. |
+| `pasadaPdfEstadistica()`, `generarXlsxEstadistica()`, `generarPanel()` | `backend/src/shared/utils/reporte-pdf-estadistica.js`, `reporte-xlsx-estadistica.js` y `reporte-grafica.js`; generan documento/PNG a partir de estadísticas, no capturas de React. |
+| `intentarRegistrar() [auditoria]` | `backend/src/business/services/bitacora-auditoria.service.js`; invocado por reporteService o el terminal del Service de exportación. |
+
+### CU38 — Consultar reporte de ventas
+
+**Actor:** Administrador autenticado. **Endpoints:** `GET /api/reportes/ventas`, `GET /api/reportes/ventas/estadisticas` y `GET /api/reportes/ventas/exportar`. **Vista:** `/reportes/ventas`.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(2) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(3) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(7) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(8) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(16) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Administrador["○<br/>─┼─<br/>╱ ╲<br/>Administrador"]
+    class Administrador { <<actor>> }
+    class Boundary["ReporteVentasPage · frontend agrupado"] {
+        <<boundary>>
+        borrador.modalidad
+        borrador.dia
+        borrador.mes
+        borrador.desde
+        borrador.hasta
+        borrador.estadoOperacion
+        granularidad
+        formato
+        buscar()
+        cambiarConsulta()
+        cambiarVista()
+        getReporteVentas()
+        getEstadisticasVentas()
+        prepararTabular()
+        prepararEstadistica()
+        iniciar()
+        cancelar()
+        exportarReporteVentas()
+    }
+    class Control["reporteController · backend agrupado"] {
+        <<control>>
+        %% consultarVentas() [controller]
+        consultarVentas()
+        %% estadisticasVentas() [controller]
+        estadisticasVentas()
+        %% ventas() [controller]
+        ventas()
+        validateVentas()
+        validateEstadisticasVentas()
+        validateExportacionVentas()
+        %% consultarVentas() [service]
+        consultarVentas()
+        %% estadisticasVentas() [service]
+        estadisticasVentas()
+        consultarVentas()
+        estadisticasVentas()
+        materializarResumenVentas()
+        materializarEstadisticas()
+        preparar()
+        resumen()
+        bloque()
+        %% intentarRegistrar() [auditoria]
+        intentarRegistrar()
+    }
+    class Venta {
+        <<entity>>
+        id_venta
+        estado_operacion
+        fecha_registro
+        fecha_venta
+        fecha_anulacion
+        total
+    }
+    Administrador --> Boundary : consulta representa y descarga
+    Boundary ..> Control : GET /api/reportes/ventas
+    Boundary ..> Control : GET /api/reportes/ventas/estadisticas
+    Boundary ..> Control : GET /api/reportes/ventas/exportar
+    Control --> Venta : consulta cabeceras y agrega por categoria
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Administrador" actor
+```
+
+**Colaboración:** ReporteVentasPage configura ReporteOperacionesConsulta con getReporteVentas, ReporteVentasResumen y ReporteVentasTable. buscar del hook aplica el borrador; Controller valida y Service coordina resumen/página mediante reporteRepository. Estadísticas usan su operación separada, con las mismas categorías/eje temporal. ExportacionTabular selecciona exportarReporteVentas y preparar del backend genera TABULAR o ESTADISTICA según los criterios, no desde el resultado visible de React.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| ReporteVentasPage y coordinación; estado `borrador` según correspondencia compartida | `frontend/src/features/reportes/pages/ReporteVentasPage.jsx`; `frontend/src/features/reportes/components/ReporteOperacionesConsulta.jsx`. |
+| `getReporteVentas()`, `getEstadisticasVentas()`, `exportarReporteVentas()` de Boundary: HTTP | `frontend/src/features/reportes/services/reporte.service.js` |
+| `consultarVentas() [controller]`, `estadisticasVentas() [controller]` | `backend/src/presentation/controllers/reporte.controller.js` |
+| `ventas() [controller]`: reporteExportacionController | `backend/src/presentation/controllers/reporte-exportacion.controller.js` |
+| `validateVentas()`, `validateEstadisticasVentas()`, `validateExportacionVentas()` | `backend/src/business/validators/reporte.validator.js` |
+| `consultarVentas() [service]`, `estadisticasVentas() [service]` | `backend/src/business/services/reporte.service.js` |
+| Tercer `consultarVentas()`/`estadisticasVentas()` de Control, sin etiqueta: reporteRepository | `backend/src/data/repositories/reporte.repository.js` |
+| `materializarResumenVentas()`; `materializarVenta()` proyecta detalle | `backend/src/business/services/reporte.materializacion.js` |
+| Venta: los seis atributos; categoría/eje no persistentes | `backend/src/data/models/venta.js`: Venta.init; `backend/src/data/repositories/reporte.criterios.js`: criteriosVentas, categoriaVenta y fechaReferenciaVenta. |
+| Funciones restantes de Boundary/Control | Correspondencia compartida de esta fase. |
+
+**Condiciones verificadas:** CONFIRMADA y ANULADA_CONFIRMADA utilizan fecha_venta; PENDIENTE y ANULADA_SIN_CONFIRMAR, fecha_registro. ANULADA selecciona ambas categorías de anulación; fechaVenta permanece null donde corresponde. Cada categoría cuenta cabeceras y suma Venta.total histórico; totalVentasRealizadas es únicamente confirmadas.importe. No se restan anuladas ni se contabilizan pendientes como ingresos. Una anulación posterior puede reclasificar un período pasado; no es cierre contable ni flujo negativo imputado a fecha_anulacion.
+
+**Aclaraciones:** solo se consulta Venta, sin joins a detalles, recetas, usuarios o catálogo ni multiplicación de importes por líneas. Las seis columnas seleccionadas son comunes al detalle de consulta/descarga; no hay métodos de negocio en la Entity. Estadísticas contienen CANTIDAD e IMPORTE en las cuatro categorías, ocho series con ceros. La distribución de importe de todas las categorías no equivale al total realizado. Los enlaces de ReporteVentasTable a CU29 consultan después la ficha operativa: no incorporan ese DTO ni sus entidades a este reporte. Eventos principales: REPORTE_VENTAS_CONSULTAR, REPORTE_VENTAS_ESTADISTICAS y terminal REPORTE_VENTAS_EXPORTAR.
+
+### CU39 — Consultar reporte de compras
+
+**Actor:** Administrador autenticado. **Endpoints:** `GET /api/reportes/compras`, `GET /api/reportes/compras/estadisticas` y `GET /api/reportes/compras/exportar`. **Vista:** `/reportes/compras`.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(2) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(3) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(7) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(8) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(16) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Administrador["○<br/>─┼─<br/>╱ ╲<br/>Administrador"]
+    class Administrador { <<actor>> }
+    class Boundary["ReporteComprasPage · frontend agrupado"] {
+        <<boundary>>
+        borrador.modalidad
+        borrador.dia
+        borrador.mes
+        borrador.desde
+        borrador.hasta
+        borrador.estadoOperacion
+        granularidad
+        formato
+        buscar()
+        cambiarConsulta()
+        cambiarVista()
+        getReporteCompras()
+        getEstadisticasCompras()
+        prepararTabular()
+        prepararEstadistica()
+        iniciar()
+        cancelar()
+        exportarReporteCompras()
+    }
+    class Control["reporteController · backend agrupado"] {
+        <<control>>
+        %% consultarCompras() [controller]
+        consultarCompras()
+        %% estadisticasCompras() [controller]
+        estadisticasCompras()
+        %% compras() [controller]
+        compras()
+        validateCompras()
+        validateEstadisticasCompras()
+        validateExportacionCompras()
+        %% consultarCompras() [service]
+        consultarCompras()
+        %% estadisticasCompras() [service]
+        estadisticasCompras()
+        consultarCompras()
+        estadisticasCompras()
+        materializarResumenCompras()
+        materializarEstadisticas()
+        preparar()
+        resumen()
+        bloque()
+        %% intentarRegistrar() [auditoria]
+        intentarRegistrar()
+    }
+    class Compra {
+        <<entity>>
+        id_compra
+        id_proveedor_laboratorio
+        estado_operacion
+        fecha_compra
+        fecha_registro
+        fecha_anulacion
+        total
+    }
+    Administrador --> Boundary : consulta representa y descarga
+    Boundary ..> Control : GET /api/reportes/compras
+    Boundary ..> Control : GET /api/reportes/compras/estadisticas
+    Boundary ..> Control : GET /api/reportes/compras/exportar
+    Control --> Compra : consulta cabeceras y agrega por estado
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Administrador" actor
+```
+
+**Colaboración:** ReporteComprasPage configura el componente compartido con getReporteCompras, ReporteComprasResumen y ReporteComprasTable. El hook aplica criterios y el backend valida/consulta cabeceras. Estadísticas agrega por adquisición y estado; la descarga usa el mismo pipeline compartido de extracción completa o materialización estadística, sin calcular desde la página de detalle.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| ReporteComprasPage y coordinación; estado del hook/componente compartidos | `frontend/src/features/reportes/pages/ReporteComprasPage.jsx`; `frontend/src/features/reportes/components/ReporteOperacionesConsulta.jsx`. |
+| `getReporteCompras()`, `getEstadisticasCompras()`, `exportarReporteCompras()` de Boundary: HTTP | `frontend/src/features/reportes/services/reporte.service.js` |
+| `consultarCompras() [controller]`, `estadisticasCompras() [controller]` | `backend/src/presentation/controllers/reporte.controller.js` |
+| `compras() [controller]`: reporteExportacionController | `backend/src/presentation/controllers/reporte-exportacion.controller.js` |
+| `validateCompras()`, `validateEstadisticasCompras()`, `validateExportacionCompras()` | `backend/src/business/validators/reporte.validator.js` |
+| `consultarCompras() [service]`, `estadisticasCompras() [service]` | `backend/src/business/services/reporte.service.js` |
+| Tercer `consultarCompras()`/`estadisticasCompras()` de Control, sin etiqueta: reporteRepository | `backend/src/data/repositories/reporte.repository.js` |
+| `materializarResumenCompras()`; `materializarCompra()` proyecta detalle | `backend/src/business/services/reporte.materializacion.js` |
+| Compra: los siete atributos y selección por adquisición | `backend/src/data/models/compra.js`: Compra.init; `backend/src/data/repositories/reporte.criterios.js`: criteriosCompras. |
+| Funciones restantes de Boundary/Control | Correspondencia compartida de esta fase. |
+
+**Condiciones verificadas:** fecha_compra es el eje inclusivo, no fecha_registro ni fecha_anulacion. CONFIRMADA/ANULADA cuentan cabeceras y suman Compra.total histórico por separado. totalComprasRealizadas es solo confirmadas.importe; anuladas conserva importe informativo positivo, sin descontarlo nuevamente ni recalcular detalles/costos. Estadísticas ofrece CANTIDAD/IMPORTE en dos categorías, cuatro series conciliadas, manteniendo ceros para el estado excluido por filtro.
+
+**Aclaraciones:** id_proveedor_laboratorio se lee de la cabecera y se presenta como ID. No se carga ProveedorLaboratorio, Usuario, DetalleCompra, Medicamento o ExistenciaMedicamento en consulta, estadísticas o descarga; no se excluye por proveedor inactivo ni se deduce proveedor desde el catálogo. Por eso el dibujo no agrega entidades/asociaciones solo por esa FK. Los enlaces de ReporteComprasTable abren CU26 después, con su permiso independiente; no convierten el reporte en consulta operativa. Eventos: REPORTE_COMPRAS_CONSULTAR, REPORTE_COMPRAS_ESTADISTICAS y terminal REPORTE_COMPRAS_EXPORTAR.
+
+### Historial compartido con Inventario — referencia a CU40
+
+CU40 mantiene su ubicación y único diagrama en la sección 9, ahora ampliado con la descarga TABULAR. MovimientosPage reutiliza ExportacionTabular con fuente=movimientos; no existe una página ReporteHistorial ni estadística de inventario. La extracción completa conserva sus filtros abiertos, referencias y proyección plana sin observacion, distinta del GET de CU24/CU40. Esta referencia respeta el orden CU38/CU39/CU40/CU41 sin contar otra vez el caso o dibujar otra implementación.
+
+### CU41 — Consultar pérdidas
+
+**Actores:** Administrador o Regente autenticado. **Endpoints:** `GET /api/reportes/perdidas`, `GET /api/reportes/perdidas/estadisticas` y `GET /api/reportes/perdidas/exportar`. **Vista:** `/reportes/perdidas`.
+
+```mermaid
+%%{init: {"theme":"base","htmlLabels":true,"markdownAutoWrap":false,"class":{"useMaxWidth":false},"themeCSS":".node.actor .label-container path{stroke:none!important;fill:none!important;} .node.actor .divider{display:none;} .nodeLabel{color:#000000!important;} .node .label div{display:table-cell!important;white-space:nowrap!important;max-width:none!important;} .control .methods-group .label:nth-child(1) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(2) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(3) p::after{content:\" [controller]\";}.control .methods-group .label:nth-child(7) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(8) p::after{content:\" [service]\";}.control .methods-group .label:nth-child(17) p::after{content:\" [auditoria]\";}","themeVariables":{"background":"#ffffff","primaryColor":"#ffffff","primaryTextColor":"#000000","primaryBorderColor":"#000000","secondaryColor":"#ffffff","tertiaryColor":"#ffffff","lineColor":"#000000","textColor":"#000000","fontFamily":"Arial","fontSize":"18px"}}}%%
+%%{init: {"state":{"useMaxWidth":false}}}%%
+classDiagram
+    direction LR
+    class Administrador["○<br/>─┼─<br/>╱ ╲<br/>Administrador"]
+    class Regente["○<br/>─┼─<br/>╱ ╲<br/>Regente"]
+    class Administrador { <<actor>> }
+    class Regente { <<actor>> }
+    class Boundary["PerdidasPage · frontend agrupado"] {
+        <<boundary>>
+        borrador.modalidad
+        borrador.dia
+        borrador.mes
+        borrador.desde
+        borrador.hasta
+        borrador.motivo
+        granularidad
+        formato
+        buscar()
+        cambiarConsulta()
+        cambiarVista()
+        getReportePerdidas()
+        getEstadisticasPerdidas()
+        prepararTabular()
+        prepararEstadistica()
+        iniciar()
+        cancelar()
+        exportarReportePerdidas()
+    }
+    class Control["reporteController · backend agrupado"] {
+        <<control>>
+        %% consultarPerdidas() [controller]
+        consultarPerdidas()
+        %% estadisticasPerdidas() [controller]
+        estadisticasPerdidas()
+        %% perdidas() [controller]
+        perdidas()
+        validatePerdidas()
+        validateEstadisticasPerdidas()
+        validateExportacionPerdidas()
+        %% consultarPerdidas() [service]
+        consultarPerdidas()
+        %% estadisticasPerdidas() [service]
+        estadisticasPerdidas()
+        consultarPerdidas()
+        estadisticasPerdidas()
+        materializarPerdida()
+        materializarResumenPerdidas()
+        materializarEstadisticas()
+        preparar()
+        resumen()
+        bloque()
+        %% intentarRegistrar() [auditoria]
+        intentarRegistrar()
+    }
+    class MovimientoInventario {
+        <<entity>>
+        id_movimiento
+        id_existencia
+        id_usuario
+        direccion
+        motivo
+        id_movimiento_original
+        fecha_movimiento
+        cantidad
+        costo_unitario_aplicado
+    }
+    class ExistenciaMedicamento {
+        <<entity>>
+        id_existencia
+        id_medicamento
+        codigo_existencia
+    }
+    class Medicamento {
+        <<entity>>
+        id_medicamento
+        codigo_medicamento
+        nombre_comercial
+    }
+    Administrador --> Boundary : consulta representa y descarga
+    Regente --> Boundary : consulta representa y descarga
+    Boundary ..> Control : GET /api/reportes/perdidas
+    Boundary ..> Control : GET /api/reportes/perdidas/estadisticas
+    Boundary ..> Control : GET /api/reportes/perdidas/exportar
+    Control --> MovimientoInventario : selecciona originales valora y agrega
+    Control --> ExistenciaMedicamento : incluye identificacion en detalle tabular
+    Control --> Medicamento : incluye codigo y nombre actuales en detalle tabular
+    Medicamento "1" -- "0..*" ExistenciaMedicamento : existencias
+    ExistenciaMedicamento "1" -- "0..*" MovimientoInventario : movimientosInventario
+    MovimientoInventario "0..1" -- "0..1" MovimientoInventario : movimientoReversion
+    cssClass "Control" control
+    classDef actor fill:#ffffff,stroke-width:0px,color:#000000
+    cssClass "Administrador,Regente" actor
+```
+
+**Colaboración:** PerdidasPage usa useReporteConsulta y muestra PerdidasResumen/PerdidasTable; comparte filtros, estadísticas y descargas con los otros reportes. El backend selecciona retiros originales, agrega con redondeo individual y materializa el detalle mínimo, incluida la referencia eventual de reversión. Estadísticas lee únicamente agregados de movimientos, sin catálogo/detalle operativo. La descarga TABULAR utiliza las relaciones de identificación; ESTADISTICA materializa todas las métricas desde agregados.
+
+**Correspondencia principal:**
+
+| Funciones o atributos | Archivo real |
+|---|---|
+| PerdidasPage; estado del hook y componentes compartidos | `frontend/src/features/reportes/pages/PerdidasPage.jsx`; correspondencia compartida. |
+| `getReportePerdidas()`, `getEstadisticasPerdidas()`, `exportarReportePerdidas()` de Boundary: HTTP | `frontend/src/features/reportes/services/reporte.service.js` |
+| `consultarPerdidas() [controller]`, `estadisticasPerdidas() [controller]` | `backend/src/presentation/controllers/reporte.controller.js` |
+| `perdidas() [controller]`: reporteExportacionController | `backend/src/presentation/controllers/reporte-exportacion.controller.js` |
+| `validatePerdidas()`, `validateEstadisticasPerdidas()`, `validateExportacionPerdidas()` | `backend/src/business/validators/reporte.validator.js` |
+| `consultarPerdidas() [service]`, `estadisticasPerdidas() [service]` | `backend/src/business/services/reporte.service.js` |
+| Tercer `consultarPerdidas()`/`estadisticasPerdidas()` de Control, sin etiqueta: reporteRepository | `backend/src/data/repositories/reporte.repository.js` |
+| `materializarPerdida()`, `materializarResumenPerdidas()` | `backend/src/business/services/reporte.materializacion.js` |
+| Selección original y pérdida individual SQL | `backend/src/data/repositories/reporte.criterios.js`: criteriosPerdidas y perdidaIndividual. |
+| Funciones restantes de Boundary/Control | Correspondencia compartida de esta fase. |
+
+**Entidades y relaciones verificadas:**
+
+| Elemento del diagrama | Archivo real y evidencia |
+|---|---|
+| MovimientoInventario | `backend/src/data/models/movimiento-inventario.js`: init define los nueve atributos seleccionados; associate declara existencia, movimientoOriginal y movimientoReversion. id_movimiento_original opcional y único respalda reversión `0..1` en ambos extremos. Los predicados utilizan direccion/motivo/original/fecha; el detalle lee cantidad/costo/responsable y el ID de la reversión mediante include. |
+| ExistenciaMedicamento | `backend/src/data/models/existencia-medicamento.js`: init define id_existencia/id_medicamento/codigo_existencia; associate declara medicamento y movimientosInventario. FK obligatoria del movimiento respalda existencia `1` a movimientos `0..*`. |
+| Medicamento | `backend/src/data/models/medicamento.js`: init define id_medicamento/codigo_medicamento/nombre_comercial y associate declara existencias. FK obligatoria de la existencia respalda medicamento `1` a existencias `0..*`. |
+| Participación concreta | `reporteRepository.consultarPerdidas()` y la selección PERDIDAS de `reporteExtraccionRepository.bloque()` incluyen existencia/medicamento/movimientoReversion. Las estadísticas y resúmenes no hacen esos joins. No hay consulta de Usuario por mostrar id_usuario. |
+
+**Condiciones verificadas:** solo direccion=SALIDA, motivo VENCIMIENTO/DAÑO e id_movimiento_original NULL, por fecha_movimiento civil inclusiva. Excluye ventas, ajustes y compensaciones; no excluye productos inactivos ni existencias agotadas/vencidas. La pérdida bruta utiliza cantidad × costo_unitario_aplicado histórico de seis decimales, admitido cero, redondeado por movimiento a centavos antes de sumar. Dos retiros de 1 × 0.005000 suman 0.02, no 0.01. No usa costo promedio actual ni precio de venta.
+
+**Aclaraciones:** resumen por vencimiento/dano y global con cantidadRetiros/cantidadRetirada/perdidaTotal; cantidades agregadas son cadenas enteras exactas. idMovimientoReversion informa la referencia incluso fuera del período, sin descontarla ni habilitar reversión operativa de retiros. Estadísticas ofrece seis series: CANTIDAD_RETIROS, CANTIDAD_RETIRADA y PERDIDA por motivo. Solo retiros/pérdida se grafican; las unidades heterogéneas retiradas permanecen en tablas/archivo, sin equivalencia farmacéutica inventada. No se consulta saldo, vencimiento o promedio actual. PerdidasTable enlaza después al historial CU40 por producto/existencia, sin volverlo parte del cálculo ni duplicarlo. Eventos: REPORTE_PERDIDAS_CONSULTAR, REPORTE_PERDIDAS_ESTADISTICAS y terminal REPORTE_PERDIDAS_EXPORTAR.
+
+## 18. Cierre del bloque Reportes y cobertura acumulada
+
+| Caso de uso | Diagramas añadidos | Alcance |
+|---|---|---|
+| CU38 — Consultar reporte de ventas | 1 | Cabeceras, cuatro categorías y realizadas solo confirmadas; estadísticas/exportación. |
+| CU39 — Consultar reporte de compras | 1 | Adquisición, estados e importes históricos; estadísticas/exportación. |
+| CU40 — Consultar historial de inventario | 0 | Ampliado el diagrama existente de Inventario con TABULAR, sin otro listado/estadística. |
+| CU41 — Consultar pérdidas | 1 | Retiros brutos, redondeo individual y reversión informativa; estadísticas/exportación. |
+| **Total añadido en Reportes** | **3** | **Tres CU antes ausentes y un CU existente ampliado.** |
+| **Cobertura vigente** | **43** | **42 CU: CU01–CU42; CU08 mantiene las variantes A y B.** |
+
+**Inventario acumulado por paquete documental:**
+
+| Sección / paquete | Casos representados | Cantidad de CU | Cantidad de diagramas |
+|---|---|---|---|
+| 1. Autenticación, Usuarios y Recuperación | CU01–CU09 | 9 | 10 |
+| 3. Proveedores y Laboratorios | CU10–CU13 | 4 | 4 |
+| 5. Medicamentos, Principios Activos y Composición | CU14–CU20 | 7 | 7 |
+| 7. Compras | CU25–CU27 | 3 | 3 |
+| 9. Inventario, Ajustes, Movimientos y Stock bajo | CU21–CU24, CU37 y CU40 ampliado | 6 | 6 |
+| 11. Vencimientos, Retiros y Bitácora | CU33–CU36 y CU42 | 5 | 5 |
+| 13. Ventas | CU28–CU30 | 3 | 3 |
+| 15. Recetas | CU31–CU32 | 2 | 2 |
+| 17. Reportes y consultas | CU38, CU39 y CU41; referencia a CU40 sin repetirlo | 3 | 3 |
+| **Total representado** | **CU01–CU42** | **42** | **43** |
+
+**Diferencias y decisiones verificadas:**
+
+1. CU38/CU39/CU41 ya están implementados en backend/frontend. Se sustituyen las notas contradictorias de pendiente funcional de los cierres anteriores por referencias al bloque actual; sus cantidades/verificaciones históricas no se convierten en una nueva aceptación. No se reconstruye implementación desde fases.md ni se modifican documentos normativos.
+2. Estadísticas, gráficas y formatos son ampliaciones de los CU existentes, no nuevos códigos ni entidades. El resumen completo no se obtiene sumando la página en React. Campos de respuesta y estado de presentación no se confunden con columnas persistentes.
+3. CU40 permanece en Inventario. Solo su dibujo se amplía; CU24 conserva el recorrido de consulta compartido. La extracción de exportación no cambia el GET ni introduce otro historial, saldos reconstruidos o resumen monetario.
+4. Las consultas no persisten reportes ni modifican operaciones/inventario. Se preservan categorías, fechas, costos e importes históricos y la distinción entre totales informativos/realizados y pérdidas brutas/netas. Railway opt-in no demuestra disponibilidad del despliegue.
+
+**Fuentes de contraste:** AGENTS.md de raíz/backend/frontend; CU38–CU41, RF35–RF38/RI12, RN91/RN97–RN101 y sección 39 del contexto maestro; `contratos-reportes-react.md` y `exportaciones-railway.md`. Los archivos/símbolos de cada correspondencia respaldan los dibujos. Presentación/enlaces contrastados con `ReporteVentasResultado.jsx`, `ReporteComprasResultado.jsx` y `PerdidasResultado.jsx` de `frontend/src/features/reportes/components/`; filtros compartidos con ReporteFilters y sus páginas/hooks. Las referencias a modelos indican declaraciones init/associate; las consultas de Repository confirman la participación efectiva, no solo la existencia del campo.
+
+**Pruebas existentes como evidencia complementaria, no ejecutadas en esta entrega:** `backend/tests/reporte.base.test.js` comprueba predicados, campos públicos y redondeo; `reporte.compras.test.js`, `reporte.ventas.test.js` y `reporte.perdidas.test.js` cubren HTTP/roles/resumen/página con transporte simulado. `reporte.estadisticas.test.js` y `reporte.perdidas.estadisticas.test.js` cubren intervalos, ceros y conciliación; `reporte.ampliacion.validator.test.js` incluye filtros abiertos de CU40 y compatibilidades. `reporte.conjunta.test.js` contempla 21 variantes de archivo, entrega y auditoría sobre fixtures simulados; `reporte.railway.test.js` simula guardas de entorno, no un contenedor desplegado. En frontend, `frontend/tests/reportes-services.test.mjs`, `reportes-estadisticas.browser.test.mjs` y `reportes-tabular.browser.test.mjs` respaldan consumo/presentación/descargas con API simulada. Su existencia y aserciones no acreditan una nueva ejecución exitosa. La evidencia MySQL histórica conserva los límites de la matriz de contratos, sin aceptación integrada/productiva nueva.
+
+**Verificación documental y límites:** lectura de código, nombres/propietarios de funciones, estado React, campos de modelos, consultas/includes, tres asociaciones de CU41 y permisos revisados. La comprobación documental en Node confirma 42 CU distintos/43 diagramas, secciones 0–18 y navegación superior válida. En los cuatro dibujos afectados comprueba 95 apariciones de métodos en sus archivos propietarios, 53 atributos Entity contra los modelos, 22 etiquetas CSS en sus filas exactas, directivas init como JSON y extremos declarados de relaciones. Hay tres diagramas nuevos y uno modificado; los otros 39 permanecen idénticos a la copia inicial de trabajo. Un Boundary/un Control en cada dibujo afectado. Mermaid tiene revisión estática de sintaxis, sin parser utilizable ni renderizado; no se instalan herramientas. `git diff --check` acotado al documento sin errores de espacios, con aviso de normalización LF/CRLF; diff revisado frente a la copia inicial de trabajo. Estos controles documentales no importan ni ejecutan módulos de aplicación. No se ejecutan flujos, pruebas funcionales ni navegador; no hay acceso a MySQL/datos reales, migraciones, despliegues, commits o pushes. Solo se modifica el archivo autorizado y se conserva el trabajo ajeno preexistente.

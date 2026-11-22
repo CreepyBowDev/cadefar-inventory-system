@@ -5,11 +5,13 @@ import { finished } from 'node:stream/promises';
 import { COLUMNAS_REPORTE } from '../../business/services/reporte.plantillas.js';
 import { leerSpool, errorLimiteExportacion } from './reporte-archivos.js';
 import { generarXlsxEstadistica } from './reporte-xlsx-estadistica.js';
+import { TITULOS_REPORTE, etiquetaReporte, etiquetaRuta, explicarCodigo, notasFuente, leyendaCodigos,
+    ESTILO_CABECERA_XLSX, alturaFilaXlsx } from './reporte-presentacion.js';
 
 export const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const TEXTO = { numFmt: '@', alignment: { vertical: 'top', wrapText: true } };
 const MAGNITUD = { ...TEXTO, alignment: { ...TEXTO.alignment, horizontal: 'right' } };
-const CABECERA = { ...TEXTO, font: { bold: true } };
+const CABECERA = ESTILO_CABECERA_XLSX;
 const magnitud = c => /cantidad|costo|total|perdida|valor|importe/i.test(c);
 const literal = valor => {
     if (valor == null) return null;
@@ -54,6 +56,7 @@ class LibroAcotado extends ExcelJS.stream.xlsx.WorkbookWriter {
 const agregar = async (hoja, valores, columnas, comprobar, cabecera = false) => {
     comprobar();
     const fila = hoja.addRow(valores.map(literal));
+    fila.height = alturaFilaXlsx(hoja, valores);
     valores.forEach((_, i) => { fila.getCell(i + 1).style = cabecera ? CABECERA : magnitud(columnas[i] ?? '') ? MAGNITUD : TEXTO; });
     fila.commit();
     if (hoja.stream.writableNeedDrain) await once(hoja.stream, 'drain');
@@ -91,27 +94,29 @@ export const generarXlsx = async ({ archivos, fuente, filtros, metadata, generac
     try {
         await Promise.race([error, (async () => {
             const resumen = libro.addWorksheet('Resumen'); hojas.push(resumen);
-            resumen.columns = [{ width: 38 }, { width: 100 }];
+            resumen.columns = [{ width: 38 }, { width: 48 }, { width: 64 }];
             const desde = filtros.periodo?.desde ?? filtros.desde ?? 'sin límite inferior';
             const hasta = filtros.periodo?.hasta ?? filtros.hasta ?? 'sin límite superior';
             const camposFiltro = fuente === 'MOVIMIENTOS' ? ['idMedicamento', 'idExistencia', 'direccion', 'motivo']
                 : fuente === 'PERDIDAS' ? ['motivo'] : ['estadoOperacion'];
-            const metadatos = [['Identidad', 'CADEFAR'], ['Título', `${fuente} / ${filtros.presentacion}`],
-                ['Modalidad', filtros.periodo?.modalidad ?? 'Filtros abiertos CU40'],
+            const metadatos = [['Identidad', 'CADEFAR'], ['Título', `${TITULOS_REPORTE[fuente]} / detalle tabular`],
+                ['Modalidad', filtros.periodo?.modalidad ?? 'Filtros abiertos CU40', filtros.periodo ? explicarCodigo(filtros.periodo.modalidad) : 'Límites opcionales'],
                 ['Desde', desde], ['Hasta', hasta], ['Zona horaria', 'America/La_Paz'], ['Generación civil', generacion],
-                ...camposFiltro.map(c => [`Filtro.${c}`, filtros[c] ?? 'todos']),
+                ...camposFiltro.map(c => [`Filtro.${c}`, filtros[c] ?? 'todos', `${etiquetaReporte(c, fuente)}: ${filtros[c] == null ? 'todos' : explicarCodigo(filtros[c])}`]),
                 ...(estadistica ? [['Granularidad', filtros.granularidad], ['Disponibilidad', 'Datos internos sin gráfica; no descarga pública']] : []),
                 ['Cantidad de ' + (fuente === 'MOVIMIENTOS' ? 'movimientos' : 'filas'), String(filas)],
                 ['Nota', 'Estado actual del snapshot; catálogos actuales, no cierre histórico.'],
                 ...(fuente === 'PERDIDAS' ? [['Pérdidas', 'Retiros originales brutos; RN91 redondeada por movimiento; reversiones no descontadas.']] : []),
                 ['Exactitud', 'IDs, códigos, fechas civiles, dinero, costos y agregados son texto @; nulos vacíos. Sin fórmulas ni sumas automáticas sobre textos.']];
             for (const par of metadatos) await agregar(resumen, par, [], comprobar);
-            for (const par of aplanar(metadata.resumen, 'resumen')) await agregar(resumen, par, ['', par[0]], comprobar);
+            for (const nota of notasFuente(fuente)) await agregar(resumen, ['Interpretación', nota], [], comprobar);
+            await agregar(resumen, ['Códigos', leyendaCodigos(fuente)], [], comprobar);
+            await agregar(resumen, ['Alcance', 'Todas las coincidencias; independiente de la página de pantalla.'], [], comprobar);
+            if (fuente !== 'MOVIMIENTOS') await agregar(resumen, ['Campo contractual', 'Valor exacto', 'Resumen completo / significado'], [], comprobar, true);
+            for (const par of aplanar(metadata.resumen, 'resumen')) await agregar(resumen, [...par, etiquetaRuta(par[0])], ['', par[0]], comprobar);
             if (estadistica) for (const par of aplanar(metadata.distribuciones, 'distribuciones')) await agregar(resumen, par, ['', par[0]], comprobar);
-            if (fuente !== 'MOVIMIENTOS') {
-                await agregar(resumen, ['Columna', 'Tipo / representación'], [], comprobar, true);
-                for (const c of columnas) await agregar(resumen, [c, 'string @; valor literal exacto; null = celda vacía'], [], comprobar);
-            }
+            await agregar(resumen, ['Columna contractual', 'Significado', 'Tipo / representación'], [], comprobar, true);
+            for (const c of columnas) await agregar(resumen, [c, etiquetaReporte(c, fuente), 'Texto exacto @; null = celda vacía'], [], comprobar);
             resumen.commit();
             const detalle = libro.addWorksheet(estadistica ? 'Estadisticas' : 'Detalle', {
                 views: [{ state: 'frozen', ySplit: 1 }], pageSetup: { printTitlesRow: '1:1' }

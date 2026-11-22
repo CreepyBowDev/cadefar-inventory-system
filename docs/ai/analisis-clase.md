@@ -8,6 +8,8 @@
 >
 > **Referencia estructural:** [Diagrama de clases actualizado](diagrama-clases.md). Objetivos y actores: [Casos de uso](casos-uso.md). Condiciones: [Reglas de negocio](reglas-negocio.md) y [Requerimientos](requerimientos.md).
 
+**Alcance histórico aclarado el 21/11/2026:** este documento conserva el análisis técnico de su corte del 12/10, no una auditoría integral del código actual. Sus cifras de 41 CU/33 implementados y las notas de Ventas/Recetas/Reportes pendientes son antecedentes superados: el catálogo vigente contiene 42 CU y esos módulos, además de Bitácora, están implementados. Los casos sin dibujo aquí siguen pendientes de representación documental. La ampliación académica está en `analisis-clases-academico-simplificado.md`; el estado vigente y los contratos de Reportes están en `contexto-maestro.md` y `contratos-reportes-react.md`. No se han actualizado todas las firmas ni renderizado los diagramas históricos en esta sincronización.
+
 ## 0. Criterios del análisis
 
 Cada CU identifica actor, clases participantes, responsabilidad, métodos ejecutados y relaciones. Por solicitud del usuario, los diagramas se ajustaron por módulos para mostrar **únicamente los métodos propios utilizados en ese CU**, incluidas llamadas internas y caminos condicionales, manteniendo los atributos completos de las clases participantes. **Los 34 diagramas de CU01–CU27, CU33–CU37 y CU40, incluidas ambas variantes de CU08, aplican este criterio**, según la verificación por bloques de 0.5.

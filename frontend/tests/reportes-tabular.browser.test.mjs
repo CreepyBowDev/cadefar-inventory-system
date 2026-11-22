@@ -1,10 +1,11 @@
 // React/Router/Axios reales, API interceptada por CDP. Sin backend/MySQL,
-// capturas ni guardado de archivos: se observa la activación del anchor.
+// guardado de descargas: se observa la activación del anchor. Capturas sintéticas
+// opt-in mediante CADEFAR_REPORTES_SCREENSHOTS, fuera del repositorio.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { estadisticasVentas } from './fixtures/estadisticasVentas.mjs';
@@ -126,6 +127,14 @@ test('Regresión conjunta Consulta/Estadísticas/TABULAR: cuatro páginas, recur
     const descarga = n => wait(`__descargas.length===${n}`);
     const ruta = fuente => fuente === 'movimientos' ? '/inventario/movimientos' : `/reportes/${fuente}`;
     const contains = text => wait(`document.body.textContent.includes(${JSON.stringify(text)})`);
+    const capturaExportacion = async nombre => {
+      if (!process.env.CADEFAR_REPORTES_SCREENSHOTS) return;
+      const directory = process.env.CADEFAR_REPORTES_SCREENSHOTS;
+      await mkdir(directory, { recursive: true }); await evaluate('window.scrollTo(0,0)'); await settle();
+      const clip = await evaluate('(()=>{const r=document.querySelector(".reporte-exportacion").getBoundingClientRect();return {x:0,y:r.top+scrollY,width:innerWidth,height:r.height,scale:1};})()');
+      const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip });
+      await writeFile(join(directory, `${nombre}.png`), Buffer.from(data, 'base64'));
+    };
 
     await t.test('12 variantes, paths exactos, vacío/página lejana, selección explícita, consultas intactas y recursos', async () => {
       for (const fuente of ['ventas', 'compras', 'perdidas', 'movimientos']) {
@@ -148,6 +157,38 @@ test('Regresión conjunta Consulta/Estadísticas/TABULAR: cuatro páginas, recur
         await evaluate('__limpiezas.splice(0).forEach(fn=>fn())');
         assert.equal(await evaluate('__revocadas.length'), 3);
       }
+    });
+    await t.test('Composición compartida: formato y descarga sobreviven a Actualizar y responsive; CU40 conserva ubicación', async () => {
+      for (const fuente of ['ventas', 'compras', 'perdidas', 'movimientos']) {
+        await navigate(ruta(fuente) + (fuente === 'movimientos' ? '' : '?mes=2026-11')); await ready(); await select('XLSX');
+        await evaluate('void(window.__formato=document.querySelector(".reporte-exportacion select"))');
+        planned = { hold: true }; const antes = requests.length; await exportar(); await esperar(() => held);
+        await click('.catalogo-toolbar button'); await ready();
+        assert.equal(requests.slice(antes).filter(r => r.path.endsWith('/exportar')).length, 1);
+        assert.equal(requests.slice(antes).filter(r => r.path === '/api' + ruta(fuente)).length, 1);
+        // 683 CSS px / DPR 2 emula reflow de 1366px con zoom 200%.
+        for (const width of [1366, 768, 683, 375]) {
+          await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: width === 683 ? 2 : 1, mobile: width === 375 }); await settle();
+          assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'));
+          assert.ok(await evaluate('__formato === document.querySelector(".reporte-exportacion select") && __formato.value === "XLSX"'));
+          assert.equal(await evaluate('document.querySelector(".reporte-exportacion fieldset").getAttribute("aria-busy")'), 'true');
+          assert.ok(await evaluate('[...document.querySelectorAll(".reporte-exportacion p")].filter(el=>el.textContent.includes("128 MiB") || el.textContent.includes("consulta independiente")).every(el=>el.getBoundingClientRect().height>0 && !el.closest("details"))'));
+          if (fuente === 'movimientos') assert.ok(await evaluate('!!(document.querySelector(".reporte-exportacion").compareDocumentPosition(document.querySelector(".catalogo-panel > div[aria-busy]")) & Node.DOCUMENT_POSITION_FOLLOWING)'));
+        }
+        const old = held; held = null; await archivo(old.id, old.formato); await descarga(1); await contains('Archivo recibido; descarga iniciada.');
+        assert.equal(await evaluate('document.querySelector(".reporte-exportacion select").value'), 'XLSX');
+        if (fuente === 'movimientos' && process.env.CADEFAR_REPORTES_SCREENSHOTS) {
+          const directory = process.env.CADEFAR_REPORTES_SCREENSHOTS;
+          await mkdir(directory, { recursive: true });
+          for (const width of [768, 683]) {
+            await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: width === 683 ? 2 : 1, mobile: false }); await settle();
+            const { cssContentSize } = await send('Page.getLayoutMetrics');
+            const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: 0, y: 0, width, height: cssContentSize.height, scale: 1 } });
+            await writeFile(join(directory, `movimientos-${width}.png`), Buffer.from(data, 'base64'));
+          }
+        }
+      }
+      await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 900, deviceScaleFactor: 1, mobile: false });
     });
     await t.test('Reportes exigen período; URL inválida nunca se sanea; CU40 admite filtros ausentes', async () => {
       for (const fuente of ['ventas', 'compras', 'perdidas', 'movimientos']) {
@@ -261,6 +302,55 @@ test('Regresión conjunta Consulta/Estadísticas/TABULAR: cuatro páginas, recur
         await evaluate('__limpiezas.splice(0).forEach(fn=>fn())'); assert.equal(await evaluate('__revocadas.length'), 2);
       }
     });
+    await t.test('Estadísticas: desplegables y ancho conservan panel/ocultas/explorado; Actualizar conserva formato/selección/descarga', async () => {
+      for (const fuente of ['ventas', 'compras', 'perdidas']) {
+        estadisticasOpciones = { intervalos1200: true };
+        await navigate(ruta(fuente) + '?desde=1000-01-01&hasta=2199-12-31&vista=ESTADISTICAS&uiGranularidad=ANIO'); await statsReady();
+        await select('LINEAS', chart); await select(fuente === 'perdidas' ? 'PERDIDA' : 'IMPORTE', metric);
+        await select('19', '.reporte-estadisticas > .form-field select'); await click('.reporte-estadisticas__leyenda input');
+        await evaluate('document.querySelector(".reporte-estadisticas__viewport [role=button]").focus()');
+        const explorado = await evaluate('document.querySelector(".reporte-estadisticas__valor").textContent');
+        await select('XLSX');
+        await evaluate('void(window.__formato=document.querySelector(".reporte-exportacion select"))');
+        planned = { hold: true }; const antes = requests.length; await exportar(); await esperar(() => held);
+        for (const width of [1366, 768, 683, 375]) {
+          await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: width === 683 ? 2 : 1, mobile: width === 375 }); await settle();
+          for (const open of [true, false]) { await evaluate(`document.querySelectorAll(".reporte-estadisticas details, .reporte-exportacion details").forEach(d=>d.open=${open})`); await settle(); }
+          assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
+          assert.equal(await evaluate('document.querySelector(".reporte-estadisticas > .form-field select").value'), '19');
+          assert.equal(await evaluate('document.querySelector(".reporte-estadisticas__leyenda input").checked'), false);
+          assert.equal(await evaluate('document.querySelector(".reporte-estadisticas__valor").textContent'), explorado);
+          assert.ok(await evaluate('__formato===document.querySelector(".reporte-exportacion select")&&__formato.value==="XLSX"'));
+          assert.equal(await evaluate('document.querySelector(".reporte-exportacion fieldset").getAttribute("aria-busy")'), 'true');
+        }
+        estadisticasOpciones = { intervalos1200: true }; plannedJson = { hold: true }; await click('.catalogo-toolbar button'); await esperar(() => heldJson);
+        assert.ok(await evaluate('__formato===document.querySelector(".reporte-exportacion select")&&__formato.value==="XLSX"'));
+        const json = heldJson; heldJson = null; await fulfill(json.id, 200, json.body); await statsReady();
+        assert.equal(await evaluate(`document.querySelector(${JSON.stringify(chart)}).value`), 'LINEAS');
+        assert.equal(await evaluate(`document.querySelector(${JSON.stringify(metric)}).value`), fuente === 'perdidas' ? 'PERDIDA' : 'IMPORTE');
+        assert.equal(requests.slice(antes).filter(r=>r.path.endsWith('/estadisticas')).length, 1);
+        assert.equal(requests.slice(antes).filter(r=>r.path.endsWith('/exportar')).length, 1);
+        assert.deepEqual(requests.slice(antes).find(r=>r.path.endsWith('/exportar')).query, { desde: '1000-01-01', hasta: '2199-12-31', presentacion: 'ESTADISTICA', formato: 'XLSX', granularidad: 'ANIO', grafico: 'LINEAS', metrica: fuente === 'perdidas' ? 'PERDIDA' : 'IMPORTE' });
+        const old = held; held = null; await archivo(old.id, old.formato); await descarga(1); await contains('Archivo recibido; descarga iniciada.');
+      }
+      await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 900, deviceScaleFactor: 1, mobile: false });
+    });
+    await t.test('Feedback de descarga visible: ocupada, cancelada, fallida y recibida; criterios largos CU40', async () => {
+      rol = 1;
+      await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 900, deviceScaleFactor: 1, mobile: true });
+      await navigate('/inventario/movimientos?' + new URLSearchParams({ motivo: 'ReferenciaSinteticaSinEspaciosDeCuarentaXXX'.slice(0, 40), desde: '1000-01-01', hasta: '9999-12-31', idMedicamento: '2147483647', idExistencia: '2147483647' })); await ready(); await select('XLSX');
+      await evaluate('void(window.__formato=document.querySelector(".reporte-exportacion select"))');
+      planned = { hold: true }; await exportar(); await esperar(() => held);
+      assert.ok(await evaluate('document.querySelector(".reporte-exportacion button:last-child").textContent.includes("Cancelar")'));
+      await capturaExportacion('descarga-ocupada-375');
+      await click('.reporte-exportacion button:last-child'); await contains('Solicitud cancelada');
+      const old = held; held = null; await entregarTardia(old);
+      await capturaExportacion('descarga-cancelada-375');
+      planned = { status: 503, message: 'Generación de exportaciones ocupada; reintente más tarde', retry: true };
+      await exportar(); await contains('después de 5 segundos'); await capturaExportacion('descarga-fallida-375');
+      await exportar(); await descarga(1); await contains('Archivo recibido; descarga iniciada.'); await capturaExportacion('descarga-recibida-375');
+      assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1&&__formato===document.querySelector(".reporte-exportacion select")&&__formato.value==="XLSX"'));
+    });
     await t.test('401/403 estadístico durante descarga retira datos e invalida archivo; vista/formato no desbloquean', async () => {
       for (const fuente of ['ventas', 'compras', 'perdidas']) for (const status of [401, 403]) {
         await navigate(ruta(fuente) + '?' + estadisticaQuery); await statsReady(); await select('PDF');
@@ -346,7 +436,7 @@ test('Regresión conjunta Consulta/Estadísticas/TABULAR: cuatro páginas, recur
     await t.test('Vacíos estadísticos válidos en tres fuentes/formatos, sin dependencia del detalle ni imagen React', async () => {
       for (const fuente of ['ventas', 'compras', 'perdidas']) {
         estadisticasOpciones = { vacio: true }; await navigate(ruta(fuente) + '?' + estadisticaQuery); await statsReady(); await contains('Sin operaciones');
-        assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas svg").length'), 0);
+        assert.equal(await evaluate('document.querySelectorAll(".reporte-estadisticas__viewport svg").length'), 0);
         assert.ok(await evaluate('[...document.querySelectorAll("[aria-label^=Valores] tbody tr")].every(r=>["0","0.00"].includes(r.cells[7].textContent))'));
         for (const formato of ['CSV', 'PDF', 'XLSX']) { await select(formato); const n = await evaluate('__descargas.length'); await exportar(); await descarga(n + 1); assert.equal(requests.at(-1).query.formato, formato); }
       }

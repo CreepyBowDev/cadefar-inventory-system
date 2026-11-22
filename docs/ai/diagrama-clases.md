@@ -4,7 +4,7 @@
 >
 > **Estado:** referencia estructural del código y del diseño funcional vigente. Sustituye el inventario de la primera versión de `Diagrama de clases cadefar SI1.drawio`.
 >
-> **Cobertura de los módulos representados:** 15 modelos persistentes y 11 servicios, incluidos `ventaService` y `recetaService`. CU28–CU32 están implementados en backend para formulario sin adjuntos. Reportes continúa pendiente. Este inventario estructural no incluye Bitácora; la cobertura global y evidencia actual se mantienen en `contexto-maestro.md` y `bitacora-auditoria.md`.
+> **Sincronización documental: 21/11/2026.** Los diagramas conservan 15 modelos persistentes y los 11 servicios detallados en §2–7. Reportes ya está implementado y su síntesis actual se incorpora en §8 (dos servicios adicionales, uno de ellos objeto de módulo, no clase). Bitácora no está dibujada aquí: el software completo tiene 16 modelos y su cobertura actual se describe en `contexto-maestro.md` y `bitacora-auditoria.md`. No se repitió la renderización ni la verificación integral de los diagramas históricos.
 
 ## 0. Alcance, fuentes y notación
 
@@ -42,8 +42,8 @@ Este documento reúne atributos, operaciones y relaciones para servir de base al
 | Compras | `Compra`, `DetalleCompra` | `compraService` | CU25–CU27. |
 | Inventario, existencias, movimientos y vencimientos | `ExistenciaMedicamento`, `MovimientoInventario` | `inventarioService` | CU21–CU24, CU33–CU37 y CU40. |
 | Ventas y recetas | `Venta`, `DetalleVenta`, `Receta` | `ventaService`, `recetaService` | CU28–CU32 implementados en backend sin adjuntos; aplicar migración de nulabilidad en bases existentes. |
-| Reportes | Sin modelo propio | Sin servicio de reportes implementado | CU38, CU39 y CU41 pendientes. CU40 ya está cubierto por Inventario. |
-| **Total de los módulos representados** | **15 modelos** | **11 servicios** | **38 CU implementados; CU38/CU39/CU41 pendientes. CU42/Bitácora queda fuera de este inventario.** |
+| Reportes | Sin modelo propio | `reporteService` y objeto `reporteExportacionService` | CU38/CU39/CU41 implementados con consultas, estadísticas y exportaciones; CU40 reutiliza Inventario. Síntesis §8, sin diagrama nuevo. |
+| **Total de los módulos inventariados aquí** | **15 modelos; Bitácora no dibujada** | **11 servicios detallados en §2–7 y 2 de Reportes resumidos en §8** | **CU01–CU41 implementados; CU42/Bitácora también existe, pero queda fuera de los diagramas de este documento.** |
 
 Los valores calculados y las validaciones de configuración no amplían el inventario de entidades. Las pruebas y la activación de funciones se distinguen de la existencia del código en la sección 10.
 
@@ -747,16 +747,18 @@ classDiagram
 
 ## 8. Reportes y consultas
 
-No existe modelo `Reporte` ni clase `ReporteService` implementada. Las fuentes son las entidades de operaciones, existencias y movimientos, no otra tabla de resultados.
+No existe modelo ni tabla `Reporte`. Sí existen la clase `reporteService` (`reporte.service.js`) y el objeto exportado `reporteExportacionService` (`reporte.exportacion.service.js`), dentro de `backend/src/business/services/`. Sus fuentes son las entidades de operaciones y movimientos. El objeto de módulo no es una clase JavaScript declarada.
 
 | Caso de uso | Estado y relación con el código actual |
 |---|---|
-| CU38 — Reporte de ventas | Pendiente; su fuente es el flujo de ventas implementado y la fecha efectiva. |
-| CU39 — Reporte de compras | Pendiente como bloque de reportes. CU26 ya permite consultar compras por fecha/período; no se inventa otro método existente. |
-| CU40 — Historial de inventario | Implementado mediante `inventarioService.getMovimientos(filtros)`, compartido con CU24. |
-| CU41 — Consultar pérdidas | Pendiente como consulta conjunta por período. Los retiros ya devuelven su pérdida individual derivada. |
+| CU38 — Reporte de ventas | `reporteService.consultarVentas(filtros, auditoria)` y `estadisticasVentas(filtros, auditoria)`. Solo Administrador; fecha de confirmación o registro según categoría. |
+| CU39 — Reporte de compras | `reporteService.consultarCompras(filtros, auditoria)` y `estadisticasCompras(filtros, auditoria)`. Solo Administrador; fecha de adquisición. No se confunde con consulta operativa CU26. |
+| CU40 — Historial de inventario | `inventarioService.getMovimientos(filtros)`, compartido con CU24; exportación TABULAR mediante el servicio compartido. |
+| CU41 — Consultar pérdidas | `reporteService.consultarPerdidas(filtros, auditoria)` y `estadisticasPerdidas(filtros, auditoria)`. Administrador/Regente; retiros originales y costo histórico. |
 
-Los métodos `reporteVentas`, `reporteCompras`, `reporteInventario`, `reporteBajoStock`, `reporteVencimientos` y `reportePerdidas` del primer dibujo eran operaciones conceptuales; no se atribuyen a una clase real. El análisis por CU podrá identificar sus fuentes y diseño pendiente sin presentar esas firmas como implementadas.
+`reporteExportacionService.preparar(fuente, filtros, auditoria, opciones)` coordina extracción y generación CSV/XLSX/PDF; `comprobarDisponibilidad(opciones)` verifica perfil LOCAL o Railway opt-in y `cerrar()` gestiona el cierre. Los Repositories conservan consultas y extracción; los helpers de estadísticas/formatos no son modelos persistentes. El frontend consume estos endpoints en Reportes y MovimientosPage. Contratos y límites: `contratos-reportes-react.md` y `exportaciones-railway.md`.
+
+Los métodos `reporteVentas`, `reporteCompras`, `reporteInventario`, `reporteBajoStock`, `reporteVencimientos` y `reportePerdidas` del primer dibujo eran conceptuales, no los nombres implementados. Los diagramas académicos específicos de CU38/CU39/CU41 aún no están incluidos: es una limitación documental, no una funcionalidad pendiente.
 
 ## 9. Matriz global de relaciones y diferencias frente a la base
 
@@ -809,7 +811,7 @@ LimiteRecuperacionIp permanece aislado en el diagrama de asociaciones persistent
 | FEFO como método actual de InventarioService | Confirmación implementada en `ventaService`, reutilizando vencimiento y comparador compartidos con Inventario. |
 | Cardinalidades y flechas por revisar | Matriz con FK, nulabilidad y distinción entre mínimo estructural y regla de negocio. |
 | Venta sin definición precisa de pendiente | Pendiente sin stock ni movimientos; confirmación y recetas implementadas en backend. |
-| VentaService y ReporteService como clases del sistema | `ventaService` ya está implementado; no existe un servicio de Reportes implementado. |
+| VentaService y ReporteService como clases conceptuales | `ventaService` y `reporteService` están implementados; las exportaciones usan además el objeto `reporteExportacionService`. |
 | 9 servicios conceptuales | Inventario original de 9 servicios y 48 métodos; se incorporan los 2 servicios de Ventas/Recetas descritos en sección 7. |
 
 ### 9.3. Cómo trasladarlo al dibujo UML
@@ -820,7 +822,7 @@ LimiteRecuperacionIp permanece aislado en el diagrama de asociaciones persistent
 4. Representar Repositories como clases auxiliares de acceso a datos cuando se analice la implementación por CU. Las dependencias aquí mostradas son las principales, no un inventario completo de imports, utilidades, Controllers o Validators.
 5. Usar asociaciones, responsables diferenciados y multiplicidades de la matriz. Si se conserva composición UML conceptual para detalles/componentes, indicar el criterio de pertenencia sin atribuirle cascadas físicas.
 6. Añadir notas para restricciones no expresables solo con multiplicidad: exclusión compra/venta en movimientos, receta de la misma venta, mínimo de hijos al registrar, estado previo completo y reversiones legítimas.
-7. Identificar Ventas/Recetas como backend implementado sin adjuntos, y Reportes como consultas futuras. No confundir implementación backend con frontend o migración ya aplicada al entorno de uso.
+7. Identificar Ventas/Recetas sin adjuntos y Reportes como implementados en backend y frontend. Ampliar dibujos solo con nombres reales de §8; Bitácora requiere su propia representación. No confundir código con migración aplicada o aceptación del entorno de uso.
 
 ## 10. Verificación y límites de esta referencia
 

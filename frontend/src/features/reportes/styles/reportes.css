@@ -2,28 +2,70 @@
 
 .reporte-filters { padding: 1.25rem; border-bottom: 1px solid var(--color-line); }
 .reporte-filters fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.reporte-filters legend { padding: 0; font-weight: 650; }
+.reporte-filters__label { margin: .25rem 0 1rem; color: var(--color-muted); font-size: var(--text-small); }
 .reporte-filters__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
-.reporte-filters__actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+.reporte-filters__actions { display: flex; gap: .6rem; margin-top: 1rem; }
 .reporte-operaciones-page .catalogo-table-wrap, .reporte-perdidas-page .catalogo-table-wrap { min-width: 0; max-width: 100%; contain: content; }
-.reporte-ventas-table, .reporte-compras-table, .reporte-perdidas-table { min-width: 80rem; }
+.reporte-ventas-table { min-width: 74rem; }
+.reporte-compras-table { min-width: 68rem; }
+.reporte-perdidas-table { min-width: 94rem; }
+.reporte-ventas-table :is(th, td), .reporte-compras-table :is(th, td), .reporte-perdidas-table :is(th, td) { padding: .75rem 1rem; }
+.reporte-ventas-table td:nth-child(n+4):nth-child(-n+7), .reporte-compras-table td:nth-child(n+4):nth-child(-n+7), .reporte-perdidas-table td:nth-child(n+6):nth-child(-n+7) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.reporte-perdidas-table td:nth-child(2) { min-width: 14rem; max-width: 22rem; }
+.reporte-perdidas-table td:nth-child(3) { min-width: 10rem; max-width: 16rem; }
+.reporte-ventas-table td:nth-child(2), .reporte-compras-table td:nth-child(3), .reporte-perdidas-table td:nth-child(5) { white-space: nowrap; }
+.reporte-ventas-table td:nth-child(3) { min-width: 11rem; overflow-wrap: normal; }
+.reporte-ventas-table td:last-child, .reporte-compras-table td:last-child, .reporte-perdidas-table td:last-child { white-space: nowrap; }
 .reporte-operaciones-page .catalogo-table td, .reporte-perdidas-page .catalogo-table td { vertical-align: top; }
 .reporte-operaciones-page .reporte-number, .reporte-perdidas-page .reporte-number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .reporte-resumen h3 { margin: 0; padding: 0 1.25rem; font-size: 1rem; }
 .reporte-resumen dd { font-variant-numeric: tabular-nums; }
-.reporte-exportacion { padding: 0 1.25rem 1.25rem; }
-.reporte-exportacion fieldset { min-width: 0; margin: 0; padding: 1rem; border: 1px solid var(--color-line); border-radius: var(--radius-control); }
+.reporte-contexto { margin: 0 1.25rem 1rem; padding: .75rem 1rem; background: var(--color-surface-subtle); border-left: 3px solid var(--color-line-strong); overflow-wrap: anywhere; }
+.reporte-resumen .reporte-contexto h3 { padding: 0; font-size: var(--text-small); }
+.reporte-contexto p { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: .25rem 0 0; font-size: var(--text-small); color: var(--color-muted); }
+.reporte-resumen .catalogo-detail > div { padding: 1rem 1.25rem; }
+.reporte-resumen .catalogo-detail > .reporte-resumen__principal { grid-column: 1 / -1; }
+.reporte-resumen__principal dt { color: var(--color-ink); font-weight: 650; }
+.reporte-resumen__principal dd strong { display: block; margin-top: .25rem; font-size: 1.5rem; line-height: 1.3; }
+.reporte-exportacion { min-width: 0; padding: 1rem 1.25rem; border-top: 1px solid var(--color-line); }
+.reporte-exportacion fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .reporte-exportacion legend { font-weight: 600; }
-.reporte-exportacion .catalogo-note { padding: 0; overflow-wrap: anywhere; }
+.reporte-exportacion .catalogo-note { padding: 0; overflow-wrap: anywhere; max-width: 100ch; }
+.reporte-exportacion .reporte-exportacion__criterios { margin: .5rem 0 .75rem; }
+.reporte-exportacion__alcance { display: grid; gap: .35rem; margin-top: .75rem; }
+.reporte-exportacion__ayuda { margin-top: .5rem; font-size: var(--text-small); }
+.reporte-exportacion__ayuda summary { width: fit-content; min-height: var(--control-height); padding-block: .65rem; cursor: pointer; }
 .reporte-exportacion__acciones { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; }
 .reporte-exportacion__acciones .form-field { min-width: 0; }
-.reporte-exportacion .feedback { overflow-wrap: anywhere; }
-.reporte-vista { margin: 1rem 1.25rem; padding: .75rem; border: 1px solid var(--color-line); border-radius: var(--radius-control); }
-.reporte-vista label { display: inline-flex; align-items: center; gap: .5rem; margin-right: 1rem; min-height: 2.75rem; }
+.reporte-exportacion .reporte-exportacion__acciones .form-field { flex: 0 1 18rem; }
+.reporte-exportacion .reporte-exportacion__acciones select { width: 100%; }
+.reporte-exportacion .feedback { margin-top: .5rem; overflow-wrap: anywhere; }
+.reporte-vista { min-width: 0; margin: 1rem 1.25rem 0; padding: .5rem 0; border: 0; }
+.reporte-vista legend { padding: 0; font-weight: 650; }
+.reporte-vista label { display: inline-flex; align-items: center; gap: .5rem; margin: .25rem .5rem .25rem 0; padding: .5rem .75rem; min-height: var(--control-height); border: 1px solid var(--color-control-border); border-radius: var(--radius-control); cursor: pointer; }
+.reporte-vista label:has(input:checked) { background: var(--color-surface-subtle); border-color: var(--color-ink); font-weight: 650; }
 .reporte-estadisticas { padding: 1.25rem; min-width: 0; }
-.reporte-estadisticas p { overflow-wrap: anywhere; }
-.reporte-estadisticas__controles { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; padding: 1.25rem; }
-.reporte-estadisticas__leyenda { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; border: 1px solid var(--color-line); }
-.reporte-estadisticas__leyenda label { display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; }
+.reporte-estadisticas h3 { margin: 0 0 1rem; font-size: 1rem; }
+.reporte-estadisticas p { overflow-wrap: anywhere; max-width: 80ch; }
+.reporte-estadisticas__aplicacion { min-width: 0; margin: 1rem 1.25rem 0; padding: 0 0 1rem; border: 0; border-bottom: 1px solid var(--color-line); }
+.reporte-estadisticas__aplicacion legend { padding: 0; font-weight: 650; }
+.reporte-estadisticas__aplicacion .catalogo-note { padding: .5rem 0 0; max-width: 80ch; }
+.reporte-estadisticas__controles { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; padding-top: .75rem; }
+.reporte-estadisticas__controles .form-field { flex: 0 1 22rem; min-width: 0; }
+.reporte-estadisticas__controles select { width: 100%; }
+.reporte-estadisticas__contexto { font-size: var(--text-small); color: var(--color-muted); }
+.reporte-estadisticas__seleccion .form-field { flex: 0 1 22rem; }
+.reporte-estadisticas__seleccion select { width: 100%; }
+.reporte-estadisticas__leyenda { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; min-width: 0; margin: 1rem 0; padding: .5rem 0; border: 0; border-bottom: 1px solid var(--color-line); }
+.reporte-estadisticas__leyenda legend { padding: 0; font-weight: 600; font-size: var(--text-small); }
+.reporte-estadisticas__leyenda label { display: flex; align-items: center; gap: .5rem; min-height: var(--control-height); cursor: pointer; }
+.reporte-estadisticas__muestra { flex: 0 0 2rem; width: 2rem; height: 1rem; }
+.reporte-estadisticas__precision { font-size: var(--text-small); color: var(--color-muted); }
+.reporte-estadisticas > .form-field { max-width: 40rem; margin-top: 1.25rem; }
+.reporte-estadisticas > .form-field select { width: 100%; min-width: 0; }
+.reporte-estadisticas__alcance { margin: .5rem 0; font-size: var(--text-small); }
+.reporte-estadisticas__alcance strong { display: block; margin-top: .25rem; }
 .reporte-estadisticas__viewport { max-width: 100%; overflow: auto; border: 1px solid var(--color-line); margin-top: 1rem; }
 .reporte-estadisticas__viewport svg { display: block; height: 340px; max-width: none; }
 .reporte-estadisticas__viewport .reporte-estadisticas__sectores { width: 100%; max-width: 420px; height: auto; }
@@ -37,9 +79,24 @@
 .reporte-estadisticas [role=button] { cursor: pointer; }
 .reporte-estadisticas [role=button]:focus { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 .reporte-estadisticas__valor { padding: .75rem; background: var(--color-surface-subtle); min-height: 3rem; }
+.reporte-estadisticas__exactos { min-width: 0; border-top: 1px solid var(--color-line); }
+.reporte-estadisticas__exactos summary, .reporte-estadisticas__ayuda summary { min-height: var(--control-height); padding: .75rem 0; cursor: pointer; }
+.reporte-estadisticas__exactos summary { font-weight: 600; }
+.reporte-estadisticas__exactos summary span { display: block; margin-top: .25rem; font-size: var(--text-small); color: var(--color-muted); font-weight: 400; }
+.reporte-estadisticas__exactos .catalogo-table-wrap { max-width: 100%; margin-bottom: 1rem; }
+.reporte-estadisticas__exactos .catalogo-table { min-width: 52rem; }
+.reporte-estadisticas__exactos th, .reporte-estadisticas__exactos td { padding: .75rem 1rem; }
+.reporte-estadisticas__exactos th { overflow-wrap: normal; white-space: nowrap; }
+.reporte-estadisticas__exactos td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.reporte-estadisticas__exactos td:nth-last-child(-n+2), .reporte-estadisticas__exactos th:nth-last-child(-n+2) { text-align: right; white-space: nowrap; }
+.reporte-estadisticas__exactos td:first-of-type { white-space: nowrap; }
+.reporte-estadisticas__ayuda { font-size: var(--text-small); color: var(--color-muted); }
 @media (max-width: 900px) { .reporte-filters__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 620px) {
   .reporte-exportacion__acciones { flex-direction: column; align-items: stretch; }
+  .reporte-exportacion .reporte-exportacion__acciones .form-field { flex-basis: auto; }
   .reporte-filters__fields { grid-template-columns: 1fr; }
-  .reporte-filters__actions { flex-direction: column-reverse; }
+  .reporte-filters__actions { flex-direction: column; }
+  .reporte-estadisticas__controles { flex-direction: column; align-items: stretch; }
+  .reporte-estadisticas__controles .form-field, .reporte-estadisticas__seleccion .form-field { flex-basis: auto; }
 }
