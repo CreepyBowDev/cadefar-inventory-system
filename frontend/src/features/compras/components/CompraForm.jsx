@@ -14,6 +14,7 @@ export const CompraForm = ({ medicamentos, proveedores, submitting, attempted, a
   const confirming = useRef(false);
   const [error, setError] = useState('');
   const [review, setReview] = useState(null);
+  const [pagarAhora, setPagarAhora] = useState(false);
   const activos = medicamentos.filter((m) => m.estado && proveedores.some((p) => p.estado && p.idProveedorLaboratorio === m.idProveedorLaboratorio));
   const proveedorId = medicamentos.find((m) => String(m.idMedicamento) === form.detalles.find((d) => d.idMedicamento)?.idMedicamento)?.idProveedorLaboratorio;
   const proveedor = proveedores.find((p) => p.idProveedorLaboratorio === proveedorId);
@@ -35,7 +36,7 @@ export const CompraForm = ({ medicamentos, proveedores, submitting, attempted, a
   const confirmar = async () => {
     if (confirming.current) return;
     confirming.current = true;
-    try { await onSubmit(review); setReview(null); }
+    try { await onSubmit(review, { pagarAhora }); setReview(null); }
     finally { confirming.current = false; }
   };
   return <>
@@ -53,6 +54,12 @@ export const CompraForm = ({ medicamentos, proveedores, submitting, attempted, a
         <button className="button button--secondary" type="button" disabled={blocked || Boolean(review)} onClick={() => { const linea = nuevaLinea(nextKey.current++); setForm({ ...form, detalles: [...form.detalles, linea] }); }}>Agregar línea</button>
       </section>
       <p className="compra-form__note">El sistema verificará los vencimientos al registrar, identificará las existencias y calculará los subtotales, el total y el costo promedio.</p>
+      <fieldset className="compra-form__cabecera compra-pago-opcion" disabled={blocked || Boolean(review)}>
+        <legend>Pago de la compra</legend>
+        <label><input type="radio" name="momentoPago" value="ahora" checked={pagarAhora} onChange={() => setPagarAhora(true)} /> Registrar compra y realizar pago ahora.</label>
+        <label><input type="radio" name="momentoPago" value="despues" checked={!pagarAhora} onChange={() => setPagarAhora(false)} /> Registrar compra y pagar después.</label>
+        <small>Primero se guardará la compra. El pago es independiente de la recepción y solo descontará el saldo cuando quede confirmado.</small>
+      </fieldset>
       <FeedbackMessage message={error || apiError} />
       {status === 401 && <a className="button button--primary" href="/login">Ir al inicio de sesión</a>}
       {attempted && <section className="compra-recuperacion" aria-label="Consulta de la clave enviada"><h3>Consultar el resultado del registro</h3><p>Si se perdió la respuesta o la clave ya existe, consulta tu operación antes de realizar otra recepción. Encontrarla no demuestra que su contenido coincida con este formulario.</p>
@@ -65,6 +72,7 @@ export const CompraForm = ({ medicamentos, proveedores, submitting, attempted, a
     </form>
     <Modal open={Boolean(review)} title="Revisar compra" description="Al confirmar se registrarán la compra, las existencias y las entradas de inventario de forma conjunta." onClose={close}>
       {review && <><dl className="compra-review"><div><dt>Adquisición</dt><dd>{fechaCivil(review.fechaCompra)}</dd></div><div><dt>Proveedor / Laboratorio</dt><dd>{proveedor?.nombre}</dd></div><div><dt>Clave</dt><dd>{review.claveOperacion}</dd></div></dl>
+        <p>{pagarAhora ? 'Después del registro se abrirá el formulario de pago: Tarjeta o PayPal, total o abono parcial.' : 'El saldo quedará pendiente. Podrás pagar desde el detalle de la compra.'}</p>
         <ol className="compra-review__lineas">{review.detalles.map((d, index) => {
           const medicamento = medicamentos.find((m) => m.idMedicamento === d.idMedicamento);
           return <li key={index}><strong>{medicamento.codigoMedicamento} · {medicamento.nombreComercial}</strong><p>{medicamento.presentacion} · {d.cantidad} {medicamento.unidadInventario}</p><p>Costo unitario: {costoDecimal(d.costoUnitario)}</p><p>Vencimiento: {d.precisionVencimiento === 'MES' ? `${d.fechaVencimiento.slice(5)}/${d.fechaVencimiento.slice(0, 4)} (mes)` : `${fechaCivil(d.fechaVencimiento)} (día)`}</p></li>;

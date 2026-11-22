@@ -4,11 +4,12 @@ import { createRequire } from 'node:module';
 import { randomBytes } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { abrirNavegadorReal } from './helpers/navegadorReal.mjs';
+import { huellaBase } from '../../backend/tests/helpers/huella-pagos.js';
 
 test('Administrador: pagos locales de extremo a extremo en React/Express/MySQL, puertos 5173/3000', {
-  skip: process.env.CADEFAR_AUTORIZAR_PAGOS_LOCAL !== '1', timeout: 120000
+  skip: process.env.CADEFAR_AUTORIZAR_PAGOS_LOCAL !== '1', timeout: 180000
 }, async t => {
   assert.notEqual(process.env.NODE_ENV, 'production');
   const backend = fileURLToPath(new URL('../../backend/', import.meta.url));
@@ -23,6 +24,10 @@ test('Administrador: pagos locales de extremo a extremo en React/Express/MySQL, 
     const [baseActiva] = await db.sequelize.query('SELECT DATABASE() AS nombre', { logging: false });
     assert.equal(baseActiva[0].nombre, entorno.BASE_PRUEBAS);
   const { app } = await import('../../backend/src/app.js');
+  const mysql = require('mysql2/promise');
+  const protegida = await mysql.createConnection({ host: process.env.DB_HOST, user: process.env.DB_USER, password: process.env.PASSWORD_DB });
+  const huellaAntes = await huellaBase(protegida, 'cadefarexamen');
+  const { getDocument } = await import(pathToFileURL(require.resolve('pdfjs-dist/legacy/build/pdf.mjs')).href);
   const { obtenerFechaOperacion } = await import('../../backend/src/shared/utils/fecha-operacion.js');
   const profile = await mkdtemp(join(process.env.LOCALAPPDATA, 'Temp', 'opencode', 'cadefar-pagos-browser-'));
   // Permite verificar el servidor local ya abierto sin detenerlo ni cambiar su puerto.
@@ -68,8 +73,9 @@ test('Administrador: pagos locales de extremo a extremo en React/Express/MySQL, 
       await page.click(`a[href="/compras/${r.body.data.idCompra}"]`); await page.contains('Disponible para pagar');
       return r.body.data.idCompra;
     };
-    const iniciar = async (importe, metodo = 'TARJETA') => {
-      await page.clickText('Pagar'); await page.field('#pago-importe', importe);
+    const iniciar = async (importe, metodo = 'TARJETA', abierto = false) => {
+      if (!abierto) await page.clickText('Pagar');
+      await page.field('#pago-importe', importe);
       assert.equal(await page.evaluate('/PRUEBA_LOCAL|Entorno de pruebas|Operación ficticia/.test(document.querySelector(".pago-form").textContent)'), false);
       if (metodo === 'PAYPAL') await page.click('input[value=PAYPAL]');
       await page.click('.pago-autorizacion input'); await page.review('.pago-form');
@@ -108,6 +114,116 @@ test('Administrador: pagos locales de extremo a extremo en React/Express/MySQL, 
       assert.equal(await page.evaluate('window.__pagoProcesando'), true);
     };
     const cerrar = async () => { await page.clickText('Volver al historial'); await page.wait('!document.querySelector(".pago-autorizacion-local")'); };
+    const registrarFormulario = async (pagarAhora, probarRechazo = false) => {
+      const iniciosAntes = browser.requests.filter(r => r.method === 'POST' && /\/pagos$/.test(r.path)).length;
+      await page.navigate('/compras/nueva'); await page.contains('Pago de la compra');
+      await page.field('#compra-fecha', obtenerFechaOperacion().fechaComercial);
+      await page.select('#compra-linea-1-med', medicamento.id_medicamento);
+      await page.field('#compra-linea-1-cantidad', '10'); await page.field('#compra-linea-1-costo', '50.000000');
+      await page.field('#compra-linea-1-fecha', '2099-12-31');
+      await page.click(`input[name=momentoPago][value=${pagarAhora ? 'ahora' : 'despues'}]`);
+      if (probarRechazo) {
+        await page.field('#compra-fecha', '2099-01-01'); await page.review('.compra-form');
+        await page.clickText('Confirmar registro'); await page.wait('!document.querySelector("[role=dialog]")');
+        await page.wait('!document.querySelector(".compra-form button[type=submit]").disabled');
+        assert.equal(await page.evaluate('location.pathname'), '/compras/nueva');
+        assert.equal(browser.requests.filter(r => r.method === 'POST' && /\/pagos$/.test(r.path)).length, iniciosAntes, 'Registro rechazado jamás inicia pago');
+        await page.field('#compra-fecha', obtenerFechaOperacion().fechaComercial);
+      }
+      await page.review('.compra-form');
+      assert.equal(browser.requests.filter(r => r.method === 'POST' && /\/pagos$/.test(r.path)).length, iniciosAntes);
+      const registrosAntes = browser.requests.filter(r => r.method === 'POST' && r.path === '/api/compras').length;
+      await page.evaluate('(() => { const b=document.querySelector(".modal__actions .button--primary");b.click();b.click(); })()');
+      await page.contains('Compra registrada.'); await page.contains('Disponible para pagar');
+      if (pagarAhora) await page.wait('!!document.querySelector(".pago-form")');
+      else assert.equal(await page.evaluate('!!document.querySelector(".pago-form")'), false);
+      assert.equal(browser.requests.filter(r => r.method === 'POST' && r.path === '/api/compras').length, registrosAntes + 1);
+      assert.equal(browser.requests.filter(r => r.method === 'POST' && /\/pagos$/.test(r.path)).length, iniciosAntes, 'Abrir formulario no inicia una transacción');
+      const registro = browser.requests.filter(r => r.method === 'POST' && r.path === '/api/compras').at(-1);
+      assert.deepEqual(Object.keys(registro.body).sort(), ['claveOperacion', 'detalles', 'fechaCompra']);
+      return Number(await page.evaluate('location.pathname.split("/").at(-1)'));
+    };
+    const textoPdf = async bytes => {
+      const doc = await getDocument({ data: new Uint8Array(bytes), useSystemFonts: true }).promise;
+      try {
+        assert.equal(doc.numPages, 1, 'Comprobante breve en una sola hoja, sin páginas vacías');
+        const viewport = (await doc.getPage(1)).getViewport({ scale: 1 });
+        assert.ok(Math.abs(viewport.width - 595.28) < 1 && Math.abs(viewport.height - 841.89) < 1, 'Hoja A4 vertical');
+        let texto = '';
+        for (let i = 1; i <= doc.numPages; i++) texto += (await (await doc.getPage(i)).getTextContent()).items.map(v => v.str).join(' ');
+        return texto;
+      } finally { await doc.cleanup(); }
+    };
+    const comprobarImpresionDescarga = async (tipo, saldo) => {
+      const financierosAntes = browser.requests.filter(r => r.method === 'POST' && r.path.includes('/pagos')).length;
+      await page.wait('!!document.querySelector(".comprobante-documento")');
+      await page.contains('Documento local sin valor bancario ni fiscal.');
+      await page.printMedia();
+      assert.equal(await page.evaluate('getComputedStyle(document.getElementById("root")).display'), 'none');
+      assert.equal(await page.evaluate('getComputedStyle(document.querySelector(".comprobante-vista .modal__header")).display'), 'none');
+      assert.equal(await page.evaluate('getComputedStyle(document.querySelector(".comprobante-acciones")).display'), 'none');
+      await page.screenshot(`comprobante-${tipo}-impresion.png`);
+      const impreso = await page.printPdf();
+      const texto = await textoPdf(impreso);
+      for (const valor of ['CADEFAR', `Comprobante de ${tipo}`, saldo, 'Prueba local']) assert.ok(texto.includes(valor), valor);
+      assert.doesNotMatch(texto, /Descargar PDF|Volver a Compras|Cerrar ventana|Pagos al laboratorio/);
+      await page.printMedia(false);
+      // Se observa el Blob real y se deja al navegador activar la descarga normal.
+      await page.evaluate('window.__ultimoPdf=null; if(!window.__crearUrlOriginal){window.__crearUrlOriginal=URL.createObjectURL.bind(URL);URL.createObjectURL=blob=>{window.__ultimoPdf=blob;return window.__crearUrlOriginal(blob);};}');
+      const descargasAntes = browser.requests.filter(r => r.path.endsWith('/comprobante.pdf')).length;
+      await page.evaluate('(() => { const b=[...document.querySelectorAll(".comprobante-acciones button")].find(b=>b.textContent==="Descargar PDF");b.click();b.click(); })()');
+      await page.wait('!!window.__ultimoPdf');
+      assert.equal(browser.requests.filter(r => r.path.endsWith('/comprobante.pdf')).length, descargasAntes + 1);
+      const encoded = await page.evaluate('new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve(r.result.split(",")[1]);r.readAsDataURL(window.__ultimoPdf);})');
+      const bytes = Buffer.from(encoded, 'base64'); assert.equal(bytes.subarray(0,5).toString(), '%PDF-');
+      const descargado = await textoPdf(bytes);
+      for (const valor of ['CADEFAR', `Comprobante de ${tipo}`, saldo, 'Prueba local']) assert.ok(descargado.includes(valor), valor);
+      assert.doesNotMatch(descargado, /cvv|password|PRUEBA_LOCAL_REF_|cuenta_destino/i);
+      await page.screenshot(`comprobante-${tipo}-desktop.png`);
+      await page.mobile(); await page.settle();
+      assert.equal(await page.evaluate('document.documentElement.scrollWidth <= 375 && document.querySelector(".modal").scrollWidth <= document.querySelector(".modal").clientWidth'), true);
+      await page.screenshot(`comprobante-${tipo}-mobile.png`); await page.viewport(1280, 1000);
+      assert.equal(browser.requests.filter(r => r.method === 'POST' && r.path.includes('/pagos')).length, financierosAntes, 'Consultar/imprimir/descargar no modifica pagos');
+      await page.click('button[aria-label="Cerrar ventana"]');
+    };
+    await t.test('Formulario: registrar sin pago y cancelar preparación inmediata conserva la compra y saldo al recargar', async () => {
+      const diferida = await registrarFormulario(false);
+      let resumen = await page.request('GET', `/compras/${diferida}/pagos`);
+      assert.equal(resumen.body.data.saldoPendiente, '500.00'); assert.equal(resumen.body.data.pagos.length, 0);
+      await page.clickText('Ver comprobante de compra'); await comprobarImpresionDescarga('compra', '500,00 BOB');
+      const inmediata = await registrarFormulario(true);
+      await page.click('.pago-form .button--secondary');
+      await page.clickText('Actualizar'); await page.contains('Disponible para pagar');
+      assert.equal(await page.evaluate('!!document.querySelector(".pago-form")'), false, 'Actualizar la compra no reabre una intención consumida');
+      await page.navigate(`/compras/${inmediata}`); await page.contains('Disponible para pagar');
+      assert.equal(await page.evaluate('!!document.querySelector(".pago-form")'), false, 'Recargar no reabre una intención consumida');
+      resumen = await page.request('GET', `/compras/${inmediata}/pagos`);
+      assert.equal(resumen.body.data.saldoPendiente, '500.00'); assert.equal(resumen.body.data.pagos.length, 0);
+    });
+    await t.test('Formulario: pagar ahora total con Tarjeta, imprimir/descargar y confirmar sin duplicados', async () => {
+      const id = await registrarFormulario(true, true); await iniciar('500.00', 'TARJETA', true); await autorizar();
+      await page.clickText('Verificar pago'); await page.contains('Pago confirmado'); await page.contains('Pagada');
+      await page.click('.pago-autorizacion-local .button--primary'); await comprobarImpresionDescarga('pago', '0,00 BOB');
+      await page.navigate(`/compras/${id}`); await page.contains('Pagada');
+      const resumen = await page.request('GET', `/compras/${id}/pagos`);
+      assert.equal(resumen.body.data.pagos.length, 1); assert.equal(resumen.body.data.totalPagado, '500.00');
+    });
+    await t.test('Formulario: abono inmediato, cancelar PayPal sin perder compra, completar después e imprimir ambos comprobantes', async () => {
+      const id = await registrarFormulario(true); await iniciar('200.00', 'TARJETA', true); await autorizar();
+      await page.clickText('Verificar pago'); await page.contains('Pago parcial');
+      await page.click('.pago-autorizacion-local .button--primary'); await comprobarImpresionDescarga('pago', '300,00 BOB');
+      await iniciar('300.00', 'PAYPAL'); await autorizar('CANCELAR'); await cerrar();
+      await page.navigate(`/compras/${id}`); await page.contains('Disponible para pagar');
+      assert.equal((await page.request('GET', `/compras/${id}/pagos`)).body.data.saldoPendiente, '300.00');
+      await iniciar('300.00', 'PAYPAL'); await autorizar();
+      await page.clickText('Confirmar operación'); await page.contains('Pago confirmado'); await page.contains('Pagada');
+      await page.click('.pago-autorizacion-local .button--primary'); await comprobarImpresionDescarga('pago', '0,00 BOB');
+      await page.clickText('Ver comprobante de compra'); await comprobarImpresionDescarga('compra', '0,00 BOB');
+      await page.navigate(`/compras/${id}`); await page.contains('Pagada');
+      const resumen = (await page.request('GET', `/compras/${id}/pagos`)).body.data;
+      assert.equal(resumen.pagos.length, 3); assert.equal(resumen.pagos.filter(p=>p.estado==='CONFIRMADO').length, 2);
+      assert.equal(resumen.saldoPendiente, '0.00'); assert.equal(resumen.totalPagado, '500.00');
+    });
     await t.test('Compra, tarjeta 200, comprobante, PayPal 300, confirmación expresa y saldo final 0', async () => {
       const id = await nuevaCompra(); await iniciar('200.00');
       await page.screenshot('tarjeta-formulario-desktop.png');
@@ -197,6 +313,8 @@ test('Administrador: pagos locales de extremo a extremo en React/Express/MySQL, 
     t.diagnostic('Navegador y API reales; sin mocks financieros ni peticiones a pasarelas.');
   } finally {
     await browser?.close(); if (server) await new Promise(resolve => server.close(resolve));
+    try { assert.equal(await huellaBase(protegida, 'cadefarexamen'), huellaAntes, 'cadefarexamen debe permanecer idéntica'); }
+    finally { await protegida.end(); }
     await db.sequelize.close(); await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 });

@@ -31,13 +31,13 @@ export const CompraFormPage = () => {
   const inFlight = useRef(false);
   const active = useRef(true);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
-  const guardar = async (data) => {
+  const guardar = async (data, { pagarAhora = false } = {}) => {
     if (!data || inFlight.current) return;
     inFlight.current = true; setSubmitting(true); setAttempted(true); setError(''); setStatus(undefined); setLookup({});
     try {
       const response = await createCompra(data);
       if (!active.current) return;
-      navigate(`/compras/${response.data.idCompra}`, { replace: true, state: { compraRegistrada: true } });
+      navigate(`/compras/${response.data.idCompra}`, { replace: true, state: { compraRegistrada: true, pagarAhora } });
     } catch (failure) { if (active.current) { setError(mensajeError(failure)); setStatus(failure.response?.status); } }
     finally { inFlight.current = false; if (active.current) setSubmitting(false); }
   };

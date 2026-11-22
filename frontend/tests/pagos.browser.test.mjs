@@ -45,6 +45,11 @@ test('Compras: pagos responsive, parciales, historial, confirmación expresa y r
         const responder = data => res.end(JSON.stringify({ data }));
         if (path === '/api/auth/me') return responder({ idUsuario: rol, idRol: rol, nombreUsuario: 'administrador' });
         if (path === '/api/compras/10') return responder(compra);
+        const comprobante = path.match(/^\/api\/compras\/10\/pagos\/(\d+)\/comprobante$/);
+        if (comprobante) {
+          const pago = pagos.find(p => p.idPago === Number(comprobante[1]));
+          return responder({ titulo: 'Comprobante de pago', numero: `PAGO-${pago.idPago}`, datos: [['Referencia', pago.referenciaExterna]], columnas: [], filas: [], totales: [['Importe pagado', `${pago.importe.replace('.', ',')} BOB`]], notas: [] });
+        }
         if (path === '/api/compras/10/pagos' && req.method === 'GET') return responder(resumen());
         if (path === '/api/compras/10/pagos' && req.method === 'POST') {
           inicios++;

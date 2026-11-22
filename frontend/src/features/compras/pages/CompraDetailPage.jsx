@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AppIcon } from '../../../components/AppIcon.jsx';
 import { FeedbackMessage } from '../../../components/FeedbackMessage.jsx';
 import { CatalogoState } from '../../../components/CatalogoState.jsx';
@@ -13,6 +13,7 @@ import { CompraEstado } from '../components/CompraEstado.jsx';
 import { CompraDetallesTable } from '../components/CompraDetallesTable.jsx';
 import { CompraAnularForm } from '../components/CompraAnularForm.jsx';
 import { CompraPagos } from '../components/CompraPagos.jsx';
+import { CompraComprobante } from '../components/CompraComprobante.jsx';
 import { nombreLaboratorioPago } from '../utils/pagoCompra.js';
 import { getCompra, anularCompra } from '../services/compra.service.js';
 import '../styles/compras.css';
@@ -22,6 +23,12 @@ const consultarCompra = (id) => idValido(id) ? getCompra(id) : Promise.reject({ 
 const CompraDetalle = ({ idCompra }) => {
   const { usuario } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [pagarAhora, setPagarAhora] = useState(Boolean(location.state?.pagarAhora));
+  // Consumir la intención de navegación: recargar o volver no reabre el pago.
+  useEffect(() => {
+    if (location.state?.pagarAhora) navigate(location.pathname, { replace: true, state: { ...location.state, pagarAhora: false } });
+  }, [location.pathname, location.state, navigate]);
   const consulta = useConsulta(consultarCompra, idCompra, idCompra);
   const [motivo, setMotivo] = useState('');
   const [resultado, setResultado] = useState(null);
@@ -78,7 +85,10 @@ const CompraDetalle = ({ idCompra }) => {
       <p className="catalogo-note">Cantidades, costos e importes corresponden a la compra registrada. Los datos y estados del catálogo son los actuales. Las fechas históricas se conservan sin conversión horaria.</p>
       {compra.detalles.length ? <CompraDetallesTable detalles={compra.detalles} /> : <CatalogoState title="Sin detalles registrados" message="La consulta no contiene detalles para esta compra." />}
     </section>}
-    {compra && usuario.idRol === ROLES.ADMINISTRADOR && <CompraPagos key={compra.estadoOperacion} compra={compra} bloqueado={submitting} />}
+    {compra && usuario.idRol === ROLES.ADMINISTRADOR && <>
+      <CompraComprobante compra={compra} />
+      <CompraPagos key={compra.estadoOperacion} compra={compra} bloqueado={submitting} pagarAhora={pagarAhora} onPagoPreparado={() => setPagarAhora(false)} />
+    </>}
     {compra?.estadoOperacion === 'CONFIRMADA' && usuario.idRol === ROLES.ADMINISTRADOR && <CompraAnularForm compra={compra} motivo={motivo} onChange={setMotivo} onSubmit={guardar} submitting={submitting} error={error} status={status} requiereConsulta={requiereConsulta} />}
   </div>;
 };

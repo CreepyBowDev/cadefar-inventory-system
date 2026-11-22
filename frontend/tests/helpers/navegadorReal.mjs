@@ -136,6 +136,11 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureRepor
         mobile: () => send('Emulation.setDeviceMetricsOverride', { width: 375, height: 900, deviceScaleFactor: 1, mobile: true }, sessionId),
         viewport: (width, height = 900) => send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 620 }, sessionId),
         timezone: (timezoneId) => send('Emulation.setTimezoneOverride', { timezoneId }, sessionId),
+        printMedia: (enabled = true) => send('Emulation.setEmulatedMedia', { media: enabled ? 'print' : '' }, sessionId),
+        printPdf: async () => {
+          const { data } = await send('Page.printToPDF', { preferCSSPageSize: true, printBackground: true }, sessionId);
+          return Buffer.from(data, 'base64');
+        },
         screenshot: async (name) => {
           if (!process.env.CADEFAR_SCREENSHOT_DIR) return;
           const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, sessionId);

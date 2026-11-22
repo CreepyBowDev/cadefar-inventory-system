@@ -13,7 +13,9 @@ import { CompraPagoForm } from './CompraPagoForm.jsx';
 import { CompraPagosTable } from './CompraPagosTable.jsx';
 import { PagoComprobante } from './PagoComprobante.jsx';
 
-export const CompraPagos = ({ compra, bloqueado = false }) => {
+const formularioInicial = data => ({ metodo: 'TARJETA', importe: data.saldoDisponible, importePasarela: '', referenciaCotizacion: '', autorizado: false });
+
+export const CompraPagos = ({ compra, bloqueado = false, pagarAhora = false, onPagoPreparado }) => {
   const consulta = useConsulta(getPagosCompra, compra.idCompra, compra.idCompra);
   const [form, setForm] = useState(null), [review, setReview] = useState(null), [comprobante, setComprobante] = useState(null);
   const [autorizacionLocal, setAutorizacionLocal] = useState(null);
@@ -23,6 +25,15 @@ export const CompraPagos = ({ compra, bloqueado = false }) => {
   const inFlight = useRef(false), active = useRef(true), clave = useRef(null);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const data = consulta.data;
+  const autoAbierto = useRef(false);
+  useEffect(() => {
+    if (!pagarAhora || autoAbierto.current || consulta.loading || consulta.error || !data || bloqueado) return;
+    autoAbierto.current = true;
+    onPagoPreparado?.();
+    if (compra.estadoOperacion !== 'CONFIRMADA' || data.saldoDisponible === '0.00' || data.importeReservado !== '0.00') return;
+    clave.current = generarClavePago();
+    setForm(formularioInicial(data));
+  }, [pagarAhora, consulta.loading, consulta.error, data, bloqueado, compra.estadoOperacion, onPagoPreparado]);
   const disabled = busy || consulta.loading || bloqueado || status === 401 || status === 403;
   const actualizar = () => { if (!inFlight.current) { setError(''); setResultado(null); setIncierto(false); consulta.retry(); } };
   const ejecutar = async (operacion, abrirAutorizacion = false) => {
@@ -45,7 +56,7 @@ export const CompraPagos = ({ compra, bloqueado = false }) => {
   const abrir = () => {
     if (disabled || !data || incierto) return;
     clave.current = generarClavePago();
-    setForm({ metodo: 'TARJETA', importe: data.saldoDisponible, importePasarela: '', referenciaCotizacion: '', autorizado: false }); setError('');
+    setForm(formularioInicial(data)); setError('');
   };
   const metodo = data?.metodos.find(item => item.metodo === form?.metodo);
   const revisar = event => {
@@ -81,7 +92,7 @@ export const CompraPagos = ({ compra, bloqueado = false }) => {
     <FeedbackMessage message={error} />
     {incierto && <p className="catalogo-note" role="status">No inicies otro pago. Actualiza el historial; si existe un intento, usa «Verificar estado». Un resultado incierto no libera su importe.</p>}
     {status === 401 && <a className="button button--primary" href="/login">Ir al inicio de sesión</a>}
-    {resultado && !autorizacionLocal && <div className="pago-resultado" role="status"><PagoEstado estado={estadoPagoVisible(resultado)} /><p>{resultado.esPrueba ? resultado.estado === 'CONFIRMADO' ? 'Saldo actualizado.' : resultado.estado === 'RECHAZADO' ? 'No se aplicó ningún abono.' : 'Pendiente de verificación.' : resultado.estado === 'CONFIRMADO' ? 'El proveedor confirmó la transacción y el saldo se actualizó.' : resultado.estado === 'RECHAZADO' ? 'El proveedor cerró el intento sin confirmar un pago.' : 'El pago aún no está confirmado. Continúa en la pasarela y después verifica su estado.'}</p>{enlacePagoSeguro(resultado.urlPago, resultado.metodo) && <a className="button button--primary" href={resultado.urlPago} target="_blank" rel="noopener noreferrer">Abrir pago seguro</a>}</div>}
+    {resultado && !autorizacionLocal && <div className="pago-resultado" role="status"><PagoEstado estado={estadoPagoVisible(resultado)} /><p>{resultado.esPrueba ? resultado.estado === 'CONFIRMADO' ? 'Saldo actualizado.' : resultado.estado === 'RECHAZADO' ? 'No se aplicó ningún abono.' : 'Pendiente de verificación.' : resultado.estado === 'CONFIRMADO' ? 'El proveedor confirmó la transacción y el saldo se actualizó.' : resultado.estado === 'RECHAZADO' ? 'El proveedor cerró el intento sin confirmar un pago.' : 'El pago aún no está confirmado. Continúa en la pasarela y después verifica su estado.'}</p>{resultado.estado === 'CONFIRMADO' && <button type="button" className="button button--secondary" onClick={() => setComprobante(resultado)}>Ver comprobante de pago</button>}{enlacePagoSeguro(resultado.urlPago, resultado.metodo) && <a className="button button--primary" href={resultado.urlPago} target="_blank" rel="noopener noreferrer">Abrir pago seguro</a>}</div>}
     <PagoAutorizacionLocal key={autorizacionLocal?.idPago || 'cerrada'} compra={compra} pago={autorizacionLocal} busy={busy || consulta.loading} error={error}
       onSubmit={decision => { if (autorizacionLocal) ejecutar(() => autorizarPagoPrueba(compra.idCompra, autorizacionLocal.idPago, decision), true); }}
       onVerificar={() => ejecutar(() => verificarPagoCompra(compra.idCompra, autorizacionLocal.idPago), true)}

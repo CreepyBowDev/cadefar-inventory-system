@@ -621,7 +621,7 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
       await abrirAnulacion(); await motivoAnulacion(' Corrección de adquisición\nCantidades documentadas ');
       const originalRows = await evaluate('document.querySelector(".compra-table tbody").textContent');
       await evaluate('document.querySelector(".compra-anular-form").scrollIntoView({block:"center"})'); await screenshot('compra-anular-desktop.png');
-      anulacionResponse = { hold: true }; const count = anulaciones().length, getCount = comprasRequests().filter(r => r.method === 'GET').length;
+      anulacionResponse = { hold: true }; const count = anulaciones().length, getCount = comprasRequests().filter(r => r.method === 'GET' && !r.path.includes('/pagos')).length;
       await confirmarAnulacion(); await waitUntil(() => heldAnulacion);
       assert.equal(anulaciones().length, count + 1);
       assert.deepEqual(heldAnulacion.body, { motivo: 'Corrección de adquisición\nCantidades documentadas' });
@@ -634,7 +634,7 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
       assert.equal(anulaciones().length, count + 1); await screenshot('compra-anular-confirmacion.png');
       await respond(heldAnulacion.requestId, 200, { data: anularSimulada(heldAnulacion.id, heldAnulacion.body.motivo) }); heldAnulacion = null;
       await contains('Compra anulada. El estado');
-      assert.equal(comprasRequests().filter(r => r.method === 'GET').length, getCount);
+      assert.equal(comprasRequests().filter(r => r.method === 'GET' && !r.path.includes('/pagos')).length, getCount);
       assert.equal(await evaluate('document.querySelector(".compra-table tbody").textContent'), originalRows);
       assert.equal(await evaluate('document.querySelector(".compra-total").textContent'), '100.000.000,37');
       assert.ok(await evaluate('document.querySelector(".compra-anulacion").textContent.includes("15/02/2026 00:15:00")'));
@@ -681,7 +681,9 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
       assert.ok(await evaluate('document.querySelector(".compra-anular-form button[type=submit]").disabled'));
       await clickText('Actualizar'); await ready();
       assert.ok(await evaluate('document.querySelector(".compra-anulacion").textContent.includes("Motivo registrado pese a respuesta perdida")'));
-      assert.equal(comprasRequests().at(-1).path, '/api/compras/1'); assert.deepEqual(comprasRequests().at(-1).query, {});
+      // El panel financiero también puede consultar al remontarse tras anular.
+      const consultaDetalle = comprasRequests().filter(r => /^\/api\/compras\/\d+$/.test(r.path) && r.method === 'GET').at(-1);
+      assert.equal(consultaDetalle.path, '/api/compras/1'); assert.deepEqual(consultaDetalle.query, {});
       assert.equal(await evaluate('!!document.querySelector(".compra-anular-form")'), false); assert.equal(anulaciones().length, count);
     });
     await t.test('CU27: red/500 sin commit bloquean; consulta fallida no pierde motivo y nueva confirmación es explícita', async () => {

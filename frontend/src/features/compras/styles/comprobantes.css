@@ -1,0 +1,41 @@
+.compra-pago-opcion { display: grid; gap: .8rem; }
+.compra-pago-opcion label { display: flex; align-items: baseline; gap: .6rem; }
+.comprobante-vista .modal--large { width: min(900px, calc(100vw - 32px)); }
+.comprobante-documento { background: white; color: #172b36; padding: 1.5rem; font-size: .9rem; }
+.comprobante-encabezado { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 3px solid #16645c; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+.comprobante-encabezado strong { font-size: 1.8rem; color: #16645c; letter-spacing: .08em; }
+.comprobante-encabezado h2 { font-size: 1.15rem; margin: .4rem 0; }
+.comprobante-encabezado p { text-align: right; }
+.comprobante-encabezado small { display: block; max-width: 200px; margin-top: .5rem; font-size: .75rem; color: #52636b; }
+.comprobante-documento table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; table-layout: fixed; }
+.comprobante-documento th, .comprobante-documento td { padding: .65rem .5rem; border-bottom: 1px solid #d8e1e4; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.comprobante-datos th { width: 36%; }
+.comprobante-lineas th { background: #e8f1ef; }
+.comprobante-lineas th:first-child { width: 43%; }
+.comprobante-lineas th:nth-child(2) { width: 12%; }
+.comprobante-lineas th:nth-child(3) { width: 24%; }
+.comprobante-lineas th:nth-child(4) { width: 21%; }
+.comprobante-lineas :is(th,td):not(:first-child), .comprobante-totales td { text-align: right; font-variant-numeric: tabular-nums; }
+.comprobante-totales { background: #f1f6f5; }
+.comprobante-totales th { width: 60%; }
+.comprobante-documento footer { color: #52636b; font-size: .75rem; }
+.comprobante-documento footer p { margin: .4rem 0; }
+@media (max-width: 620px) {
+  .comprobante-documento { padding: .25rem; font-size: .75rem; }
+  .comprobante-documento th, .comprobante-documento td { padding: .4rem .2rem; }
+  .comprobante-encabezado { flex-direction: column; }
+  .comprobante-encabezado p { text-align: left; }
+}
+@page comprobante { size: A4 portrait; margin: 15mm; }
+@media print {
+  .comprobante-vista { page: comprobante; }
+  body:has(.comprobante-vista) { background: white !important; overflow: visible !important; }
+  body:has(.comprobante-vista) > :not(.comprobante-vista) { display: none !important; }
+  .comprobante-vista .modal-backdrop, .comprobante-vista .modal, .comprobante-vista .modal__body { display: block !important; position: static !important; width: auto !important; max-width: none !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; background: white !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+  .comprobante-vista .modal__header, .comprobante-vista .modal__body > :not(.comprobante-documento) { display: none !important; }
+  .comprobante-documento { padding: 0; font-size: 10pt; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .comprobante-encabezado { flex-direction: row; }
+  .comprobante-encabezado p { text-align: right; }
+  .comprobante-documento thead { display: table-header-group; }
+  .comprobante-documento tr, .comprobante-encabezado, .comprobante-totales { break-inside: avoid; }
+}

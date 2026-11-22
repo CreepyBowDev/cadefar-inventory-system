@@ -9,6 +9,7 @@ const { app } = await import('../src/app.js');
 const { generarToken } = await import('../src/shared/utils/jwt.js');
 const { usuarioRepository } = await import('../src/data/repositories/usuario.repository.js');
 const { pagoCompraService } = await import('../src/business/services/pago-compra.service.js');
+const { compraComprobanteService } = await import('../src/business/services/compra-comprobante.service.js');
 const { simularAuditoriaTransversal } = await import('./helpers/auditoria-transversal.js');
 
 test('Pagos HTTP: sesión, rol Administrador, CSRF, validación estricta y ausencia de secretos', async t => {
@@ -17,6 +18,7 @@ test('Pagos HTTP: sesión, rol Administrador, CSRF, validación estricta y ausen
     t.mock.method(usuarioRepository, 'findByIdForSession', async ({ idUsuario }) => ({ id_usuario: idUsuario,
         id_rol: idUsuario, nombre_usuario: `usuario${idUsuario}`, estado: true, version_credenciales: 0 }));
     let llamadas = [];
+    t.mock.method(compraComprobanteService, 'consultar', async () => ({ titulo: 'Comprobante de compra', numero: 'COMPRA-1', esPrueba: true, datos: [['Compra', '#1']], columnas: [], filas: [], totales: [['Saldo pendiente', '100,00 BOB']], notas: ['Prueba local'] }));
     for (const metodo of ['consultar', 'iniciar', 'verificar']) t.mock.method(pagoCompraService, metodo, async (...args) => {
         llamadas.push({ metodo, args }); return { estado: 'PENDIENTE' };
     });
@@ -35,6 +37,21 @@ test('Pagos HTTP: sesión, rol Administrador, CSRF, validación estricta y ausen
     };
     const body = { claveOperacion: 'pago-operacion-http-001', metodo: 'TARJETA', importe: '1.00', autorizarPago: true };
     try {
+        await t.test('Comprobantes JSON/PDF protegidos, IDs y consultas estrictos, PDF real no cacheable', async () => {
+            for (const path of ['/1/comprobante', '/1/comprobante.pdf', '/1/pagos/2/comprobante', '/1/pagos/2/comprobante.pdf']) {
+                for (const rol of [null, 2, 3]) assert.equal((await request(path, 'GET', undefined, rol)).status, rol ? 403 : 401);
+                assert.equal((await request(`${path}?extra=1`)).status, 400);
+                assert.equal((await request(path.replace('/1/', '/01/'))).status, 400);
+            }
+            assert.equal((await request('/1/comprobante')).status, 200);
+            const response = await fetch(`${base}/1/comprobante.pdf`, { headers: { Cookie: `token=${generarToken({ idUsuario: 1, idRol: 1, versionCredenciales: 0 })}` } });
+            assert.equal(response.status, 200);
+            assert.equal(response.headers.get('content-type'), 'application/pdf');
+            assert.equal(response.headers.get('cache-control'), 'no-store');
+            assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+            assert.match(response.headers.get('content-disposition'), /CADEFAR-COMPRA-1.pdf/);
+            assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
+        });
         for (const [path, method, payload] of [['/1/pagos', 'GET'], ['/1/pagos', 'POST', body],
             ['/1/pagos/2/verificar', 'POST', {}], ['/1/pagos/2/confirmar', 'POST', { autorizarPago: true }],
             ['/1/pagos/2/conciliar', 'POST', { idExterno: 'cs_live_recuperada' }]]) {

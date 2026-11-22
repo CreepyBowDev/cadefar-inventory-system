@@ -76,9 +76,9 @@ export class pagoCompraService {
             throw new AppError('La base conectada no permite operaciones de prueba', 503);
         }
     }
-    static async consultar(idCompra) {
+    static async consultar(idCompra, { transaction } = {}) {
         this.#validarBase();
-        return db.sequelize.transaction({ isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ }, async transaction => {
+        const consultar = async transaction => {
             const registro = await compraRepository.findById(idCompra, { transaction });
             if (!registro) throw new AppError('Compra no encontrada', 404);
             const compra = toPlain(registro);
@@ -87,7 +87,8 @@ export class pagoCompraService {
             return { ...calcularResumenPagos(compra, pagos), pagos: pagos.map(toPublic),
                 ...(entorno.esPruebaLocal() ? { esPrueba: true, procesador: 'PRUEBA_LOCAL' } : {}),
                 metodos: metodosPagoPublicos(compra.id_proveedor_laboratorio) };
-        });
+        };
+        return transaction ? consultar(transaction) : db.sequelize.transaction({ isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ }, consultar);
     }
 
     static #validarEntorno(pago) {

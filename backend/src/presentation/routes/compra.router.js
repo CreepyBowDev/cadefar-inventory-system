@@ -6,9 +6,16 @@ import { ROLES } from '../../shared/constants/roles.js';
 import { pagoCompraController } from '../controllers/pago-compra.controller.js';
 import { pagoOrigenMiddleware } from '../middlewares/pago-origen.middleware.js';
 import { pagosLocalMiddleware } from '../middlewares/pagos-local.middleware.js';
+import { compraComprobanteController } from '../controllers/compra-comprobante.controller.js';
 
 export const compraRouter = Router();
 compraRouter.use(authMiddleware);
+
+// Los comprobantes contienen información financiera: conservan el permiso de Pagos.
+compraRouter.get('/:idCompra/comprobante', requireRole(ROLES.ADMINISTRADOR), compraComprobanteController.compra);
+compraRouter.get('/:idCompra/comprobante.pdf', requireRole(ROLES.ADMINISTRADOR), compraComprobanteController.compraPdf);
+compraRouter.get('/:idCompra/pagos/:idPago/comprobante', requireRole(ROLES.ADMINISTRADOR), compraComprobanteController.pago);
+compraRouter.get('/:idCompra/pagos/:idPago/comprobante.pdf', requireRole(ROLES.ADMINISTRADOR), compraComprobanteController.pagoPdf);
 
 compraRouter.get('/:idCompra/pagos', requireRole(ROLES.ADMINISTRADOR), pagoCompraController.consultar);
 compraRouter.post('/:idCompra/pagos/:idPago/autorizar-prueba', requireRole(ROLES.ADMINISTRADOR), pagosLocalMiddleware, pagoOrigenMiddleware, pagoCompraController.autorizarPrueba);
