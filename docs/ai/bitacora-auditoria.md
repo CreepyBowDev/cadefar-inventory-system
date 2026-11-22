@@ -2,6 +2,14 @@
 
 Fecha de revisión: 19/11/2026. Fuentes funcionales: secciones 38–39 del contexto maestro, CU38–CU42, RF35–RF38/RF43–RF53, RI12/RI16, RNF18–RNF22 y RN91/RN97–RN101/RN116–RN133. Los cierres previos conservan su evidencia histórica.
 
+## Estado vigente y lectura de los cierres — 21/11/2026
+
+Captura backend y consulta frontend de Bitácora implementadas. Ventas/Recetas y Reportes también están implementados en backend y frontend e integran sus eventos en la matriz siguiente. La evidencia histórica de Bitácora o de backend no acredita por extensión toda la interfaz de esos módulos ni el despliegue. Venta pendiente y detalles se registran primero; cada receta y sus vínculos se registran después en otra transacción (RN57).
+
+La matriz backend y las cifras de cada cierre se conservan con su alcance original. Las referencias a `fases.md` §10.14–10.20/§7.15 identifican planes sustituidos, no el seguimiento visual actual. Su resumen de evidencia conservado está en la sección «Integraciones futuras y pendientes operativos» de este archivo y en `contratos-reportes-react.md` §9. La restricción histórica «solo LOCAL» fue ampliada por el perfil Railway opt-in; controles, correcciones y límites actuales en `exportaciones-railway.md`. Implementación no significa perfil habilitado o aceptado en un servidor real.
+
+Esta actualización documental no ejecuta pruebas, migraciones ni conexiones; no reemplaza la evidencia anterior por una nueva aceptación.
+
 ## Estado por fase
 
 | Fase | Entrega | Estado |
@@ -15,7 +23,7 @@ Fecha de revisión: 19/11/2026. Fuentes funcionales: secciones 38–39 del conte
 | 6 | Compras, anulaciones, ajustes/conciliación y retiros | Implementada |
 | 7 | Cobertura integral, documentación y aceptación MySQL aislada | Verificada localmente; pendientes operativos al final |
 
-La revisión original comprendía 33 CU (CU01–CU27, CU33–CU37 y CU40) y 44 endpoints: 26 escrituras y 18 GET. CU42 agregó dos GET. Ventas/Recetas añadió nueve endpoints y completó CU28–CU32 para formulario sin adjuntos (55 endpoints, 39 CU). Los tres GET ordinarios de Reportes llevaron ese total a 58. La ampliación añade tres estadísticas y cuatro exportaciones: **65 endpoints actuales (31 no GET y 34 GET), más siete rechazos HEAD explícitos** (72 registros de método/ruta en Express), sin nuevos CU. CU38/CU39/CU41 están implementados y los 42 CU cubiertos en backend dentro de sus alcances aprobados. Esto no equivale a aceptación conjunta completa: Fase 10 de ampliación sigue PARCIAL (`fases.md` §10.20); Fase 11 cierra solo documentación. Los catálogos funcionales mantienen 42 CU, 53 RF, 16 RI, 22 RNF y 133 RN. Compartir un endpoint entre CU no crea endpoints adicionales.
+La revisión original comprendía 33 CU (CU01–CU27, CU33–CU37 y CU40) y 44 endpoints: 26 escrituras y 18 GET. CU42 agregó dos GET. Ventas/Recetas añadió nueve endpoints y completó CU28–CU32 para formulario sin adjuntos (55 endpoints, 39 CU). Los tres GET ordinarios de Reportes llevaron ese total a 58. La ampliación añade tres estadísticas y cuatro exportaciones: **65 endpoints actuales (31 no GET y 34 GET), más siete rechazos HEAD explícitos** (72 registros de método/ruta en Express), sin nuevos CU. CU38/CU39/CU41 están implementados y los 42 CU cubiertos en backend dentro de sus alcances aprobados. Esto no equivale a aceptación conjunta completa: el cierre histórico de Fase 10 backend fue PARCIAL; la matriz de evidencia conservada está en `contratos-reportes-react.md` §9. Los catálogos funcionales mantienen 42 CU, 53 RF, 16 RI, 22 RNF y 133 RN. Compartir un endpoint entre CU no crea endpoints adicionales.
 
 ## Matriz de endpoints
 

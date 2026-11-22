@@ -726,7 +726,7 @@ Ejemplo al crear usuario, enviar:
 {
   "idRol": 3,
   "nombreUsuario": "vendedor01",
-  "password": "12345678"
+  "password": "EjemploSoloDocs1!"
 }
 ```
 

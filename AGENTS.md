@@ -415,14 +415,17 @@ La autenticación utiliza:
 
 El JWT debe contener solamente la información necesaria.
 
-Payload esperado:
+Payload obligatorio actual:
 
 ```js
 {
   idUsuario,
-  idRol
+  idRol,
+  versionCredenciales
 }
 ```
+
+`authMiddleware` contrasta la cuenta activa y `versionCredenciales` con la base de datos. CU08/CU09 incrementan la versión para invalidar credenciales anteriores; logout elimina la cookie sin blacklist ni tabla de sesiones.
 
 Nunca incluir:
 

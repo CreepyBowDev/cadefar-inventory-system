@@ -617,16 +617,16 @@ Vendedor.
 **Objetivo:**  
 Preparar, guardar y confirmar la venta de medicamentos.
 
-**Estado de implementación backend:** CU28–CU32 están implementados y verificados localmente para el alcance aprobado sin adjuntos: ventas pendientes/confirmadas, consulta y anulación, registro de recetas mediante formulario y aprobación/rechazo por el Regente. RN58 exige receta aprobada de la misma venta para `RECETA_MEDICA`, no para `LIBRE`, y bloquea valores desconocidos. La migración `20261101120000-allow-null-receta-archivo.js` permite NULL en el campo legado y debe aplicarse antes de utilizar esta versión en una base existente. La evidencia actual de `bitacora-auditoria.md` corresponde al flujo completo de formulario; no acredita frontend ni despliegue en el entorno operativo.
+**Estado vigente (21/11/2026):** CU28–CU32 están implementados en backend y frontend para el alcance sin adjuntos: ventas pendientes/confirmadas, consulta y anulación, registro de recetas mediante formulario y aprobación/rechazo por el Regente. RN58 exige receta aprobada de la misma venta para `RECETA_MEDICA`, no para `LIBRE`, y bloquea valores desconocidos. La migración `20261101120000-allow-null-receta-archivo.js` permite NULL en el campo legado y debe aplicarse antes de utilizar esta versión en una base existente. La evidencia backend local de `bitacora-auditoria.md` conserva su alcance original; la existencia de la interfaz React no acredita una nueva aceptación integrada ni despliegue.
 
 **Registro pendiente:**
 
-- El Vendedor guarda la venta en estado `PENDIENTE` con sus detalles y recetas cuando correspondan.
+- El Vendedor guarda la venta en estado `PENDIENTE` con sus detalles, mediante `POST /api/ventas` con `claveOperacion` y `detalles`. El alta no recibe recetas y crea detalles sin receta vinculada.
 - Los medicamentos incluidos en una nueva venta deben estar activos, conforme a RN14.
 - Se calcula el total y se registra la fecha de registro, sin fecha de venta todavía.
 - Cada detalle mantiene una referencia obligatoria a una existencia real mediante `id_existencia`, conforme al modelo vigente; esta selección es provisional y no garantiza disponibilidad.
 - No se descuenta ni reserva stock ni se generan movimientos de inventario.
-- Las recetas quedan vinculadas con la venta para que el Regente las revise.
+- Después, el Regente o Vendedor registra y vincula cada receta mediante CU31 en otra transacción, para su revisión por el Regente. Un fallo de ese registro no revierte la venta pendiente ya guardada (RN57).
 
 **Condiciones para confirmar:**
 
@@ -916,7 +916,7 @@ Se utiliza la fecha de confirmación y se distinguen las ventas confirmadas de l
 
 **Ampliación común autorizada, sin reconstruir los CU (20/11/2026):** para las tres fuentes, el actor permitido puede solicitar `/estadisticas` con período/filtro propios y granularidad obligatoria, o `/exportar` eligiendo TABULAR/ESTADISTICA y CSV/XLSX/PDF. Estadísticas JSON devuelven `{ data: { fuente, periodo, filtros, granularidad, sinDatos, resumen, intervalos, series, distribuciones } }` sin paginación; ceros y conciliación exacta en snapshot propio. Exportación TABULAR incluye todo el detalle seleccionado; ESTADISTICA todas las métricas, no detalle operativo adicional. PDF/XLSX estadísticos exigen gráfico/métrica compatibles e incrustan PNG más tabla exacta; CSV rechaza esos selectores. No se exporta solo página visible ni se truncan datos para encajar límites.
 
-Descarga **solo LOCAL**, 200 con archivo terminado/MIME/attachment/longitud incluso vacío; 400 incompatibilidades, 413 límite, 503 ocupado/no disponible/tiempo agotado, 500 técnico seguro. Tras headers no segundo JSON; transporte fallido no es éxito. Sesión/roles se validan antes de generar. Un evento terminal de exportación, EXITO solo tras finish/bytes completos; no recepción del usuario. Contrato técnico, límites y consumo con cookie/credenciales sin guardar JWT: `contratos-reportes-react.md` §1–7. La interfaz se implementará por separado.
+Descarga bajo perfil LOCAL o Railway opt-in admitido por el servidor, 200 con archivo terminado/MIME/attachment/longitud incluso vacío; 400 incompatibilidades, 413 límite, 503 ocupado/no disponible/tiempo agotado, 500 técnico seguro. Tras headers no segundo JSON; transporte fallido no es éxito. Sesión/roles se validan antes de generar. Un evento terminal de exportación, EXITO solo tras finish/bytes completos; no recepción del usuario. Contrato técnico, límites y consumo con cookie/credenciales sin guardar JWT: `contratos-reportes-react.md` §1–7 y `exportaciones-railway.md`. La interfaz ya implementa consultas, estadísticas, gráficas y descargas; su seguimiento visual es `fases.md`, independiente de las evidencias backend históricas.
 
 ---
 
@@ -961,7 +961,7 @@ Consultar la trazabilidad histórica del inventario.
 
 **Implementación reutilizada:** `GET /api/inventario/movimientos`, mismo flujo que CU24 para Administrador/Regente. Conserva filtros y respuesta propia `{ data: movimientos }`, incluida observacion; no adopta el DTO mínimo/paginación de los tres reportes ni crea otro listado JSON.
 
-**Exportación ampliada LOCAL:** `GET /api/inventario/movimientos/exportar`, mismos actores/filtros abiertos existentes, formato CSV/XLSX/PDF y `presentacion=TABULAR` obligatorios. No exige período, no admite ESTADISTICA ni paginación/gráfico/métrica. Extrae todas las coincidencias bajo snapshot propio, proyección plana de referencias/usuario sin observacion, saldos reconstruidos ni resumen monetario; cuenta movimientos. Vacío/errores/transporte/auditoría según contrato común de descarga, sin cambiar GET de CU24/CU40 (`contratos-reportes-react.md` §2/5–7).
+**Exportación ampliada:** `GET /api/inventario/movimientos/exportar`, mismos actores/filtros abiertos existentes, formato CSV/XLSX/PDF y `presentacion=TABULAR` obligatorios. Disponibilidad según perfil LOCAL o Railway opt-in admitido. No exige período, no admite ESTADISTICA ni paginación/gráfico/métrica. Extrae todas las coincidencias bajo snapshot propio, proyección plana de referencias/usuario sin observacion, saldos reconstruidos ni resumen monetario; cuenta movimientos. Vacío/errores/transporte/auditoría según contrato común de descarga, sin cambiar GET de CU24/CU40 (`contratos-reportes-react.md` §2/5–7).
 
 ---
 
@@ -991,7 +991,7 @@ Las pérdidas se obtienen de los movimientos registrados y no requieren una tabl
 4. Devolver resumen por motivo y global, cantidades retiradas agregadas textuales y detalle mínimo paginado por fecha/ID descendentes. Es retiro bruto: idMovimientoReversion eventual se informa en el mismo snapshot sin descontarla, incluso fuera del período. No habilita un flujo operativo de reversión de retiros.
 5. Intentar REPORTE_PERDIDAS_CONSULTAR independiente tras materializar, también en vacío; solo cantidadResultados de la página como metadato específico, como en CU38/CU39.
 
-**Estado de verificación de CU38/CU39/CU41 y exportación CU40:** consultas y ampliación implementadas; evidencia MySQL 8.0.46 delimitada en `fases.md` §10.20, con Fase 10 PARCIAL, no aceptación backend conjunta completa. Las 21 descargas acotadas sí se probaron con motor; multibloque MySQL solo CSV, XLSX/PDF multibloque simulados. DATETIME(0) impide fracciones persistidas; fallos tardíos de transporte/conexión/COMMIT no reproducidos íntegramente con motor. Matriz de evidencia en `contratos-reportes-react.md` §9. Fase 11 completa documentación, no revisión visual, gates productivos ni frontend/despliegue; Fase 9 sigue PARCIAL y Fases 5–8 conservan sus límites. La antigua Fase 6 parcial/Fase 7 documental pertenecían al plan sustituido y no son las fases de la ampliación actual.
+**Estado de verificación de CU38/CU39/CU41 y exportación CU40:** backend y frontend implementados; evidencia histórica MySQL 8.0.46 delimitada en `contratos-reportes-react.md` §9 y `bitacora-auditoria.md`, sin aceptación backend conjunta completa. Las 21 descargas acotadas sí se probaron con motor; multibloque MySQL solo CSV, XLSX/PDF multibloque simulados. DATETIME(0) impide fracciones persistidas; fallos tardíos de transporte/conexión/COMMIT no reproducidos íntegramente con motor. Los cierres backend Fases 9/10 parciales y Fase 11 documental pertenecen al plan sustituido. No deben confundirse con las cuatro fases de mejora visual actuales de `fases.md`; la extensión Railway y sus límites de evidencia están en `exportaciones-railway.md`. No se acredita despliegue por esta sincronización documental.
 
 ---
 
@@ -999,7 +999,7 @@ Las pérdidas se obtienen de los movimientos registrados y no requieren una tabl
 
 - Crear, modificar, consultar y activar/desactivar usuarios requiere autenticación y autorización de Administrador.
 - Registrar una compra implica actualizar existencias, generar movimientos de entrada y actualizar el costo promedio.
-- Guardar una venta pendiente conserva sus detalles y recetas sin afectar inventario; confirmarla implica volver a consultar stock vendible, seleccionar existencias y generar movimientos de salida.
+- Guardar una venta pendiente conserva sus detalles sin afectar inventario; las recetas se registran y vinculan en operaciones posteriores. Confirmarla implica volver a consultar stock vendible, recetas y vencimientos, seleccionar existencias y generar movimientos de salida.
 - Cuando existen varias existencias de un medicamento, la venta prioriza la existencia vendible que vence primero.
 - Confirmar una venta puede requerir que el Regente apruebe las recetas previamente vinculadas con la venta pendiente.
 - Anular una compra o venta confirmada genera movimientos de reversión en lugar de eliminar los movimientos originales. Anular una venta pendiente no genera reversiones.
@@ -1104,8 +1104,8 @@ Registrar un evento no es un objetivo manual del actor: es un comportamiento aut
 | CU08 y CU09 | Cambio propio, restablecimiento administrativo, solicitud de recuperación, rechazo o limitación, restablecimiento exitoso o fallido y problemas técnicos de envío | RF47, RF46 |
 | CU03, CU06, CU07, CU10, CU12, CU13 y escrituras de CU14/CU16–CU19 | Altas, modificaciones, cambios de estado y cambios de composición; responsable y registro afectado | RF48 |
 | CU23, CU25, CU27, CU35 y CU36 | Ajustes, registro/anulación de compra y retiros, con resultado y referencias a operaciones y movimientos existentes | RF49 |
-| CU28, CU30, CU31 y CU32 | Integración futura del registro y confirmación de venta, anulación, registro y revisión de recetas | RF49 |
+| CU28, CU30, CU31 y CU32 | Registro y confirmación de venta, anulación, registro y revisión de recetas implementados con auditoría transaccional | RF49 |
 
-Los procesos de autenticación, administración, catálogo, compras, ajustes y retiros indicados están integrados con Bitácora. Ventas y Recetas conservan su estado funcional pendiente. Los éxitos de CU04/CU05 y CU42 se auditan como consultas sensibles; los éxitos rutinarios del catálogo/inventario y `/auth/me` se excluyen. Sus rechazos y errores relevantes recibidos por el backend conservan captura transversal.
+Los procesos de autenticación, administración, catálogo, compras, ajustes, retiros, ventas y recetas indicados están integrados con Bitácora. CU38/CU39/CU41 y sus estadísticas/exportaciones también incorporan sus eventos, con la política propia de lecturas y descargas. Los éxitos de CU04/CU05 y CU42 se auditan como consultas sensibles; los éxitos rutinarios del catálogo/inventario y `/auth/me` se excluyen. Sus rechazos y errores relevantes recibidos por el backend conservan captura transversal.
 
-CU23 registra el resultado sin cambios según RF49/RN129, sin crear un movimiento, un historial detallado de conteos ni alterar las precondiciones y valoración actuales. No guarda la observación ni el conteo de esa conciliación. La bitácora complementa, pero no sustituye, CU24/CU40 ni el historial de compras y futuras ventas.
+CU23 registra el resultado sin cambios según RF49/RN129, sin crear un movimiento, un historial detallado de conteos ni alterar las precondiciones y valoración actuales. No guarda la observación ni el conteo de esa conciliación. La bitácora complementa, pero no sustituye, CU24/CU40 ni el historial de compras y ventas.

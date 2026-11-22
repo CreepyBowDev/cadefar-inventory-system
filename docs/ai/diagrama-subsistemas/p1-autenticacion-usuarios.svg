@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2240" height="1120" viewBox="0 0 2240 1120" role="img" aria-labelledby="title description">
+  <title id="title">P1. PAQUETE DE AUTENTICACIÓN Y USUARIOS</title>
+  <desc id="description">Tres filas horizontales: siete interfaces React, los dos controladores HTTP participantes y las cinco tablas MySQL utilizadas por el paquete, incluida la captura automática de auditoría. Cada relación tiene un recorrido ortogonal independiente, sin cruces ni tramos superpuestos. auth.controller.js depende indirectamente de limite_recuperacion_ip, recuperacion_password, usuario y bitacora_auditoria. usuario.controller.js depende indirectamente de recuperacion_password, usuario, bitacora_auditoria y rol. Las flechas llegan al borde superior o inferior de cada tabla; no existen llamadas entre controladores.</desc>
+  <defs>
+    <marker id="dependency-arrow" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 1 1 L 10 5 L 1 9" fill="none" stroke="#303030" stroke-width="1.5"/>
+    </marker>
+    <g id="component" fill="#e2efda" stroke="#548235" stroke-width="1.2">
+      <rect x="4" y="0" width="17" height="22"/>
+      <rect x="0" y="4" width="9" height="5"/>
+      <rect x="0" y="13" width="9" height="5"/>
+    </g>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #000; }
+      .box { fill: #e2efda; stroke: #548235; stroke-width: 1.3; }
+      .stereotype { font-size: 17px; text-anchor: middle; }
+      .filename { font-size: 16px; text-anchor: middle; }
+      .name { font-size: 18px; text-anchor: middle; }
+      .http { fill: none; stroke: #303030; stroke-width: 1.5; }
+      .dependency { fill: none; stroke: #303030; stroke-width: 1.5; stroke-dasharray: 7 5; }
+    </style>
+  </defs>
+
+  <rect width="2240" height="1120" fill="#fff"/>
+  <text x="30" y="40" font-size="25" font-weight="bold">P1. PAQUETE DE AUTENTICACIÓN Y USUARIOS</text>
+  <rect x="30" y="110" width="2180" height="900" fill="#fff" stroke="#548235" stroke-width="1.3"/>
+  <rect x="30" y="75" width="395" height="35" fill="#a9d18e" stroke="#548235" stroke-width="1.3"/>
+  <text x="227.5" y="98" font-size="19" text-anchor="middle">AUTENTICACIÓN Y USUARIOS</text>
+
+  <!-- Fila 1: exclusivamente interfaces. -->
+  <g id="interfaces">
+    <g id="login-page">
+      <rect class="box" x="60" y="180" width="280" height="80"/>
+      <use href="#component" x="307" y="190"/>
+      <text class="stereotype" x="200" y="207">«Interface»</text>
+      <text class="filename" x="200" y="238">LoginPage.jsx</text>
+    </g>
+    <g id="recovery-page">
+      <rect class="box" x="360" y="180" width="280" height="80"/>
+      <use href="#component" x="607" y="190"/>
+      <text class="stereotype" x="500" y="207">«Interface»</text>
+      <text class="filename" x="500" y="238">RecuperacionPasswordPage.jsx</text>
+    </g>
+    <g id="main-layout">
+      <rect class="box" x="660" y="180" width="280" height="80"/>
+      <use href="#component" x="907" y="190"/>
+      <text class="stereotype" x="800" y="207">«Interface»</text>
+      <text class="filename" x="800" y="238">MainLayout.jsx</text>
+    </g>
+    <g id="users-page">
+      <rect class="box" x="960" y="180" width="280" height="80"/>
+      <use href="#component" x="1207" y="190"/>
+      <text class="stereotype" x="1100" y="207">«Interface»</text>
+      <text class="filename" x="1100" y="238">UsuariosPage.jsx</text>
+    </g>
+    <g id="user-form-page">
+      <rect class="box" x="1260" y="180" width="280" height="80"/>
+      <use href="#component" x="1507" y="190"/>
+      <text class="stereotype" x="1400" y="207">«Interface»</text>
+      <text class="filename" x="1400" y="238">UsuarioFormPage.jsx</text>
+    </g>
+    <g id="reset-password-dialog">
+      <rect class="box" x="1560" y="180" width="280" height="80"/>
+      <use href="#component" x="1807" y="190"/>
+      <text class="stereotype" x="1700" y="207">«Interface»</text>
+      <text class="filename" x="1700" y="238">ResetPasswordDialog.jsx</text>
+    </g>
+    <g id="own-password-dialog">
+      <rect class="box" x="1860" y="180" width="280" height="80"/>
+      <use href="#component" x="2107" y="190"/>
+      <text class="stereotype" x="2000" y="207">«Interface»</text>
+      <text class="filename" x="2000" y="238">ChangeOwnPasswordDialog.jsx</text>
+    </g>
+  </g>
+
+  <!-- Una conexión y un puerto circular por interfaz; sin distribuidores comunes. -->
+  <g id="http-connections" class="http">
+    <path id="login-to-auth" d="M 200 260 V 300 H 410 V 344"/>
+    <path id="recovery-to-auth" d="M 500 260 V 344"/>
+    <path id="logout-to-auth" d="M 800 260 V 300 H 590 V 344"/>
+    <path id="users-to-user" d="M 1100 260 V 330 H 1500 V 344"/>
+    <path id="form-to-user" d="M 1400 260 V 300 H 1580 V 344"/>
+    <path id="reset-to-user" d="M 1700 260 V 300 H 1660 V 344"/>
+    <path id="own-password-to-user" d="M 2000 260 V 330 H 1740 V 344"/>
+    <circle cx="410" cy="350" r="6" fill="#fff"/>
+    <circle cx="500" cy="350" r="6" fill="#fff"/>
+    <circle cx="590" cy="350" r="6" fill="#fff"/>
+    <circle cx="1500" cy="350" r="6" fill="#fff"/>
+    <circle cx="1580" cy="350" r="6" fill="#fff"/>
+    <circle cx="1660" cy="350" r="6" fill="#fff"/>
+    <circle cx="1740" cy="350" r="6" fill="#fff"/>
+    <path d="M 410 356 V 370 M 500 356 V 370 M 590 356 V 370 M 1500 356 V 370 M 1580 356 V 370 M 1660 356 V 370 M 1740 356 V 370"/>
+  </g>
+
+  <!-- Fila 2: exclusivamente controladores HTTP. -->
+  <g id="controllers">
+    <g id="auth-controller">
+      <rect class="box" x="350" y="370" width="300" height="80"/>
+      <use href="#component" x="617" y="380"/>
+      <text class="stereotype" x="500" y="397">«Class»</text>
+      <text class="name" x="500" y="428">auth.controller.js</text>
+    </g>
+    <g id="user-controller">
+      <rect class="box" x="1450" y="370" width="380" height="80"/>
+      <use href="#component" x="1797" y="380"/>
+      <text class="stereotype" x="1640" y="397">«Class»</text>
+      <text class="name" x="1640" y="428">usuario.controller.js</text>
+    </g>
+  </g>
+
+  <!-- Ocho dependencias independientes. Los carriles inferiores evitan cruces
+       entre las tres tablas compartidas y las salidas de ambos controladores. -->
+  <g id="persistence-connections" class="dependency" marker-end="url(#dependency-arrow)">
+    <path id="auth-to-ip-quota" d="M 390 450 V 520 H 200 V 650"/>
+    <path id="auth-to-recovery" d="M 450 450 V 540 H 600 V 650"/>
+    <path id="auth-to-user" d="M 510 450 V 500 H 1000 V 650"/>
+    <path id="auth-to-audit" d="M 570 450 V 480 H 1400 V 650"/>
+    <path id="user-to-role" d="M 1480 450 V 570 H 1900 V 650"/>
+    <path id="user-to-audit" d="M 1560 450 V 520 H 2100 V 850 H 1400 V 730"/>
+    <path id="user-to-user" d="M 1650 450 V 500 H 2140 V 890 H 1000 V 730"/>
+    <path id="user-to-recovery" d="M 1740 450 V 480 H 2180 V 930 H 600 V 730"/>
+  </g>
+
+  <!-- Fila 3: exclusivamente nombres físicos de tablas. -->
+  <g id="tables">
+    <g id="ip-quota-table">
+      <rect class="box" x="50" y="650" width="300" height="80"/>
+      <use href="#component" x="317" y="660"/>
+      <text class="stereotype" x="200" y="677">«Table»</text>
+      <text class="name" x="200" y="708">limite_recuperacion_ip</text>
+    </g>
+    <g id="recovery-table">
+      <rect class="box" x="450" y="650" width="300" height="80"/>
+      <use href="#component" x="717" y="660"/>
+      <text class="stereotype" x="600" y="677">«Table»</text>
+      <text class="name" x="600" y="708">recuperacion_password</text>
+    </g>
+    <g id="user-table">
+      <rect class="box" x="850" y="650" width="300" height="80"/>
+      <use href="#component" x="1117" y="660"/>
+      <text class="stereotype" x="1000" y="677">«Table»</text>
+      <text class="name" x="1000" y="708">usuario</text>
+    </g>
+    <g id="audit-table">
+      <rect class="box" x="1250" y="650" width="300" height="80"/>
+      <use href="#component" x="1517" y="660"/>
+      <text class="stereotype" x="1400" y="677">«Table»</text>
+      <text class="name" x="1400" y="708">bitacora_auditoria</text>
+    </g>
+    <g id="role-table">
+      <rect class="box" x="1750" y="650" width="300" height="80"/>
+      <use href="#component" x="2017" y="660"/>
+      <text class="stereotype" x="1900" y="677">«Table»</text>
+      <text class="name" x="1900" y="708">rol</text>
+    </g>
+  </g>
+
+  <text x="70" y="982" font-size="16">Cada flecha identifica una dependencia individual. Los carriles inferiores llegan a las tablas compartidas sin cruzar otras conexiones.</text>
+  <path class="http" d="M 45 1055 H 110"/>
+  <circle cx="117" cy="1055" r="6" fill="#fff" stroke="#303030" stroke-width="1.5"/>
+  <text x="135" y="1061" font-size="17">Comunicación HTTP mediante servicios frontend y Axios</text>
+  <path class="dependency" d="M 860 1055 H 930" marker-end="url(#dependency-arrow)"/>
+  <text x="950" y="1061" font-size="17">Persistencia indirecta: Controller → Service → Repository → Sequelize → MySQL</text>
+  <text x="45" y="1097" font-size="16">CU01–CU09 · 7 interfaces · 2 controladores · 5 tablas · Incluye captura automática de auditoría; la consulta manual corresponde a P11.</text>
+</svg>

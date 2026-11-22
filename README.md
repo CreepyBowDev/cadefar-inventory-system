@@ -1,11 +1,16 @@
 # CADEFAR Inventory System
 
-Sistema web de uso interno para la administración de inventario, ventas y control de vencimientos de la farmacia CADEFAR. El repositorio contiene un backend y un frontend independientes. Están disponibles las interfaces y API de autenticación, usuarios, proveedores/laboratorios, medicamentos/composición, Inventario y Compras. Inventario incluye consultas, ajustes, retiros y vencimientos; Compras incluye registro, consulta y anulación. Ventas, Recetas y Reportes permanecen pendientes como módulos funcionales.
+Sistema web de uso interno para la administración de inventario, ventas y control de vencimientos de la farmacia CADEFAR. El repositorio contiene un backend y un frontend independientes. Están implementadas las interfaces y API de autenticación y recuperación de contraseña, usuarios, proveedores/laboratorios, principios activos, medicamentos/composición, Inventario, Compras, Ventas, Recetas, Reportes y Bitácora. Inventario incluye consultas, ajustes, retiros y vencimientos; Compras incluye registro, consulta y anulación. Ventas permite guardar pendientes, confirmar con FEFO y anular; las recetas se registran posteriormente mediante formulario sin adjuntos y las revisa el Regente antes de confirmar cuando son necesarias.
+
+**Estado documental: 21/11/2026.** Reportes incluye consultas, estadísticas, gráficas y exportación CSV/XLSX/PDF. Las descargas dependen de las guardas del backend: perfil LOCAL o Railway opt-in; que el código exista no acredita habilitación ni aceptación del despliegue. Bitácora permite al Administrador consultar eventos, filtros y detalle. El estado vigente, límites de verificación y requisitos operativos se resumen en [el contexto maestro](docs/ai/contexto-maestro.md#estado-vigente-contrastado-con-el-código--21112026).
 
 Guías de uso y verificación:
 
 - [Medicamentos y composición](docs/uso/medicamentos.md): código automático e inmutable, registro integral y prevención de duplicados.
 - [Inventario y Compras](docs/uso/inventario-compras.md): consultas, ajustes, retiros, recepción y anulación.
+- [Reportes](docs/ai/contratos-reportes-react.md): contratos, permisos, consultas, estadísticas, frontend y descargas.
+- [Exportaciones Railway](docs/ai/exportaciones-railway.md): configuración opt-in, guardas y límites operativos.
+- [Bitácora](docs/ai/bitacora-auditoria.md): cobertura y evidencias históricas de aceptación.
 
 ## Requisitos previos
 
@@ -51,7 +56,7 @@ cadefar-inventory-system/
 │       ├── api/                # Configuración de Axios
 │       ├── app/                # Rutas de React
 │       ├── components/
-│       ├── features/           # auth, usuarios, catálogo, proveedores, inventario y compras
+│       ├── features/           # auth, dashboard, usuarios, catálogo, proveedores, inventario, compras, ventas, recetas, reportes y bitácora
 │       ├── layouts/
 │       ├── routes/             # Protección de vistas
 │       └── styles/
@@ -134,7 +139,7 @@ Para cargar todos los datos de demostración, después de configurar `SEED_USERS
 pnpm exec sequelize-cli db:seed:all
 ```
 
-Hay seeders para roles, usuarios, proveedores/laboratorios, principios activos, medicamentos, su composición y existencias, compras, ventas, recetas, detalles de compra y venta y movimientos de inventario. Incluyen un usuario administrador de demostración (`admin_demo`) cuya contraseña será la que definas en `SEED_USERS_PASSWORD`. Los seeders de otras tablas aportan datos de ejemplo, **no endpoints para módulos todavía no implementados**.
+Hay seeders para roles, usuarios, proveedores/laboratorios, principios activos, medicamentos, su composición y existencias, compras, ventas, recetas, detalles de compra y venta y movimientos de inventario. Incluyen un usuario administrador de demostración (`admin_demo`) cuya contraseña será la que definas en `SEED_USERS_PASSWORD`. Los seeders aportan datos de ejemplo: no acreditan por sí solos flujos funcionales ni normalizan históricos a los contratos vigentes.
 
 Para deshacer cambios cuando corresponda (si vas a revertir todo, deshaz primero los datos de los seeders):
 

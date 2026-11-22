@@ -8,6 +8,8 @@ Sistema de Información Web para la Administración de Inventario, Ventas y Cont
 > **Cobertura documental:** 33 CU implementados y 34 diagramas; CU08 conserva dos variantes.
 > **Avance de la corrección:** los 33 CU y 34 diagramas están corregidos contra fuentes; Fase 6 y cierre acumulado quedan para revisión del usuario.
 
+**Alcance histórico aclarado el 21/11/2026:** las cifras y cierres de este análisis corresponden a sus entregas, no al inventario completo del software vigente. El catálogo actual contiene 42 CU; Ventas, Recetas, Reportes y Bitácora están implementados. Los CU no dibujados aquí están pendientes de cobertura documental, no necesariamente de implementación. La ampliación académica de Ventas/Recetas/Bitácora está en `analisis-clases-academico-simplificado.md`; el estado funcional vigente está en `contexto-maestro.md`. No se han vuelto a contrastar ni renderizar todos los diagramas por esta sincronización.
+
 ## 0. Alcance y criterios del análisis académico
 
 Este documento explica cómo colaboran las clases de análisis para cumplir los objetivos del usuario:

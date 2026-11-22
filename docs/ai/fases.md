@@ -1,513 +1,297 @@
-# CADEFAR — Mejora visual y organización del apartado Reportes
+# CADEFAR — Fases para la implementación de la arquitectura de subsistemas
 
-## 1. Estado y objetivo
+## 1. Objetivo y estado
 
-**Actualizado el 21/11/2026. Fase 1: COMPLETADA (especificación; §10). Fase 2: COMPLETADA (composición y verificación focalizada; §11). Fase 3: COMPLETADA (estadísticas y gráficas; §12). Fase 4: PARCIAL (revisión visual real y regresiones realizadas; pendiente zoom nativo 200%, §13).**
+**Actualizado: 21/11/2026.** Este documento reemplaza, por solicitud expresa, el seguimiento anterior de mejora visual de Reportes. El nuevo trabajo es exclusivamente documental: elaborar **once diagramas de implementación de subsistemas**, verificables contra el software, y reunirlos en `docs/ai/subsistemas.md`.
 
-Este documento reemplaza por solicitud expresa el seguimiento anterior de ampliación frontend. La ampliación está implementada; el usuario informa que funciona correctamente. La tarea siguiente es **solo diseño, estructura visual y orden de la información**, para hacer Reportes más intuitivo. No reconstruir consultas, estadísticas, gráficas o descargas. Preparar este plan no ejecuta ninguna fase ni modifica la interfaz.
+No son diagramas de casos de uso, BCE ni clases con atributos y métodos. Cada paquete utiliza tres filas horizontales:
 
-La intervención permite reorganizar la composición interna de Reportes, mejorar jerarquía, densidad, alineación, agrupación, etiquetas y responsive, conservando la identidad CADEFAR. No autoriza rediseñar toda la aplicación ni cambiar su lógica funcional.
+1. **«Interface»**: páginas o componentes React existentes.
+2. **«Class»**: todos los controladores HTTP que participan en el paquete.
+3. **«Table»**: todas las tablas físicas utilizadas por esos flujos, incluidas las dependencias indirectas y transversales comprobadas.
 
-## 2. Alcance y límites
+**Punto de partida:** P1 ya tiene un SVG revisado por el usuario, reorganizado sin cruces ni tramos superpuestos, y su explicación en `subsistemas.md`. Incluye siete interfaces, los dos controladores participantes y cinco tablas, incluida `bitacora_auditoria`. Es la referencia visual vigente; no se debe reconstruir sin necesidad.
 
-### Incluido
+La planificación se agrupa en **cuatro fases**, no una fase por paquete. Redactar este seguimiento no ejecuta las fases ni acredita que los paquetes pendientes estén elaborados.
 
-- Reporte de ventas CU38, compras CU39 y pérdidas CU41: filtros, selección de vista, contexto aplicado, resumen, detalle, estadísticas, acciones y exportación.
-- Componente de exportación compartido con historial CU40: comprobar su consistencia visual en MovimientosPage, sin rediseñar Inventario ni duplicar la página.
-- Presentación visual de barras, líneas y sectores, controles, leyenda, valor explorado y tablas exactas existentes.
-- Estados sin selección, cargando, vacío, sin valor gráfico, error, ocupado, cancelación y descarga iniciada.
-- Accesibilidad visual/semántica, teclado, orden DOM coherente y adaptación a móvil/escritorio.
-
-### Fuera de alcance
-
-Backend, endpoints/CORS, contratos, Services HTTP, validators, hooks de negocio/consulta/descarga, escala y cálculos estadísticos, filtros permitidos, permisos, URLs/rutas, navegación postlogin, sidebar, dashboard, tema global, documentos PDF/XLSX/CSV y su generación, configuración/despliegue Railway o MySQL. No agregar indicadores, operaciones, librerías visuales/gráficas ni nuevas pantallas.
-
-No corregir silenciosamente incidencias funcionales históricas dentro de una tarea visual. Si se detecta un fallo reproducible que impide verificar diseño, registrarlo y separar su autorización. No usar textos visuales para ocultar un error o afirmar disponibilidad no acreditada.
-
-## 3. Uso obligatorio de frontend-design
-
-**Cargar y utilizar `frontend-design` en cada fase de diseño o adaptación visual.** Aplicarla a jerarquía, lectura, agrupación de tareas, tipografía, alineación, contraste, formularios, tablas, gráficas, foco y responsive. Si no está disponible, indicarlo; no afirmar su uso.
-
-La intención visual es **«espacio de consulta farmacéutica claro y sobrio»**, no dashboard promocional. Preservar colores, fuentes, iconos y lenguaje de componentes de CADEFAR. La libertad de rediseño se concentra en el orden y composición interna de Reportes; no introducir una estética distinta ni modificar estilos globales para conseguirla.
-
-### Base visual comprobada
-
-- `app-foundations.css`: fondo `#f3f5f7`, superficie `#ffffff`, texto `#252930`, secundario `#555f6b`, borde `#dce2e8`, foco `#9b5b00`; consumir variables existentes, no duplicarlas como tema nuevo.
-- Tipografía actual: Segoe UI Variable / Aptos / Segoe UI, escala y altura de control existentes. No instalar fuentes.
-- Mantener `page-heading`, paneles `catalogo-panel`, campos `form-field`, botones `button`, tablas y paginación actuales; CSS específico de Reportes con selectores acotados.
-- Evitar exceso de tarjetas iguales, bordes anidados, etiquetas mayúsculas, iconos decorativos, texto técnico protagonista y animaciones. Los números de negocio son información, no decoración.
-- Justificar cada cambio por una mejora concreta: encontrar una acción, distinguir criterios, entender el resultado o reducir ruido. No modificar por preferencia estética sin beneficio de lectura.
-
-## 4. Punto de partida inspeccionado
-
-Rutas relativas a la raíz del repositorio. Leer solo archivos pertinentes a la fase; no volver a analizar todo el software.
-
-| Archivo real | Uso en la mejora |
-|---|---|
-| `frontend/src/features/reportes/components/ReporteOperacionesConsulta.jsx` | Composición común CU38/CU39; filtros, radios de vista, toolbar, notas, exportación y resultados |
-| `frontend/src/features/reportes/pages/PerdidasPage.jsx` | Composición CU41 equivalente con particularidades de pérdidas; mantener callbacks y estados |
-| `frontend/src/features/reportes/pages/ReporteVentasPage.jsx`, `ReporteComprasPage.jsx` | Títulos/props de cada fuente; sin nuevas páginas |
-| `frontend/src/features/reportes/components/ReporteFilters.jsx` | Presentación de filtros y acciones; no cambiar modalidad/aplicación efectiva |
-| `frontend/src/features/reportes/components/ReporteFuenteEstadisticas.jsx` | Granularidad/aplicación, toolbar y exportación estadísticas, resumen y gráfico; actualmente varios bloques de controles separados |
-| `frontend/src/features/reportes/components/ReporteEstadisticas.jsx` | Gráfico SVG, selectores, categorías visibles, paneles, valor explorado, distribuciones y tabla alternativa; mejorar presentación, no algoritmos |
-| `frontend/src/features/reportes/components/ExportacionTabular.jsx` | Descarga TABULAR/ESTADISTICA y feedback; abundantes notas y criterios en bloque; compartido por CU40 |
-| `frontend/src/features/reportes/components/ReporteVentasResultado.jsx`, `ReporteComprasResultado.jsx`, `PerdidasResultado.jsx` | Resúmenes/detalles y enlaces actuales; jerarquía de importes y categorías |
-| `frontend/src/features/reportes/styles/reportes.css` | Principal archivo de intervención: grids, márgenes, números, exportación, vista, SVG y tablas |
-| `frontend/src/styles/app-foundations.css`, `catalogo.css`, `pagination.css` | Referencia de identidad y convenciones, no objetivos de reescritura |
-| `frontend/src/features/inventario/pages/MovimientosPage.jsx` | Verificar efecto del exportador compartido; conservar InventarioNav, filtros, tabla y consulta automática |
-| `frontend/src/features/reportes/hooks/*`, `utils/*`, `services/reporte.service.js` | Referencia para preservar comportamiento; no modificar en alcance visual |
-| `frontend/tests/reportes-*.test.mjs` | Regresiones existentes de consulta, estadísticas, exportación/ciclo y navegación; usar solo las afectadas |
-
-Observaciones iniciales derivadas del código, no de una revisión visual manual: exportación aparece antes del resumen, vista y granularidad están en bloques separados, ayudas técnicas extensas preceden a resultados, tablas de detalle tienen ancho mínimo de 80rem y estadísticas combina muchos controles/notas/tablas en una sección. El diagnóstico, la comprobación headless y las limitaciones de Fase 1 quedan separados en §10; no atribuir estos problemas a capturas o revisión manual inexistentes.
-
-## 5. Propuesta de organización visual y comportamiento inmutable
-
-### 5.1. Secuencia de lectura objetivo
-
-```text
-Título y descripción breve de la fuente
-Panel de configuración
-  Vista Consulta / Estadísticas claramente reconocible
-  Período y estado/motivo existentes
-  Acciones Buscar / Limpiar con jerarquía consistente
-  Granularidad y Aplicar solo en contexto estadístico, en grupo separado
-Contexto aplicado y estado de consulta
-Resultados
-  Resumen legible (principal vs categorías informativas)
-  Consulta: detalle + paginación
-  Estadísticas: controles de visualización + gráfico + valores exactos
-Acción de descarga vinculada al contexto aplicado
-  Formato, exportar/cancelar y feedback
-  Ayudas adicionales accesibles en segundo nivel
-```
-
-Es una guía de agrupación, no autorización para fusionar las acciones Buscar/Aplicar granularidad o cambiar cuándo consultan. La disposición única fijada en §10 concreta esta guía: descarga al final de la vista, sin ocultar que exporta todas las coincidencias; no se añade otra acción de descarga en la cabecera.
-
-### 5.2. Reglas de jerarquía
-
-- Una acción primaria identificable por tarea, secundarias con menor énfasis; distinguir Buscar, Actualizar, Aplicar granularidad y Exportar sin cambiar callbacks.
-- Mantener visible la diferencia entre borrador y criterios aplicados. Presentar período, estado/motivo, vista y granularidad efectivos de forma compacta; no convertir la selección editada en una falsa consulta ya ejecutada.
-- Destacar total realizado frente a importes informativos de pendientes/anuladas; pérdidas claramente brutas. No añadir símbolo monetario ni cálculos nuevos.
-- Agrupar ayudas extensas en detalles desplegables nativos o bloques secundarios si beneficia la lectura. Mantener visibles las advertencias indispensables: alcance del resultado, criterios de exportación, error, ausencia de acceso y estado de generación/cancelación. No ocultar alertas dentro de un acordeón cerrado.
-- Puede simplificarse el texto de interfaz manteniendo significado y selectores de contrato intactos. Valores técnicos pueden tener etiquetas comprensibles, pero sin cambiar enums, unidades, IDs ni nombres de parámetros enviados.
-- Tablas: encabezados claros, números alineados, fechas/nulos/acciones legibles, wrapping y scroll localizado. No eliminar campos/datos, cambiar orden de registros o paginación para hacer que «quepa».
-- Gráficas: separar configuración, leyenda, gráfico y detalle exacto; alinear colores/etiquetas entre vistas manteniendo identificación estable de categorías y contraste. Sin nuevos tipos de gráfica ni porcentajes, escala o muestreo distintos.
-- Distribución y tabla alternativa pueden organizarse con secciones/ayudas de menor peso visual; conservar acceso completo a todas las métricas y paneles. No sustituir tabla accesible por tooltip.
-
-### 5.3. Contrato de no regresión
-
-El rediseño **no cambia**: GET emitidos, query/URL e historial del navegador, vista/granularidad aplicadas, defaults actuales, 1200 intervalos, paginación, resumen completo, filtros abiertos de CU40, categorías/precisión/fechas civiles, permisos, cancelación, timeout, nombres/headers/blob, límites o disponibilidad del servidor.
-
-Preservar props, handlers, condiciones disabled/hidden y semántica de estados. Evitar mover componentes entre ramas o cambiar keys de forma que se desmonten y reinicien formato, selección gráfica, panel explorado, petición o descarga. Cambiar orden visual no debe alterar orden lógico de teclado, provocar nuevas solicitudes ni duplicar una instancia para desktop/móvil. No usar CSS `order` para dejar un recorrido de foco contradictorio.
-
-Scope CSS local: cambios al exportador compartido deben verificarse también en CU40; no filtrar estilos hacia todo Inventario, Ventas operativas u otros módulos. Evitar `!important` para resolver conflictos estructurales y selectores globales nuevos.
-
-## 6. Fases y dependencias
-
-Se definen **cuatro fases**, suficientes para separar decisiones de diseño, composición principal, densidad estadística y verificación final sin repartir cambios pequeños en demasiadas sesiones.
-
-| Fase | Propósito | Dependencias | Estado |
-|---|---|---|---|
-| 1 | Diagnóstico visual focalizado y especificación de jerarquía | Plan y módulo actual | COMPLETADA — especificación §10 |
-| 2 | Reorganización visual de consultas, resúmenes y exportación | Fase 1 | COMPLETADA — cierre §11 |
-| 3 | Mejora visual de estadísticas y gráficas | Fases 1–2 | COMPLETADA — cierre §12 |
-| 4 | Ajustes responsive/accesibilidad, regresión y cierre | Fases 2–3 | PARCIAL — verificación y pendiente concreto §13 |
-
-### Fase 1 — Diagnóstico y especificación visual
-
-- **Objetivo:** concretar una organización intuitiva basada en pantallas/componentes actuales, con `frontend-design` cargada y aplicada.
-- **Dependencias:** este plan y módulo actual disponible; no necesita implementar capacidades nuevas.
-- **Lectura mínima:** AGENTS raíz/frontend, este plan, componentes y CSS de §4, cierres previos solo si son necesarios para preservar comportamiento; guía de contratos únicamente como referencia semántica.
-- **Archivos:** este documento para decisiones de diseño. Sin implementación funcional ni CSS en esta fase.
-- **Actividades:** inspección visual acotada con API simulada/fixtures locales del arnés si está disponible, sin usar datos reales ni conectar a MySQL. Revisar Consulta/Estadísticas/Exportación en desktop y 375px. Especificar orden/agrupación, acción primaria, densidad de ayudas, jerarquía de resumen, tratamiento de tablas y representación de estados. Utilizar tokens/tipografía existentes, no crear un sistema nuevo.
-- **Restricciones:** no rediseño general, nuevos flujos, cambio de rutas/Services/hooks ni instalación de herramientas. Si no hay inspección disponible, identificar claramente decisiones verificadas por código vs pendientes visuales; no inventar evidencia.
-- **Verificaciones:** un recorrido lógico «configurar → consultar → leer → descargar», ayudas esenciales visibles, foco/DOM coherente y todos los controles/datos conservados. Contrastar la propuesta con las restricciones de §5.3 antes de implementar.
-- **Aceptación:** especificación breve y concreta registrada aquí, con componentes afectados y condiciones de no regresión. No exige una ronda de aprobación por cada ajuste ni crear maquetas/capturas como entregable.
-- **Entrega:** decisiones suficientes para Fase 2, hallazgos reales y pendientes separados. Ningún cambio de aplicación.
-
-### Fase 2 — Composición principal y descarga
-
-- **Objetivo:** mejorar estructura y orden de Consulta en ventas/compras/pérdidas y presentación del exportador compartido. **Cargar `frontend-design`; conservar identidad CADEFAR.**
-- **Dependencias:** Fase 1 y decisiones anotadas; no reabrirlas salvo incompatibilidad demostrada.
-- **Lectura mínima:** coordinador CU38/CU39, PerdidasPage, filtros/resultados/exportador, reportes.css y CU40 para efectos compartidos; hooks solo para verificar mounts/props.
-- **Archivos previstos:** JSX de composición/presentación en los componentes citados y CSS de Reportes; MovimientosPage solo si hace falta un wrapper/clase visual local. Tests afectados únicamente por semántica/estructura visual legítima.
-- **Actividades:** aplicar grupos y espaciados, selección de vista clara, contexto aplicado compacto, resumen principal vs informativo, tablas/acciones consistentes y descarga asociada al resultado. Reducir ruido de notas mediante texto claro/ayuda secundaria manteniendo advertencias críticas y mensajes accesibles.
-- **Restricciones:** no cambios a Services/validators/hooks, comportamiento de acciones, campos o permisos. Mantener exportación desde vacío/página lejana según comportamiento vigente; no condicionarla artificialmente a filas visibles. No reiniciar/duplicar exportador al moverlo.
-- **Verificaciones:** inspección acotada de tres fuentes y exportador CU40, estados inicial/carga/vacío/error/descarga, teclado/labels, query y número de peticiones iguales para las mismas acciones; prueba focalizada de consulta/tabular/navegación y `git diff --check`.
-- **Aceptación:** jerarquía común reconocible, menos ruido y sin pérdida de datos/controles; CU40 sigue siendo su página única y sin cambios visuales globales.
-- **Entrega:** archivos/decisiones reales, evidencia simulada y pruebas registradas; Fase 3 habilitada sin ejecutar automáticamente.
-
-### Fase 3 — Estadísticas, gráficas y datos exactos
-
-- **Objetivo:** hacer más legible y ordenada la vista estadística de las tres fuentes. **Cargar `frontend-design` para jerarquía/visualización sin cambiar cálculos ni alcance.**
-- **Dependencias:** Fases 1–2, composición principal coherente.
-- **Lectura mínima:** ReporteFuenteEstadisticas, ReporteEstadisticas, resúmenes, exportador estadístico y estilos; escalaEstadistica.js solo como referencia no modificable.
-- **Archivos previstos:** componentes de presentación estadística y CSS local. Extracción de un componente puramente visual solo si evita duplicación real, conservando propietario de estado y keys.
-- **Actividades:** agrupar granularidad/aplicación, toolbar, selección de gráfico/métrica, leyenda y panel; mejorar espacio de gráfica, etiquetas y feedback de valor explorado. Organizar resumen, distribución y tabla alternativa con títulos/ayudas claros; exportación estadística coherente con Fase 2. Distinguir contexto del panel temporal frente a período completo en sectores.
-- **Restricciones:** no cambiar coordenadas/cálculos/series, 60 intervalos por panel o límite vigente, totales/ceros/null, identificación de categorías, opciones de gráfico o parámetros de archivo. No introducir porcentajes, moneda, interpolación, nuevas bibliotecas ni datos ocultos definitivamente.
-- **Verificaciones:** barras/líneas/sectores con cero/sinDatos/valores grandes, paneles extremos y todas las categorías ocultas, tooltip/foco/táctil/tabla exacta, etiquetas largas y exportación compartiendo selección actual. Regresión focalizada de estadísticas/ciclo y descarga; queries/selecciones sin cambios por rediseñar.
-- **Aceptación:** gráfica entendible sin leer toda la documentación técnica, alternativas exactas accesibles y mismos valores/controles/peticiones. Colores se distinguen con leyenda/texto/patrones, no solo por tono.
-- **Entrega:** mejoras visuales de tres fuentes verificadas, sin alterar semántica, y Fase 4 habilitada.
-
-### Fase 4 — Responsive, accesibilidad y cierre visual
-
-- **Objetivo:** comprobar la coherencia final y corregir solo defectos de presentación demostrados. **Cargar `frontend-design` para crítica y ajustes finales.**
-- **Dependencias:** Fases 2–3.
-- **Lectura mínima:** cierres, componentes modificados, tests focalizados de Reportes y CU40; no auditar todo el proyecto.
-- **Archivos previstos:** tests visuales/semánticos afectados y JSX/CSS de alcance para ajustes; este seguimiento. No backend ni otros documentos.
-- **Actividades/verificaciones:** revisar desktop, 768px y 375px, zoom200%, nombres/fechas/importes largos, foco/orden teclado, contraste y estados de consulta/descarga. Tablas/gráficos pueden desplazarse localmente; página no desborda. Usar API simulada para fixtures conocidos; ejecutar regresiones pertinentes de consulta, estadísticas/exportación/ciclo y navegación, más `pnpm build` y `git diff --check`. No ejecutar suites MySQL/backend o aceptación integrada por una tarea visual.
-- **Restricciones:** no debilitar aserciones funcionales para hacer pasar tests; actualizar selectores solo por cambios legítimos de markup/etiqueta preservando intención. Sin instalación, capturas masivas, navegación prolongada, commit/push/despliegue ni conexión a datos operativos.
-- **Aceptación:** acciones/localización/jerarquía más claras, funcionalidades intactas en los escenarios ejercidos y revisión visual efectivamente realizada. Si no puede inspeccionarse visualmente, dejar esa aceptación parcial y no presentarla como completada por el build.
-- **Entrega:** resumen de qué cambió visualmente, archivos, pruebas reales/avisos y revisión manual pendiente. No afirmar aceptación funcional/productiva nueva por este rediseño.
-
-## 7. Continuidad entre sesiones
-
-1. Leer AGENTS raíz/frontend, este archivo y cierre de dependencias; consultar `git status --short` y preservar cambios locales ajenos.
-2. Ejecutar exclusivamente la fase solicitada; leer solo referencias mínimas. Cargar `frontend-design` en cada fase de diseño.
-3. No convertir problemas de presentación en refactor funcional. Anotar bloqueos concretos o incidencias fuera de alcance antes de ampliar cambios.
-4. Registrar decisiones/archivos/comandos/evidencia y actualizar estado; no iniciar automáticamente la siguiente fase.
-5. Navegador solo para revisión/pruebas focalizadas sin datos reales cuando se ejecute la fase; esta preparación no lo utiliza. No hay autorización MySQL ni reutilización de permisos de sesiones antiguas.
-
-Prompt de continuidad:
-
-> Trabaja en frontend. Lee AGENTS.md raíz/frontend y docs/ai/fases.md. Ejecuta únicamente la Fase N de mejora visual de Reportes. Carga frontend-design; conserva identidad CADEFAR y funcionalidades. Reorganiza solo presentación/JSX/CSS dentro del alcance, sin modificar Services, hooks de consulta/descarga, cálculos, backend, rutas o permisos. Preserva mounts/keys/callbacks al cambiar disposición. Verifica visualmente con API simulada y pruebas focalizadas según fase; actualiza cierre y siguiente fase habilitada sin iniciarla.
-
-## 8. Plantilla de cierre
-
-```text
-Fase / fecha / estado: PENDIENTE, EN CURSO, COMPLETADA, PARCIAL o BLOQUEADA
-Skill frontend-design: aplicada y decisiones derivadas
-Hallazgos: código / inspección visual realmente realizada
-Cambios visuales y motivo de usabilidad:
-Archivos/componentes modificados; funciones reutilizadas sin cambio:
-Orden visual/DOM y responsive/teclado comprobados:
-No regresión: acciones, filtros aplicados, queries, mounts/keys, selección y descargas
-Comandos de pruebas/build/diff y resultados reales:
-Limitaciones y problemas funcionales detectados fuera de alcance:
-Siguiente fase habilitada y lectura mínima:
-```
-
-No guardar secretos, cookies, archivos descargados o datos reales en cierres. No commit, push, merge, despliegue ni instalar dependencias para rediseñar.
-
-## 9. Registro inicial y dependencias históricas
-
-- Solo se reemplaza `docs/ai/fases.md`. Skill cargada y revisión selectiva de JSX/CSS/estructura/pruebas disponibles; Git inicial limpio. No se modificó interfaz, ejecutaron pruebas funcionales/build, abrieron navegadores o accedió a backend/MySQL en esta preparación.
-- **Estado en la preparación:** las cuatro fases estaban PENDIENTES / NO INICIADAS. El estado vigente y el cierre de Fase 1 están en §1, §6 y §10; no se reimplementaron funciones.
-- El usuario informa ampliación terminada y funcional. El cierre anterior registra integración LOCAL focalizada y limitaciones (incluida incidencia histórica de retorno postlogin con query, no corregida allí); no se afirma que esa incidencia siga presente sin comprobarla, ni se incluye su corrección en este plan visual.
-- Fuentes técnicas conservadas sin editar: `contratos-reportes-react.md` y extensión posterior `exportaciones-railway.md`. Esta última documenta perfil Railway opt-in implementado, no habilitado/desplegado por aquella entrega. No reutilizar notas históricas «solo LOCAL» para reemplazar disponibilidad actual ni declarar Railway activo sin evidencia. Los avisos funcionales/de disponibilidad se preservan conforme al software vigente.
-- Las referencias externas a fases del archivo reemplazado son históricas, no fases completadas de este nuevo plan. No reescribir documentación normativa en esta tarea ni eliminar esas guías.
-- Verificación documental de preparación: comprobadas cuatro fases pendientes, uso de skill en cada una, alcance visual y continuidad. `git diff --check` sin errores de espacios (solo aviso de futura normalización LF → CRLF); `git status --short` muestra únicamente este documento modificado. Sin pruebas funcionales y sin ejecución de Fase 1.
-
-## 10. Fase 1 — Diagnóstico y especificación elegida
-
-### 10.1. Evidencia y hallazgos focalizados
-
-Fecha: 21/11/2026. Leídos AGENTS raíz/frontend y este plan; skill `frontend-design` cargada. Git inicial: únicamente ` M ../docs/ai/fases.md`, cambio previo preservado. No se atribuye a esta fase el reemplazo histórico del plan.
-
-**Fuentes de código inspeccionadas:** los seis componentes principales solicitados, los tres archivos de resultados/resúmenes, `reportes.css`, `app-foundations.css` y `catalogo.css`; `MovimientosPage.jsx` solo para integración del exportador CU40. Lectura acotada de `package.json` y los tres arneses browser existentes para comprobar el medio de revisión. Sin releer backend, contratos, hooks, servicios ni el resto del proyecto.
-
-| Hallazgo verificado por código | Fuente concreta | Consecuencia para la propuesta (no observación manual de pantalla) |
+| Fase | Paquetes | Estado actual |
 |---|---|---|
-| Consulta/Estadísticas está después del formulario; granularidad pertenece a otro componente | `ReporteOperacionesConsulta.jsx:25–32`, `PerdidasPage.jsx:24–30`, `ReporteFuenteEstadisticas.jsx:47–52` | Elegir primero la vista; mantener dos grupos de aplicación distintos y próximos, sin extraer estado |
-| Actualizar, nota de negocio y exportador preceden al resumen; hay varios párrafos antes del primer dato | Coordinadores anteriores y `ExportacionTabular.jsx:35–47` | Resultado antes de descarga; reducir peso de explicaciones, no de advertencias |
-| El total realizado/bruto es el último elemento del mismo `dl` que las categorías | Los tres `*Resultado.jsx`, resúmenes | Colocar el total primero y a ancho completo; categorías después, sin recalcular |
-| Todas las tablas de detalle comparten mínimo 80rem, pese a tener 9/9/12 columnas | `reportes.css:8`, tablas de resultados | Dimensionar por fuente/contenido, sin ocultar columnas ni comprimir fechas/importes |
-| Gráfica, métrica, leyenda, precisión, panel, gráfico, valor explorado y dos tablas conviven en secuencia extensa | `ReporteEstadisticas.jsx:35–76` | Agrupar controles y separar exploración de consultas exactas secundarias |
-| Los valores exactos estadísticos no usan la alineación numérica del detalle; la leyenda tiene texto/número pero no muestra una muestra del trazo/color | `ReporteEstadisticas.jsx:40,74–76`, `reportes.css:10,30–35` | Alinear valores y añadir muestras de las series existentes, con identificación textual estable |
-| DOM de acciones: Limpiar → Buscar; móvil usa `column-reverse` y muestra Buscar → Limpiar | `ReporteFilters.jsx:18`, `reportes.css:44` | Unificar DOM y presentación como Buscar → Limpiar, sin invertir con CSS |
-| CU40 usa el mismo exportador con `pendiente`, restricción y filtros automáticos; no tiene selector de vista | `MovimientosPage.jsx:16–29` | Solo hereda presentación interna compacta; no mover su exportador ni adaptar su flujo al de Reportes |
-
-**Comprobación real en navegador headless, con API interceptada y datos sintéticos:** se ejecutaron sin modificar los tres arneses existentes indicados en §10.7. React/Router/Axios reales; solo servidor estático de prueba, sin backend/MySQL. Resultado: **119 pruebas aprobadas, 0 fallidas/canceladas/omitidas**, incluyendo contenedoras y subtests, no 119 pantallas revisadas.
-
-- Consulta: tres fuentes, entrada sin período, carga retenida, vacío, página fuera de rango con resumen completo y errores. Estadísticas: tres fuentes, entrada sin granularidad, carga, errores, sin operaciones frente a valor cero, barras/líneas/sectores, paneles y categorías. Descarga: formatos, ocupado/cancelación/error y mensaje de archivo recibido; CU40 cubierto como consumidor compartido, sin rediseñarlo.
-- Escritorio de 1366 px y móvil de 375 px en las comprobaciones previstas por el arnés: ancho de documento, labels, regiones desplazables, foco/teclado; también toque en gráfica y exportación estadística. No es una matriz exhaustiva de cada estado × fuente × ancho.
-- Las aserciones verifican DOM, textos, geometría, estilos calculados e interacciones. **No hubo inspección visual manual ni lectura de imágenes del navegador**: no se acredita equilibrio óptico, contraste medido, altura del primer resultado ni ausencia de solapamientos en todos los estados. No se generaron capturas. Estos aspectos quedan pendientes de revisión visual durante implementación y cierre, no se presentan como defectos vistos ni como aceptación visual final.
-
-### 10.2. Dirección visual y disposición única
-
-Aplicación de `frontend-design`: la información farmacéutica y su alcance son protagonistas, no tarjetas de dashboard. Alineación a la izquierda, una superficie principal, separaciones por tarea, títulos en sentence case, números tabulares y ayudas de menos de 80 caracteres por línea cuando el ancho lo permita. El énfasis singular será el **total realizado o pérdida bruta**, sin tamaño publicitario, gradientes ni nueva paleta. Autocrítica frente al brief: se descarta convertir cada categoría en una tarjeta destacada, porque equipararía importes informativos con el total efectivo y fragmentaría la lectura.
-
-```text
-Título de la fuente + descripción breve
-Panel existente
-  Vista: Consulta / Estadísticas (radios visibles)
-  Período: modalidad → fecha(s) → estado o motivo
-  Ayuda esencial de borrador + Buscar / Limpiar
-  Solo Estadísticas: Granularidad → Aplicar granularidad + ayuda de aplicación
-  Resultados / Resultados estadísticos + estado + Actualizar correspondiente
-  Contexto aplicado compacto + alcance esencial
-  Total principal → categorías informativas
-  Consulta: tabla de detalle → paginación
-  Estadísticas:
-    Gráfica / Métrica → leyenda → panel de intervalos y alcance
-    Gráfica desplazable → valor explorado
-    Distribución exacta [desplegable] → intervalos exactos [desplegable]
-  Descarga: criterios propios → formato / Exportar / Cancelar → feedback
-            alcance y advertencias visibles; detalles técnicos secundarios
-```
-
-La descarga permanece al final **en ambas vistas**, fuera de los desplegables de datos exactos y fuera del bloque condicional de éxito del resultado. En Consulta queda después de la paginación. No habrá botón duplicado, modal de exportación ni barra flotante. Así la lectura no atraviesa una configuración de archivo antes del resumen; el archivo sigue accesible aunque el resultado sea vacío o falle su consulta independiente.
-
-### 10.3. Decisiones de organización y motivo
-
-1. **Vista antes de filtros:** `fieldset` de radios con legend visible y selección reconocible por control nativo, texto y borde, no solo color. No convertirlo en tabs con otra navegación. Anticipa qué tarea se realizará sin cambiar que seleccionar Estadísticas puede ser una selección local todavía no aplicada.
-2. **Período y estado/motivo juntos:** conservar modalidad y campos condicionales, mostrar fechas contiguas Desde/Hasta, luego filtro propio. Buscar será primario y primero en DOM; Limpiar secundario después, en la misma secuencia en móvil. Ayuda visible: días incluidos y «Editar no cambia el resultado; pulsa Buscar». Mantener la aclaración de anuladas en ventas. Reduce ambigüedad entre rellenar y ejecutar.
-3. **Granularidad en una fila separada inmediatamente después de filtros, solo en contexto estadístico:** permanece dentro de `ReporteFuenteEstadisticas`, con su selector y botón secundario «Aplicar granularidad». Mostrar granularidad aplicada junto a la ayuda «Los filtros se aplican con Buscar». No incorporar ese botón al submit de filtros ni hacer que Buscar aplique el borrador de granularidad. La proximidad comunica relación; la separación comunica operaciones distintas.
-4. **Actualizar en cabecera del resultado**, secundario y con el callback de la vista correspondiente; Buscar no se duplica allí. Exportar es secundario en su grupo de descarga; Cancelar permanece visible durante generación junto al botón. Se distingue configurar, refrescar y producir un archivo sin competir con la acción primaria.
-5. **Contexto compacto, no chips editables:** una franja de texto/datos descriptivos bajo cabecera: modalidad, Desde/Hasta efectivos, zona horaria y estado/motivo; en estadísticas, granularidad aplicada y distinción entre vista elegida y configuración ejecutada. Reutilizar valores de `aplicada` y `periodo` recibidos, nunca los campos del borrador como encabezado del resultado. Al carecer de aplicación válida, mostrar el estado inicial/error existente, no un período inventado. El exportador conserva además sus criterios propios (incluyendo gráfica/métrica cuando corresponda): no sustituirlos por esta franja.
-6. **Borrador distinguible sin nueva máquina de estados:** rótulos «Filtros por aplicar» y «Criterios aplicados» y ayudas siempre visibles; selector de granularidad frente a su valor aplicado. No es necesario un nuevo detector de cambios ni indicador de «desactualizado». En carga conservar la retirada actual de datos y `aria-busy`; no presentar resultado previo como nueva ejecución.
-7. **Resumen:** primero total de ventas/compras realizadas, con «solo confirmadas» inseparable de la cifra; después categorías en dos columnas en escritorio/una en móvil, sin tarjetas independientes. Pérdidas: primero total global de retiros brutos, pérdida total y cantidades con sus etiquetas; luego Vencimiento/Daño. No sumar, redondear de nuevo, asumir moneda ni equiparar cantidades heterogéneas. Permanecen visibles las notas sobre informativos, reclasificación, bruto/reversiones y costos históricos, porque evitan interpretaciones incorrectas.
-8. **Tablas de detalle:** mantener el orden actual de columnas y registros, enlaces y paginación inmediatamente debajo. Reducir aire de celdas solo localmente; ancho propio por fuente basado en sus columnas en lugar del mínimo único 80rem. Fechas y números íntegros; nombres largos con wrapping; números a la derecha y tabulares. No sustituir por cards móviles, truncar datos esenciales, ocultar columnas o fijar un ancho sin comprobarlo a 375 px. Hace comparables las filas sin sacrificar trazabilidad.
-9. **Estadísticas:** Gráfica/Métrica juntas; leyenda debajo con número, nombre y muestra del color/trazo ya utilizado; panel y su alcance antes del viewport. Conservar el selector de panel también en Sectores y aclarar que afecta a tabla/temporal mientras Sectores representa el período completo. Mantener colores por índice de categoría, trazos y numeración actuales; no reordenar categorías al ocultar. El valor explorado queda inmediatamente después del gráfico, en la superficie sutil existente y con su live region. Mantener visible y asociado por `aria-describedby` que la geometría es aproximada, los valores pequeños pueden no apreciarse y los datos exactos se consultan con teclado/toque/tabla, sin porcentajes ni moneda asumida. Solo el detalle técnico de resolución a millonésimas pasa a ayuda secundaria. Reduce distancia entre acción y lectura exacta sin ocultar límites de interpretación.
-10. **Datos exactos accesibles a demanda:** dos `details/summary` nativos, inicialmente cerrados, titulados «Distribución exacta del período completo» y «Tabla exacta del panel …». Cada summary indica alcance y que incluye métricas/categorías/ceros aunque no se vean en gráfica. No renderizar sus hijos condicionalmente: tablas completas dentro del DOM, captions y regiones con foco conservados, apertura nativa con teclado. El panel se sigue eligiendo arriba y no se cambia al abrir/cerrar. Esto acorta la vista y acerca la descarga sin ocultar permanentemente datos ni sustituirlos por tooltip. Advertencias esenciales fuera del `details`.
-11. **Descarga compacta y siempre reconocible:** legend, criterios aplicados de esa descarga, selector de formato, Exportar y Cancelar; feedback y orientación de error inmediatamente debajo. Mantener visibles alcance completo/no página, consulta independiente, disponibilidad determinada por servidor, hasta 128 MiB y, para estadísticas, qué incluyen CSV/PDF/XLSX y límites 1200/8/9600. Pasar solo explicación ampliada de formatos (imagen XLSX no editable, selección compartida) a «Detalles del archivo» nativo; selección gráfica vigente sigue identificable en los criterios. Avisos de sesión, bloqueo, filtros pendientes CU40, ocupado, cancelación y fallo nunca dentro del desplegable. No afirmar «guardado»: mantener «Archivo recibido; descarga iniciada» y cualquier advertencia vigente de disponibilidad.
-
-### 10.4. Reutilización y adaptaciones previstas (no ejecutadas)
-
-- **Tokens existentes:** `--color-app-bg` #f3f5f7, `--color-surface` #ffffff, `--color-ink` #252930, `--color-muted` #555f6b, `--color-line` #dce2e8, `--color-focus` #9b5b00; también superficie sutil, borde de control y colores de series actuales. Segoe UI Variable/Aptos/Segoe UI, `--text-title/body/small/control`, `--space-*`, `--control-height` 2.75rem y radios existentes. Sin nuevos tokens globales ni iconografía/fuentes/dependencias nuevas.
-- **Componentes/lenguaje:** `page-heading`, `catalogo-panel/toolbar/detail/table-wrap/table/note`, `form-field`, `button--primary/secondary`, `CatalogoState`, `FeedbackMessage`, `Pagination`, controles nativos y SVG actual. Mantener ayudas y títulos con jerarquía semántica, no mayúsculas decorativas.
-- **Fase 2:** coordinador CU38/CU39 y `PerdidasPage` para selector y descarga; `ReporteFilters` para agrupación/orden DOM; tres resultados para total/contexto/tablas; `ExportacionTabular` para densidad y ayuda secundaria; CSS acotado en `reportes.css`. No requiere tocar páginas de ventas/compras que aportan props ni `MovimientosPage`: este solo verifica el estilo interno compartido.
-- **Fase 3:** `ReporteFuenteEstadisticas` para proximidad de granularidad, cabecera y posición de descarga; `ReporteEstadisticas` para agrupación, leyenda, valor explorado, desplegables y alineación de tablas exactas; CSS local. No extraer componentes con estado ni anticipar un wrapper genérico.
-- No editar `app-foundations.css`/`catalogo.css`: referencias, no destinos. Reglas de layout bajo páginas de Reportes; estilos internos `.reporte-exportacion` compartidos intencionalmente con CU40, sin afectar filtros/tabla/navegación de Inventario.
-
-### 10.5. Continuidad de estado y condiciones específicas de no regresión
-
-La nueva disposición se escribe una vez en JSX; **no se alternan árboles por viewport, carga, datos ni aperturas de ayuda**. No usar portales ni copias desktop/móvil. Conservar tipo, propietario, rama condicional y claves de componentes con estado; reorganizar hermanos estáticos en el mismo propietario, no trasladarlos entre coordinadores.
-
-| Componente/ubicación propuesta | Contrato y continuidad que deben conservarse |
-|---|---|
-| Selector de vista, antes del formulario en ambos coordinadores | Mismos `checked`, `setSeleccionEstadisticas`, `cambiarVista` y efecto por `query`. Consulta y Estadísticas no pasan a consultar al cambiar meramente su presentación |
-| `ReporteFilters`, misma instancia en el panel | `tipo/borrador/onChange/disabled/onSearch/onClear`; `buscar/limpiar` y reglas de submit intactas. Solo orden de controles y acciones |
-| `ReporteFuenteEstadisticas`, sigue siendo hermano permanente después de filtros/notas | Mismas `tipo/activa/aplicada/restringida/onRestringida/onAplicar`. No envolver su montaje en `estadisticas &&`: actualmente el componente sigue montado y devuelve null si está inactivo. Su granularidad y `seleccionLocal` permanecen en ese propietario |
-| Exportador TABULAR, al final de la misma rama `!estadisticas` | Mismas `fuente/restringida/onRestringida`; sin key nueva ligada a página, loading o resultado. Fuera de condiciones de éxito, filas o resumen. Cambio de vista conserva el desmontaje actual; no mantener artificialmente las dos presentaciones montadas |
-| Exportador ESTADISTICA, al final del fragmento activo de `ReporteFuenteEstadisticas` | Mismas `fuente/presentacion="ESTADISTICA"/seleccion/restringida/onRestringida`; sigue hermano del bloque `aria-busy`, no dentro de él ni de `ReporteEstadisticas`. Así recargar JSON o abrir datos exactos no reinicia formato ni cancela archivo |
-| `ReporteEstadisticas` y tablas exactas | Mantener `key={contexto}`, `data/seleccion/onSeleccion`, propietario de ocultas/panel/explorado, keys de categorías/series/puntos/filas y eventos SVG. No añadir keys por gráfica/métrica ni condicionar montaje a detalles abiertos |
-| Resúmenes, tablas y `Pagination` | Mismos props `periodo/resumen/estadoOperacion/motivo`, `detalle/query`; enlaces y state intactos. `Pagination` conserva condiciones, filtros aplicados, callbacks y disabled; no limitar resumen al detalle ni mover descarga dentro del paginado |
-| CU40 | Mismas `fuente="movimientos"/pendiente/restringida/onRestringida`, misma ubicación/instancia. No añadir período obligatorio, Buscar o Estadísticas; conservar filtros abiertos y cancelación por cambio efectivo de contexto |
-
-Durante implementación, evitar que inserciones/reordenaciones de hermanos sin key cambien identidad por ramas alternantes; comprobar continuidad con las transiciones del arnés, no «solucionar» reseteos añadiendo keys dinámicas. El nuevo orden debe ser fijo para todos los estados. Los cambios de contexto que hoy reinician/invalidan la selección o descarga deben seguir haciéndolo; solo se prohíben reinicios adicionales por presentación.
-
-Inmutables además de §5.3: número y parámetros HTTP, URL/rutas/roles/sidebar; filtros borrador frente a aplicados; Buscar frente a Aplicar; escala, series, valores exactos, distribución y geometría SVG; selección compartida PDF/XLSX y ausencia de parámetros gráficos en CSV; categorías ocultas/panel no recortan exportación; vacío/página lejana siguen exportables conforme al comportamiento vigente. No cambiar disponibilidad, estados, cancelación, callbacks, condiciones disabled/hidden ni hooks para permitir una composición visual.
-
-### 10.6. Accesibilidad, responsive y estados a validar
-
-- **Orden DOM/teclado objetivo:** radios (navegación nativa con flechas) → modalidad/fechas/filtro → Buscar → Limpiar → granularidad/Aplicar cuando corresponda → Actualizar → tabla/paginación o selectores de gráfica/métrica, categorías, panel, viewport/puntos → desplegables exactos → formato/Exportar/Cancelar → ayuda secundaria. Errores y estado en el lugar de su tarea, sin autofocus al refrescar ni tabIndex positivo. El DOM del resumen sigue su lectura visual: total primero.
-- **Responsive:** conservar cortes 900/620 px; filtros 3/2/1 columnas con Desde/Hasta consecutivos; resumen total a ancho completo y categorías 2/1 columnas. A 375 px, radios envolventes y grupos de acciones en columna sin `column-reverse`/`order`; granularidad y Aplicar dentro del ancho disponible. Misma instancia y orden a cualquier ancho.
-- Tabla/gráfica con scroll **local**, región etiquetada y foco visible; no scroll horizontal del documento ni reducción artificial de SVG/escala para encajar. Nombres y criterios largos envuelven; números enormes permanecen íntegros y desplazables si es necesario. Asegurar `min-width: 0` en contenedores; comprobar también 768 px y zoom 200% en la fase final.
-- Reutilizar outline de foco y controles de al menos 2.75rem; labels/legend/caption/scope, `aria-busy` y live regions actuales. Leyenda comprensible sin color; no quitar numeración/trazos. Verificar contraste de texto normal 4.5:1 y controles/foco 3:1 durante adaptación, sin afirmar que ya se midió. Sin animación nueva ni cambio de preferencia de movimiento.
-- **Inicial:** instrucciones específicas de período/granularidad, sin totales ficticios. **Carga:** estado/bloqueo actuales y descarga independiente. **Vacío:** ceros del servidor, resumen y posibilidad de archivo según contexto. **Página lejana:** resumen completo y acción existente de primera página. **Error:** distinguir filtros, consulta, permisos y descarga; conservar retry/login donde hoy corresponden. **Gráfica sin valor/todas ocultas:** mensaje visible y acceso exacto, sin inventar sectores. **Descarga:** sin selección, bloqueo, ocupado, cancelar, fallo y archivo recibido junto a sus controles.
-
-### 10.7. Cierre de Fase 1 (plantilla §8)
-
-- **Fase / fecha / estado:** Fase 1 / 21-11-2026 / **COMPLETADA como diagnóstico y especificación**. Se satisfacen aceptación y entrega de §6: una propuesta concreta compatible con componentes actuales, fuentes separadas y condiciones de no regresión. La revisión visual manual pendiente no se oculta ni se sustituye por tests; esta fase permite expresamente documentar esa limitación. No equivale al cierre visual exigido por Fase 4.
-- **Skill frontend-design:** aplicada a jerarquía de total, secuencia configurar/leer/descargar, agrupación, densidad, texto, accesibilidad y responsive; identidad preservada y alternativa de dashboard descartada (§10.2).
-- **Hallazgos:** código en §10.1; navegador headless/API sintética para DOM/interacción/anchos, sin inspección manual de imágenes. No se ha medido visualmente la mejora propuesta, porque no se implementó.
-- **Cambios visuales y motivo de usabilidad:** solo decisiones §10.2–10.6; **ningún cambio visual implementado**.
-- **Archivos/componentes modificados; funciones reutilizadas sin cambio:** únicamente `docs/ai/fases.md`. Todos los componentes, props/callbacks, servicios, hooks y cálculos inspeccionados permanecen intactos; adaptaciones futuras listadas en §10.4.
-- **Orden visual/DOM y responsive/teclado comprobados:** orden actual verificado por código; etiquetas, foco, anchos/scroll y toque ejercidos por arneses existentes. Orden propuesto especificado, todavía no comprobable en interfaz implementada. Inversión Buscar/Limpiar móvil identificada por CSS, pendiente de adaptación.
-- **No regresión:** propuesta contrastada con §5.3 y contratos de montaje de §10.5; pruebas de base aprobadas sin modificar aplicación. No se afirma regresión de una implementación todavía inexistente.
-- **Comandos de pruebas/build/diff y resultados reales:** desde frontend:
-
-  ```text
-  git status --short
-  Inicial: únicamente M ../docs/ai/fases.md (trabajo previo preservado).
-
-  node --test --test-concurrency=1 tests/reportes-ventas.browser.test.mjs tests/reportes-estadisticas.browser.test.mjs tests/reportes-tabular.browser.test.mjs
-  119 aprobadas; 0 fallidas/canceladas/omitidas; duración aproximada 59 s.
-  Builds temporales internos del arnés; no pnpm build independiente.
-  Sin cambios de arnés, capturas ni guardado de descargas; temporales propios limpiados por finally.
-
-  git diff --check
-  Sin errores de espacios; únicamente aviso de futura normalización LF → CRLF.
-  Revisión documental: una propuesta, trazabilidad de fuentes, preservación de estado,
-  criterios responsive/accesibles y cierre/lectura mínima coherentes; Fases 2–4 pendientes.
-  git status --short
-  Únicamente M ../docs/ai/fases.md; ningún archivo de aplicación o pruebas modificado.
-  ```
-
-- **Limitaciones y problemas funcionales fuera de alcance:** sin revisión visual manual, contraste medido, lector de pantalla, otros navegadores/dispositivos ni matriz completa de estados/anchos. No se detectó un nuevo fallo funcional en las pruebas ejecutadas; la incidencia histórica postlogin de §9 no se reinvestigó ni se considera corregida por estos resultados. Sin MySQL/backend, instalación, contratos reconstruidos, commit/push o despliegue.
-- **Siguiente fase habilitada y lectura mínima:** **Fase 2 habilitada, NO INICIADA**; Fases 3–4 también pendientes. Leer AGENTS raíz/frontend, §5.3, definición Fase 2 y §10 de este documento; después coordinador CU38/CU39, PerdidasPage, filtros, tres resultados, exportador y `reportes.css`. `app-foundations.css`/`catalogo.css` solo para tokens; `MovimientosPage` solo para comprobar exportador. Revisar `ReporteFuenteEstadisticas` únicamente para no alterar su montaje; su adaptación visual pertenece a Fase 3. No reabrir backend/contratos ni releer todas las suites. Inspección visual manual del resultado y continuidad de formato/descarga son comprobaciones necesarias en la implementación, no autorizan ejecutar Fases 2–4 en esta sesión.
-
-## 11. Fase 2 — Composición principal y descarga
-
-### 11.1. Cierre según plantilla
-
-- **Fase / fecha / estado:** Fase 2 / 21-11-2026 / **COMPLETADA** dentro de su aceptación focalizada: jerarquía común implementada y revisada, controles/datos conservados y CU40 sin cambios de página ni flujo. Fases 3–4 **PENDIENTES / NO INICIADAS**; este cierre no sustituye la aceptación visual final de Fase 4.
-- **Preparación y preservación:** leídos AGENTS raíz/frontend, §5.3, definición de Fase 2 y §10 completo. Git inicial: únicamente ` M ../docs/ai/fases.md`. Se conserva íntegro ese trabajo previo; esta sesión actualiza estado y agrega §11, sin atribuirse el reemplazo histórico del documento. Lectura focalizada conforme al prompt; no se reabrieron backend, contratos, servicios ni hooks.
-- **Skill frontend-design:** cargada y aplicada a la propuesta única de §10.2. Paleta existente (fondo #f3f5f7, superficie #ffffff, texto #252930, secundario #555f6b, borde #dce2e8, foco #9b5b00), Segoe UI Variable/Aptos/Segoe UI, controles y componentes CADEFAR. Alineación izquierda, una superficie, total efectivo/bruto como énfasis singular; sin tarjetas de dashboard, nuevos iconos, fuentes o tokens globales.
-- **Hallazgos por código:** la composición permite mover hermanos en la misma rama, sin wrappers condicionales ni nuevas keys. Los resúmenes y el exportador también se reutilizan en Estadísticas: heredan exclusivamente su presentación interna; no se reorganizó `ReporteFuenteEstadisticas` ni `ReporteEstadisticas`.
-- **Cambios visuales y motivo de usabilidad:**
-  - Radios Consulta/Estadísticas antes de los filtros, selección nativa reconocible por control, borde y peso. Período y estado/motivo en el mismo fieldset rotulado «Filtros por aplicar»; ayuda de aplicación siempre visible.
-  - Buscar primario antes de Limpiar secundario, tanto en DOM como en escritorio/móvil; eliminado `column-reverse` de estas acciones.
-  - Franja «Criterios aplicados» con fechas, modalidad, zona horaria y estado/motivo recibidos; no lee borradores. Resumen completo: total primero, ancho completo, después categorías 2/1 columnas. Notas informativas y advertencias de bruto/reclasificación/costos históricos intactas.
-  - Tablas completas con mínimos propios (ventas 74rem, compras 68rem, pérdidas 94rem), menor padding local, fechas/números/estados/enlaces íntegros y nombres envolventes. Se mantiene el scroll local, región etiquetada, captions, columnas, registros, enlaces y paginación. Los mínimos pueden crecer con el contenido, sin comprimir importes grandes.
-  - Exportador TABULAR al final de Consulta, después del detalle/paginación y fuera del éxito/filas/resumen. Criterios propios → formato/Exportar/Cancelar → feedback próximo → alcance y advertencias visibles. Quitado el borde anidado, sin esconder disponibilidad del servidor, consulta independiente, todas las coincidencias ni 128 MiB.
-  - Exportador estadístico compartido: límites 1200/8/9600 y contenido CSV/PDF/XLSX siguen visibles; solo la explicación de imagen XLSX no editable/selección compartida pasa a `details` nativo. Su ubicación en Estadísticas queda para Fase 3. CU40 conserva su exportador antes del resultado y su consulta automática.
-
-### 11.2. Archivos y continuidad de estado
-
-Rutas relativas a la raíz:
-
-| Archivos modificados | Alcance |
-|---|---|
-| `frontend/src/features/reportes/components/ReporteOperacionesConsulta.jsx` | Orden de vista y exportador TABULAR CU38/CU39 |
-| `frontend/src/features/reportes/pages/PerdidasPage.jsx` | Mismo orden para CU41 |
-| `frontend/src/features/reportes/components/ReporteFilters.jsx` | Legend/agrupación y Buscar → Limpiar |
-| `frontend/src/features/reportes/components/ReporteVentasResultado.jsx` | Contexto y total primero |
-| `frontend/src/features/reportes/components/ReporteComprasResultado.jsx` | Contexto y total primero |
-| `frontend/src/features/reportes/components/PerdidasResultado.jsx` | Contexto y total bruto primero |
-| `frontend/src/features/reportes/components/ExportacionTabular.jsx` | Composición interna compacta y ayuda secundaria |
-| `frontend/src/features/reportes/styles/reportes.css` | Estilos locales; solo interior del exportador compartido alcanza CU40 |
-| `frontend/tests/reportes-ventas.browser.test.mjs` | Selectores de total adaptados a su nuevo lugar sin perder aserciones; orden DOM/foco y capturas opt-in |
-| `frontend/tests/reportes-tabular.browser.test.mjs` | Continuidad del nodo/formato/descarga al Actualizar y cambiar ancho en cuatro fuentes; capturas CU40 opt-in |
-| `docs/ai/fases.md` | Estado y este cierre; trabajo documental previo preservado |
-
-- **Reutilizados sin cambio:** `CatalogoState`, `FeedbackMessage`, `Pagination`, funciones de presentación, callbacks, props y condiciones disabled/hidden; sin editar servicios, validators, hooks, URLs/rutas/roles/sidebar, cálculos ni backend. `MovimientosPage.jsx`, `ReporteFuenteEstadisticas.jsx`, `ReporteEstadisticas.jsx`, estilos globales y fixtures no modificados.
-- **Montaje/keys:** `ReporteFuenteEstadisticas` continúa como hermano permanente, con las mismas props y posición de montaje, incluso inactivo; conserva granularidad y selección local. Exportador TABULAR permanece en la misma rama `!estadisticas`, sin key nueva, siempre fuera de carga/error/éxito y paginación. No se duplican árboles por viewport. No se alteraron `key={contexto}`, propietarios ni keys gráficas. El cambio de vista conserva sus desmontajes actuales, no se mantienen artificialmente ambas descargas.
-- **Continuidad comprobada automáticamente:** en ventas/compras/pérdidas/CU40, se retiene una descarga XLSX, se pulsa Actualizar y se alternan 1366/375 px: mismo nodo select y valor XLSX, `aria-busy` de exportación activo, exactamente un GET de archivo y uno de actualización, y archivo finalmente recibido sin cancelación adicional. Las regresiones conservan borrador/aplicado, paginación/resumen completo, consultas sin selección, límites, errores, selecciones estadísticas, categorías/paneles, cancelaciones esperadas y respuestas tardías. No se fusionaron Buscar y Aplicar granularidad.
-
-### 11.3. Verificaciones reales y límites
-
-**Automatizadas (API interceptada, datos sintéticos, React/Router/Axios reales):** inicial sin período, carga retenida, vacío/ceros, página lejana con resumen completo, errores 400/401/403/500/red; descarga sin formato/ocupada/cancelación/fallo/archivo recibido, filtros pendientes de CU40, tres formatos y consultas independientes. Tres fuentes, exportador CU40, navegación por rol, Atrás/Adelante y recarga. Orden vista/filtros, Buscar/Limpiar, total/categorías y paginación/descarga comprobado en DOM; labels, caption/scope, Tab real, foco visible y desplazamiento horizontal local con teclado a 375 px. Sin desbordamiento horizontal del documento en los escenarios de ancho ejercidos. No es una matriz exhaustiva estado × fuente × viewport.
-
-```text
-Desde frontend, última ejecución completa:
-$env:CADEFAR_REPORTES_SCREENSHOTS = 'C:\Users\jesus\AppData\Local\Temp\opencode\cadefar-fase2-visual'
-node --test --test-concurrency=1 tests/reportes-consulta.test.mjs tests/reportes-ampliacion-consulta.test.mjs tests/reportes-tabular.test.mjs tests/reportes-tabular-ciclo.test.mjs tests/reportes-navegacion.test.mjs tests/reportes-ventas.browser.test.mjs tests/reportes-tabular.browser.test.mjs tests/reportes-estadisticas.browser.test.mjs
-143 aprobadas; 0 fallidas/canceladas/omitidas; ~62 s (incluye contenedoras y subtests).
-Builds Vite temporales del arnés; no pnpm build independiente ni suite backend/real.
-git diff --check
-Sin errores de espacios; avisos de normalización futura LF → CRLF.
-```
-
-La primera ejecución dio 141 aprobadas y 2 fallidas (subtest nuevo y contenedora) por intentar devolver un nodo DOM serializado mediante CDP: `Object reference chain is too long`. Corregida únicamente la expresión de prueba con `void`; repetición tabular 24/24 y última ejecución conjunta 143/143. Ninguna aserción funcional debilitada.
-
-**Inspección visual real:** se generaron y leyeron ocho imágenes del navegador headless: `ventas-1366.png`, `ventas-375.png`, `compras-1366.png`, `compras-375.png`, `perdidas-1366.png`, `perdidas-375.png`, `movimientos-1366.png`, `movimientos-375.png`, en el directorio temporal indicado, no versionadas. Consultas con filas, nombres históricos e importes sintéticos extremos; CU40 vacío tras descarga XLSX recibida. Se revisó composición, separación borrador/aplicado, jerarquía de total, wrapping, orden de descarga y proximidad de feedback. La primera lectura mostró cortes dentro de «Confirmada»/categorías/motivos; se corrigieron con anchos/nowrap locales y se volvieron a generar y leer las ocho imágenes finales. Sin solapamientos apreciados en esas capturas; las tablas se recortan al viewport propio, no eliminan datos. Las capturas de éxito no se presentan como inspección óptica de todos los estados.
-
-**Contraste acotado:** cálculo sRGB sobre tokens reutilizados, no auditoría completa: texto #252930/blanco 14,60:1 y sobre superficie sutil 13,59:1; secundario #555f6b/blanco 6,49:1 y sobre superficie sutil 6,04:1; foco #9b5b00/blanco 5,40:1; borde de control #7e8b99/blanco 3,48:1. No se certifican todos los estados/controles de la aplicación por estas relaciones.
-
-**Limitaciones y fuera de alcance:** revisión de imágenes headless y teclado automatizado, no recorrido manual interactivo con usuario, lector de pantalla ni dispositivo físico. Inicial/carga/error/cancelación se comprobaron por aserciones, no por imágenes de cada combinación. Pendientes para Fase 4: 768 px, zoom 200%, matriz visual ampliada y revisión accesible final después de Fase 3. No se detectó una incidencia funcional nueva en las pruebas; la histórica postlogin de §9 no se reinvestigó ni se declara resuelta. Sin MySQL, datos reales, pruebas backend, dependencias nuevas, subagentes, commit/push o despliegue. Los archivos descargados son bytes sintéticos y se observa el anchor; no acredita validez de documentos generados ni disponibilidad productiva.
-
-**Siguiente fase habilitada y lectura mínima:** **Fase 3 habilitada, NO INICIADA**. Fase 4 pendiente. Leer AGENTS raíz/frontend, §5.3, definición Fase 3, §10.2–10.6 y este cierre; después `ReporteFuenteEstadisticas.jsx`, `ReporteEstadisticas.jsx`, resúmenes, `ExportacionTabular.jsx` y `reportes.css`. `escalaEstadistica.js` solo como referencia si resulta necesario; sin reabrir backend/servicios/contratos. Sigue pendiente en Fase 3 acercar granularidad, reorganizar gráfico/datos exactos y mover su exportador al final, conservando propietarios/props/keys/selección y descarga independiente de §10.5. No rehacer Consulta ni CU40.
-
-## 12. Fase 3 — Estadísticas, gráficas y datos exactos
-
-### 12.1. Cierre según plantilla
-
-- **Fase / fecha / estado:** Fase 3 / 21-11-2026 / **COMPLETADA** en su alcance focalizado. Tres fuentes con composición común, leyenda textual y muestras, alcance explícito y alternativas exactas accesibles, sin cambios de valores/controles/peticiones en los escenarios ejercidos. **Fase 4 habilitada, PENDIENTE / NO INICIADA**; no se sustituye su revisión final ampliada.
-- **Preparación y preservación:** leídos AGENTS raíz/frontend, §5.3, definición de Fase 3, §10.2–10.6 y cierre completo §11. Git inicial con **11 rutas modificadas** de trabajo previo: este documento, exportador, tres resultados, filtros, coordinador, PerdidasPage, CSS y dos arneses (ventas/tabular). Todos preservados; no se atribuyen a Fase 3 sus cambios anteriores. Lectura focalizada de componentes/resúmenes/exportador/CSS y pruebas/fixtures pertinentes; consulta normativa acotada de los cuatro documentos AI por las secciones de Reportes. Sin reabrir backend ni editar servicios, hooks, validators o utilidades de escala.
-- **Skill frontend-design:** cargada y aplicada a la propuesta única: superficie sobria de consulta farmacéutica, alineación izquierda, agrupación por tarea y jerarquía sin tarjetas nuevas. Conservados colores/tokens, tipografía, iconos y componentes CADEFAR. Se descartó destacar cada serie como una tarjeta: la leyenda se mantiene compacta, numerada y vinculada al gráfico existente.
-- **Hallazgos y cambios visuales / motivo de usabilidad:**
-  - Granularidad y Aplicar en fieldset separado, próximo a los filtros dentro del propietario actual, con ayuda explícita de que Buscar aplica los filtros. No se fusionan acciones.
-  - Cabecera con Actualizar estadísticas y estado; contexto de vista elegida/granularidad aplicada antes del resumen. Los criterios de período/estado/motivo siguen procediendo del resumen recibido, no del borrador.
-  - Gráfica/Métrica juntas; leyenda con checkbox, número, nombre y muestra SVG que reutiliza clase/color y patrón de línea existentes por índice. No modifica las series ni el SVG de datos.
-  - Selector de panel y alcance antes del viewport. En Sectores se indica explícitamente período completo y que el panel solo modifica la tabla; Barras/Líneas identifican su alcance temporal.
-  - Valor explorado inmediatamente después del viewport, con rótulo y live region conservada. Avisos de aproximación, valores pequeños y acceso exacto con teclado/toque/tabla permanecen visibles y asociados por `aria-describedby`; solo precisión técnica en millonésimas pasa a ayuda secundaria.
-  - Distribución completa y tabla exacta del panel en dos `details/summary` nativos inicialmente cerrados; tablas siempre en DOM, sin renderizado condicionado por apertura. Summary explica métricas/categorías ocultas/ceros, y se conservan caption, scope y regiones con foco. Valores alineados a la derecha, números tabulares, fechas/identificadores íntegros con scroll local.
-  - Exportador ESTADISTICA al final del fragmento activo, fuera de `aria-busy`, éxito y desplegables. Reutiliza sin cambios la presentación interna de Fase 2. Consulta y CU40 no se reorganizaron.
-
-### 12.2. Archivos y continuidad
+| 1. Acceso y catálogos | P1–P3 | COMPLETADA documentalmente: P1 conservado/verificado; P2/P3 generados y verificados |
+| 2. Inventario y operaciones | P4–P6 | COMPLETADA documentalmente: P4/P5/P6 generados y verificados |
+| 3. Recetas y control de existencias | P7–P9 | COMPLETADA documentalmente: P7/P8/P9 generados y verificados |
+| 4. Consultas, auditoría y cierre de la colección | P10–P11 | COMPLETADA documentalmente: P10/P11 y revisión final P1–P11; sin aceptación funcional/productiva |
 
-Rutas relativas a la raíz; solo estos seis archivos recibieron cambios nuevos en esta fase:
-
-| Archivo | Cambio de Fase 3 |
-|---|---|
-| `frontend/src/features/reportes/components/ReporteFuenteEstadisticas.jsx` | Grupo de aplicación, contexto y posición final del exportador |
-| `frontend/src/features/reportes/components/ReporteEstadisticas.jsx` | Leyenda, alcance, valor explorado y desplegables exactos |
-| `frontend/src/features/reportes/styles/reportes.css` | CSS local estadístico y tablas exactas; preserva CSS previo de Fase 2 |
-| `frontend/tests/reportes-estadisticas.browser.test.mjs` | Interacción/estado/DOM, extremos, cero/vacío y capturas opt-in |
-| `frontend/tests/reportes-tabular.browser.test.mjs` | Continuidad estadística durante descarga; selector de SVG de datos acotado al viewport |
-| `docs/ai/fases.md` | Estado y este cierre, sin reemplazar cierres anteriores |
-
-- **Reutilizados sin cambio:** resúmenes y exportador, CatalogoState/FeedbackMessage, props/callbacks/disabled, series/categorías/fechas/precisión/cálculos/geometría SVG, eventos y keys de puntos/filas. No modificaciones de HTTP, parámetros, URLs, permisos, sidebar, paginación, resumen completo ni disponibilidad de archivos.
-- **Montaje:** coordinadores intactos; `ReporteFuenteEstadisticas` sigue montado también inactivo y conserva su `return null`, granularidad y selección local. `ReporteEstadisticas` conserva `key={contexto}`, props y propietarios de ocultas/panel/explorado. No keys por tipo de gráfico/métrica ni árboles desktop/móvil. Exportador sigue hermano del bloque ocupado y sin key nueva. Los desmontajes actuales por carga/contexto/vista permanecen: no se promete conservar panel/ocultas/explorado al refrescar JSON, porque ya se desmontaba el gráfico en carga.
-- **Continuidad automatizada:** apertura/cierre de desplegables y cambios 1366/375 px conservan nodo del gráfico y filas, panel extremo, ocultas, valor explorado, formato XLSX y descarga retenida. Actualizar conserva nodo/formato del exportador, selección LINEAS + IMPORTE/PERDIDA y archivo en curso; exactamente un GET de archivo y uno de actualización. Archivo recibido sin cancelación adicional. Gráfico/métrica/leyenda/panel/desplegables no agregan GET. Cambios de contexto y cancelaciones intencionales siguen cubiertos.
-- **Descargas:** matriz existente de CSV/PDF/XLSX en las tres fuentes aprobada. CSV sin parámetros gráficos; PDF/XLSX con selección vigente. Panel visible/categorías ocultas no recortan solicitud; vacío/error/carga no condicionan artificialmente el exportador. CU40 conserva ubicación, consulta automática y comportamiento previo, ejercidos por el arnés compartido.
-
-### 12.3. Verificaciones reales y limitaciones
-
-**Automatizadas, API simulada y datos sintéticos:** tres fuentes, barras/líneas/sectores, métricas disponibles, magnitudes enormes y bajo resolución, ceros/sinDatos, categorías excluidas y todas ocultas, 1200 intervalos/20 paneles y extremos primero/último, límite 1201, datos exactos campo por campo, roles/errores/respuestas tardías, borradores/aplicados y navegación. Teclado Enter/Espacio abre/cierra desplegables; foco visible, scroll local con flecha en tablas abiertas a 375 px, selección/exploración por foco y toque en los tres gráficos, labels/leyenda y orden DOM de valor/exportación. Sin desbordamiento del documento en anchos ejercidos. No es una matriz óptica exhaustiva de cada estado × ancho × fuente.
-
-```text
-Desde frontend, última ejecución completa:
-$env:CADEFAR_REPORTES_SCREENSHOTS = 'C:\Users\jesus\AppData\Local\Temp\opencode\cadefar-fase3-visual'
-node --test --test-concurrency=1 tests/reportes-estadisticas.test.mjs tests/reportes-estadisticas-fuentes.test.mjs tests/reportes-estadisticas-ciclo.test.mjs tests/reportes-tabular.test.mjs tests/reportes-tabular-ciclo.test.mjs tests/reportes-estadisticas.browser.test.mjs tests/reportes-tabular.browser.test.mjs
-91 aprobadas; 0 fallidas/canceladas/omitidas; ~60 s (incluye contenedoras y subtests).
-Builds Vite temporales del arnés; no pnpm build independiente ni pruebas backend.
-git diff --check
-Sin errores de espacios; avisos de normalización futura LF → CRLF.
-```
-
-**Iteraciones de prueba registradas:** primera conjunta 83/91, con cuatro subtests nuevos fallidos y sus contenedoras: CDP Enter sin texto no activaba summary, y el fixture de ventas no tenía opt-in de 1200 intervalos en la nueva comprobación de panel 19. Corregida solo la preparación de prueba, repetición browser 71/71. Al ampliar toque/tablas, conjunta 89/91: el toque en el centro común de Sectores extremos alcanzaba otra categoría. Se movió el punto de prueba al interior del sector mayor, sin modificar eventos/geometría ni debilitar la comprobación del valor. Última conjunta 91/91. Ningún fallo funcional de aplicación nuevo reproducido por estas incidencias del arnés.
-
-**Inspección visual real, no solo aserciones:** capturas opt-in guardadas fuera del repositorio en la ruta anterior. Leídas durante iteración las composiciones `ventas-BARRAS`, `compras-LINEAS`, `perdidas-SECTORES` en 1366/375 px, además de `compras-SECTORES-1366`, `ventas-SECTORES-375`, `compras-BARRAS-375` y `perdidas-LINEAS-375`. Leídas también las seis imágenes finales `{ventas,compras,perdidas}-exactos-{1366,375}.png` (recortes de hasta 1500 px de altura, no todas las filas/columnas a la vez). Las primeras imágenes de tablas abiertas mostraron cortes dentro de fechas/identificadores; se corrigió exclusivamente CSS local `white-space` y se regeneraron/leyeron las seis finales. En las imágenes revisadas se reconocen grupos, leyenda textual/muestras, alcance, valor próximo, ayudas y descarga al final; las tablas desbordan su región, no el documento. No se afirma haber leído todas las capturas generadas ni revisión óptica de estados de error/carga/vacío por cada combinación.
-
-**Limitaciones y fuera de alcance:** headless con teclado/toque emulados, no dispositivo físico, recorrido interactivo de usuario ni lector de pantalla. No medición nueva de contraste completa (tokens y relaciones acotadas de §11 se reutilizan); 768 px, zoom 200% y revisión accesible/visual final ampliada pertenecen a Fase 4 y no se ejecutaron. Bytes de descarga sintéticos/anchor observado: no valida documentos reales, backend ni disponibilidad productiva. No incidencia funcional nueva pendiente de corrección; la histórica postlogin de §9 no se reinvestigó ni se declara resuelta. Sin MySQL/datos reales/pruebas backend/dependencias/subagentes/commit/push/despliegues.
-
-**Siguiente fase habilitada / lectura mínima:** **Fase 4 HABILITADA, PENDIENTE / NO INICIADA**. Leer AGENTS raíz/frontend, §5.3, definición Fase 4, §10.5–10.6 y cierres §11–12; después solo los componentes/CSS y arneses afectados de Reportes, con CU40 como consumidor del exportador compartido. Ampliar a 768 px/zoom 200%, estados y contraste/foco según Fase 4, ejecutar sus regresiones/build/diff y corregir únicamente defectos visuales demostrados. No reabrir cálculos/backend/servicios ni rehacer Consulta/CU40.
-
-## 13. Fase 4 — Verificación final responsive y accesible
-
-### 13.1. Cierre según plantilla
-
-- **Fase / fecha / estado:** Fase 4 / 21-11-2026 / **PARCIAL**. Revisión visual real de capturas y regresiones focalizadas completadas en entorno simulado. Se verificó el reflow equivalente al 200% mediante viewport de 683 píxeles CSS y DPR 2, pero **no el zoom nativo del navegador al 200%**. Por criterio conservador, esa comprobación queda pendiente antes de marcar la fase COMPLETADA; no se sustituye por build ni por capturas a DPR 2.
-- **Preparación y preservación:** leídos AGENTS raíz/frontend, §5.3, definición Fase 4, §10.5–10.6 y cierres completos §11–12. Git inicial con 14 rutas modificadas: documento, diez archivos de aplicación/CSS y tres arneses browser de Fases 2–3. Se preservó todo ese trabajo. Lectura focalizada de esos componentes/CSS y pruebas relacionadas; MovimientosPage solo para verificar exportador CU40. Utilidades de exportación/validación consultadas exclusivamente para entender el dato sintético rechazado, sin modificarlas.
-- **Skill frontend-design:** cargada y aplicada como crítica final, no como nuevo diseño. Conservados fondo #f3f5f7, blanco, texto #252930, secundario #555f6b, foco #9b5b00 y tokens existentes; Segoe UI Variable/Aptos/Segoe UI, iconos y componentes CADEFAR. Se confirmó la secuencia configurar → leer → descargar, énfasis único en total efectivo/bruto, ayudas secundarias y alineación numérica. No se reabrieron las decisiones de Fases 2–3.
-- **Hallazgos / cambios visuales:** no se reprodujo un defecto de presentación que justificara editar la aplicación en los escenarios revisados. Nombres extensos envuelven, fechas/importes quedan completos en regiones desplazables, ayudas y feedback siguen próximos a sus controles, foco reconocible y exportación fuera del resultado. **Ninguna corrección JSX/CSS nueva**: no introducir cambios estéticos por preferencia es parte del alcance. Se amplió únicamente la evidencia de regresión y el seguimiento.
-
-### 13.2. Archivos y continuidad de estado
-
-Solo estas cuatro rutas recibieron cambios de esta sesión; sus modificaciones previas se conservaron:
-
-| Archivo relativo a raíz | Cambio de Fase 4 |
-|---|---|
-| `frontend/tests/reportes-ventas.browser.test.mjs` | Añade 768px/reflow equivalente 200% al recorrido accesible existente; denominación comercial sintética extensa con cadena sin espacios para pérdidas |
-| `frontend/tests/reportes-estadisticas.browser.test.mjs` | Amplía anchos de continuidad/exploración/desplegables; inicial/carga/error a 768px, contraste sRGB y capturas opt-in representativas |
-| `frontend/tests/reportes-tabular.browser.test.mjs` | Amplía continuidad durante descarga a 768px/reflow 200%, apertura de ayuda del archivo, estados de descarga y criterios CU40 largos válidos |
-| `docs/ai/fases.md` | Estado y cierre §13; cierres anteriores preservados como registros históricos |
-
-- **Reutilizados sin cambio:** todos los componentes, CSS, props, callbacks, condiciones, servicios, hooks, validators, utilidades y backend. ReporteFuenteEstadisticas permanece montado inactivo; `key={contexto}`, propietarios de selección/ocultas/panel/explorado y keys/eventos SVG intactos. Los desplegables exactos conservan sus hijos montados. No se añadieron solicitudes, cancelaciones, resets, ramas por viewport ni instancias duplicadas.
-- **Continuidad automatizada:** mismos nodos de gráfico y filas al abrir/cerrar exactos y alternar 1366/768/683/375px; mismo panel extremo, categorías ocultas, valor explorado, nodo/formato XLSX y descarga retenida al cambiar ancho/abrir ayudas. Actualizar mantiene formato/selección compartida y descarga, con exactamente un GET JSON y uno de archivo. Conservado el desmontaje previo del gráfico durante carga JSON: no se promete conservar panel/ocultas/explorado al Actualizar.
-- **Contratos conservados y ejercidos:** Buscar distinto de Aplicar granularidad; borrador/aplicado, paginación y resumen completo; geometría/series/precisión/ceros/null/fechas civiles/límites; HTTP/query/URLs/permisos/navegación; CSV sin parámetros gráficos, PDF/XLSX con selección vigente. Categorías ocultas y panel no recortan archivos. Exportadores fuera de éxito/filas y del bloque ocupado del resultado; CU40 en su ubicación previa, automático y sin período obligatorio.
-
-### 13.3. Verificaciones automatizadas y resultados reales
-
-API interceptada por CDP, datos y bytes sintéticos, React/Router/Axios reales; no backend/MySQL ni datos operativos.
-
-- Consulta de ventas/compras/pérdidas y exportador CU40: inicial, carga retenida, vacío/ceros, error, página lejana, filtros/roles, resumen completo, recarga, Atrás/Adelante y enlaces existentes.
-- Estadísticas de tres fuentes: barras/líneas/sectores, métricas, 1200 intervalos/20 paneles/extremos, cero/sinDatos, todas las categorías ocultas, exactitud campo por campo, foco/teclado/toque y datos exactos abiertos/cerrados. Interacciones de presentación sin GET adicionales.
-- 1366/768/375px y 683 CSS px con DPR 2: sin overflow horizontal del documento en los escenarios ejercidos; tablas/gráficos con scroll local, regiones etiquetadas y foco. Orden DOM de vista/filtros/Buscar/Limpiar/resultado/datos/descarga, labels, legend, caption y scope conservados; Enter/Espacio en summary y Tab real. No es una auditoría de lector de pantalla ni una matriz óptica exhaustiva estado × fuente × ancho.
-- Descarga ocupada/cancelada/fallida/recibida, simultánea con JSON, respuestas tardías, recursos y matriz de formatos/presentaciones; criterios CU40 con motivo sin espacios de 40 caracteres, fechas civiles extremas e IDs máximos válidos. Nombre comercial largo de pérdidas sin ocultar ni truncar el dato.
-- **Contraste medido automáticamente sobre tokens efectivos compilados:** texto/blanco 14,60:1; secundario/blanco 6,49:1; foco/blanco 5,40:1; borde de control/blanco 3,48:1. Sobre superficie sutil: 13,59 / 6,04 / 5,03 / 3,24 respectivamente. Superan 4,5:1 para texto y 3:1 para foco/controles; las cuatro series reutilizan esos colores. No equivale a certificación de cada estado, hover, control nativo o color de feedback.
-
-```text
-Desde frontend, última ejecución conjunta:
-$env:CADEFAR_REPORTES_SCREENSHOTS = 'C:\Users\jesus\AppData\Local\Temp\opencode\cadefar-fase4-visual'
-node --test --test-concurrency=1 tests/reportes-consulta.test.mjs tests/reportes-ampliacion-consulta.test.mjs tests/reportes-estadisticas.test.mjs tests/reportes-estadisticas-fuentes.test.mjs tests/reportes-estadisticas-ciclo.test.mjs tests/reportes-tabular.test.mjs tests/reportes-tabular-ciclo.test.mjs tests/reportes-navegacion.test.mjs tests/reportes-ventas.browser.test.mjs tests/reportes-estadisticas.browser.test.mjs tests/reportes-tabular.browser.test.mjs
-167 aprobadas; 0 fallidas/canceladas/omitidas; ~95 s, incluyendo contenedoras y subtests.
-pnpm build
-Correcto: Vite 8.3.0, 254 módulos; sin dependencias nuevas.
-git diff --check
-Sin errores de espacios; avisos de normalización futura LF → CRLF.
-```
-
-**Iteraciones del arnés:** primera conjunta 164/166: nuevo subtest CU40 y contenedora fallaron porque el motivo sintético excedía el máximo vigente de 40 caracteres; se corrigió el fixture de esa prueba, sin tocar validator ni disponibilidad de descarga (repetición tabular 26/26). Segunda conjunta 165/167: prueba nueva de contraste y contenedora fallaron porque el lector hex no contemplaba `#fff` abreviado por Vite; se corrigió el parser de prueba para hex de 3/6 dígitos, manteniendo umbrales. Última conjunta 167/167. Las capturas de secciones vuelven al scroll inicial para evitar artefactos del header sticky en imágenes extendidas. No se debilitaron aserciones funcionales ni se corrigió código de aplicación para resolver incidencias del arnés.
-
-### 13.4. Evidencia visual realmente inspeccionada
-
-Capturas opt-in fuera del repositorio en el directorio temporal del comando anterior. Se **leyeron como imágenes**, además de las aserciones DOM:
-
-- Consulta: `ventas-768.png`, `compras-683.png` y `perdidas-375.png` (incluida su versión final con denominación muy larga). Resumen/criterios, acciones y paginación/descarga sin solapamientos apreciados; nombre largo envuelve dentro de su celda.
-- Gráficas: `ventas-BARRAS-1366.png`, `ventas-BARRAS-768.png`, `compras-LINEAS-683.png`, `perdidas-SECTORES-375.png`. Leyenda, alcance, valor explorado, foco de summary y ayudas coherentes; misma propuesta CADEFAR. Las magnitudes sintéticas extremas mantienen la advertencia de aproximación, no se altera la escala para hacerlas visibles.
-- Exactos abiertos: `ventas-exactos-768.png`, `compras-exactos-683.png`, `perdidas-exactos-768.png`. Fechas, categorías y valores íntegros dentro de regiones horizontalmente desplazables; captions/columnas extensas pueden quedar fuera del recorte local, no se eliminan. Imágenes de hasta 1500px de altura, no inspección simultánea de todas las filas/columnas.
-- Estados: `ventas-inicial-768.png`, `ventas-carga-768.png`, `ventas-error-768.png`, `ventas-ocultas-768.png` (releída sin artefacto sticky), `compras-cero-375.png`, `perdidas-vacio-375.png`. Mensajes distinguibles y controles/datos exactos disponibles conforme al estado; recortes de hasta 1200px, no todo el documento.
-- CU40: `movimientos-683.png` y `descarga-{ocupada,cancelada,fallida,recibida}-375.png`. Criterios largos envuelven, Cancelar permanece visible durante generación y feedback cerca de formato/Exportar, sin rediseñar Inventario.
-
-No se afirma haber inspeccionado todas las imágenes generadas ni cada combinación de estados. Las comprobaciones de continuidad son automatizadas; las imágenes por sí solas no prueban identidad de nodos, ausencia de peticiones ni cancelaciones.
-
-### 13.5. Limitaciones y pendiente de cierre
-
-- **Pendiente concreto para completar Fase 4:** recorrido visual con **zoom nativo 200%** en navegador de escritorio: Consulta y Estadísticas de las tres fuentes y exportador CU40; abrir/cerrar exactos/ayuda y retener una descarga para comprobar continuidad, controles y scroll local. Ya se verificó el reflow equivalente mediante viewport/DPR, pero no se presenta como uso del zoom nativo. Registrar el resultado aquí, sin rehacer Fases 2–3 ni ampliar lógica.
-- Resto de límites: navegador headless, teclado/toque emulados y lectura de imágenes, no dispositivos físicos ni lector de pantalla; contraste acotado a tokens, no auditoría WCAG integral. Descargas con bytes sintéticos/anchor observado: no acredita documentos reales, disponibilidad del servidor ni aceptación backend/productiva. No hay nuevo requisito de backend para estos cambios de pruebas.
-- No se reprodujo una incidencia funcional nueva de aplicación en las regresiones ejecutadas. El motivo excesivo fue un error del nuevo dato de prueba, no un defecto funcional. Incidencia histórica postlogin de §9 no reinvestigada ni declarada resuelta.
-- Sin MySQL, datos reales, pruebas backend, servicios/hooks/validators modificados, CORS/Railway, dependencias nuevas, subagentes, commit/push ni despliegues. **No hay Fase 5 habilitada:** continuar únicamente el pendiente de Fase 4. Lectura mínima: AGENTS raíz/frontend, §5.3, §10.5–10.6 y §13; arneses actuales y componentes solo si se demuestra un defecto visual.
+## 2. Alcance y archivos autorizados
+
+Durante la ejecución de las fases, crear o actualizar únicamente:
+
+- `docs/ai/subsistemas.md`.
+- Los once SVG de `docs/ai/diagrama-subsistemas/` definidos en la sección 3.
+- `docs/ai/fases.md`, para registrar el avance real y la evidencia de cierre.
+
+No modificar frontend, backend, tablas, migraciones, modelos, controladores, servicios, repositorios, rutas, sidebar, reglas de negocio ni otros diagramas académicos. No adaptar el software al dibujo. No instalar dependencias únicamente para generar SVG si las herramientas disponibles bastan. No hacer commits, push ni despliegues.
+
+No ejecutar una auditoría general del sistema ni todas sus pruebas. No se requiere navegador, capturas de la aplicación ni conexión a MySQL/Railway. Verificar archivos físicos de persistencia no equivale a certificar el esquema ni la disponibilidad de un servidor desplegado.
+
+## 3. Clasificación y entregables obligatorios
+
+Conservar este orden y la correspondencia académica indicada por el usuario. Compartir componentes no permite fusionar paquetes.
+
+| Paquete | Nombre oficial | Casos de uso | SVG en `docs/ai/diagrama-subsistemas/` |
+|---|---|---|---|
+| P1 | Autenticación y usuarios | CU01–CU09 | `p1-autenticacion-usuarios.svg` |
+| P2 | Proveedores y laboratorios | CU10–CU13 | `p2-proveedores-laboratorios.svg` |
+| P3 | Medicamentos y composición | CU14–CU20 | `p3-medicamentos-composicion.svg` |
+| P4 | Existencias e inventario | CU21–CU24 | `p4-existencias-inventario.svg` |
+| P5 | Compras | CU25–CU27 | `p5-compras.svg` |
+| P6 | Ventas | CU28–CU30 | `p6-ventas.svg` |
+| P7 | Recetas | CU31–CU32 | `p7-recetas.svg` |
+| P8 | Vencimientos y retiros | CU33–CU36 | `p8-vencimientos-retiros.svg` |
+| P9 | Stock bajo | CU37 | `p9-stock-bajo.svg` |
+| P10 | Reportes y consultas | CU38–CU41 | `p10-reportes-consultas.svg` |
+| P11 | Bitácora | CU42 | `p11-bitacora.svg` |
+
+Si aparece una clasificación posterior aprobada que contradiga esta tabla, identificar la fuente y la diferencia antes de cambiarla. No resolver contradicciones inventando componentes.
+
+## 4. Contrato visual común
+
+Usar el P1 revisado como plantilla de estilo, no como inventario técnico para otros módulos:
+
+- Orientación horizontal; fondo blanco; recuadro exterior rectangular y borde verde delgado.
+- Pestaña verde en la esquina superior izquierda con el nombre oficial del paquete en mayúsculas.
+- Cajas rectangulares verde claro, bordes verdes delgados, texto negro centrado y Arial o equivalente. Mantener los colores de P1: cajas `#e2efda`, borde `#548235`, pestaña `#a9d18e` y conexiones `#303030`.
+- Pequeño símbolo UML de componente como el utilizado en P1, sin atributos ni métodos.
+- Tres filas exclusivas y alineadas: interfaces arriba, controladores en medio y tablas abajo. Todos los componentes de un mismo nivel deben permanecer en su fila.
+- Título: `P<n>. PAQUETE DE <NOMBRE OFICIAL>`. Mantener esa convención en el documento y el SVG.
+- Espaciado regular, cajas de dimensiones coherentes y tipografía legible. Ampliar el lienzo cuando sea necesario, sin reducir los nombres hasta volverlos ilegibles.
+- Interface–Class: conexiones continuas, con puertos circulares como en P1. Representan servicios HTTP frontend y Axios, no importaciones ni llamadas directas entre lenguajes.
+- Class–Table: líneas discontinuas con flecha hacia la tabla. Resumen Controller → Service → Repository → Sequelize → MySQL.
+- Una ruta independiente por relación, con puertos distintos. **No utilizar distribuidores comunes ni tramos superpuestos.** Evitar cruces; usar carriles ortogonales separados y, cuando convenga, recorridos laterales/inferiores como en P1. Las flechas pueden entrar por distintos bordes de la tabla si la dirección queda inequívoca.
+- Las líneas no deben atravesar cajas, textos ni símbolos; las leyendas deben quedar fuera de los recorridos.
+- Una caja por controlador o tabla dentro de cada diagrama. Su reutilización entre paquetes es válida y debe explicarse.
+- SVG vectorial válido, texto seleccionable, `viewBox`, título y descripción accesibles; sin imágenes remotas ni fuentes externas. No sustituirlo por Mermaid si no reproduce el modelo.
+
+**Referencia disponible:** la imagen original mencionada por el usuario no está adjunta en la conversación; no afirmar una comparación visual con ella. La base comprobable es el estilo descrito y el P1 revisado.
+
+## 5. Procedimiento verificable dentro de cada fase
+
+Aplicar este procedimiento al conjunto de paquetes de la fase, sin solicitar aprobación individual por paquete ni crear maquetas alternativas.
+
+### 5.1. Inspección focalizada
+
+1. Leer las instrucciones `AGENTS.md` aplicables y las secciones pertinentes de `contexto-maestro.md`, `casos-uso.md`, `requerimientos.md` y `reglas-negocio.md`.
+2. Consultar la documentación académica de arquitectura/paquetes y modelo de datos que realmente exista, incluido `analisis-clases-academico-simplificado.md` cuando corresponda. Buscar el apartado «3.1 Análisis de arquitectura» y sus secciones de identificación, relación con CU y vista de paquetes; si no está disponible, declarar la limitación, sin inventar su contenido.
+3. Identificar páginas y componentes principales en `frontend/src/features/` y layouts compartidos. Seguir formularios, diálogos, servicios HTTP y rutas para comprobar qué operaciones representan.
+4. Revisar routers, middlewares y controladores de `backend/src/presentation/`. Inventariar **todos los controladores efectivamente involucrados**, incluidos los de otros módulos cuando atiendan operaciones del paquete.
+5. Seguir sus servicios y repositorios hasta modelos, asociaciones y migraciones para identificar **todas las tablas utilizadas**, incluidas auditoría y persistencia auxiliar cuando intervengan. Confirmar el nombre físico con `tableName` y las migraciones, no solo con el nombre de la clase Sequelize.
+
+### 5.2. Trazabilidad y selección
+
+- Conservar el nombre exacto de cada archivo y tabla, incluida su escritura y extensión cuando sea un archivo. No crear una interfaz ficticia por CU.
+- Seleccionar las interfaces reales suficientes para cubrir las responsabilidades del paquete. Un componente compartido o diálogo puede representar una operación sin existir una página independiente.
+- Incluir todos los controladores y tablas participantes, aunque sean compartidos o transversales. No incluir controladores solo porque existe un Service del mismo módulo: **un Service no implica que su Controller sea llamado**.
+- Por ejemplo, la captura automática de auditoría de P1 utiliza su Service y `bitacora_auditoria`; no utiliza el Controller de consulta manual de P11.
+- Incluir relaciones principales comprobadas y suficientes para explicar la participación de cada caja. Pueden omitirse detalles técnicos secundarios, pero no quitar una tabla o controlador participante para simplificar el dibujo.
+- En la explicación de cada paquete, conservar una correspondencia breve entre interfaz, operación/CU, controlador y tablas, con rutas relativas verificables a archivos fuente. Identificar los servicios/repositorios que justifican relaciones menos evidentes; estos no se convierten en una cuarta fila.
+- Ante una implementación parcial, mostrar solo componentes existentes y explicar la parte pendiente. No completar el dibujo con nombres propuestos.
+
+### 5.3. Producción y actualización del documento
+
+1. Generar los SVG de la fase con el mismo contrato visual y validar sus recorridos.
+2. Integrarlos en `subsistemas.md` en el orden P1–P11, mediante enlaces relativos.
+3. Añadir explicaciones breves: interfaces, controladores, tablas, responsabilidades, componentes compartidos, relaciones secundarias omitidas y límites comprobados.
+4. Actualizar el alcance acumulado sin presentar paquetes pendientes como entregados. Reservar el resumen final completo para el cierre de la fase 4.
+5. Registrar en este seguimiento los paquetes entregados, comprobaciones realmente ejecutadas y cualquier limitación.
+
+## 6. Fases de ejecución
+
+### Fase 1 — Acceso y catálogos: P1, P2 y P3
+
+**Objetivo:** consolidar la plantilla aprobada y completar los primeros tres paquetes.
+
+**Trabajo del bloque:**
+
+- **P1 — CU01–CU09:** conservar el diagrama existente y contrastar su cobertura completa con los flujos actuales. Base ya identificada: `auth.controller.js`, `usuario.controller.js`; tablas `limite_recuperacion_ip`, `recuperacion_password`, `usuario`, `bitacora_auditoria` y `rol`. Mantener acceso y recuperación sin exigir sesión previa; cambio propio y administrativo como variantes distintas. No agregar tabla de sesiones ni controlador ficticio de recuperación.
+- **P2 — CU10–CU13:** identificar interfaces de consulta/gestión, todos sus controladores y tablas reales. Respetar `ProveedorLaboratorio`: no separar proveedor y laboratorio por analogía con otro proyecto. Incluir persistencia transversal cuando corresponda.
+- **P3 — CU14–CU20:** cubrir medicamentos, principios activos y composición con los controladores efectivamente utilizados. Verificar sus relaciones con tablas de catálogo y las dependencias de consulta o validación que realmente usen los flujos; no limitarse a tres cajas por conveniencia.
+
+**Entrega:** tres SVG acumulados y secciones P1–P3 completas en `subsistemas.md`.
+
+**Cierre:** aprobar la lista común de verificaciones de la sección 7 para los tres paquetes; conservar P1 salvo ajustes necesarios y justificados. Estado COMPLETADA solo cuando P2/P3 también estén generados y verificados.
+
+### Fase 2 — Inventario y operaciones: P4, P5 y P6
+
+**Objetivo:** representar inventario, compras y ventas con su persistencia y trazabilidad reales.
+
+**Trabajo del bloque:**
+
+- **P4 — CU21–CU24:** identificar consultas de medicamentos/existencias, historial y ajustes implementados. Distinguir medicamento, existencia y movimiento; stock físico y vendible. No crear tabla `inventario`.
+- **P5 — CU25–CU27:** representar registro, consulta y anulación conforme al código, con compras, detalles, existencias, movimientos y todas las tablas adicionales realmente utilizadas. Contrastar consultas auxiliares de selección y dependencias entre módulos.
+- **P6 — CU28–CU30:** cubrir registro, consulta, confirmación y anulación según los flujos implementados. Verificar detalles, FEFO, existencias, movimientos, requisitos de receta y tablas compartidas. No atribuir al frontend la selección FEFO ni representar registro de venta y recetas como una única transacción si el código los separa.
+
+**Entrega:** SVG P4–P6, sus explicaciones y seis paquetes acumulados en el documento.
+
+**Cierre:** aprobar las verificaciones comunes; justificar las tablas compartidas y las dependencias entre compras/ventas/inventario sin convertirlas en paquetes fusionados.
+
+### Fase 3 — Recetas y control de existencias: P7, P8 y P9
+
+**Objetivo:** completar respaldo de ventas, vencimientos, retiros y consulta de stock insuficiente.
+
+**Trabajo del bloque:**
+
+- **P7 — CU31–CU32:** localizar el registro y revisión de recetas, incluso cuando reutilicen páginas de ventas. Incluir todos los controladores y tablas utilizados por esos recorridos. Distinguir registro, revisión y posterior confirmación de venta. No inventar almacenamiento de archivos ni adjuntos.
+- **P8 — CU33–CU36:** cubrir consultas de vencimiento y retiros por vencimiento/daño, con existencias, movimientos y demás tablas comprobadas. El vencimiento es una condición de datos, no una tabla; una existencia vencida puede conservar saldo físico.
+- **P9 — CU37:** identificar la interfaz real de stock bajo, aunque esté compartida con inventario, y la consulta de stock vendible frente al mínimo. Incluir las tablas realmente consultadas y la persistencia transversal aplicable. No crear tablas `alerta` o `stock_bajo`.
+
+**Entrega:** SVG P7–P9, sus explicaciones y nueve paquetes acumulados.
+
+**Cierre:** aprobar las verificaciones comunes, comprobar la reutilización de componentes y conservar tres diagramas separados aunque compartan controladores o tablas.
+
+### Fase 4 — Consultas, auditoría y cierre: P10 y P11
+
+**Objetivo:** completar la colección y revisar conjuntamente sus once paquetes.
+
+**Trabajo del bloque:**
+
+- **P10 — CU38–CU41:** representar las consultas implementadas, reportes dinámicos/estáticos/estadísticos y exportaciones existentes, incluida la consulta de movimientos CU40. Identificar todos los controladores participantes, incluso los de exportación o de otra feature. Incluir todas las tablas fuente que realmente usan consultas, estadísticas y descargas. Los generadores PDF/XLSX/CSV no son tablas y no existe una tabla `reportes` por el solo hecho de generar documentos. Consultar `contratos-reportes-react.md` y documentación de exportaciones para sus límites, sin afirmar disponibilidad productiva no verificada.
+- **P11 — CU42:** representar interfaz de consulta, todos sus controladores y tablas efectivamente utilizadas. Distinguir consulta manual de captura automática de eventos, que es transversal a los demás paquetes. No convertir este diagrama en una repetición de todas las pantallas del sistema.
+- Revisar P1–P11 como colección: nombres oficiales, orden, tres filas, estilo, legibilidad, componentes compartidos y ausencia de referencias rotas. No reconstruir paquetes cerrados salvo inconsistencias comprobadas.
+- Completar el **RESUMEN FINAL** de `subsistemas.md`: once paquetes, componentes reutilizados, tablas compartidas, dependencias entre módulos y limitaciones/pendientes reales. Eliminar avisos de entrega parcial solo cuando corresponda.
+
+**Entrega:** SVG P10/P11, once SVG totales y `subsistemas.md` completo, con introducción, once secciones y resumen final breve.
+
+**Cierre:** aprobar todas las verificaciones de la sección 7 para la colección completa. Informar archivos creados/modificados, paquetes cubiertos, controladores/tablas compartidos, simplificaciones y resultados reales de las comprobaciones.
+
+## 7. Verificaciones obligatorias por fase
+
+Casillas originales: comprobaciones realizadas para **Fase 1 (P1–P3), 21/11/2026**; se conserva su evidencia histórica. **Fases 2 (P4–P6), 3 (P7–P9) y 4 (P10–P11/cierre de colección), 21/11/2026**, satisfacen estas verificaciones con evidencia **independiente** en §8. Los resultados históricos no se extienden por inferencia a esta fase. P3–P8 y P10 dibujan relaciones principales; las secundarias compartidas se justifican en sus matrices textuales, sin omitir controladores ni tablas. P9/P11 dibujan todas sus dependencias. La revisión final de estructura/geometría/enlaces abarcó los once SVG, sin reejecutar sus flujos funcionales.
+
+### Cobertura y correspondencia con el software
+
+- [x] Cada paquete del bloque tiene exactamente un SVG y su sección en Markdown.
+- [x] Se mantiene la clasificación, el orden y los CU de la sección 3.
+- [x] Todas las interfaces representadas existen y materializan las operaciones atribuidas.
+- [x] Están incluidos todos los controladores HTTP participantes, comprobados mediante rutas y flujos; no se confunden con Services.
+- [x] Están incluidas todas las tablas utilizadas por los flujos, incluidas persistencia auxiliar y transversal cuando aplique.
+- [x] Los nombres físicos coinciden con modelos y migraciones; se documenta cualquier diferencia importante sin modificar el software.
+- [x] Cada relación tiene fundamento en servicios HTTP/rutas o en la cadena de persistencia; no se agregan relaciones solo por FK o proximidad visual.
+- [x] Los componentes reutilizados y las partes incompletas quedan explicados sin inventar nombres ni estados.
+
+### Diagramación y archivos
+
+- [x] Tres filas exclusivas: Interface arriba, Class en medio y Table abajo.
+- [x] Colores, pestaña, recuadro, tipografía, iconos, títulos y conexiones uniformes.
+- [x] No hay cajas vacías, etiquetas cortadas, nombres ilegibles ni componentes duplicados injustificadamente.
+- [x] Cada relación tiene su propio recorrido y puertos distinguibles; no hay cruces, tramos superpuestos ni líneas atravesando componentes o textos.
+- [x] Se comprueba la geometría de los segmentos contra otras conexiones y contra los límites de las cajas, mediante herramientas disponibles o inspección explícita. No afirmar una comprobación automática si no se ejecutó.
+- [x] Los SVG son XML válido, vectoriales, escalables y con textos seleccionables; referencias internas válidas y sin dependencias remotas.
+- [x] Los vínculos relativos de imágenes y archivos fuente resuelven correctamente.
+- [x] Se ejecuta `git diff --check`; se informan errores y advertencias relevantes sin alterar cambios ajenos.
+- [x] Se revisa el alcance de los cambios: solo documentos y SVG autorizados, sin código funcional, dependencias, commits ni despliegues.
+
+### Cierre acumulado
+
+- [x] Al cerrar fase 1: P1–P3, tres diagramas.
+- [x] Al cerrar fase 2: P1–P6, seis diagramas.
+- [x] Al cerrar fase 3: P1–P9, nueve diagramas.
+- [x] Al cerrar fase 4: P1–P11, once diagramas, introducción y resumen final completos.
+
+## 8. Registro de avance y evidencia
+
+### Antecedente — P1 elaborado y revisado
+
+- Archivos existentes: `subsistemas.md` y `diagrama-subsistemas/p1-autenticacion-usuarios.svg`.
+- Cobertura: siete interfaces, dos controladores, cinco tablas y ocho relaciones de persistencia individuales.
+- En la revisión de P1 se comprobó XML válido, tres filas, referencias internas y 16 vínculos locales válidos. La comprobación geométrica de 56 segmentos no detectó cruces, superposiciones ni componentes atravesados.
+- `git diff --check` terminó sin errores de whitespace; emitió advertencias LF/CRLF en archivos previamente modificados del repositorio. Esta evidencia corresponde a P1, no a los paquetes pendientes.
+- No se ejecutaron pruebas funcionales ni conexiones de base de datos. No se comparó con la imagen original ausente.
+
+### Estado inicial al redactar este plan (antecedente)
+
+P1 se conserva como referencia aprobada. P2–P11 no se han generado. La fase 1 permanece PARCIAL y las fases 2–4 PENDIENTES. Los criterios de verificación anteriores son requisitos de ejecución, no una declaración de que ya estén cumplidos para toda la colección.
+
+### Cierre de Fase 1 — 21/11/2026
+
+**Estado: COMPLETADA documentalmente.** P1–P3 cubren CU01–CU20; las fases 2–4 siguen PENDIENTES. No se modifica ni genera P4–P11.
+
+| Paquete y evidencia SVG | Interfaces | Controladores | Tablas | Relaciones HTTP / persistencia dibujadas | Segmentos comprobados |
+|---|---:|---:|---:|---:|---:|
+| [P1 conservado](diagrama-subsistemas/p1-autenticacion-usuarios.svg) | 7 | 2 | 5 | 7 / 8 | 56 |
+| [P2 creado](diagrama-subsistemas/p2-proveedores-laboratorios.svg) | 3 | 1 | 3 | 3 / 3 | 17 |
+| [P3 creado](diagrama-subsistemas/p3-medicamentos-composicion.svg) | 6 | 4 | 8 | 7 / 14 | 76 |
+
+- [Correspondencias y matrices P1–P3](subsistemas.md) completadas: páginas → servicios Axios → routers/middlewares → Controllers → Services/Repositories → modelos y migraciones. Se incluyen nombres físicos y enlaces relativos a las fuentes. P1 no presenta inconsistencias comprobadas y su SVG no se editó; SHA-256 conservado: `AC548130C6637EDD5E82D58EF7568A013BF97B31E4879675F93FC32E5B728625`.
+- P2 incluye `proveedor_laboratorio`, `usuario` (autenticación previa) y `bitacora_auditoria`. P3 añade al catálogo las consultas de `existencia_medicamento`/`movimiento_inventario` que protegen identidad y composición; incluye los Controllers HTTP de Proveedores y Principios por peticiones reales de apoyo. Captura automática y autenticación no implican llamar a los Controllers de Bitácora, Usuarios o Auth.
+- Se conservan 16 interfaces, 6 controladores y 11 tablas distintos en el acumulado. P2/P3 comparten el Controller de proveedores y su tabla; `usuario`/`bitacora_auditoria` aparecen en los tres paquetes. La matriz P3 documenta las cargas auxiliares HTTP y las dependencias compartidas secundarias no repetidas como flechas, conforme a §5.2. No se quitaron controladores ni tablas para resolver el trazado.
+- **XML:** los tres archivos se cargaron correctamente con `System.Xml.XmlDocument` de .NET. Comprobación adicional con Node.js: filas exclusivas/alineadas, archivos de componentes existentes, tablas coincidentes con `tableName` y migración de creación (incluido el SQL `CREATE TABLE` de Bitácora), IDs únicos, referencias internas válidas y ausencia de imágenes/scripts/recursos remotos.
+- **Geometría automática:** 149 segmentos ortogonales (56/17/76), comprobados entre relaciones, contra interiores de cajas y contra los 17 puertos circulares. Cero cruces/contactos entre relaciones, solapes o cajas/puertos atravesados. Se excluyen del cómputo los símbolos de componente y las muestras de leyenda. Los segmentos consecutivos de una misma ruta solo se unen en sus codos; no hay distribuidores.
+- **Texto y estilo:** se contrastaron en el SVG los colores, marco, pestaña, iconos, Arial, estereotipos y tipos de conexión con P1. `System.Drawing` midió los 95 textos en Arial, sin desbordamientos de cajas. Los textos externos de título/pestaña/notas/leyenda quedan fuera de los carriles; no se atribuye una revisión en navegador ni un renderizado visual no realizado.
+- **Vínculos:** 107 vínculos locales comprobados entre ambos Markdown y sus imágenes, todos con destino existente; no se certifica contenido remoto ni despliegue. Las referencias SVG usan únicamente IDs locales.
+- **Whitespace y alcance:** `git diff --check` sin errores; Git advierte conversión LF/CRLF en el árbol de trabajo. Se preservaron cambios previos y se limitaron las ediciones a `subsistemas.md`, `fases.md` y los SVG P2/P3. También se ejecutó `git diff --no-index --check` contra `NUL` para los cuatro archivos sin seguimiento (Markdown y SVG P1–P3), sin errores de whitespace; su código 1 señala diferencia frente al archivo vacío, no un error de espacios. Persisten avisos LF/CRLF, sin normalizar archivos ajenos.
+- **Límites:** no se localizó en `docs/` el apartado académico independiente «3.1 Análisis de arquitectura»; se consultaron los bloques pertinentes del análisis académico simplificado y del modelo de clases, sin inventar esa fuente. No se acredita entrega real de correo CU09, esquema operativo ni funcionamiento productivo. Python y el renderer `@resvg/resvg-js` no están disponibles en este entorno; se usaron Node.js/.NET existentes, sin instalar dependencias. No se ejecutaron pruebas funcionales, conexiones MySQL, despliegues, commits ni push.
+
+### Cierre de Fase 2 — 21/11/2026
+
+**Estado: COMPLETADA documentalmente.** P4–P6 cubren CU21–CU30; acumulado de **seis paquetes P1–P6**, sin avanzar a Fase 3. P7–P11 y el resumen final de la colección permanecen pendientes. La entrada de Fase 1 anterior es histórica y no se reescribe como evidencia de esta fase.
+
+| Paquete y evidencia SVG | Interfaces | Controllers HTTP | Tablas físicas | Relaciones HTTP / persistencia dibujadas | Segmentos comprobados |
+|---|---:|---:|---:|---:|---:|
+| [P4 Existencias e inventario](diagrama-subsistemas/p4-existencias-inventario.svg) | 5 | 3 | 10 | 6 / 11 | 57 |
+| [P5 Compras](diagrama-subsistemas/p5-compras.svg) | 3 | 3 | 12 | 5 / 13 | 58 |
+| [P6 Ventas](diagrama-subsistemas/p6-ventas.svg) | 4 | 3 | 11 | 5 / 14 | 70 |
+
+- **Cobertura y fuentes:** [matrices P4–P6](subsistemas.md) contrastadas selectivamente con CU21–CU30, RF17–RF29, reglas de stock/compras/FEFO/recetas/anulaciones/ajustes y transacciones T21–T24; páginas/componentes → servicios Axios → routers/auth/roles → Controllers → Services/Repositories → modelos/migraciones. Se comprobaron archivos reales y nombres físicos, sin conectar a MySQL. El inventario de `transacciones.md` no enumera las actuales aperturas de Ventas: sus límites se verificaron directamente en el Service implementado.
+- **Dependencias que no se omitieron:** P4 incorpora la ficha auxiliar (Medicamentos), el componente de exportación del historial y `reporte-exportacion.controller.js`; CU24/exportación leen detalles, no cabeceras de compra/venta. P5 incluye `venta`/`detalle_venta` por comprobación condicional de compensaciones históricas CU27, y composición/principio por el selector de medicamentos. P6 incorpora la consulta provisional de existencias y ficha/catálogo; `receta` se consulta desde Ventas sin llamar a su Controller. Las matrices identifican cada relación secundaria no repetida como flecha, justificando su selección conforme a §5.2.
+- **Integridad y límites funcionales representados:** inventario sin tabla propia; medicamento/existencia/movimiento y físico/vendible distintos; ajuste con precondiciones, conciliación sin movimiento pero con evento de resultado; compra y anulación con costos/reversiones, B1/A; alta de venta pendiente sin stock ni recetas, confirmación posterior FEFO y validación RN58, anulación pendiente sin reversión o confirmada con devolución RN78. Cada registro posterior de receta y su revisión son transacciones independientes: no se representa un alta atómica venta+recetas ni se desarrolla P7.
+- **Compartidos:** Medicamentos participa por HTTP en los tres nuevos paquetes; Proveedores en P5, Inventario en P4/P6 y Exportación en P4 (también reutilizable por P10 pendiente). Usuario/autenticación y Bitácora automática participan sin agregar los Controllers de Auth, Usuarios o consulta de Bitácora. Ningún Service/Repository compartido se convierte en Controller ficticio.
+- **Preservación:** SHA-256 de P1–P3 contrastados antes/después, sin cambios: P1 `AC548130C6637EDD5E82D58EF7568A013BF97B31E4879675F93FC32E5B728625`; P2 `E33CFFA46D439C53EEF220515E427605995725EA0C415F79E0609AF88C6FBF1B`; P3 `74FA04C11EA7A59B187A58F21DD1A3CE028960D20E2061CF708953A48BD5C94D`. En el texto de P3 solo se actualiza la referencia de P4 pendiente a incorporado; no se rediseña P3.
+- **XML y estructura:** .NET `System.Xml.XmlDocument` cargó correctamente los tres nuevos SVG; Node.js comprobó tres filas exclusivas/alineadas, archivos existentes, `tableName` y creación en migraciones (incluido SQL de Bitácora), IDs únicos y referencias internas. SVG vectoriales con `viewBox`, título/descripción accesibles, textos seleccionables, sin imágenes/scripts ni recursos remotos. Definiciones de estilo copiadas de P2 y contrastadas con P1 (Arial, verde claro, borde/pestaña verdes, símbolo de componente, puertos y tipos de línea).
+- **Geometría automática:** 185 segmentos no nulos, 57/58/70 por SVG, contrastados entre relaciones, contra interiores de cajas, 16 puertos circulares y límites de los textos. Cero cruces/contactos entre relaciones, solapes o componentes/puertos/textos atravesados. Los segmentos no consecutivos de una misma ruta también se compararon; las relaciones tienen salidas/entradas distintas y no usan distribuidores. Se excluyeron iconos y muestras de leyenda del conteo de conexiones. Los extremos de cada flecha de persistencia coinciden con el borde de su tabla y parten del Controller indicado.
+- **Texto:** `System.Drawing` midió 126 textos en Arial (42 por SVG), sin desbordamientos horizontales de cajas. Se contrastaron sus límites estimados conservadores de altura con los recorridos y entre textos, sin intersecciones. No se atribuye renderizado en navegador ni comparación con la imagen original ausente.
+- **Vínculos y whitespace:** 196 vínculos locales comprobados entre ambos Markdown y sus destinos de código/imágenes, todos existentes. `git diff --check` sin errores de whitespace. También `git diff --no-index --check` contra `NUL` para `subsistemas.md` y los seis SVG sin seguimiento: sin errores de espacios; código 1 por diferencia frente al archivo vacío. Git emitió avisos LF/CRLF, también en cambios previos; no se normalizan archivos ajenos. El estado final conserva la lista previa de archivos modificados y agrega solo los tres SVG previstos dentro de la carpeta ya sin seguimiento.
+- **Discrepancias y limitaciones:** no se encontró el apartado académico independiente «3.1 Análisis de arquitectura». Se consultaron los bloques pertinentes del análisis académico simplificado/modelo de clases; dos notas históricas del modelo sobre Ventas y conciliación contradicen código/reglas vigentes y se señalan en `subsistemas.md`, sin editar aquel documento. No se acredita disponibilidad de exportaciones LOCAL/Railway, entrega de descargas ni esquema operativo; tampoco aplicación de la migración de receta sin adjuntos. Solo se usaron Node.js/.NET existentes, sin instalar dependencias ni realizar pruebas funcionales, conexiones MySQL, despliegues, commits o push. Los auxiliares de generación/comprobación quedaron en el directorio temporal de OpenCode, fuera del repositorio.
+
+### Cierre de Fase 3 — 21/11/2026
+
+**Estado: COMPLETADA documentalmente.** P7–P9 cubren CU31–CU37; acumulado de **nueve paquetes P1–P9 (CU01–CU37)**. Se conservan los cierres históricos de Fases 1/2. P10/P11 y el resumen final permanecen pendientes; no se ejecuta Fase 4.
+
+| Paquete y evidencia SVG | Interfaces | Controllers HTTP | Tablas físicas | Relaciones HTTP / persistencia dibujadas | Segmentos comprobados |
+|---|---:|---:|---:|---:|---:|
+| [P7 Recetas](diagrama-subsistemas/p7-recetas.svg) | 5 | 2 | 7 | 6 / 10 | 58 |
+| [P8 Vencimientos y retiros](diagrama-subsistemas/p8-vencimientos-retiros.svg) | 3 | 2 | 8 | 4 / 8 | 38 |
+| [P9 Stock bajo](diagrama-subsistemas/p9-stock-bajo.svg) | 1 | 1 | 4 | 1 / 4 | 14 |
+
+- **Archivos y trazabilidad:** tres SVG nuevos y actualización de [subsistemas.md](subsistemas.md)/este seguimiento. Matrices P7–P9 contrastadas con CU31–CU37, RF27/RF28/RF30–RF34, reglas de recetas/vencimientos/retiros/stock bajo y transacciones T20/T24. Se siguieron páginas/componentes → servicios HTTP/Axios → routers/middlewares/roles → Controllers → Services/Repositories → modelos/migraciones. Todos los archivos dibujados existen y cada nombre físico coincide con `tableName` y creación en migraciones, incluido SQL de Bitácora. No se conectó a MySQL.
+- **P7:** incluye VentasPage y VentaDetailPage por selección/contexto real, además de las tres páginas de Recetas. Dos Controllers: Recetas y Ventas, este último solo GET dentro del paquete. Sus includes justifican medicamento/existencia; no añaden Controller de Medicamentos ni movimientos. Alta de venta/detalles, cada receta/vínculos, revisión y confirmación son transacciones independientes. Registro/revisión no confirman ni reservan/descuentan stock ni crean movimientos. Se verificaron permisos, pertenencia de detalles, revisión inicial NULL, decisión única y auditoría sensible. Se inspeccionó la migración que permite `archivo_receta` NULL, sin ejecutarla; no hay adjuntos ni almacenamiento de archivos.
+- **P8/P9:** P8 comparte InventarioPage/ExistenciasPage e incluye RetiroFormPage y Controller auxiliar de Medicamentos por ficha preparatoria. Se contrastaron cortes DIA/MES, horizonte de tres meses calendario, físico/vendible, precondiciones saldo/último movimiento, costos y pérdida derivada con auditoría transaccional. No se agregan tablas de alerta/retiro/pérdida ni compras/ventas por referencias NULL o enlaces de navegación. P9 utiliza InventarioPage `vista="stockBajo"`: activos, `stockVendible <= stockMinimo`, LEFT JOIN que admite productos sin existencias; a diferencia de CU21 con `soloConExistencias: true`. No ejecuta Controller de Medicamentos ni lee movimientos.
+- **Compartidos y simplificaciones:** matrices explícitas para todas las tablas. P7 resume únicamente flechas transversales Ventas → usuario/bitácora y GET de apoyo desde dos páginas de Recetas (dibujado desde el formulario con el mismo servicio). P8 resume Medicamentos → medicamento/usuario/bitácora y ficha desde ExistenciasPage (dibujada desde RetiroFormPage). P9 no omite relaciones. Formularios/componentes internos quedan en sus páginas; no se omiten Controllers o tablas por conveniencia gráfica. No se convierten servicios de autenticación/auditoría en Controllers HTTP adicionales. P7/P8/P9 siguen separados.
+- **Preservación:** comparación SHA-256 antes/después de P1–P6, sin diferencias. P1–P3 conservan los hashes registrados en Fases 1/2. P4: `36CF8CE59AF8A33D3EEF1C718C1B018D63E384D52E2BFB65C33F8C49EE774960`; P5: `8A2332CD0201111577EF218AD55972272BAAB6F9CDE9AC607779C84E2B9B042F`; P6: `EB696D9157CD346B9DEDBED57C33646DBF3CA453CE2446F3DFA5AFCF7A46AD56`. También se compararon los demás archivos previamente modificados/sin seguimiento fuera de los dos Markdown autorizados, sin cambios. Las notas históricas de los SVG no se reescriben para alterar sus cierres.
+- **XML, estructura y estilo:** los tres SVG se cargaron con `System.Xml.XmlDocument` de .NET. Node.js comprobó filas exclusivas/alineadas, componentes existentes, nombres físicos, IDs únicos y referencias locales. SVG vectoriales con `viewBox`, título/descripción accesibles, texto seleccionable y sin imágenes/scripts/recursos remotos. Definiciones visuales reutilizadas de P2/P1: marco/pestaña verdes, cajas verde claro, Arial, símbolo UML de componente, líneas HTTP continuas con puertos y persistencia discontinua con flecha hacia tabla.
+- **Geometría automática y texto:** auxiliares temporales de Fase 2 revisados y adaptados exclusivamente a P7–P9. Se compararon **110 segmentos ortogonales** (58/38/14) entre relaciones y contra interiores de cajas, **11 puertos** y límites de textos; también segmentos no consecutivos de una misma ruta. Cero cruces/contactos entre relaciones, tramos superpuestos ni cajas/puertos/textos atravesados. Se comprobaron origen Controller y destino en borde de tabla. `System.Drawing` midió **84 textos Arial** (34/32/18), sin desbordamiento horizontal de cajas/lienzos ni textos superpuestos. Se excluyen iconos/muestras de leyenda del conteo de conexiones. No se afirma renderizado en navegador.
+- **Comprobación adicional de contrato visual:** estilos normalizados idénticos a P1; recuentos exactos de interfaces/Controllers/tablas, cajas únicas y dentro del marco, `viewBox` coherente con dimensiones, `aria-labelledby` resolviendo título/descripción. Cada ruta HTTP parte del borde de una interfaz real, llega a un puerto circular distinto y continúa hasta el borde de un Controller mediante su propio tramo.
+- **Vínculos, whitespace y alcance:** **269 vínculos locales** de ambos Markdown comprobados, todos con destino existente. `git diff --check` sin errores de whitespace. También `git diff --no-index --check` contra `NUL` para los diez archivos sin seguimiento de esta colección (subsistemas.md y SVG P1–P9): sin errores de espacios; código 1 por diferencia frente al archivo vacío. Persisten avisos LF/CRLF de Git, incluidos cambios ajenos, sin normalizarlos. El estado mantiene todos los cambios previos; solo se añaden P7–P9 y se editan los dos Markdown autorizados. Sin cambios de código, base de datos, dependencias u otros diagramas.
+- **Límites documentales/operativos:** no se localizó el apartado académico independiente «3.1 Análisis de arquitectura»; se consultaron selectivamente los bloques pertinentes del análisis académico simplificado, sin confundir sus agrupaciones BCE con Controllers HTTP. El inventario histórico de `transacciones.md` no enumera las aperturas actuales de Recetas: se verificaron directamente en su Service. No se acredita esquema operativo ni aplicación de migraciones en destino, funcionalidad ejecutada o disponibilidad de despliegue. Solo herramientas Node.js/.NET existentes, sin dependencias nuevas, pruebas funcionales, MySQL, despliegues, commits ni push. Los auxiliares permanecen fuera del repositorio, en el temporal de OpenCode.
+
+### Cierre de Fase 4 y de la colección — 21/11/2026
+
+**Estado: COMPLETADA documentalmente.** P10/P11 cubren CU38–CU42; acumulado de **once paquetes P1–P11, CU01–CU42**, introducción y **RESUMEN FINAL** completos en [subsistemas.md](subsistemas.md). Se preservan íntegros los cierres históricos de Fases 1–3; sus cifras no se atribuyen a esta ejecución. No es aceptación funcional, aplicación de migraciones ni habilitación productiva.
+
+| Paquete y evidencia SVG | Interfaces | Controllers HTTP | Tablas físicas | Relaciones HTTP / persistencia dibujadas | Segmentos / textos / puertos comprobados |
+|---|---:|---:|---:|---:|---:|
+| [P10 Reportes y consultas](diagrama-subsistemas/p10-reportes-consultas.svg) | 6 | 3 | 9 | 6 / 11 | 55 / 42 / 6 |
+| [P11 Bitácora](diagrama-subsistemas/p11-bitacora.svg) | 2 | 1 | 2 | 2 / 2 | 14 / 16 / 2 |
+
+- **Alcance de edición:** solo se crean P10/P11 y se actualizan `subsistemas.md`/este seguimiento. Estado inicial con cambios ajenos y colección sin seguimiento: registrado antes de editar, sin descartar nada. Comparación SHA-256 de **24 archivos previos fuera de los dos Markdown autorizados**, incluidos P1–P9 y los demás modificados/sin seguimiento, sin diferencias. No se reconstruye ningún diagrama cerrado. P1–P6 mantienen los hashes de las fases anteriores; P7 `02479F183E0E828594C8E750D3933953C9568BC011A5921BB9A182CCE7E64F57`, P8 `E35619872F66249F10F7F0D07F66FB4E526A8B59939C2CF173FCB5C4E89685B3`, P9 `7046D783804D8C39C969506288362F5A41040B5A2E83CF14C545E3C09133C2B2`.
+- **Cobertura P10:** CU38/CU39/CU40/CU41 contrastados con interfaces → servicios HTTP/Axios → routers/auth/roles → los tres Controllers reales → Services/Repositories → modelos/migraciones. Incluye Reportes, Exportación e Inventario; no Controllers de módulos por usar sus modelos/repositorios. Matriz por rama: ventas/compras solo cabeceras; pérdidas agregado/series sobre movimientos y detalle con existencia/medicamento/autoasociación de reversión; CU40 GET y descarga con usuario/detalles de origen, sin cabeceras por FK. Nueve tablas incluidas, ninguna `reporte`/`perdida`/documento.
+- **Semántica P10 comprobada estáticamente:** RN91/RN101, originales SALIDA VENCIMIENTO/DAÑO sin original, costo aplicado histórico, redondeo individual DECIMAL/BigInt antes de sumar, ceros incluidos y reversiones informativas sin netear ni habilitar su operación. Separación de persistencia/agregados/documentos y snapshots internos por solicitud; CU40 comparte MovimientosPage/ExportacionTabular/endpoints con CU24/P4, sin RR/paginación nuevos para su GET. Exportación RR independiente, keyset/spool y cierre antes del render. Permisos, eventos sensibles/terminal único y guardas LOCAL/Railway opt-in comprobados en código, sin acreditar su disponibilidad real ni entrega/guardado de descargas.
+- **Cobertura P11:** dos páginas y un Controller para CU42, listado/filtros/paginación/detalle; dos tablas: usuario por autenticación y bitacora_auditoria por consulta/evento posterior. No consultas HTTP auxiliares ni JOIN a identidades actuales; referencias JSON/IDs no incorporan módulos/tablas de origen. Página/total RR y evento sensible independiente posterior; detalle individual no abre el RR del listado. DTO, permisos, datos permitidos, errores y separación de captura automática frente a consulta manual contrastados con código/política de auditoría.
+- **Simplificaciones y compartidos:** matrices de P10 explican exactamente las flechas secundarias Inventario → usuario/existencia/medicamento/bitácora y Exportación → usuario/venta/compra/existencia/medicamento/detalles/bitácora. Se dibujan sus dependencias principales independientes, sin distribuidores. Las páginas anfitrionas delegan estadísticas/exportación en componentes compartidos mostrados una sola vez. P11 dibuja todas sus relaciones. Services, Repositories, modelos, middlewares y generadores no se convierten en Controllers ni en una cuarta fila. La colección reúne **38 interfaces, 13 Controllers y 16 tablas distintos**; reutilización y límites descritos en el resumen final.
+- **XML/estructura/estilo de la colección:** once SVG cargados con `System.Xml.XmlDocument` (.NET). Node.js verifica orden P1–P11, once secciones/títulos concordantes, tres filas exclusivas/alineadas, recuentos y cajas únicas, archivos existentes, `tableName` y creación en migraciones (incluido SQL de Bitácora), IDs únicos/referencias locales y extremos de relaciones. `viewBox`, título/descripción accesibles, texto seleccionable, sin imágenes/scripts/recursos remotos. Estilos normalizados idénticos a P1 (Arial, marco/pestaña/bordes verdes, cajas verde claro, símbolo UML, puertos HTTP y persistencia discontinua con flecha).
+- **Geometría y texto, evidencia nueva:** validador temporal adaptado a **los once SVG**, incluidos los puertos/tramos múltiples propios de P1/P2, no solo a archivos/filas de Fase 3. **513 segmentos ortogonales**, **52 puertos** y límites de **363 textos Arial** comprobados; cero cruces/contactos entre relaciones, tramos superpuestos, componentes/puertos/textos atravesados o textos superpuestos. También se compararon segmentos no consecutivos de cada ruta; entradas/salidas en bordes y puertos distintos. P10/P11 aportan **69 segmentos, 8 puertos y 58 textos**, no las cifras históricas de Fase 3. `System.Drawing` midió textos sin desbordamientos horizontales de cajas/lienzos; límites verticales conservadores para colisiones, no renderizado real. Se excluyen símbolos y muestras de leyenda del cómputo de conexiones. **No hubo revisión en navegador** ni comparación con la imagen original ausente.
+- **Vínculos y whitespace:** comprobación de todos los vínculos locales de ambos Markdown, imágenes y archivos fuente; sin destinos rotos. `git diff --check` y comprobación individual contra `NUL` de los doce archivos sin seguimiento de la colección (`subsistemas.md` y once SVG), sin errores de whitespace; código 1 frente a `NUL` solo indica contenido distinto del vacío. Avisos LF/CRLF previos conservados, sin normalizar archivos ajenos. Detalle cuantitativo final de enlaces: 343 comprobados.
+- **Fuentes y limitaciones:** lectura selectiva de CU38–CU42, RF35–RF38/RF50–RF53, RN91/RN97–RN101 y auditoría, contexto §38–39, transacciones T24/T25 y aclaración histórica, contratos de Reportes, exportaciones Railway y política de Bitácora. El inventario T01–T25 no desarrolla las aperturas actuales de Reportes/Exportación; se inspeccionaron sus Services. Análisis académico simplificado CU40/CU42/modelo de clases §8 consultados; no se localizó el apartado independiente «3.1 Análisis de arquitectura». Los diagramas de reportes pendientes en otros análisis no se atribuyen como carencia funcional ni se editan fuera de alcance. Referencias a planes sustituidos conservadas como antecedentes, no como evidencias de esta fase.
+- **Pendientes separados:** aplicación/validación de migraciones en destino (Bitácora, receta NULL), permisos SQL/retención/respaldos/volumen/rendimiento/proxies, entrega real de correo y aceptación de exportaciones/recursos/entorno LOCAL/Railway/documentos. Se conserva la aceptación backend parcial de Reportes y sus límites de DATETIME(0), multibloque/fallos tardíos; no se resuelven por documentarlos. Solo herramientas Node.js/.NET existentes, sin instalaciones, pruebas funcionales, MySQL, descargas reales, despliegues, commits ni push. Auxiliares/baseline/resultados en el temporal de OpenCode, fuera del repositorio.
+
+**Resultado final:** colección documental completa, once paquetes separados y evidencia focalizada nueva; ningún cierre documental sustituye la autorización y verificación operativa posterior.
+
+**Referencia histórica:** otros documentos pueden conservar enlaces o menciones a las antiguas fases de mejora visual de Reportes. Este reemplazo no reinterpreta sus cierres ni acredita nuevas pruebas de aquel trabajo; esas referencias no describen las fases de subsistemas aquí definidas. No modificar otros documentos para ajustarlas dentro de esta tarea.

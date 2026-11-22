@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="4700" height="1540" viewBox="0 0 4700 1540" role="img" aria-labelledby="title description">
+  <title id="title">P4. PAQUETE DE EXISTENCIAS E INVENTARIO</title>
+  <desc id="description">CU21–CU24. Incluye ficha auxiliar de medicamento y exportación del historial. Las lecturas compartidas secundarias se documentan en subsistemas.md; ninguna flecha representa llamadas entre controladores.</desc>
+  <defs>
+    <marker id="dependency-arrow" markerWidth="11" markerHeight="11" refX="10" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 1 1 L 10 5 L 1 9" fill="none" stroke="#303030" stroke-width="1.5"/></marker>
+    <g id="component" fill="#e2efda" stroke="#548235" stroke-width="1.2"><rect x="4" y="0" width="17" height="22"/><rect x="0" y="4" width="9" height="5"/><rect x="0" y="13" width="9" height="5"/></g>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #000; }
+      .box { fill: #e2efda; stroke: #548235; stroke-width: 1.3; }
+      .stereotype { font-size: 17px; text-anchor: middle; }
+      .filename { font-size: 16px; text-anchor: middle; }
+      .name { font-size: 18px; text-anchor: middle; }
+      .http { fill: none; stroke: #303030; stroke-width: 1.5; }
+      .dependency { fill: none; stroke: #303030; stroke-width: 1.5; stroke-dasharray: 7 5; }
+    </style>
+  </defs>
+  <rect width="4700" height="1540" fill="#fff"/>
+  <text x="30" y="40" font-size="25" font-weight="bold">P4. PAQUETE DE EXISTENCIAS E INVENTARIO</text>
+  <rect x="30" y="110" width="4640" height="1270" fill="#fff" stroke="#548235" stroke-width="1.3"/>
+  <rect x="30" y="75" width="430" height="35" fill="#a9d18e" stroke="#548235" stroke-width="1.3"/>
+  <text x="245" y="98" font-size="19" text-anchor="middle">EXISTENCIAS E INVENTARIO</text>
+  <g id="interfaces">
+    <g id="interface-0"><rect class="box" x="40" y="180" width="320" height="80"/><use href="#component" x="327" y="190"/><text class="stereotype" x="200" y="207">«Interface»</text><text class="filename" x="200" y="238">InventarioPage.jsx</text></g>
+    <g id="interface-1"><rect class="box" x="440" y="180" width="320" height="80"/><use href="#component" x="727" y="190"/><text class="stereotype" x="600" y="207">«Interface»</text><text class="filename" x="600" y="238">ExistenciasPage.jsx</text></g>
+    <g id="interface-2"><rect class="box" x="840" y="180" width="320" height="80"/><use href="#component" x="1127" y="190"/><text class="stereotype" x="1000" y="207">«Interface»</text><text class="filename" x="1000" y="238">AjusteFormPage.jsx</text></g>
+    <g id="interface-3"><rect class="box" x="1240" y="180" width="320" height="80"/><use href="#component" x="1527" y="190"/><text class="stereotype" x="1400" y="207">«Interface»</text><text class="filename" x="1400" y="238">MovimientosPage.jsx</text></g>
+    <g id="interface-4"><rect class="box" x="4090" y="180" width="320" height="80"/><use href="#component" x="4377" y="190"/><text class="stereotype" x="4250" y="207">«Interface»</text><text class="filename" x="4250" y="238">ExportacionTabular.jsx</text></g>
+  </g>
+  <g id="http-connections" class="http">
+    <path id="http-0" d="M 200 260 V 300 H 360 V 344"/>
+    <path id="http-1" d="M 600 260 V 280 H 520 V 344"/>
+    <path id="http-2" d="M 1000 260 V 300 H 640 V 344"/>
+    <path id="http-3" d="M 1400 260 V 330 H 760 V 344"/>
+    <path id="http-4" d="M 4250 260 V 344"/>
+    <path id="http-aux-0" d="M 620 180 V 140 H 3300 V 344"/>
+    <circle cx="360" cy="350" r="6" fill="#fff"/>
+    <circle cx="520" cy="350" r="6" fill="#fff"/>
+    <circle cx="640" cy="350" r="6" fill="#fff"/>
+    <circle cx="760" cy="350" r="6" fill="#fff"/>
+    <circle cx="4250" cy="350" r="6" fill="#fff"/>
+    <circle cx="3300" cy="350" r="6" fill="#fff"/>
+    <path id="http-0-stem" d="M 360 356 V 370"/>
+    <path id="http-1-stem" d="M 520 356 V 370"/>
+    <path id="http-2-stem" d="M 640 356 V 370"/>
+    <path id="http-3-stem" d="M 760 356 V 370"/>
+    <path id="http-4-stem" d="M 4250 356 V 370"/>
+    <path id="http-aux-0-stem" d="M 3300 356 V 370"/>
+  </g>
+  <g id="controllers">
+    <g id="controller-0"><rect class="box" x="200" y="370" width="800" height="80"/><use href="#component" x="967" y="380"/><text class="stereotype" x="600" y="397">«Class»</text><text class="name" x="600" y="428">inventario.controller.js</text></g>
+    <g id="controller-1"><rect class="box" x="2950" y="370" width="700" height="80"/><use href="#component" x="3617" y="380"/><text class="stereotype" x="3300" y="397">«Class»</text><text class="name" x="3300" y="428">medicamento.controller.js</text></g>
+    <g id="controller-2"><rect class="box" x="3950" y="370" width="600" height="80"/><use href="#component" x="4517" y="380"/><text class="stereotype" x="4250" y="397">«Class»</text><text class="name" x="4250" y="428">reporte-exportacion.controller.js</text></g>
+  </g>
+  <!-- Cada relación tiene carril y puerto propios. Las secundarias están en la matriz Markdown. -->
+  <g id="persistence-connections" class="dependency" marker-end="url(#dependency-arrow)">
+    <path id="dependency-upper-0" data-controller="0" data-table="0" d="M 360 450 V 1010 H 200 V 1100"/>
+    <path id="dependency-upper-1" data-controller="0" data-table="1" d="M 420 450 V 980 H 600 V 1100"/>
+    <path id="dependency-upper-2" data-controller="0" data-table="2" d="M 480 450 V 950 H 1000 V 1100"/>
+    <path id="dependency-upper-3" data-controller="0" data-table="3" d="M 540 450 V 920 H 1400 V 1100"/>
+    <path id="dependency-upper-4" data-controller="0" data-table="4" d="M 600 450 V 890 H 1800 V 1100"/>
+    <path id="dependency-upper-5" data-controller="0" data-table="5" d="M 660 450 V 860 H 2200 V 1100"/>
+    <path id="dependency-upper-6" data-controller="0" data-table="6" d="M 720 450 V 830 H 2600 V 1100"/>
+    <path id="dependency-upper-7" data-controller="1" data-table="7" d="M 3100 450 V 800 H 3000 V 1100"/>
+    <path id="dependency-upper-8" data-controller="1" data-table="8" d="M 3250 450 V 770 H 3400 V 1100"/>
+    <path id="dependency-upper-9" data-controller="1" data-table="9" d="M 3400 450 V 740 H 3800 V 1100"/>
+    <path id="dependency-lower-0" data-controller="2" data-table="3" d="M 4250 450 V 600 H 4600 V 1300 H 1400 V 1180"/>
+  </g>
+  <g id="tables">
+    <g id="table-0"><rect class="box" x="50" y="1100" width="300" height="80"/><use href="#component" x="317" y="1110"/><text class="stereotype" x="200" y="1127">«Table»</text><text class="name" x="200" y="1158">usuario</text></g>
+    <g id="table-1"><rect class="box" x="450" y="1100" width="300" height="80"/><use href="#component" x="717" y="1110"/><text class="stereotype" x="600" y="1127">«Table»</text><text class="name" x="600" y="1158">medicamento</text></g>
+    <g id="table-2"><rect class="box" x="850" y="1100" width="300" height="80"/><use href="#component" x="1117" y="1110"/><text class="stereotype" x="1000" y="1127">«Table»</text><text class="name" x="1000" y="1158">existencia_medicamento</text></g>
+    <g id="table-3"><rect class="box" x="1250" y="1100" width="300" height="80"/><use href="#component" x="1517" y="1110"/><text class="stereotype" x="1400" y="1127">«Table»</text><text class="name" x="1400" y="1158">movimiento_inventario</text></g>
+    <g id="table-4"><rect class="box" x="1650" y="1100" width="300" height="80"/><use href="#component" x="1917" y="1110"/><text class="stereotype" x="1800" y="1127">«Table»</text><text class="name" x="1800" y="1158">detalle_compra</text></g>
+    <g id="table-5"><rect class="box" x="2050" y="1100" width="300" height="80"/><use href="#component" x="2317" y="1110"/><text class="stereotype" x="2200" y="1127">«Table»</text><text class="name" x="2200" y="1158">detalle_venta</text></g>
+    <g id="table-6"><rect class="box" x="2450" y="1100" width="300" height="80"/><use href="#component" x="2717" y="1110"/><text class="stereotype" x="2600" y="1127">«Table»</text><text class="name" x="2600" y="1158">bitacora_auditoria</text></g>
+    <g id="table-7"><rect class="box" x="2850" y="1100" width="300" height="80"/><use href="#component" x="3117" y="1110"/><text class="stereotype" x="3000" y="1127">«Table»</text><text class="name" x="3000" y="1158">proveedor_laboratorio</text></g>
+    <g id="table-8"><rect class="box" x="3250" y="1100" width="300" height="80"/><use href="#component" x="3517" y="1110"/><text class="stereotype" x="3400" y="1127">«Table»</text><text class="name" x="3400" y="1158">composicion_medicamento</text></g>
+    <g id="table-9"><rect class="box" x="3650" y="1100" width="300" height="80"/><use href="#component" x="3917" y="1110"/><text class="stereotype" x="3800" y="1127">«Table»</text><text class="name" x="3800" y="1158">principio_activo</text></g>
+  </g>
+  <text x="70" y="1350" font-size="16">Medicamento: catálogo; existencia: saldo físico; movimiento: historial. Stock vendible calculado, sin tabla inventario.</text>
+  <path class="http" d="M 45 1430 H 110"/><circle cx="117" cy="1430" r="6" fill="#fff" stroke="#303030" stroke-width="1.5"/>
+  <text x="135" y="1436" font-size="17">Comunicación HTTP mediante servicios frontend y Axios</text>
+  <path class="dependency" d="M 860 1430 H 930" marker-end="url(#dependency-arrow)"/>
+  <text x="950" y="1436" font-size="17">Persistencia indirecta: Controller → Service → Repository → Sequelize → MySQL</text>
+  <text x="45" y="1480" font-size="16">CU21–CU24 · 5 interfaces · 3 controladores · 10 tablas · 6 relaciones HTTP y 11 dependencias principales. Relaciones secundarias: subsistemas.md.</text>
+</svg>
