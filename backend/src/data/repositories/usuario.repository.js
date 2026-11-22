@@ -1,4 +1,6 @@
 import db from '../models/index.js';
+import entorno from '../../shared/utils/pagos-entorno.cjs';
+import { authLocalRepository } from './auth-local.repository.js';
 
 const { Usuario, Rol } = db;
 
@@ -37,6 +39,7 @@ export class usuarioRepository {
     }
 
     static async findAllUsuarios() {
+        if (entorno.esPruebaLocal()) return authLocalRepository.findUsuariosPublicos();
         return Usuario.findAll({
             attributes: usuarioPublicAttributes,
             include: [rolInclude],
@@ -45,6 +48,7 @@ export class usuarioRepository {
     }
 
     static async findById({ idUsuario, transaction = undefined }) {
+        if (entorno.esPruebaLocal()) return (await authLocalRepository.findUsuariosPublicos(idUsuario))[0] || null;
         return Usuario.findByPk(idUsuario, {
             attributes: usuarioPublicAttributes,
             include: [rolInclude],

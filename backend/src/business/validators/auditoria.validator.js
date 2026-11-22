@@ -32,7 +32,7 @@ const PERFILES = {
     COMPRA: { estadoOperacion: z.enum(['CONFIRMADA', 'ANULADA']), total: decimal,
         idProveedorLaboratorio: id, cantidadDetalles: entero },
     PAGO_COMPRA: { idCompra: id, metodo: z.enum(['TARJETA', 'PAYPAL']), importe: decimal,
-        moneda: texto(3), importePasarela: decimal, monedaPasarela: texto(3),
+        moneda: texto(3), importePasarela: decimal, monedaPasarela: texto(3), procesador: z.literal('PRUEBA_LOCAL'),
         estado: z.enum(['PENDIENTE', 'PROCESANDO', 'CONFIRMADO', 'RECHAZADO']), referenciaExterna: texto(100).nullable() },
     VENTA: { estadoOperacion: z.enum(['PENDIENTE', 'CONFIRMADA', 'ANULADA']), total: decimal,
         cantidadDetalles: entero },

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AppError } from '../errors/app-error.js';
+import entorno from './pagos-entorno.cjs';
 
 // Cuentas receptoras propiedad del laboratorio, nunca de CADEFAR. Secretos solo
 // en el entorno del servidor. La habilitación comercial incluye medicamentos.
@@ -14,10 +15,11 @@ const tarjeta = z.object({ ...comun, secretKey: z.string().regex(/^sk_live_/),
 const paypal = z.object({ ...comun, moneda: z.enum(['USD', 'EUR']),
     clientId: z.string().min(1), clientSecret: z.string().min(1), merchantId: z.string().regex(/^[A-Z0-9]{13}$/) });
 
-export const monedaCompras = () => ['BOB', 'USD', 'EUR'].includes(process.env.PAGOS_MONEDA_COMPRAS)
+export const monedaCompras = () => entorno.esPruebaLocal() ? 'BOB' : ['BOB', 'USD', 'EUR'].includes(process.env.PAGOS_MONEDA_COMPRAS)
     ? process.env.PAGOS_MONEDA_COMPRAS : null;
 
 export const obtenerConfiguracionPago = (idProveedor, metodo, exigirHabilitacion = true) => {
+    if (entorno.esPruebaLocal()) return { moneda: 'BOB', cuenta: `PRUEBA_LOCAL_LAB_${idProveedor}`, procesador: 'PRUEBA_LOCAL' };
     if (exigirHabilitacion && process.env.PAGOS_REALES_HABILITADOS !== 'true') {
         throw new AppError('El método de pago no está disponible. Se requiere habilitación administrativa.', 503);
     }
@@ -45,6 +47,7 @@ export const metodosPagoPublicos = idProveedor => ['TARJETA', 'PAYPAL'].map(meto
 });
 
 export const urlRetornoPago = idCompra => {
+    if (entorno.esPruebaLocal()) return `http://localhost:5173/compras/${idCompra}`;
     let url;
     try { url = new URL(process.env.FRONTEND_URL); } catch { throw new AppError('El método de pago no está disponible por configuración incompleta.', 503); }
     if (url.protocol !== 'https:' || url.username || url.password) {

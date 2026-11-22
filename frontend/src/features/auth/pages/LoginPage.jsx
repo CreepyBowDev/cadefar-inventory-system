@@ -4,7 +4,7 @@ import { AuthPageContent } from '../components/AuthPageContent.jsx';
 import { useAuth } from '../../../hooks/useAuth.js';
 
 export const LoginPage = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, entornoPruebas } = useAuth();
 
   if (loading) {
     return (
@@ -25,10 +25,11 @@ export const LoginPage = () => {
       title="Iniciar sesión"
       description="Ingresa tus credenciales para continuar al sistema administrativo."
     >
+      {entornoPruebas && <p role="status">Entorno de pruebas. Ingresa con tu usuario y contraseña actuales de CADEFAR. No se modifican las cuentas originales ni se envía dinero real.</p>}
       <LoginForm />
-      <Link className="auth-form-link" to="/recuperar-contrasena">
+      {!entornoPruebas && <Link className="auth-form-link" to="/recuperar-contrasena">
         ¿Olvidaste tu contraseña?
-      </Link>
+      </Link>}
     </AuthPageContent>
   );
 };

@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "start:pagos-pruebas": "node --env-file=.env.pagos-pruebas src/server-pagos-pruebas.js",
+    "prepare:pagos-pruebas": "node --env-file=.env.pagos-pruebas scripts/preparar-pagos-pruebas.js --autorizar-crear"
   },
   "keywords": [],
   "author": "",

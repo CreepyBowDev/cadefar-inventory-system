@@ -10,6 +10,7 @@ export const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [entornoPruebas, setEntornoPruebas] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -20,10 +21,12 @@ export const AuthProvider = ({ children }) => {
 
         if (active) {
           setUsuario(sessionUsuario);
+          setEntornoPruebas(sessionUsuario.esPrueba === true);
         }
-      } catch {
+      } catch (error) {
         if (active) {
           setUsuario(null);
+          setEntornoPruebas(error.response?.data?.esPrueba === true);
         }
       } finally {
         if (active) {
@@ -41,6 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     const authenticatedUsuario = await loginRequest(credentials);
+    setEntornoPruebas(authenticatedUsuario.esPrueba === true);
     setUsuario(authenticatedUsuario);
     return authenticatedUsuario;
   };
@@ -58,10 +62,11 @@ export const AuthProvider = ({ children }) => {
       usuario,
       isAuthenticated: Boolean(usuario),
       loading,
+      entornoPruebas,
       login,
       logout
     }),
-    [usuario, loading]
+    [usuario, loading, entornoPruebas]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

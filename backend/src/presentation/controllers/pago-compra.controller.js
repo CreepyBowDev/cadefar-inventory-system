@@ -11,6 +11,15 @@ const validar = result => {
 };
 
 export class pagoCompraController {
+    static async autorizarPrueba(req, res, next) {
+        try {
+            const { idCompra, idPago } = validar(pagoCompraValidator.validatePago(req.params));
+            validar(pagoCompraValidator.validateVacio(req.query));
+            const { decision } = validar(pagoCompraValidator.validateAutorizacionPrueba(req.body));
+            const pago = await ejecutarConAuditoria(req, auditoria => pagoCompraService.autorizarPrueba(idCompra, idPago, decision, auditoria));
+            return res.set('Cache-Control', 'no-store').json({ data: pago });
+        } catch (error) { next(error); }
+    }
     static async consultar(req, res, next) {
         try {
             const { idCompra } = validar(pagoCompraValidator.validateCompra(req.params));

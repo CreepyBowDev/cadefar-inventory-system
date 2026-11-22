@@ -14,8 +14,16 @@ import { bitacoraAuditoriaRouter } from './presentation/routes/bitacora-auditori
 import { errorHandler } from './presentation/middlewares/error.middleware.js';
 import { auditoriaContextoMiddleware } from './presentation/middlewares/auditoria-contexto.middleware.js';
 import { auditoriaAuthErrorMiddleware } from './presentation/middlewares/auditoria-auth-error.middleware.js';
+import entorno from './shared/utils/pagos-entorno.cjs';
+import { conexionLocal } from './presentation/middlewares/pagos-local.middleware.js';
+import { AppError } from './shared/errors/app-error.js';
 
 export const app = express();
+
+app.use((req, res, next) => {
+    if (entorno.esPruebaLocal() && !conexionLocal(req.socket.remoteAddress)) return res.sendStatus(403);
+    next();
+});
 
 app.use(auditoriaContextoMiddleware);
 app.use(cors({
@@ -26,6 +34,17 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use((req, res, next) => {
+    if (entorno.esPruebaLocal() && ((/^\/api\/usuarios(?:\/|$)/i.test(req.path) && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) ||
+        /^\/api\/auth\/recuperacion(?:\/|$)/i.test(req.path))) {
+        return next(new AppError('El entorno de pruebas no permite modificar cuentas ni contraseñas.', 409));
+    }
+    if (entorno.esPruebaLocal() && /^\/api\/auth\/login\/?$/i.test(req.path) && req.method === 'POST' &&
+        req.get('Origin') !== process.env.FRONTEND_URL) {
+        return next(new AppError('Origen de autenticación no permitido', 403));
+    }
+    next();
+});
 
 app.use('/api/usuarios', usuarioRouter);
 app.use('/api/auth', authRouter);

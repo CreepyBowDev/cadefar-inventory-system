@@ -4,11 +4,19 @@ import { fileURLToPath } from 'node:url';
 import { app } from './app.js';
 import db from './data/models/index.js';
 import { reporteExportacionService } from './business/services/reporte.exportacion.service.js';
+import entorno from './shared/utils/pagos-entorno.cjs';
 
 const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';
+const HOST = entorno.esPruebaLocal() ? '127.0.0.1' : '0.0.0.0';
 
 export const iniciarServidor = async () => {
+    if (entorno.esPruebaLocal()) {
+        const [identity] = await db.sequelize.query('SELECT DATABASE() AS nombre', { logging: false });
+        const [views] = await db.sequelize.query("SELECT IS_UPDATABLE FROM information_schema.VIEWS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='usuario_sesion_local'", { logging: false });
+        if (identity[0]?.nombre !== entorno.BASE_PRUEBAS || views[0]?.IS_UPDATABLE !== 'NO' || !process.env.JWT_SECRET) {
+            throw new Error('El entorno aislado exige una vista de identidad no actualizable y configuración JWT');
+        }
+    }
     const server = app.listen(PORT, HOST);
     await new Promise((resolve, reject) => {
         server.once('listening', resolve);

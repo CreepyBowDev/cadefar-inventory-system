@@ -1,4 +1,5 @@
 import { AppError } from '../../shared/errors/app-error.js';
+import entorno from '../../shared/utils/pagos-entorno.cjs';
 
 const nombresTecnicos = new Set(['Error', 'TypeError', 'RangeError',
     'SequelizeDatabaseError', 'SequelizeValidationError', 'SequelizeUniqueConstraintError',
@@ -30,7 +31,8 @@ export const errorHandler = (error, req, res, next) => {
     if (error instanceof AppError) {
 
         const response = {
-            message: error.message
+            message: error.message,
+            ...(entorno.esPruebaLocal() ? { esPrueba: true } : {})
         };
 
         if (error.details) {

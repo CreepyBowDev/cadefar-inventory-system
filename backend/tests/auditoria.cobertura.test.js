@@ -44,7 +44,7 @@ test('Los endpoints y siete rechazos HEAD explícitos coinciden con clasificador
     const rechazosHead = ['HEAD /api/reportes/ventas/estadisticas', 'HEAD /api/reportes/compras/estadisticas',
         'HEAD /api/reportes/perdidas/estadisticas', 'HEAD /api/reportes/ventas/exportar',
         'HEAD /api/reportes/compras/exportar', 'HEAD /api/reportes/perdidas/exportar', 'HEAD /api/inventario/movimientos/exportar'];
-    assert.equal(actuales.length, 77); assert.equal(new Set(actuales).size, 77);
+    assert.equal(actuales.length, 78); assert.equal(new Set(actuales).size, 78);
     assert.deepEqual(actuales.sort(), [...esperados, ...rechazosHead].sort());
     assert.equal(contratos.filter(e => e.metodo === 'GET').length, 35);
     const documento = await readFile(new URL('../../docs/ai/bitacora-auditoria.md', import.meta.url), 'utf8');
@@ -53,7 +53,7 @@ test('Los endpoints y siete rechazos HEAD explícitos coinciden con clasificador
     // contractual se verifica aquí junto a la matriz histórica conservada.
     const pagos = ['GET /api/compras/:id/pagos', 'POST /api/compras/:id/pagos',
         'POST /api/compras/:id/pagos/:id/verificar', 'POST /api/compras/:id/pagos/:id/confirmar',
-        'POST /api/compras/:id/pagos/:id/conciliar'];
+        'POST /api/compras/:id/pagos/:id/conciliar', 'POST /api/compras/:id/pagos/:id/autorizar-prueba'];
     assert.deepEqual([...matriz, ...pagos].sort(), esperados.sort());
     // fases.md fue sustituido por un plan frontend; el contrato vigente de
     // auditoría sigue siendo la matriz anterior, que no se modifica.

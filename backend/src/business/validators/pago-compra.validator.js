@@ -16,6 +16,7 @@ const iniciar = z.object({
 }).strict();
 
 export class pagoCompraValidator {
+    static validateAutorizacionPrueba(data) { return z.object({ decision: z.enum(['APROBAR', 'RECHAZAR', 'CANCELAR', 'PENDIENTE']) }).strict().safeParse(data); }
     static validateIniciar(data) { return iniciar.safeParse(data); }
     static validateCompra(data) { return z.object({ idCompra: id }).strict().safeParse(data); }
     static validatePago(data) { return z.object({ idCompra: id, idPago: id }).strict().safeParse(data); }

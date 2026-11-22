@@ -13,6 +13,7 @@ import { CompraEstado } from '../components/CompraEstado.jsx';
 import { CompraDetallesTable } from '../components/CompraDetallesTable.jsx';
 import { CompraAnularForm } from '../components/CompraAnularForm.jsx';
 import { CompraPagos } from '../components/CompraPagos.jsx';
+import { nombreLaboratorioPago } from '../utils/pagoCompra.js';
 import { getCompra, anularCompra } from '../services/compra.service.js';
 import '../styles/compras.css';
 
@@ -63,7 +64,7 @@ const CompraDetalle = ({ idCompra }) => {
         {consulta.loading ? <CatalogoState loading message="Cargando compra…" /> : consulta.error ? <CompraError consulta={{ ...consulta, retry: actualizar }} /> : compra && <>
           <dl className="catalogo-detail compra-detail">
             <div><dt>Fecha de adquisición</dt><dd>{fechaCivil(compra.fechaCompra)}</dd></div><div><dt>Fecha y hora de registro</dt><dd>{horaCivil(compra.fechaRegistro)}</dd></div>
-            <div><dt>Proveedor / Laboratorio registrado</dt><dd>{compra.proveedorLaboratorio?.nombre || `Proveedor #${compra.idProveedorLaboratorio}`}{compra.proveedorLaboratorio?.estado === false && <small>Actualmente inactivo</small>}</dd></div>
+            <div><dt>Proveedor / Laboratorio registrado</dt><dd>{nombreLaboratorioPago(compra.proveedorLaboratorio?.nombre, usuario.esPrueba) || `Proveedor #${compra.idProveedorLaboratorio}`}{compra.proveedorLaboratorio?.estado === false && <small>Actualmente inactivo</small>}</dd></div>
             <div><dt>Registrada por</dt><dd>{compra.usuarioRegistrador?.nombreUsuario || `Usuario #${compra.idUsuario}`}</dd></div>
             <div><dt>Clave de operación</dt><dd className="compra-clave">{compra.claveOperacion ?? 'Sin clave registrada'}</dd></div><div><dt>Total registrado</dt><dd className="compra-total">{costoDecimal(compra.total)}</dd></div>
           </dl>

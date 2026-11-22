@@ -40,6 +40,7 @@ const rutas = [
     ['POST', '/compras/:id/pagos/:id/verificar', 'PAGOS_COMPRAS.VERIFICAR'],
     ['POST', '/compras/:id/pagos/:id/confirmar', 'PAGOS_COMPRAS.CONFIRMAR'],
     ['POST', '/compras/:id/pagos/:id/conciliar', 'PAGOS_COMPRAS.CONCILIAR'],
+    ['POST', '/compras/:id/pagos/:id/autorizar-prueba', 'PAGOS_COMPRAS.AUTORIZAR_PRUEBA'],
     ['GET', '/ventas', 'VENTAS.CONSULTAR'], ['GET', '/ventas/:id', 'VENTAS.CONSULTAR'],
     ['POST', '/ventas', 'VENTAS.REGISTRAR_PENDIENTE'],
     ['POST', '/ventas/:id/confirmar', 'VENTAS.CONFIRMAR'],

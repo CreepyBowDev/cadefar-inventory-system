@@ -1,4 +1,5 @@
 'use strict';
+const { esPruebaLocal } = require('../../shared/utils/pagos-entorno.cjs');
 
 const {
   Model
@@ -126,7 +127,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: 'Usuario',
-      tableName: 'usuario',
+      tableName: esPruebaLocal() ? 'usuario_sesion_local' : 'usuario',
       timestamps: false,
       indexes: [
         {

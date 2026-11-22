@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../../components/ConfirmDialog.jsx';
 import { getApiErrorMessage } from '../../../utils/apiError.js';
 import { ResetPasswordDialog } from '../components/ResetPasswordDialog.jsx';
 import { UsuarioTable } from '../components/UsuarioTable.jsx';
+import { useAuth } from '../../../hooks/useAuth.js';
 import {
   getUsuarios,
   updateEstadoUsuario
@@ -12,6 +13,8 @@ import {
 import '../styles/usuarios.css';
 
 export const UsuariosPage = () => {
+  const { usuario } = useAuth();
+  const soloLectura = usuario?.esPrueba === true;
   const location = useLocation();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -112,11 +115,12 @@ export const UsuariosPage = () => {
           <h2>Gestión de usuarios</h2>
           <p>Administra las cuentas, sus roles y el acceso al sistema.</p>
         </div>
-        <Link className="button button--primary" to="/usuarios/nuevo">
+        {!soloLectura && <Link className="button button--primary" to="/usuarios/nuevo">
           <AppIcon name="plus" size={18} />
           Nuevo usuario
-        </Link>
+        </Link>}
       </header>
+      {soloLectura && <p className="catalogo-note" role="status">Consulta de usuarios en solo lectura. Las cuentas y contraseñas originales se conservan sin cambios; las demás operaciones de este entorno utilizan datos aislados.</p>}
 
       {successMessage && (
         <div className="feedback feedback--success" role="status">
@@ -193,6 +197,7 @@ export const UsuariosPage = () => {
             usuarios={filteredUsuarios}
             onToggleEstado={setEstadoTarget}
             onResetPassword={setResetTarget}
+            soloLectura={soloLectura}
           />
         ) : (
           <div className="table-state">
@@ -203,7 +208,7 @@ export const UsuariosPage = () => {
                 ? 'Ajusta la búsqueda o los filtros para ver otros resultados.'
                 : 'Crea la primera cuenta para comenzar la gestión de usuarios.'}
             </p>
-            {!hasFilters && (
+            {!hasFilters && !soloLectura && (
               <Link className="button button--primary" to="/usuarios/nuevo">
                 Crear usuario
               </Link>

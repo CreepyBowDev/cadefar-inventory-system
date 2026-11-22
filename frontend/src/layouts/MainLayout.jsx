@@ -15,6 +15,7 @@ export const MainLayout = () => {
   const [mobileNavigation, setMobileNavigation] = useState(() => window.matchMedia('(max-width: 960px)').matches);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const { usuario, logout } = useAuth();
+  const entornoPruebas = usuario.esPrueba === true;
   const navigate = useNavigate();
   const location = useLocation();
   const roleName = getRoleName(usuario.idRol);
@@ -63,7 +64,8 @@ export const MainLayout = () => {
         navigationOpen={navigationOpen}
         closingSession={closingSession}
         onOpenMenu={() => setSidebarOpen(true)}
-        onChangePassword={() => setPasswordDialogOpen(true)}
+        local={entornoPruebas}
+        onChangePassword={entornoPruebas ? undefined : () => setPasswordDialogOpen(true)}
         onLogout={handleLogout}
       />
       <main className="main-content" inert={navigationOpen}>

@@ -44,6 +44,9 @@ test('Pagos HTTP: sesión, rol Administrador, CSRF, validación estricta y ausen
             }
         }
         assert.equal(llamadas.length, 0);
+        assert.equal((await request('/1/pagos/2/autorizar-prueba', 'POST', { decision: 'APROBAR' })).status, 404,
+            'La autorización ficticia no está disponible fuera del modo local');
+        assert.equal(llamadas.length, 0);
         for (const origen of ['', 'https://ajeno.example.test']) assert.equal((await request('/1/pagos', 'POST', body, 1, origen)).status, 403);
         for (const invalido of [{ ...body, importe: '1e2' }, { ...body, importe: '1.001' }, { ...body, estado: 'CONFIRMADO' },
             { ...body, numeroTarjeta: 'no-permitido' }, { ...body, autorizarPago: false }]) {

@@ -62,8 +62,41 @@
 .pago-table td { vertical-align: top; }
 .pago-resumen dd { font-variant-numeric: tabular-nums; }
 .pago-resultado { margin: 1.25rem; padding: 1rem; background: var(--color-accent-pale); border-radius: .4rem; }
-.pago-estado--rechazado { color: var(--color-danger); background: #fff0ed; border-color: #ecc4bf; }
+.pago-estado--rechazado, .pago-estado--cancelado { color: var(--color-danger); background: #fff0ed; border-color: #ecc4bf; }
 .pago-estado--pendiente, .pago-estado--procesando, .pago-estado--parcial { color: #775312; background: #fff9eb; border-color: #e9d6a5; }
+.pago-autorizacion-local { min-width: 0; }
+.modal--pago-local { width: min(100%, 44rem); max-height: calc(100dvh - 2.5rem); overflow-y: auto; }
+.modal--pago-local .modal__header { position: sticky; top: 0; z-index: 1; background: #fff; }
+.pago-autorizacion-local .modal__actions { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--color-line); flex-wrap: wrap; }
+.pago-pasos { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: 0 0 1.25rem; padding: 0; list-style: none; color: var(--color-muted); font-size: .75rem; }
+.pago-pasos [aria-current='step'] { color: var(--color-ink); font-weight: 700; text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: .4em; }
+.pago-operacion { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 1rem; margin-top: 1rem; border: 1px solid var(--color-line); border-radius: .4rem; background: var(--color-surface-subtle); }
+.pago-operacion .pago-operacion__importe { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pago-tarjeta, .pago-paypal { min-width: 0; margin: 0; padding: 0; border: 0; }
+.pago-tarjeta legend, .pago-paypal legend { margin-bottom: .75rem; font-weight: 650; font-size: .95rem; }
+.pago-confirmacion p, .pago-procesamiento p { font-size: .8rem; line-height: 1.6; color: var(--color-muted); overflow-wrap: anywhere; }
+.pago-opciones-local { margin-top: .75rem; font-size: .8rem; color: var(--color-muted); }
+.pago-opciones-local summary { cursor: pointer; }
+.pago-opciones-local .form-field { margin-top: .5rem; }
+.pago-opciones-local select { width: 100%; }
+.pago-tarjeta__campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.pago-tarjeta__ancho { grid-column: 1 / -1; }
+.pago-tarjeta input, .pago-paypal select { width: 100%; min-width: 0; }
+.pago-tarjeta input[aria-invalid='true'] { border-color: var(--color-danger); }
+.pago-tarjeta .pago-campo-error { color: var(--color-danger); }
+.pago-form .pago-campo-error { color: var(--color-danger); }
+.pago-form input[aria-invalid='true'] { border-color: var(--color-danger); }
+.pago-campo-error:empty { display: none; }
+.pago-paypal__medio { padding: 1rem; border: 1px solid var(--color-line); border-left: 3px solid var(--color-accent); border-radius: .4rem; font-size: .85rem; }
+.pago-paypal__medio p { margin: .5rem 0; }
+.pago-paypal__medio small { color: var(--color-muted); line-height: 1.6; }
+.pago-confirmacion, .pago-procesamiento { padding: 1rem; border: 1px solid var(--color-line); border-radius: .4rem; }
+.pago-confirmacion h3, .pago-procesamiento h3 { margin: .5rem 0; font-size: 1rem; }
+.pago-procesamiento { text-align: center; padding-block: 2rem; }
+.pago-procesamiento__indicador { display: inline-block; width: 2rem; height: 2rem; border: 3px solid var(--color-line); border-top-color: var(--color-accent); border-radius: 50%; animation: pago-procesando 1s linear infinite; }
+@keyframes pago-procesando { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pago-procesamiento__indicador { animation: none; } }
+@media (max-width: 620px) { .modal--pago-local { width: 100%; max-height: 92dvh; } .pago-operacion, .pago-tarjeta__campos { grid-template-columns: 1fr; } .pago-autorizacion-local .modal__actions { flex-direction: column-reverse; } .pago-autorizacion-local .modal__actions .button { width: 100%; white-space: normal; } }
 @media (max-width: 620px) { .pago-metodos, .pago-form__fields { grid-template-columns: 1fr; } .pago-actions .button { width: 100%; } }
 @media (max-width: 1000px) { .compra-linea__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .compra-filters__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .compra-filters__clave { grid-column: span 1; } }

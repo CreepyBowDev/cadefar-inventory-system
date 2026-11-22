@@ -6,6 +6,7 @@ export const AppHeader = ({
   closingSession,
   onOpenMenu,
   onChangePassword,
+  local = false,
   onLogout
 }) => (
   <header className="app-header" inert={navigationOpen}>
@@ -23,11 +24,12 @@ export const AppHeader = ({
         </button>
         <div>
           <h1 title={title}>{title}</h1>
+          {local && <small title="Procesador local · Sin pagos reales">Local</small>}
         </div>
       </div>
 
       <div className="app-header__actions">
-        <button
+        {onChangePassword && <button
           className="app-header__action-button"
           type="button"
           onClick={onChangePassword}
@@ -36,7 +38,7 @@ export const AppHeader = ({
         >
           <AppIcon name="key" size={19} />
           <span>Cambiar contraseña</span>
-        </button>
+        </button>}
         <button
           className="app-header__action-button"
           type="button"

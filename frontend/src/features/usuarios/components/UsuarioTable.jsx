@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { AppIcon } from '../../../components/AppIcon.jsx';
 
-export const UsuarioTable = ({ usuarios, onToggleEstado, onResetPassword }) => (
+export const UsuarioTable = ({ usuarios, onToggleEstado, onResetPassword, soloLectura = false }) => (
   <div className="usuario-table-wrap">
     <table className="usuario-table">
       <thead>
@@ -44,7 +44,7 @@ export const UsuarioTable = ({ usuarios, onToggleEstado, onResetPassword }) => (
               </span>
             </td>
             <td>
-              <div className="usuario-table__actions">
+              {soloLectura ? <span>Solo lectura</span> : <div className="usuario-table__actions">
                 <Link
                   className="table-action"
                   to={`/usuarios/${usuario.idUsuario}/editar`}
@@ -75,7 +75,7 @@ export const UsuarioTable = ({ usuarios, onToggleEstado, onResetPassword }) => (
                 >
                   <AppIcon name="power" size={17} />
                 </button>
-              </div>
+              </div>}
             </td>
           </tr>
         ))}

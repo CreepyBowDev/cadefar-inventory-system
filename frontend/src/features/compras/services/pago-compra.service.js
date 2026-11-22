@@ -1,5 +1,10 @@
 import { api } from '../../../api/api.js';
 
+export const autorizarPagoPrueba = async (idCompra, idPago, decision) => {
+  const response = await api.post(`/compras/${idCompra}/pagos/${idPago}/autorizar-prueba`, { decision });
+  return response.data;
+};
+
 export const getPagosCompra = async idCompra => {
   const response = await api.get(`/compras/${idCompra}/pagos`);
   return response.data;

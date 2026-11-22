@@ -1,6 +1,14 @@
 import { AppError } from '../errors/app-error.js';
 import { decimalAEntero } from './decimal.js';
 import { urlRetornoPago } from './pagos-config.js';
+import entorno from './pagos-entorno.cjs';
+import { esPagoPrueba } from './pagos-prueba.js';
+
+const exigirReal = pago => {
+    if (entorno.esPruebaLocal() || esPagoPrueba(pago) || String(pago.id_externo || '').startsWith('PRUEBA_LOCAL_')) {
+        throw new AppError('El procesador real no admite operaciones de prueba', 409);
+    }
+};
 
 const conflicto = () => new AppError('La respuesta del proveedor no coincide con el pago. El importe permanece reservado para su revisión.', 409);
 const comprobar = condicion => { if (!condicion) throw conflicto(); };
@@ -17,6 +25,7 @@ export const urlPagoSegura = (valor, metodo, comprobante = false) => {
 
 // Sin redirects, reintentos ni logs de respuestas: pueden contener datos privados.
 const solicitar = async (url, opciones = {}) => {
+    if (entorno.esPruebaLocal()) throw new AppError('Las pasarelas reales están bloqueadas en pruebas locales', 409);
     try {
         const response = await fetch(url, { ...opciones, redirect: 'error', signal: AbortSignal.timeout(12000) });
         if (!response.ok) throw new Error('Proveedor no disponible');
@@ -104,6 +113,7 @@ const verificarPayPal = (config, pago, order) => {
 
 export class pagosPasarela {
     static async crear(config, pago) {
+        exigirReal(pago);
         const retorno = urlRetornoPago(pago.id_compra);
         if (pago.metodo === 'TARJETA') {
             await comprobarCuentaStripe(config);
@@ -131,6 +141,7 @@ export class pagosPasarela {
     }
 
     static async consultar(config, pago, capturar = false) {
+        exigirReal(pago);
         if (pago.metodo === 'TARJETA') {
             await comprobarCuentaStripe(config);
             const id = idValido(pago.id_externo, /^cs_live_[a-zA-Z0-9]+$/);

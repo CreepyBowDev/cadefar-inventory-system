@@ -18,13 +18,13 @@ export const esperar = async (predicate, description, timeout = 20000) => {
 // CDP controla sesiones independientes. Las peticiones llegan al Express real.
 // La única intercepción disponible descarta una respuesta POST ya confirmada;
 // no fabrica DTOs, cookies, estados HTTP ni datos de la API.
-export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureReports = false }) => {
+export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureReports = false, headless = true }) => {
   const executable = process.env.CADEFAR_TEST_BROWSER || [
     'C:/Program Files/Google/Chrome/Application/chrome.exe',
     'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
   ].find(existsSync);
   assert.ok(executable, 'Instalar Chrome/Edge o configurar CADEFAR_TEST_BROWSER');
-  const browser = spawn(executable, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
+  const browser = spawn(executable, [...(headless ? ['--headless=new'] : []), '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
   let socket, send;
   try {
     const [port, path] = await esperar(async () => {
@@ -38,7 +38,7 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureRepor
     send = (method, params = {}, sessionId) => new Promise((resolve, reject) => {
       const id = ++sequence;
       const timer = setTimeout(() => { pending.delete(id); reject(new Error(`CDP no respondió: ${method}`)); }, 20000);
-      pending.set(id, { resolve: (value) => { clearTimeout(timer); resolve(value); }, reject: (error) => { clearTimeout(timer); reject(error); } });
+      pending.set(id, { method, resolve: (value) => { clearTimeout(timer); resolve(value); }, reject: (error) => { clearTimeout(timer); reject(error); } });
       socket.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
     socket.addEventListener('close', () => { for (const item of pending.values()) item.reject(new Error('Chrome cerró')); pending.clear(); });
@@ -46,7 +46,7 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureRepor
       const message = JSON.parse(event.data);
       if (message.id) {
         const item = pending.get(message.id); pending.delete(message.id);
-        if (message.error) item?.reject(new Error(message.error.message)); else item?.resolve(message.result);
+        if (message.error) item?.reject(new Error(`${item.method}: ${message.error.message}`)); else item?.resolve(message.result);
         return;
       }
       const session = sessions.get(message.sessionId);
@@ -91,13 +91,18 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureRepor
         } else await send('Fetch.continueResponse', { requestId: params.requestId }, message.sessionId);
       })().catch((error) => errors.push({ session: session.name, interception: error.message }));
     });
-    const openSession = async (name, contextId) => {
-      const browserContextId = contextId || (await send('Target.createBrowserContext')).browserContextId;
-      const { targetId } = await send('Target.createTarget', { url: 'about:blank', browserContextId });
+    const openSession = async (name, contextId, { useDefaultContext = false } = {}) => {
+      // Entrada manual: dejar una única ventana controlada del perfil temporal,
+      // cerrando la pestaña vacía inicial para evitar confusiones.
+      const browserContextId = useDefaultContext ? undefined : contextId || (await send('Target.createBrowserContext')).browserContextId;
+      const existing = useDefaultContext ? (await send('Target.getTargets')).targetInfos.find(target => target.type === 'page' && target.url === 'about:blank') : null;
+      const { targetId } = await send('Target.createTarget', { url: 'about:blank', ...(browserContextId ? { browserContextId } : {}), ...(!headless ? { newWindow: true } : {}) });
       const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
       const session = { name, browserContextId, network: new Map(), dropPath: null };
       sessions.set(sessionId, session);
       await send('Page.enable', {}, sessionId); await send('Runtime.enable', {}, sessionId); await send('Network.enable', {}, sessionId);
+      if (!headless) { await send('Target.activateTarget', { targetId }); await send('Page.bringToFront', {}, sessionId); }
+      if (existing) await send('Target.closeTarget', { targetId: existing.targetId });
       const evaluate = async (expression) => {
         const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
         assert.ok(!result.exceptionDetails, result.exceptionDetails?.text);
@@ -107,6 +112,7 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureRepor
       const settle = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
       return {
         name, browserContextId, evaluate, wait, settle,
+        close: () => send('Target.closeTarget', { targetId }),
         initScript: source => send('Page.addScriptToEvaluateOnNewDocument', { source }, sessionId),
         navigate: async (path) => {
           await evaluate('window.__navigating = true');
@@ -125,6 +131,8 @@ export const abrirNavegadorReal = async ({ profile, origin, apiUrl, captureRepor
         request: async (method, path, body) => evaluate(`(async () => { const response = await fetch(${JSON.stringify(`${apiUrl}${path}`)}, {method:${JSON.stringify(method)},credentials:'include',${body === undefined ? '' : `headers:{'Content-Type':'application/json'},body:${JSON.stringify(JSON.stringify(body))},`} }); return {status:response.status,body:await response.json()}; })()`),
         dropNextPost: async (path) => { session.dropPath = path; await send('Fetch.enable', { patterns: [{ urlPattern: `${apiUrl.replace(/\/api$/, '')}${path}`, requestStage: 'Response' }] }, sessionId); },
         cookies: async () => (await send('Storage.getCookies', { browserContextId })).cookies,
+        restoreSessionCookie: value => send('Network.setCookie', { name: 'token', value,
+          url: apiUrl, path: '/', httpOnly: true, sameSite: 'Lax' }, sessionId),
         mobile: () => send('Emulation.setDeviceMetricsOverride', { width: 375, height: 900, deviceScaleFactor: 1, mobile: true }, sessionId),
         viewport: (width, height = 900) => send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 620 }, sessionId),
         timezone: (timezoneId) => send('Emulation.setTimezoneOverride', { timezoneId }, sessionId),

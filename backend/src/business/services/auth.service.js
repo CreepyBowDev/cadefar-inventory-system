@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
+import entorno from '../../shared/utils/pagos-entorno.cjs';
 import db from '../../data/models/index.js';
 import { usuarioRepository } from '../../data/repositories/usuario.repository.js';
+import { authLocalRepository } from '../../data/repositories/auth-local.repository.js';
 import { LOGIN_SECURITY } from '../../shared/constants/security.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { generarToken, esVersionCredencialesValida } from '../../shared/utils/jwt.js';
@@ -21,7 +23,8 @@ const LOGIN_RESULT = Object.freeze({
 const toSessionUsuario = (usuario) => ({
     idUsuario: usuario.id_usuario,
     idRol: usuario.id_rol,
-    nombreUsuario: usuario.nombre_usuario
+    nombreUsuario: usuario.nombre_usuario,
+    ...(entorno.esPruebaLocal() ? { esPrueba: true } : {})
 });
 
 const getBlockedMessage = (bloqueadoHasta) => {
@@ -37,6 +40,7 @@ const getBlockedMessage = (bloqueadoHasta) => {
 
 export class authService {
     static async login({ nombreUsuario, password }, contexto = crearContextoAuditoriaConexion()) {
+        const repositorioLogin = entorno.esPruebaLocal() ? authLocalRepository : usuarioRepository;
         let transaccionLogin;
         let etapa = 'VERIFICACION';
         let datosEvento = { contexto, nombreIngresado: nombreUsuario, fechaEvento: new Date() };
@@ -44,7 +48,7 @@ export class authService {
         try {
             result = await sequelize.transaction(async (transaction) => {
                 transaccionLogin = transaction;
-                const usuario = await usuarioRepository.findByNombreUsuario({
+                const usuario = await repositorioLogin.findByNombreUsuario({
                     nombreUsuario,
                     transaction,
                     lock: true
@@ -96,7 +100,7 @@ export class authService {
                         ? new Date(now.getTime() + LOGIN_SECURITY.LOCK_MINUTES * 60 * 1000) : null;
 
                     etapa = 'SEGURIDAD';
-                    await usuarioRepository.updateLoginSecurity({
+                    await repositorioLogin.updateLoginSecurity({
                         idUsuario: usuario.id_usuario, intentosFallidosLogin: intentosFallidos,
                         bloqueadoHasta: nuevoBloqueo, transaction
                     });
@@ -124,7 +128,7 @@ export class authService {
 
                 if (usuario.intentos_fallidos_login > 0 || bloqueadoHasta) {
                     etapa = 'SEGURIDAD';
-                    await usuarioRepository.updateLoginSecurity({
+                    await repositorioLogin.updateLoginSecurity({
                         idUsuario: usuario.id_usuario, intentosFallidosLogin: 0,
                         bloqueadoHasta: null, transaction
                     });

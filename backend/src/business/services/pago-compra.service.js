@@ -8,12 +8,15 @@ import { monedaCompras, metodosPagoPublicos, obtenerConfiguracionPago, urlRetorn
 import { pagosPasarela, urlPagoSegura } from '../../shared/utils/pagos-pasarela.js';
 import { bitacoraAuditoriaService } from './bitacora-auditoria.service.js';
 import { anotarErrorAuditoria } from '../../shared/utils/auditoria-error.js';
+import entorno from '../../shared/utils/pagos-entorno.cjs';
+import { pagosPrueba, esPagoPrueba, exigirPagoPrueba } from '../../shared/utils/pagos-prueba.js';
 
 const toPlain = registro => registro.get ? registro.get({ plain: true }) : registro;
 const conflicto = mensaje => anotarErrorAuditoria(new AppError(mensaje, 409), { causa: 'CONFLICTO' });
 const snapshot = pago => ({ idCompra: pago.id_compra, metodo: pago.metodo, importe: pago.importe,
     moneda: pago.moneda, importePasarela: pago.importe_pasarela, monedaPasarela: pago.moneda_pasarela,
-    estado: pago.estado, referenciaExterna: pago.referencia_externa ?? null });
+    estado: pago.estado, referenciaExterna: pago.referencia_externa ?? null,
+    ...(esPagoPrueba(pago) ? { procesador: 'PRUEBA_LOCAL' } : {}) });
 const toPublic = pago => ({
     idPago: pago.id_pago, idCompra: pago.id_compra, idUsuario: pago.id_usuario,
     claveOperacion: pago.clave_operacion, metodo: pago.metodo, importe: pago.importe, moneda: pago.moneda,
@@ -21,6 +24,7 @@ const toPublic = pago => ({
     referenciaCotizacion: pago.referencia_cotizacion, estado: pago.estado,
     fecha: pago.fecha_registro, fechaVerificacion: pago.fecha_verificacion, fechaConfirmacion: pago.fecha_confirmacion,
     referenciaExterna: pago.referencia_externa, resultadoProveedor: pago.resultado_proveedor,
+    ...(esPagoPrueba(pago) ? { esPrueba: true, procesador: 'PRUEBA_LOCAL' } : {}),
     permiteConciliacion: !pago.id_externo && pago.estado === 'PENDIENTE',
     urlPago: urlPagoSegura(pago.url_pago, pago.metodo),
     urlComprobante: urlPagoSegura(pago.url_comprobante, pago.metodo, true),
@@ -67,18 +71,54 @@ const buscarCompra = async (idCompra, transaction) => {
 };
 
 export class pagoCompraService {
+    static #validarBase() {
+        if (entorno.esPruebaLocal() && db.sequelize.config.database !== entorno.BASE_PRUEBAS) {
+            throw new AppError('La base conectada no permite operaciones de prueba', 503);
+        }
+    }
     static async consultar(idCompra) {
+        this.#validarBase();
         return db.sequelize.transaction({ isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ }, async transaction => {
             const registro = await compraRepository.findById(idCompra, { transaction });
             if (!registro) throw new AppError('Compra no encontrada', 404);
             const compra = toPlain(registro);
             const pagos = (await pagoCompraRepository.findHistorial({ idCompra, transaction })).map(toPlain);
+            for (const pago of pagos) this.#validarEntorno(pago);
             return { ...calcularResumenPagos(compra, pagos), pagos: pagos.map(toPublic),
+                ...(entorno.esPruebaLocal() ? { esPrueba: true, procesador: 'PRUEBA_LOCAL' } : {}),
                 metodos: metodosPagoPublicos(compra.id_proveedor_laboratorio) };
         });
     }
 
+    static #validarEntorno(pago) {
+        if (entorno.esPruebaLocal()) exigirPagoPrueba(pago);
+        else if (esPagoPrueba(pago)) throw conflicto('Una operación de prueba no puede procesarse como pago real.');
+    }
+
+    static async autorizarPrueba(idCompra, idPago, decision, auditoria) {
+        if (!entorno.esPruebaLocal() || db.sequelize.config.database !== entorno.BASE_PRUEBAS) {
+            throw new AppError('Recurso no disponible', 404);
+        }
+        return bitacoraAuditoriaService.ejecutarCambio('PAGO_COMPRA_AUTORIZAR_PRUEBA', auditoria,
+            { tipo: 'PAGO_COMPRA', id: idPago }, seguimiento => transaccion(async transaction => {
+                seguimiento.transaction = transaction;
+                const compra = await buscarCompra(idCompra, transaction);
+                if (compra.estado_operacion !== 'CONFIRMADA') throw conflicto('La compra ya no admite pagos.');
+                const registro = await pagoCompraRepository.findById({ idCompra, idPago, transaction });
+                if (!registro) throw new AppError('Pago no encontrado', 404);
+                const pago = toPlain(registro);
+                exigirPagoPrueba(pago);
+                const data = pagosPrueba.autorizar(pago, decision);
+                if (!Object.keys(data).length) return toPublic(pago);
+                await pagoCompraRepository.update({ idPago, data, transaction });
+                const resultado = { ...pago, ...data };
+                await bitacoraAuditoriaService.registrarCambio(seguimiento, { antes: snapshot(pago), despues: snapshot(resultado) }, transaction);
+                return toPublic(resultado);
+            }));
+    }
+
     static async iniciar(idCompra, data, idUsuario, auditoria) {
+        this.#validarBase();
         const config = obtenerConfiguracionPago((await this.#identificarCompra(idCompra)).id_proveedor_laboratorio, data.metodo);
         urlRetornoPago(idCompra);
         const importePasarela = config.moneda === monedaCompras() ? data.importe : data.importePasarela;
@@ -93,6 +133,7 @@ export class pagoCompraService {
                 const previo = await pagoCompraRepository.findByClave({ claveOperacion: data.claveOperacion, transaction });
                 if (previo) {
                     const pago = toPlain(previo);
+                    this.#validarEntorno(pago);
                     if (pago.id_compra !== idCompra || pago.id_usuario !== idUsuario || pago.metodo !== data.metodo ||
                         pago.importe !== data.importe || pago.moneda !== monedaCompras() || pago.cuenta_destino !== config.cuenta ||
                         pago.importe_pasarela !== importePasarela || pago.moneda_pasarela !== config.moneda ||
@@ -103,6 +144,7 @@ export class pagoCompraService {
                 }
                 if (compra.estado_operacion !== 'CONFIRMADA') throw conflicto('No se puede pagar una compra anulada.');
                 const pagos = (await pagoCompraRepository.findAll({ idCompra, transaction, lock: true })).map(toPlain);
+                for (const pago of pagos) this.#validarEntorno(pago);
                 const resumen = calcularResumenPagos(compra, pagos);
                 if (pagos.some(pago => ['PENDIENTE', 'PROCESANDO'].includes(pago.estado))) {
                     throw conflicto('Existe un pago pendiente de verificación. Resuélvalo antes de iniciar otro.');
@@ -136,6 +178,7 @@ export class pagoCompraService {
     }
 
     static async verificar(idCompra, idPago, capturar, auditoria, idExternoRecuperado) {
+        this.#validarBase();
         return bitacoraAuditoriaService.ejecutarCambio('PAGO_COMPRA_VERIFICAR', auditoria,
             { tipo: 'PAGO_COMPRA', id: idPago }, seguimiento => transaccion(async transaction => {
                 seguimiento.transaction = transaction;
@@ -143,6 +186,7 @@ export class pagoCompraService {
                 const registro = await pagoCompraRepository.findById({ idCompra, idPago, transaction });
                 if (!registro) throw anotarErrorAuditoria(new AppError('Pago no encontrado', 404), { causa: 'NO_ENCONTRADO' });
                 const pago = toPlain(registro);
+                this.#validarEntorno(pago);
                 if (['CONFIRMADO', 'RECHAZADO'].includes(pago.estado)) return toPublic(pago);
                 if (compra.estado_operacion !== 'CONFIRMADA') throw conflicto('La compra ya no admite pagos. Se requiere revisión financiera.');
                 if (idExternoRecuperado && pago.id_externo && pago.id_externo !== idExternoRecuperado) {
@@ -160,15 +204,21 @@ export class pagoCompraService {
                 }
                 // Una referencia recuperada no acredita un pago: debe superar
                 // la misma consulta de cuenta, moneda, importe y clave internos.
-                const respuesta = idExterno ? await pagosPasarela.consultar(config, { ...pago, id_externo: idExterno }, capturar)
-                    : await pagosPasarela.crear(config, pago);
+                if (entorno.esPruebaLocal() && idExternoRecuperado) throw conflicto('La conciliación externa no corresponde a pagos locales.');
+                const adaptador = entorno.esPruebaLocal() ? pagosPrueba : pagosPasarela;
+                const respuesta = idExterno ? await adaptador.consultar(config, { ...pago, id_externo: idExterno }, capturar)
+                    : await adaptador.crear(config, pago);
                 const fecha = obtenerFechaOperacion().fechaHoraComercial;
                 const data = { ...respuesta, ...(idExterno ? { id_externo: idExterno } : {}), fecha_verificacion: fecha,
                     fecha_confirmacion: respuesta.estado === 'CONFIRMADO' ? fecha : null };
                 const pagos = (await pagoCompraRepository.findAll({ idCompra, transaction, lock: true })).map(toPlain);
                 calcularResumenPagos(compra, pagos.map(p => p.id_pago === idPago ? { ...p, ...data } : p));
                 const [actualizados] = await pagoCompraRepository.update({ idPago, data, transaction });
-                if (actualizados !== 1) throw conflicto('No fue posible registrar el resultado verificado.');
+                // MySQL puede informar 0 cuando la consulta repite exactamente
+                // un resultado ya persistido (incluida la fecha al segundo).
+                // La fila continúa bloqueada; aceptar solo el no-op comprobado.
+                const sinCambios = actualizados === 0 && Object.entries(data).every(([campo, valor]) => pago[campo] === valor);
+                if (actualizados !== 1 && !sinCambios) throw conflicto('No fue posible registrar el resultado verificado.');
                 const resultado = { ...pago, ...data };
                 await bitacoraAuditoriaService.registrarCambio(seguimiento, {
                     antes: snapshot(pago), despues: snapshot(resultado), referencias: [{ tipo: 'COMPRA', id: idCompra }]

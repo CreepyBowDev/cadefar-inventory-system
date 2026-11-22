@@ -5,11 +5,13 @@ import { requireRole } from '../middlewares/role.middleware.js';
 import { ROLES } from '../../shared/constants/roles.js';
 import { pagoCompraController } from '../controllers/pago-compra.controller.js';
 import { pagoOrigenMiddleware } from '../middlewares/pago-origen.middleware.js';
+import { pagosLocalMiddleware } from '../middlewares/pagos-local.middleware.js';
 
 export const compraRouter = Router();
 compraRouter.use(authMiddleware);
 
 compraRouter.get('/:idCompra/pagos', requireRole(ROLES.ADMINISTRADOR), pagoCompraController.consultar);
+compraRouter.post('/:idCompra/pagos/:idPago/autorizar-prueba', requireRole(ROLES.ADMINISTRADOR), pagosLocalMiddleware, pagoOrigenMiddleware, pagoCompraController.autorizarPrueba);
 compraRouter.post('/:idCompra/pagos', requireRole(ROLES.ADMINISTRADOR), pagoOrigenMiddleware, pagoCompraController.iniciar);
 compraRouter.post('/:idCompra/pagos/:idPago/verificar', requireRole(ROLES.ADMINISTRADOR), pagoOrigenMiddleware, pagoCompraController.verificar);
 compraRouter.post('/:idCompra/pagos/:idPago/confirmar', requireRole(ROLES.ADMINISTRADOR), pagoOrigenMiddleware, pagoCompraController.confirmar);
