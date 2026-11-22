@@ -84,5 +84,21 @@ test('Pagos HTTP: sesión, rol Administrador, CSRF, validación estricta y ausen
         assert.equal((await request('/1/pagos/2/conciliar', 'POST', { idExterno: 'cs_live_recuperada' })).status, 200);
         assert.equal(llamadas.at(-1).args[2], false);
         assert.equal(llamadas.at(-1).args[4], 'cs_live_recuperada');
+        await t.test('Autorización simulada desplegada conserva sesión, rol, origen y validación', async () => {
+            const anterior = { ...process.env };
+            try {
+                Object.assign(process.env, { PAGOS_MODO: 'SIMULACION', PAGOS_MONEDA_COMPRAS: 'BOB',
+                    PAGOS_REALES_HABILITADOS: 'false', PAGOS_PROVEEDORES_JSON: '{}', PAGOS_PAYPAL_PAYER_ID: '' });
+                let autorizaciones = 0;
+                t.mock.method(pagoCompraService, 'autorizarPrueba', async () => { autorizaciones++; return { esPrueba: true }; });
+                const path = '/1/pagos/2/autorizar-prueba', payload = { decision: 'APROBAR' };
+                for (const rol of [null, 2, 3]) assert.equal((await request(path, 'POST', payload, rol)).status, rol ? 403 : 401);
+                assert.equal((await request(path, 'POST', payload, 1, 'https://ajeno.example.test')).status, 403);
+                assert.equal((await request(path, 'POST', { ...payload, numeroTarjeta: 'no-permitido' })).status, 400);
+                assert.equal(autorizaciones, 0);
+                assert.equal((await request(path, 'POST', payload)).status, 200);
+                assert.equal(autorizaciones, 1);
+            } finally { process.env = anterior; }
+        });
     } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 });

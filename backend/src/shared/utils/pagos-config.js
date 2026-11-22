@@ -15,11 +15,11 @@ const tarjeta = z.object({ ...comun, secretKey: z.string().regex(/^sk_live_/),
 const paypal = z.object({ ...comun, moneda: z.enum(['USD', 'EUR']),
     clientId: z.string().min(1), clientSecret: z.string().min(1), merchantId: z.string().regex(/^[A-Z0-9]{13}$/) });
 
-export const monedaCompras = () => entorno.esPruebaLocal() ? 'BOB' : ['BOB', 'USD', 'EUR'].includes(process.env.PAGOS_MONEDA_COMPRAS)
+export const monedaCompras = () => entorno.esSimulacion() ? 'BOB' : ['BOB', 'USD', 'EUR'].includes(process.env.PAGOS_MONEDA_COMPRAS)
     ? process.env.PAGOS_MONEDA_COMPRAS : null;
 
 export const obtenerConfiguracionPago = (idProveedor, metodo, exigirHabilitacion = true) => {
-    if (entorno.esPruebaLocal()) return { moneda: 'BOB', cuenta: `PRUEBA_LOCAL_LAB_${idProveedor}`, procesador: 'PRUEBA_LOCAL' };
+    if (entorno.esSimulacion()) return { moneda: 'BOB', cuenta: `PRUEBA_LOCAL_LAB_${idProveedor}`, procesador: 'PRUEBA_LOCAL' };
     if (exigirHabilitacion && process.env.PAGOS_REALES_HABILITADOS !== 'true') {
         throw new AppError('El método de pago no está disponible. Se requiere habilitación administrativa.', 503);
     }

@@ -577,6 +577,16 @@ test('CU25/CU26/CU27 React: compras, recuperación y roles con API simulada', { 
       await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 900, deviceScaleFactor: 1, mobile: true });
       await nueva(); await settled();
       assert.ok(await evaluate('document.documentElement.scrollWidth <= 375'));
+      assert.ok(await evaluate(`(() => {
+        const opciones = [...document.querySelectorAll('.compra-pago-opcion__tarjeta')];
+        return opciones.length === 2 && opciones.every(opcion => {
+          const radio = opcion.querySelector('input');
+          return radio.getBoundingClientRect().width <= 20 && opcion.scrollWidth <= opcion.clientWidth;
+        }) && opciones[1].getBoundingClientRect().top >= opciones[0].getBoundingClientRect().bottom;
+      })()`), 'Opciones apiladas y radios compactos en móvil');
+      await evaluate(`document.querySelector('input[name="momentoPago"][value="ahora"]').click()`);
+      assert.equal(await evaluate(`document.querySelector('input[name="momentoPago"][value="ahora"]').checked`), true);
+      await evaluate(`document.querySelector('input[name="momentoPago"][value="despues"]').click()`);
       await screenshot('compra-registro-mobile.png');
       await revisar(); await waitFor('!!document.querySelector("[role=dialog]")');
       assert.ok(await evaluate('document.documentElement.scrollWidth <= 375'));

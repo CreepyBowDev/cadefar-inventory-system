@@ -82,7 +82,7 @@ export const CompraPagos = ({ compra, bloqueado = false, pagarAhora = false, onP
         <div><dt>En verificación</dt><dd>{importePago(data.importeReservado, data.moneda)}</dd></div>
         <div><dt>Disponible para pagar</dt><dd>{importePago(data.saldoDisponible, data.moneda)}</dd></div>
       </dl>
-      {!data.esPrueba && <p className="catalogo-note">El saldo considera únicamente pagos registrados y verificados en CADEFAR. Concilia los pagos anteriores realizados fuera del sistema con el laboratorio antes de continuar.</p>}
+      {data.esPrueba ? <p className="catalogo-note" role="status">Simulación educativa: no se envía dinero ni se realizan cargos reales. Los abonos se registran únicamente para esta demostración.</p> : <p className="catalogo-note">El saldo considera únicamente pagos registrados y verificados en CADEFAR. Concilia los pagos anteriores realizados fuera del sistema con el laboratorio antes de continuar.</p>}
       {!data.moneda && <FeedbackMessage message="La moneda de las compras requiere configuración administrativa antes de habilitar pagos." />}
       {compra.estadoOperacion === 'CONFIRMADA' && !form && data.saldoDisponible !== '0.00' && data.importeReservado === '0.00' && <div className="pago-actions"><button className="button button--primary" type="button" onClick={abrir} disabled={disabled || incierto}>Pagar</button></div>}
       {form && <CompraPagoForm compra={compra} resumen={data} form={form} onChange={setForm} onSubmit={revisar} onClose={() => setForm(null)} disabled={disabled || Boolean(review) || incierto} />}

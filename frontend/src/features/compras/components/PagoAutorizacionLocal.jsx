@@ -28,6 +28,7 @@ export const PagoAutorizacionLocal = ({ compra, pago, busy, error, onSubmit, onV
   };
   return <Modal open={Boolean(pago)} size="pago-local" title={tarjeta ? 'Pago con tarjeta' : 'Autorización PayPal'} manageFocus onClose={onClose}>
     {pago && <div className="pago-autorizacion-local" aria-busy={busy}>
+      <p className="catalogo-note">Simulación educativa, sin cargos reales. Utiliza únicamente datos ficticios de tarjeta.</p>
       <ol className="pago-pasos" aria-label="Progreso del pago"><li aria-current={!resultado && !busy ? 'step' : undefined}>1. {tarjeta ? 'Datos de tarjeta' : 'Autorización'}</li><li aria-current={busy || autorizado ? 'step' : undefined}>2. Verificación</li><li aria-current={confirmado || rechazado ? 'step' : undefined}>3. Resultado</li></ol>
       {busy ? <div className="pago-procesamiento" role="status"><span className="pago-procesamiento__indicador" aria-hidden="true" /><h3>Procesando pago…</h3><p>Un momento, por favor.</p></div>
         : resultado ? <div className="pago-confirmacion" role="status">

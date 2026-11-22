@@ -5,7 +5,7 @@ import entorno from './pagos-entorno.cjs';
 import { esPagoPrueba } from './pagos-prueba.js';
 
 const exigirReal = pago => {
-    if (entorno.esPruebaLocal() || esPagoPrueba(pago) || String(pago.id_externo || '').startsWith('PRUEBA_LOCAL_')) {
+    if (entorno.esSimulacion() || esPagoPrueba(pago) || String(pago.id_externo || '').startsWith('PRUEBA_LOCAL_')) {
         throw new AppError('El procesador real no admite operaciones de prueba', 409);
     }
 };
@@ -25,7 +25,7 @@ export const urlPagoSegura = (valor, metodo, comprobante = false) => {
 
 // Sin redirects, reintentos ni logs de respuestas: pueden contener datos privados.
 const solicitar = async (url, opciones = {}) => {
-    if (entorno.esPruebaLocal()) throw new AppError('Las pasarelas reales están bloqueadas en pruebas locales', 409);
+    if (entorno.esSimulacion()) throw new AppError('Las pasarelas reales están bloqueadas durante la simulación', 409);
     try {
         const response = await fetch(url, { ...opciones, redirect: 'error', signal: AbortSignal.timeout(12000) });
         if (!response.ok) throw new Error('Proveedor no disponible');

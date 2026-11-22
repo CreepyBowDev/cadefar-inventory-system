@@ -1,5 +1,17 @@
 .compra-pago-opcion { display: grid; gap: .8rem; }
-.compra-pago-opcion label { display: flex; align-items: baseline; gap: .6rem; }
+.compra-pago-opcion__opciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+.compra-pago-opcion__tarjeta { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid var(--color-line); border-radius: .4rem; cursor: pointer; }
+.compra-pago-opcion__tarjeta:has(input:checked) { border-color: var(--color-accent); background: var(--color-accent-pale); }
+.compra-pago-opcion__tarjeta:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.compra-pago-opcion__tarjeta:has(input:disabled) { opacity: .65; cursor: not-allowed; }
+.compra-form .compra-pago-opcion__tarjeta input[type="radio"] { flex: 0 0 auto; width: 1rem; height: 1rem; margin: .15rem 0 0; accent-color: var(--color-accent); }
+.compra-pago-opcion__tarjeta span { min-width: 0; }
+.compra-pago-opcion__tarjeta strong { display: block; font-size: .86rem; line-height: 1.5; }
+.compra-pago-opcion small { display: block; color: var(--color-muted); font-size: .78rem; line-height: 1.6; }
+.compra-pago-opcion__tarjeta small { margin-top: .3rem; }
+@media (max-width: 620px) {
+  .compra-pago-opcion__opciones { grid-template-columns: 1fr; }
+}
 .comprobante-vista .modal--large { width: min(900px, calc(100vw - 32px)); }
 .comprobante-documento { background: white; color: #172b36; padding: 1.5rem; font-size: .9rem; }
 .comprobante-encabezado { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 3px solid #16645c; padding-bottom: 1rem; margin-bottom: 1.5rem; }

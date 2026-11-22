@@ -2,8 +2,17 @@
 
 const BASE_PRUEBAS = 'cadefar_pagos_pruebas';
 const BASE_IDENTIDAD = 'cadefarexamen';
+// Demostración desplegada: conserva la base y autenticación habituales, pero
+// nunca admite credenciales ni habilitación de las pasarelas financieras.
+const validarSimulacion = env => {
+    if (env.PAGOS_REALES_HABILITADOS !== 'false' || env.PAGOS_MONEDA_COMPRAS !== 'BOB' ||
+        (env.PAGOS_PROVEEDORES_JSON && env.PAGOS_PROVEEDORES_JSON !== '{}') || env.PAGOS_PAYPAL_PAYER_ID) {
+        throw new Error('La simulación requiere BOB y pagos reales deshabilitados, sin cuentas financieras');
+    }
+};
 const esPruebaLocal = (env = process.env) => {
     const modo = env.PAGOS_MODO;
+    if (modo === 'SIMULACION') { validarSimulacion(env); return false; }
     if (!modo || modo === 'PRODUCCION') return false;
     if (modo !== 'PRUEBA_LOCAL' || env.NODE_ENV !== 'development' ||
         env.DB_NAME_PAGOS_PRUEBAS !== BASE_PRUEBAS ||
@@ -18,4 +27,6 @@ const esPruebaLocal = (env = process.env) => {
     return true;
 };
 
-module.exports = { BASE_PRUEBAS, BASE_IDENTIDAD, esPruebaLocal };
+const esSimulacion = (env = process.env) => esPruebaLocal(env) || env.PAGOS_MODO === 'SIMULACION';
+
+module.exports = { BASE_PRUEBAS, BASE_IDENTIDAD, esPruebaLocal, esSimulacion };

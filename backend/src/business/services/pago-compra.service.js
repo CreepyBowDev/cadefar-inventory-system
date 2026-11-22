@@ -85,19 +85,20 @@ export class pagoCompraService {
             const pagos = (await pagoCompraRepository.findHistorial({ idCompra, transaction })).map(toPlain);
             for (const pago of pagos) this.#validarEntorno(pago);
             return { ...calcularResumenPagos(compra, pagos), pagos: pagos.map(toPublic),
-                ...(entorno.esPruebaLocal() ? { esPrueba: true, procesador: 'PRUEBA_LOCAL' } : {}),
+                ...(entorno.esSimulacion() ? { esPrueba: true, procesador: 'PRUEBA_LOCAL' } : {}),
                 metodos: metodosPagoPublicos(compra.id_proveedor_laboratorio) };
         };
         return transaction ? consultar(transaction) : db.sequelize.transaction({ isolationLevel: db.Sequelize.Transaction.ISOLATION_LEVELS.REPEATABLE_READ }, consultar);
     }
 
     static #validarEntorno(pago) {
-        if (entorno.esPruebaLocal()) exigirPagoPrueba(pago);
+        if (entorno.esSimulacion()) exigirPagoPrueba(pago);
         else if (esPagoPrueba(pago)) throw conflicto('Una operación de prueba no puede procesarse como pago real.');
     }
 
     static async autorizarPrueba(idCompra, idPago, decision, auditoria) {
-        if (!entorno.esPruebaLocal() || db.sequelize.config.database !== entorno.BASE_PRUEBAS) {
+        this.#validarBase();
+        if (!entorno.esSimulacion()) {
             throw new AppError('Recurso no disponible', 404);
         }
         return bitacoraAuditoriaService.ejecutarCambio('PAGO_COMPRA_AUTORIZAR_PRUEBA', auditoria,
@@ -205,8 +206,8 @@ export class pagoCompraService {
                 }
                 // Una referencia recuperada no acredita un pago: debe superar
                 // la misma consulta de cuenta, moneda, importe y clave internos.
-                if (entorno.esPruebaLocal() && idExternoRecuperado) throw conflicto('La conciliación externa no corresponde a pagos locales.');
-                const adaptador = entorno.esPruebaLocal() ? pagosPrueba : pagosPasarela;
+                if (entorno.esSimulacion() && idExternoRecuperado) throw conflicto('La conciliación externa no corresponde a pagos simulados.');
+                const adaptador = entorno.esSimulacion() ? pagosPrueba : pagosPasarela;
                 const respuesta = idExterno ? await adaptador.consultar(config, { ...pago, id_externo: idExterno }, capturar)
                     : await adaptador.crear(config, pago);
                 const fecha = obtenerFechaOperacion().fechaHoraComercial;

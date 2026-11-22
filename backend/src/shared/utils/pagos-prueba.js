@@ -3,7 +3,7 @@ import { AppError } from '../errors/app-error.js';
 
 export const esPagoPrueba = pago => String(pago.cuenta_destino || '').startsWith('PRUEBA_LOCAL_LAB_');
 export const exigirPagoPrueba = pago => {
-    if (!entorno.esPruebaLocal() || !esPagoPrueba(pago) || pago.moneda !== 'BOB' || pago.moneda_pasarela !== 'BOB') {
+    if (!entorno.esSimulacion() || !esPagoPrueba(pago) || pago.moneda !== 'BOB' || pago.moneda_pasarela !== 'BOB') {
         throw new AppError('El pago no pertenece al procesador local autorizado', 409);
     }
 };

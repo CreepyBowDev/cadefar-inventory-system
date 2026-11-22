@@ -56,8 +56,10 @@ export const CompraForm = ({ medicamentos, proveedores, submitting, attempted, a
       <p className="compra-form__note">El sistema verificará los vencimientos al registrar, identificará las existencias y calculará los subtotales, el total y el costo promedio.</p>
       <fieldset className="compra-form__cabecera compra-pago-opcion" disabled={blocked || Boolean(review)}>
         <legend>Pago de la compra</legend>
-        <label><input type="radio" name="momentoPago" value="ahora" checked={pagarAhora} onChange={() => setPagarAhora(true)} /> Registrar compra y realizar pago ahora.</label>
-        <label><input type="radio" name="momentoPago" value="despues" checked={!pagarAhora} onChange={() => setPagarAhora(false)} /> Registrar compra y pagar después.</label>
+        <div className="compra-pago-opcion__opciones">
+          <label className="compra-pago-opcion__tarjeta"><input type="radio" name="momentoPago" value="ahora" checked={pagarAhora} onChange={() => setPagarAhora(true)} /><span><strong>Registrar compra y realizar pago ahora.</strong><small>Abre el formulario de pago después de guardar la compra.</small></span></label>
+          <label className="compra-pago-opcion__tarjeta"><input type="radio" name="momentoPago" value="despues" checked={!pagarAhora} onChange={() => setPagarAhora(false)} /><span><strong>Registrar compra y pagar después.</strong><small>Deja el saldo pendiente y paga desde el detalle de la compra.</small></span></label>
+        </div>
         <small>Primero se guardará la compra. El pago es independiente de la recepción y solo descontará el saldo cuando quede confirmado.</small>
       </fieldset>
       <FeedbackMessage message={error || apiError} />
